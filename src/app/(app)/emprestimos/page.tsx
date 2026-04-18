@@ -785,6 +785,21 @@ export default function EmprestimosPage() {
 
   return (
     <div className="space-y-6">
+      {/* Title + Vence Hoje / Atrasados */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">Empréstimos</h1>
+        <div className="flex items-center gap-2">
+          <Button onClick={sendBulkDueToday} disabled={bulkSendingDueToday} className="bg-amber-500 hover:bg-amber-600 text-white">
+            {bulkSendingDueToday ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <MessageCircle className="h-4 w-4 mr-2" />}
+            {bulkSendingDueToday ? "Enviando..." : "Vence Hoje"}
+          </Button>
+          <Button onClick={sendBulkOverdue} disabled={bulkSendingOverdue} className="bg-red-600 hover:bg-red-700 text-white">
+            {bulkSendingOverdue ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <MessageCircle className="h-4 w-4 mr-2" />}
+            {bulkSendingOverdue ? "Enviando..." : "Atrasados"}
+          </Button>
+        </div>
+      </div>
+
       {/* Tabs */}
       <div className="flex items-center gap-1 bg-white dark:bg-zinc-900 rounded-xl p-1 border border-gray-200 dark:border-zinc-800 overflow-x-auto">
         <button
@@ -819,14 +834,6 @@ export default function EmprestimosPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-zinc-500" />
           <Input placeholder="Buscar..." className="pl-10" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
-        <Button onClick={sendBulkDueToday} disabled={bulkSendingDueToday} className="bg-amber-500 hover:bg-amber-600 text-white">
-          {bulkSendingDueToday ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <MessageCircle className="h-4 w-4 mr-2" />}
-          {bulkSendingDueToday ? "Enviando..." : "Vence Hoje"}
-        </Button>
-        <Button onClick={sendBulkOverdue} disabled={bulkSendingOverdue} className="bg-red-600 hover:bg-red-700 text-white">
-          {bulkSendingOverdue ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <MessageCircle className="h-4 w-4 mr-2" />}
-          {bulkSendingOverdue ? "Enviando..." : "Atrasados"}
-        </Button>
         <Button onClick={() => { resetForm(); setDialogOpen(true) }} className="bg-emerald-600 hover:bg-emerald-700 text-white">
           <Plus className="h-4 w-4 mr-2" /> Novo Empréstimo
         </Button>
@@ -1114,11 +1121,6 @@ export default function EmprestimosPage() {
 
                   {/* Ações */}
                   <div className="px-4 pt-3 pb-4 mt-2 border-t border-gray-100 dark:border-zinc-800 space-y-3">
-                    <div>
-                      <Button size="sm" variant="outline" onClick={() => openRenegotiateDialog(loan)} className="w-full h-9 text-sm border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-400 transition-colors">
-                        <Receipt className="h-3.5 w-3.5 mr-1.5" /> Pagar
-                      </Button>
-                    </div>
                     {(status.label === "Atrasado" || status.label === "Inadimplente") && (
                       <div>
                         <Button size="sm" onClick={() => openWhatsappDialog(loan)} className="w-full h-9 text-sm bg-green-600 hover:bg-green-700 text-white transition-colors">
@@ -1127,6 +1129,9 @@ export default function EmprestimosPage() {
                       </div>
                     )}
                     <div className="flex items-center justify-center gap-2">
+                      <button className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors" onClick={() => openRenegotiateDialog(loan)} title="Pagar">
+                        <Receipt className="h-4 w-4" />
+                      </button>
                       <button className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors" onClick={() => router.push(`/emprestimos/${loan.id}`)} title="Histórico">
                         <RotateCcw className="h-4 w-4" />
                       </button>
@@ -1304,7 +1309,12 @@ export default function EmprestimosPage() {
                               <span className="text-gray-400 dark:text-zinc-600">·</span>
                               <span className="text-gray-500 dark:text-zinc-400">Venc: {nextI ? formatDate(nextI.dueDate) : "—"}</span>
                             </div>
-                            <span className="text-sm font-semibold tabular-nums text-gray-700 dark:text-zinc-300">{formatCurrency(loan.totalAmount)}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-semibold tabular-nums text-gray-700 dark:text-zinc-300">{formatCurrency(loan.totalAmount)}</span>
+                              <button className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors" onClick={() => openRenegotiateDialog(loan)} title="Pagar">
+                                <Receipt className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
                           </div>
                         )
                       })}

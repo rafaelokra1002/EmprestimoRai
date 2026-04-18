@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useRef } from "react"
+import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { clientSchema, ClientFormData } from "@/lib/validations"
@@ -12,7 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { Avatar } from "@/components/avatar"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Search, Pencil, Trash2, User, MapPin, FileText, Mail, Phone, Instagram, Globe, Briefcase, Users, Camera, Upload, X, Eye, Download, Image } from "lucide-react"
+import { Plus, Search, Pencil, Trash2, User, MapPin, FileText, Mail, Phone, Instagram, Globe, Briefcase, Users, Camera, Upload, X, Eye, Download, Image, DollarSign } from "lucide-react"
 
 interface Client {
   id: string
@@ -99,6 +100,7 @@ function cepMask(value: string) {
 }
 
 export default function ClientesPage() {
+  const router = useRouter()
   const [clients, setClients] = useState<Client[]>([])
   const [filtered, setFiltered] = useState<Client[]>([])
   const [search, setSearch] = useState("")
@@ -393,6 +395,15 @@ export default function ClientesPage() {
 
   return (
     <div className="space-y-4">
+      {/* Title + Criar Empréstimo */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">Clientes</h1>
+        <Button onClick={() => router.push("/emprestimos?novo=true")} className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 whitespace-nowrap text-xs px-3 py-1.5 h-8">
+          <DollarSign className="h-4 w-4" />
+          Criar Empréstimo
+        </Button>
+      </div>
+
       {/* Search bar with counter */}
       <div className="flex items-center gap-3">
         <div className="relative flex-1">
@@ -463,7 +474,7 @@ export default function ClientesPage() {
                   <TableCell className="text-gray-700 dark:text-zinc-300">{client.income ? `R$ ${client.income.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "-"}</TableCell>
                   <TableCell className="text-gray-700 dark:text-zinc-300">{client.requestedAmount ? `R$ ${client.requestedAmount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "-"}</TableCell>
                   <TableCell>
-                    <Badge variant={client.status === "ACTIVE" ? "success" : "outline"}>
+                    <Badge variant={client.status === "ACTIVE" ? "success" : "warning"}>
                       {client.status === "ACTIVE" ? "Ativo" : "Inativo"}
                     </Badge>
                   </TableCell>
