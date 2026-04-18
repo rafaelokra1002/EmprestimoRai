@@ -44,12 +44,14 @@ if (!globalForWA.__waState) {
 }
 
 const wa = globalForWA.__waState
-const AUTH_DIR = path.join(process.cwd(), ".whatsapp-auth")
+const AUTH_DIR = process.env.WHATSAPP_AUTH_DIR || path.join(process.cwd(), ".whatsapp-auth")
 const MAX_RECONNECT_ATTEMPTS = 3
 
 const ensureAuthDir = () => {
+  console.log("[WhatsApp] AUTH_DIR:", AUTH_DIR)
   if (!fs.existsSync(AUTH_DIR)) {
     fs.mkdirSync(AUTH_DIR, { recursive: true })
+    console.log("[WhatsApp] Created auth directory")
   }
 }
 
@@ -153,8 +155,9 @@ const startSocket = async (): Promise<void> => {
         }
       }
     })
-  } catch (err) {
-    console.error("[WhatsApp] Error starting socket:", err)
+  } catch (err: any) {
+    console.error("[WhatsApp] Error starting socket:", err?.message || err)
+    console.error("[WhatsApp] Stack:", err?.stack)
     wa.connecting = false
     wa.connectionState = "disconnected"
   }
@@ -175,7 +178,9 @@ export const whatsappService = {
     await startSocket()
 
     const start = Date.now()
-    while (Date.now() - start < 15000) {
+    const timeout = 25000
+    console.log("[WhatsApp] Waiting for QR code or connection...")
+    while (Date.now() - start < timeout) {
       if ((wa.connectionState as string) === "open") {
         return { connected: true, state: "open" }
       }
