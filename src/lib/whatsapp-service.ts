@@ -1,13 +1,18 @@
-import makeWASocket, {
-  DisconnectReason,
-  useMultiFileAuthState,
-  fetchLatestBaileysVersion,
-  makeCacheableSignalKeyStore,
-} from "@whiskeysockets/baileys"
 import { Boom } from "@hapi/boom"
 import * as QRCode from "qrcode"
 import path from "path"
 import fs from "fs"
+
+async function loadBaileys() {
+  const baileys = await import("@whiskeysockets/baileys")
+  return {
+    makeWASocket: baileys.default,
+    DisconnectReason: baileys.DisconnectReason,
+    useMultiFileAuthState: baileys.useMultiFileAuthState,
+    fetchLatestBaileysVersion: baileys.fetchLatestBaileysVersion,
+    makeCacheableSignalKeyStore: baileys.makeCacheableSignalKeyStore,
+  }
+}
 
 type ConnectionState = {
   connected: boolean
@@ -18,7 +23,7 @@ type ConnectionState = {
 // Use globalThis to survive Next.js HMR reloads (same pattern as Prisma)
 const globalForWA = globalThis as unknown as {
   __waState?: {
-    sock: ReturnType<typeof makeWASocket> | null
+    sock: any
     currentQr: string | null
     connectionState: "disconnected" | "connecting" | "open"
     connecting: boolean
@@ -68,6 +73,7 @@ const startSocket = async (): Promise<void> => {
     cleanupSocket()
     ensureAuthDir()
 
+    const { makeWASocket, DisconnectReason, useMultiFileAuthState, fetchLatestBaileysVersion, makeCacheableSignalKeyStore } = await loadBaileys()
     const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR)
     const { version } = await fetchLatestBaileysVersion()
 
