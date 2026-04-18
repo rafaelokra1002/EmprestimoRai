@@ -1,0 +1,6 @@
+.whatsapp-auth
+.git
+node_modules
+__tests__
+test-result.txt
+*.ps1

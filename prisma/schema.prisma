@@ -1,0 +1,328 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String             @id @default(cuid())
+  name          String?
+  email         String             @unique
+  emailVerified DateTime?
+  password      String?
+  image         String?
+  phone         String?
+  role          Role               @default(USER)
+  companyName   String?
+  companyDoc    String?
+  pixKey        String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  accounts      Account[]
+  sessions      Session[]
+  clients       Client[]
+  loans         Loan[]
+  sales         Sale[]
+  vehicles      Vehicle[]
+  expenses      Expense[]
+  employees     Employee[]
+  templates     WhatsAppTemplate[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Client {
+  id           String           @id @default(cuid())
+  name         String
+  email        String?
+  phone        String?
+  document     String?
+  rg           String?
+  instagram    String?
+  facebook     String?
+  profession   String?
+  workplace    String?
+  category     String?
+  income       Float?
+  requestedAmount Float?
+  referral     Boolean          @default(false)
+  clientType   String           @default("EMPRESTIMO")
+  photo        String?
+  address      String?
+  city         String?
+  state        String?
+  zipCode      String?
+  neighborhood String?
+  complement   String?
+  number       String?
+  notes        String?
+  score        Int              @default(100)
+  status       ClientStatus     @default(ACTIVE)
+  userId       String
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  loans        Loan[]
+  sales        Sale[]
+  vehicles     Vehicle[]
+  documents    ClientDocument[]
+}
+
+model ClientDocument {
+  id        String   @id @default(cuid())
+  clientId  String
+  name      String
+  type      String   @default("OUTRO")
+  fileData  String   @db.Text
+  fileType  String
+  createdAt DateTime @default(now())
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+}
+
+model Loan {
+  id                   String        @id @default(cuid())
+  clientId             String
+  userId               String
+  amount               Float
+  interestRate         Float
+  interestType         String        @default("PER_INSTALLMENT")
+  modality             String        @default("MONTHLY")
+  totalInterest        Float         @default(0)
+  installmentValue     Float         @default(0)
+  totalAmount          Float
+  profit               Float
+  installmentCount     Int
+  contractDate         DateTime
+  firstInstallmentDate DateTime
+  startDate            DateTime
+  skipSaturday         Boolean       @default(false)
+  skipSunday           Boolean       @default(false)
+  skipHolidays         Boolean       @default(false)
+  dailyInterest        Boolean       @default(false)
+  dailyInterestAmount  Float         @default(0)
+  penaltyFee           Float         @default(0)
+  lateCycles           Int           @default(0)
+  dueDay               Int           @default(1)
+  whatsappNotify       Boolean       @default(false)
+  status               LoanStatus    @default(ACTIVE)
+  notes                String?
+  tags                 String[]      @default([])
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+  client               Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  user                 User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  installments         Installment[]
+  payments             Payment[]
+}
+
+model Installment {
+  id         String            @id @default(cuid())
+  loanId     String
+  number     Int
+  amount     Float
+  dueDate    DateTime
+  paidAmount Float             @default(0)
+  paidDate   DateTime?
+  status     InstallmentStatus @default(PENDING)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  loan       Loan              @relation(fields: [loanId], references: [id], onDelete: Cascade)
+}
+
+model Payment {
+  id        String   @id @default(cuid())
+  loanId    String
+  amount    Float
+  date      DateTime
+  notes     String?
+  createdAt DateTime @default(now())
+  loan      Loan     @relation(fields: [loanId], references: [id], onDelete: Cascade)
+}
+
+model Sale {
+  id               String            @id @default(cuid())
+  clientId         String
+  userId           String
+  description      String
+  totalAmount      Float
+  paidAmount       Float             @default(0)
+  installmentCount Int               @default(1)
+  startDate        DateTime
+  status           SaleStatus        @default(ACTIVE)
+  notes            String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  client           Client            @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  saleInstallments SaleInstallment[]
+}
+
+model SaleInstallment {
+  id         String            @id @default(cuid())
+  saleId     String
+  number     Int
+  amount     Float
+  dueDate    DateTime
+  paidAmount Float             @default(0)
+  paidDate   DateTime?
+  status     InstallmentStatus @default(PENDING)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  sale       Sale              @relation(fields: [saleId], references: [id], onDelete: Cascade)
+}
+
+model Vehicle {
+  id               String    @id @default(cuid())
+  clientId         String?
+  userId           String
+  brand            String
+  model            String
+  year             Int
+  plate            String?
+  color            String?
+  chassis          String?
+  purchasePrice    Float
+  salePrice        Float?
+  paidAmount       Float     @default(0)
+  downPayment      Float     @default(0)
+  sold             Boolean   @default(false)
+  installmentCount Int       @default(1)
+  modality         String    @default("MONTHLY")
+  saleDate         DateTime?
+  firstDueDate     DateTime?
+  originName       String?
+  buyerName        String?
+  buyerPhone       String?
+  buyerEmail       String?
+  buyerCpf         String?
+  buyerRg          String?
+  buyerAddress     String?
+  whatsappNotify   Boolean   @default(false)
+  notes            String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  client           Client?   @relation(fields: [clientId], references: [id])
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Expense {
+  id          String        @id @default(cuid())
+  userId      String
+  description String
+  supplier    String?
+  pixKey      String?
+  accountType String        @default("PESSOAL")
+  amount      Float
+  category    String
+  dueDate     DateTime
+  paidDate    DateTime?
+  recurring   Boolean       @default(false)
+  status      ExpenseStatus @default(PENDING)
+  notes       String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Employee {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  email     String
+  phone     String?
+  role      Role     @default(USER)
+  salary    Float?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model WhatsAppTemplate {
+  id        String       @id @default(cuid())
+  userId    String
+  name      String
+  content   String       @db.Text
+  type      TemplateType @default(COBRANCA)
+  active    Boolean      @default(true)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum ClientStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum LoanStatus {
+  ACTIVE
+  COMPLETED
+  DEFAULTED
+  CANCELLED
+}
+
+enum SaleStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum InstallmentStatus {
+  PENDING
+  PAID
+  OVERDUE
+}
+
+enum ExpenseStatus {
+  PENDING
+  PAID
+  OVERDUE
+}
+
+enum TemplateType {
+  COBRANCA
+  LEMBRETE
+  CONFIRMACAO
+  CUSTOM
+}

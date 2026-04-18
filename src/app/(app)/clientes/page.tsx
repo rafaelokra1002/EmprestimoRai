@@ -1,0 +1,936 @@
+"use client"
+
+import { useEffect, useState, useRef } from "react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { clientSchema, ClientFormData } from "@/lib/validations"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Dialog } from "@/components/ui/dialog"
+import { Badge } from "@/components/ui/badge"
+import { Textarea } from "@/components/ui/textarea"
+import { Avatar } from "@/components/avatar"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Plus, Search, Pencil, Trash2, User, MapPin, FileText, Mail, Phone, Instagram, Globe, Briefcase, Users, Camera, Upload, X, Eye, Download, Image } from "lucide-react"
+
+interface Client {
+  id: string
+  name: string
+  email: string | null
+  phone: string | null
+  document: string | null
+  rg: string | null
+  instagram: string | null
+  facebook: string | null
+  profession: string | null
+  workplace: string | null
+  category: string | null
+  income: number | null
+  requestedAmount: number | null
+  referral: boolean
+  photo: string | null
+  address: string | null
+  city: string | null
+  state: string | null
+  zipCode: string | null
+  neighborhood: string | null
+  complement: string | null
+  number: string | null
+  notes: string | null
+  score: number
+  status: "ACTIVE" | "INACTIVE"
+  createdAt: string
+  loans: { id: string; amount: number; status: string }[]
+}
+
+type DialogTab = "dados" | "endereco" | "documentos"
+
+interface ClientDoc {
+  id: string
+  name: string
+  type: string
+  fileType: string
+  createdAt: string
+}
+
+const DOC_TYPES = [
+  { value: "CPF", label: "CPF" },
+  { value: "RG", label: "RG" },
+  { value: "CNH", label: "CNH" },
+  { value: "COMPROVANTE_RESIDENCIA", label: "Comprovante de Residência" },
+  { value: "COMPROVANTE_RENDA", label: "Comprovante de Renda" },
+  { value: "SELFIE", label: "Selfie / Foto do Cliente" },
+  { value: "CONTRATO", label: "Contrato" },
+  { value: "OUTRO", label: "Outro" },
+]
+
+function cpfMask(value: string) {
+  return value
+    .replace(/\D/g, "")
+    .slice(0, 11)
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d{1,2})$/, "$1-$2")
+}
+
+function rgMask(value: string) {
+  return value
+    .replace(/\D/g, "")
+    .slice(0, 9)
+    .replace(/(\d{2})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d{1})$/, "$1-$2")
+}
+
+function phoneMask(value: string) {
+  return value
+    .replace(/\D/g, "")
+    .slice(0, 11)
+    .replace(/(\d{2})(\d)/, "($1) $2")
+    .replace(/(\d{5})(\d)/, "$1-$2")
+}
+
+function cepMask(value: string) {
+  return value
+    .replace(/\D/g, "")
+    .slice(0, 8)
+    .replace(/(\d{5})(\d)/, "$1-$2")
+}
+
+export default function ClientesPage() {
+  const [clients, setClients] = useState<Client[]>([])
+  const [filtered, setFiltered] = useState<Client[]>([])
+  const [search, setSearch] = useState("")
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all")
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [editing, setEditing] = useState<Client | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<DialogTab>("dados")
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
+  const [cepLoading, setCepLoading] = useState(false)
+  const [clientDocs, setClientDocs] = useState<ClientDoc[]>([])
+  const [docsLoading, setDocsLoading] = useState(false)
+  const [uploadingDoc, setUploadingDoc] = useState(false)
+  const [selectedDocType, setSelectedDocType] = useState("OUTRO")
+  const [previewDoc, setPreviewDoc] = useState<{ name: string; data: string; fileType: string } | null>(null)
+  const [formError, setFormError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const docFileInputRef = useRef<HTMLInputElement>(null)
+
+  const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<ClientFormData>({
+    resolver: zodResolver(clientSchema),
+    defaultValues: {
+      status: "ACTIVE",
+      referral: false,
+    }
+  })
+
+  const watchName = watch("name") || ""
+  const watchStatus = watch("status")
+  const watchReferral = watch("referral")
+  const watchZipCode = watch("zipCode") || ""
+
+  const searchCep = async () => {
+    const cep = watchZipCode.replace(/\D/g, "")
+    if (cep.length !== 8) return
+    setCepLoading(true)
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`)
+      const data = await res.json()
+      if (!data.erro) {
+        setValue("address", data.logradouro || "")
+        setValue("neighborhood", data.bairro || "")
+        setValue("city", data.localidade || "")
+        setValue("state", data.uf || "")
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setCepLoading(false)
+    }
+  }
+
+  const fetchClients = async () => {
+    const res = await fetch("/api/clients")
+    const data = await res.json()
+    const list = Array.isArray(data) ? data : []
+    setClients(list)
+    setFiltered(list)
+    setLoading(false)
+  }
+
+  useEffect(() => { fetchClients() }, [])
+
+  useEffect(() => {
+    let list = clients.filter((c) =>
+      c.name.toLowerCase().includes(search.toLowerCase()) ||
+      c.email?.toLowerCase().includes(search.toLowerCase()) ||
+      c.phone?.includes(search) ||
+      c.document?.includes(search)
+    )
+    if (statusFilter === "active") {
+      list = list.filter(c => c.status === "ACTIVE" || c.loans?.some(l => l.status === "ACTIVE"))
+    } else if (statusFilter === "inactive") {
+      list = list.filter(c => c.status === "INACTIVE" || (!c.loans?.some(l => l.status === "ACTIVE")))
+    }
+    setFiltered(list)
+  }, [search, clients, statusFilter])
+
+  const onSubmit = async (data: ClientFormData) => {
+    setSaving(true)
+    setFormError(null)
+
+    // Clean empty strings to avoid sending "" for optional fields
+    const cleanData: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(data)) {
+      cleanData[key] = typeof value === "string" && value.trim() === "" ? undefined : value
+    }
+
+    try {
+      let res: Response
+      if (editing) {
+        res = await fetch(`/api/clients/${editing.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(cleanData),
+        })
+      } else {
+        res = await fetch("/api/clients", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(cleanData),
+        })
+      }
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Erro ao salvar cliente" }))
+        setFormError(err.error || "Erro ao salvar cliente")
+        return
+      }
+
+      setDialogOpen(false)
+      setEditing(null)
+      setActiveTab("dados")
+      setPhotoPreview(null)
+      reset()
+      fetchClients()
+    } catch (err: any) {
+      setFormError(err.message || "Erro de conexão ao salvar cliente")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleEdit = (client: Client) => {
+    setEditing(client)
+    setFormError(null)
+    reset({
+      name: client.name,
+      email: client.email || "",
+      phone: client.phone || "",
+      document: client.document || "",
+      rg: client.rg || "",
+      instagram: client.instagram || "",
+      facebook: client.facebook || "",
+      profession: client.profession || "",
+      workplace: client.workplace || "",
+      category: client.category || "",
+      income: client.income || undefined,
+      requestedAmount: client.requestedAmount || undefined,
+      referral: client.referral || false,
+      photo: client.photo || "",
+      address: client.address || "",
+      city: client.city || "",
+      state: client.state || "",
+      zipCode: client.zipCode || "",
+      neighborhood: client.neighborhood || "",
+      complement: client.complement || "",
+      number: client.number || "",
+      notes: client.notes || "",
+      status: client.status,
+    })
+    setPhotoPreview(client.photo || null)
+    setActiveTab("dados")
+    setDialogOpen(true)
+    fetchClientDocs(client.id)
+  }
+
+  const fetchClientDocs = async (clientId: string) => {
+    setDocsLoading(true)
+    try {
+      const res = await fetch(`/api/clients/${clientId}/documents`)
+      const data = await res.json()
+      setClientDocs(Array.isArray(data) ? data : [])
+    } catch {
+      setClientDocs([])
+    } finally {
+      setDocsLoading(false)
+    }
+  }
+
+  const handleDocUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !editing) return
+
+    setUploadingDoc(true)
+    const reader = new FileReader()
+    reader.onloadend = async () => {
+      const base64 = reader.result as string
+      try {
+        await fetch(`/api/clients/${editing.id}/documents`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: file.name,
+            type: selectedDocType,
+            fileData: base64,
+            fileType: file.type,
+          }),
+        })
+        fetchClientDocs(editing.id)
+      } catch {
+        // silently fail
+      } finally {
+        setUploadingDoc(false)
+        if (docFileInputRef.current) docFileInputRef.current.value = ""
+      }
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleDocDelete = async (docId: string) => {
+    if (!editing) return
+    if (!confirm("Tem certeza que deseja excluir este documento?")) return
+    await fetch(`/api/clients/${editing.id}/documents?docId=${docId}`, { method: "DELETE" })
+    fetchClientDocs(editing.id)
+  }
+
+  const handleDocPreview = async (doc: ClientDoc) => {
+    if (!editing) return
+    try {
+      // Fetch full document with fileData for preview
+      const res = await fetch(`/api/clients/${editing.id}/documents`)
+      // We need a separate endpoint or inline data. For now use a direct fetch.
+      // Since we store base64, we re-fetch when needed
+      setPreviewDoc({ name: doc.name, data: "", fileType: doc.fileType })
+    } catch {
+      // silently fail
+    }
+  }
+
+  const getDocTypeLabel = (type: string) => {
+    return DOC_TYPES.find(d => d.value === type)?.label || type
+  }
+
+  const getDocIcon = (fileType: string) => {
+    if (fileType.startsWith("image/")) return <Image className="h-5 w-5 text-emerald-600" />
+    return <FileText className="h-5 w-5 text-blue-600" />
+  }
+
+  const handleDelete = async (id: string) => {
+    if (confirm("Tem certeza que deseja excluir este cliente?")) {
+      await fetch(`/api/clients/${id}`, { method: "DELETE" })
+      fetchClients()
+    }
+  }
+
+  const openNewClient = () => {
+    setEditing(null)
+    setFormError(null)
+    reset({
+      name: "", email: "", phone: "", document: "", rg: "",
+      instagram: "", facebook: "", profession: "",
+      workplace: "", category: "",
+      income: undefined, requestedAmount: undefined,
+      referral: false, photo: "",
+      address: "", city: "", state: "", zipCode: "",
+      neighborhood: "", complement: "", number: "",
+      notes: "", status: "ACTIVE"
+    })
+    setPhotoPreview(null)
+    setActiveTab("dados")
+    setDialogOpen(true)
+  }
+
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        const base64 = reader.result as string
+        setPhotoPreview(base64)
+        setValue("photo", base64)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const tabs: { key: DialogTab; label: string; icon: React.ReactNode }[] = [
+    { key: "dados", label: "Dados Pessoais", icon: <User className="h-4 w-4" /> },
+    { key: "endereco", label: "Endereço", icon: <MapPin className="h-4 w-4" /> },
+    { key: "documentos", label: "Documentos", icon: <FileText className="h-4 w-4" /> },
+  ]
+
+  const getScoreIcon = (score: number) => {
+    if (score >= 150) return "⭐"
+    if (score >= 100) return "🔥"
+    if (score >= 50) return "👍"
+    return "⚠️"
+  }
+
+  const getScoreColor = (score: number) => {
+    if (score >= 150) return "bg-yellow-50 dark:bg-yellow-950/300/20 text-yellow-600"
+    if (score >= 100) return "bg-orange-50 dark:bg-orange-950/300/20 text-orange-600"
+    if (score >= 50) return "bg-blue-50 dark:bg-blue-950/300/20 text-blue-600"
+    return "bg-red-50 dark:bg-red-950/300/20 text-red-600"
+  }
+
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString("pt-BR")
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Search bar with counter */}
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-zinc-500" />
+          <Input
+            placeholder="Buscar clientes..."
+            className="pl-10"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-800 text-sm text-gray-500 dark:text-zinc-400 whitespace-nowrap">
+          <Users className="h-4 w-4" />
+          {filtered.length} clientes
+        </div>
+        <div className="flex items-center gap-4 text-sm">
+          <button onClick={() => setStatusFilter(statusFilter === "inactive" ? "all" : "inactive")} className={`flex items-center gap-2 transition-opacity ${statusFilter === "inactive" ? "opacity-100" : "opacity-60 hover:opacity-100"}`}>
+            <span className="font-semibold text-gray-400 dark:text-zinc-500 tabular-nums">{clients.filter(c => c.status === "INACTIVE" || (!c.loans?.some(l => l.status === "ACTIVE"))).length}</span>
+            <span className={`font-medium ${statusFilter === "inactive" ? "text-yellow-600 dark:text-yellow-500 underline underline-offset-4" : "text-yellow-600 dark:text-yellow-500"}`}>Inativo</span>
+          </button>
+          <button onClick={() => setStatusFilter(statusFilter === "active" ? "all" : "active")} className={`flex items-center gap-2 transition-opacity ${statusFilter === "active" ? "opacity-100" : "opacity-60 hover:opacity-100"}`}>
+            <span className="font-semibold text-gray-400 dark:text-zinc-500 tabular-nums">{clients.filter(c => c.status === "ACTIVE" || c.loans?.some(l => l.status === "ACTIVE")).length}</span>
+            <span className={`font-medium ${statusFilter === "active" ? "text-emerald-600 dark:text-emerald-400 underline underline-offset-4" : "text-emerald-600 dark:text-emerald-400"}`}>Ativo</span>
+          </button>
+        </div>
+        <Button onClick={openNewClient} className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 whitespace-nowrap">
+          <Plus className="h-4 w-4" />
+          Novo Cliente
+        </Button>
+      </div>
+
+      {/* Table */}
+      <div className="rounded-xl border border-gray-200 dark:border-zinc-800 overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Cliente</TableHead>
+              <TableHead>Cidade</TableHead>
+              <TableHead>Telefone</TableHead>
+              <TableHead>Renda</TableHead>
+              <TableHead>Valor Solicitado</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Score</TableHead>
+              <TableHead>Cadastrado em</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={9} className="text-center py-8 text-gray-500 dark:text-zinc-400">Carregando...</TableCell>
+              </TableRow>
+            ) : filtered.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={9} className="text-center py-8 text-gray-500 dark:text-zinc-400">Nenhum cliente encontrado</TableCell>
+              </TableRow>
+            ) : (
+              filtered.map((client) => (
+                <TableRow key={client.id}>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <Avatar name={client.name} src={client.photo} size="sm" />
+                      <span className="font-medium">{client.name}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-gray-500 dark:text-zinc-400">{client.city || "-"}</TableCell>
+                  <TableCell>{client.phone || "-"}</TableCell>
+                  <TableCell className="text-gray-700 dark:text-zinc-300">{client.income ? `R$ ${client.income.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "-"}</TableCell>
+                  <TableCell className="text-gray-700 dark:text-zinc-300">{client.requestedAmount ? `R$ ${client.requestedAmount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "-"}</TableCell>
+                  <TableCell>
+                    <Badge variant={client.status === "ACTIVE" ? "success" : "outline"}>
+                      {client.status === "ACTIVE" ? "Ativo" : "Inativo"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${getScoreColor(client.score)}`}>
+                      {getScoreIcon(client.score)} {client.score}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-gray-500 dark:text-zinc-400">{formatDate(client.createdAt)}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button variant="ghost" size="icon" onClick={() => handleEdit(client)}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleDelete(client.id)}>
+                        <Trash2 className="h-4 w-4 text-red-600" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Dialog Novo / Editar Cliente */}
+      <Dialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        title={editing ? "Editar Cliente" : "Novo Cliente"}
+        className="max-w-2xl"
+      >
+        {/* Tabs */}
+        <div className="flex bg-gray-50 dark:bg-zinc-800 rounded-lg p-1 mb-6">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setActiveTab(tab.key)}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-md text-sm font-medium transition-colors ${
+                activeTab === tab.key
+                  ? "bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
+                  : "text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:text-zinc-300"
+              }`}
+            >
+              {tab.icon}
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        <form onSubmit={handleSubmit(onSubmit, (formErrors) => {
+          // If validation fails, switch to the tab with the error
+          if (formErrors.name || formErrors.email || formErrors.phone || formErrors.document || formErrors.profession || formErrors.workplace || formErrors.category || formErrors.income || formErrors.requestedAmount) {
+            setActiveTab("dados")
+          } else if (formErrors.address || formErrors.city || formErrors.state || formErrors.zipCode || formErrors.neighborhood || formErrors.complement || formErrors.number) {
+            setActiveTab("endereco")
+          }
+          setFormError("Preencha os campos obrigatórios corretamente")
+        })} className="space-y-5">
+          {/* Tab: Dados Pessoais */}
+          {activeTab === "dados" && (
+            <div className="space-y-5">
+              {/* Avatar Section */}
+              <div className="flex flex-col items-center gap-2">
+                {photoPreview ? (
+                  <img
+                    src={photoPreview}
+                    alt="Foto do cliente"
+                    className="h-20 w-20 rounded-full object-cover border-2 border-emerald-500"
+                  />
+                ) : (
+                  <div className="h-20 w-20 rounded-full bg-emerald-50 dark:bg-emerald-950/300 flex items-center justify-center text-white text-2xl font-bold">
+                    {watchName ? watchName.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() : "CL"}
+                  </div>
+                )}
+                <span className="text-xs text-gray-400 dark:text-zinc-500">Avatar gerado automaticamente</span>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handlePhotoSelect}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-gray-300 dark:border-zinc-700 text-sm text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 dark:bg-zinc-800 transition-colors"
+                >
+                  <Camera className="h-4 w-4" />
+                  Adicionar foto
+                </button>
+                <span className="text-xs text-gray-400 dark:text-zinc-500">A foto será enviada ao salvar o cliente</span>
+              </div>
+
+              {/* Nome Completo */}
+              <div>
+                <Label className="flex items-center gap-1">Nome Completo *</Label>
+                <Input {...register("name")} className="mt-1" />
+                {errors.name && <p className="text-red-600 text-xs mt-1">{errors.name.message}</p>}
+              </div>
+
+              {/* CPF */}
+              <div>
+                <Label className="flex items-center gap-1.5">
+                  <FileText className="h-3.5 w-3.5" /> CPF
+                </Label>
+                <Input
+                  {...register("document")}
+                  placeholder="000.000.000-00"
+                  className="mt-1"
+                  onChange={(e) => setValue("document", cpfMask(e.target.value))}
+                />
+              </div>
+
+              {/* Telefone */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="font-medium">Telefone (com DDD)</Label>
+                  <Input
+                    {...register("phone")}
+                    placeholder="(00) 00000-0000"
+                    className="mt-1"
+                    onChange={(e) => setValue("phone", phoneMask(e.target.value))}
+                  />
+                  <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">Inclua o DDD para envio de mensagens via WhatsApp</p>
+                </div>
+                <div>
+                  <Label className="flex items-center gap-1.5">
+                    <Instagram className="h-3.5 w-3.5" /> Instagram
+                  </Label>
+                  <Input
+                    {...register("instagram")}
+                    placeholder="@usuario"
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+
+              {/* Profissão e Local de Trabalho */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="flex items-center gap-1.5">
+                    <Briefcase className="h-3.5 w-3.5" /> Profissão
+                  </Label>
+                  <Input
+                    {...register("profession")}
+                    placeholder="Ex: Eletricista, Comerciante..."
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label>Local de Trabalho</Label>
+                  <Input
+                    {...register("workplace")}
+                    placeholder="Ex: Empresa X, Loja Y..."
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+
+              {/* Renda e Valor Solicitado */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Renda</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    {...register("income", { valueAsNumber: true })}
+                    placeholder="R$ 0,00"
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label>Valor Solicitado</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    {...register("requestedAmount", { valueAsNumber: true })}
+                    placeholder="R$ 0,00"
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+
+              {/* Categoria */}
+              <div>
+                <Label>Categoria</Label>
+                <select
+                  {...register("category")}
+                  className="flex h-10 w-full rounded-md border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 px-3 py-2 text-sm text-gray-900 dark:text-zinc-100 mt-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                >
+                  <option value="">Selecione...</option>
+                  <option value="CARTEIRA_ASSINADA">Carteira assinada</option>
+                  <option value="CLT_SEM_REGISTRO">CLT sem registro</option>
+                  <option value="AUTONOMO">Autônomo</option>
+                  <option value="BENEFICIARIO">Beneficiário</option>
+                  <option value="ESTAGIARIO">Estagiário</option>
+                  <option value="SEM_COMPROVACAO">Não consigo comprovação renda</option>
+                </select>
+              </div>
+
+              {/* Cliente veio por indicação */}
+              <div
+                className="flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-200 dark:border-zinc-800 cursor-pointer hover:bg-white dark:bg-zinc-900 transition-colors"
+                onClick={() => setValue("referral", !watchReferral)}
+              >
+                <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+                  watchReferral ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/300" : "border-gray-300 dark:border-zinc-700"
+                }`}>
+                  {watchReferral && (
+                    <div className="h-2 w-2 rounded-full bg-white dark:bg-zinc-900" />
+                  )}
+                </div>
+                <Users className="h-4 w-4 text-gray-500 dark:text-zinc-400" />
+                <span className="text-sm text-gray-700 dark:text-zinc-300">Cliente veio por indicação</span>
+              </div>
+
+              {/* Tipo de Cliente - removed */}
+
+              {/* Cliente Ativo */}
+              <div className="flex items-center justify-between px-4 py-3 rounded-lg border border-gray-200 dark:border-zinc-800">
+                <div className="flex items-center gap-3">
+                  <User className="h-5 w-5 text-emerald-500" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-800 dark:text-zinc-200">Cliente Ativo</p>
+                    <p className="text-xs text-gray-400 dark:text-zinc-500">Este cliente pode receber novos empréstimos</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setValue("status", watchStatus === "ACTIVE" ? "INACTIVE" : "ACTIVE")}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    watchStatus === "ACTIVE" ? "bg-emerald-50 dark:bg-emerald-950/300" : "bg-gray-200 dark:bg-zinc-700"
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white dark:bg-zinc-900 transition-transform ${
+                      watchStatus === "ACTIVE" ? "translate-x-6" : "translate-x-1"
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Observações */}
+              <div>
+                <Label className="font-semibold text-gray-800 dark:text-zinc-200">Observações</Label>
+                <Textarea
+                  {...register("notes")}
+                  className="mt-1"
+                  rows={3}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Tab: Endereço */}
+          {activeTab === "endereco" && (
+            <div className="space-y-4">
+              {/* CEP com botão Buscar */}
+              <div>
+                <Label className="font-semibold">CEP</Label>
+                <div className="flex gap-2 mt-1">
+                  <Input
+                    {...register("zipCode")}
+                    placeholder="00000-000"
+                    className="flex-1"
+                    onChange={(e) => setValue("zipCode", cepMask(e.target.value))}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); searchCep() } }}
+                  />
+                  <button
+                    type="button"
+                    onClick={searchCep}
+                    disabled={cepLoading}
+                    className="flex items-center gap-2 px-4 py-2 rounded-md border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 text-sm text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 dark:bg-zinc-800 transition-colors disabled:opacity-50"
+                  >
+                    <Search className="h-4 w-4" />
+                    {cepLoading ? "Buscando..." : "Buscar"}
+                  </button>
+                </div>
+              </div>
+
+              {/* Rua / Logradouro */}
+              <div>
+                <Label className="font-semibold">Rua / Logradouro</Label>
+                <Input {...register("address")} placeholder="Preenchido automaticamente pelo CEP" className="mt-1" />
+              </div>
+
+              {/* Número e Complemento */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="font-semibold">Número</Label>
+                  <Input {...register("number")} placeholder="123" className="mt-1" />
+                </div>
+                <div>
+                  <Label className="font-semibold">Complemento</Label>
+                  <Input {...register("complement")} placeholder="Apto 101" className="mt-1" />
+                </div>
+              </div>
+
+              {/* Bairro */}
+              <div>
+                <Label className="font-semibold">Bairro</Label>
+                <Input {...register("neighborhood")} placeholder="Preenchido automaticamente pelo CEP" className="mt-1" />
+              </div>
+
+              {/* Cidade e Estado */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="font-semibold">Cidade</Label>
+                  <Input {...register("city")} placeholder="Preenchido automaticamente" className="mt-1" />
+                </div>
+                <div>
+                  <Label className="font-semibold">Estado (UF)</Label>
+                  <Input {...register("state")} placeholder="UF" className="mt-1" />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Tab: Documentos */}
+          {activeTab === "documentos" && (
+            <div className="space-y-4">
+              {!editing ? (
+                <div className="text-center py-8">
+                  <FileText className="h-12 w-12 text-gray-500 dark:text-zinc-400 mx-auto mb-3" />
+                  <p className="text-gray-500 dark:text-zinc-400 text-sm">Salve o cliente primeiro para adicionar documentos</p>
+                  <p className="text-gray-400 dark:text-zinc-500 text-xs mt-1">Crie o cliente e depois edite para enviar documentos</p>
+                </div>
+              ) : (
+                <>
+                  {/* Upload area */}
+                  <div className="rounded-lg border-2 border-dashed border-gray-300 dark:border-zinc-700 p-6 text-center hover:border-gray-300 dark:border-zinc-700 transition-colors">
+                    <Upload className="h-10 w-10 text-gray-400 dark:text-zinc-500 mx-auto mb-3" />
+                    <p className="text-sm text-gray-700 dark:text-zinc-300 mb-1">Enviar documento</p>
+                    <p className="text-xs text-gray-400 dark:text-zinc-500 mb-4">PDF, imagens (JPG, PNG) — máx. 5MB</p>
+
+                    <div className="flex items-center justify-center gap-3">
+                      <select
+                        value={selectedDocType}
+                        onChange={(e) => setSelectedDocType(e.target.value)}
+                        className="h-9 rounded-md border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 px-3 text-sm text-gray-900 dark:text-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                      >
+                        {DOC_TYPES.map((dt) => (
+                          <option key={dt.value} value={dt.value}>{dt.label}</option>
+                        ))}
+                      </select>
+
+                      <input
+                        type="file"
+                        ref={docFileInputRef}
+                        accept="image/*,.pdf"
+                        className="hidden"
+                        onChange={handleDocUpload}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => docFileInputRef.current?.click()}
+                        disabled={uploadingDoc}
+                        className="flex items-center gap-2 px-4 py-2 rounded-md bg-emerald-600 text-sm text-white font-medium hover:bg-emerald-700 transition-colors disabled:opacity-50"
+                      >
+                        <Upload className="h-4 w-4" />
+                        {uploadingDoc ? "Enviando..." : "Selecionar Arquivo"}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Document list */}
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-3">Documentos enviados</h4>
+                    {docsLoading ? (
+                      <p className="text-sm text-gray-400 dark:text-zinc-500 text-center py-4">Carregando documentos...</p>
+                    ) : clientDocs.length === 0 ? (
+                      <div className="text-center py-6 rounded-lg bg-white dark:bg-zinc-900">
+                        <FileText className="h-8 w-8 text-gray-500 dark:text-zinc-400 mx-auto mb-2" />
+                        <p className="text-sm text-gray-400 dark:text-zinc-500">Nenhum documento enviado</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {clientDocs.map((doc) => (
+                          <div
+                            key={doc.id}
+                            className="flex items-center justify-between px-4 py-3 rounded-lg border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-gray-50 dark:bg-zinc-800 transition-colors"
+                          >
+                            <div className="flex items-center gap-3">
+                              {getDocIcon(doc.fileType)}
+                              <div>
+                                <p className="text-sm font-medium text-gray-800 dark:text-zinc-200">{doc.name}</p>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs text-emerald-600 bg-emerald-50 dark:bg-emerald-950/300/10 px-2 py-0.5 rounded">
+                                    {getDocTypeLabel(doc.type)}
+                                  </span>
+                                  <span className="text-xs text-gray-400 dark:text-zinc-500">
+                                    {new Date(doc.createdAt).toLocaleDateString("pt-BR")}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => handleDocDelete(doc.id)}
+                                className="p-1.5 rounded-md text-red-600 hover:bg-red-50 dark:bg-red-950/300/10 transition-colors"
+                                title="Excluir documento"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Botões de ação */}
+          {formError && (
+            <div className="px-4 py-3 rounded-lg bg-red-50 dark:bg-red-950/300/10 border border-red-500/30 text-red-600 text-sm">
+              {formError}
+            </div>
+          )}
+          <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-zinc-800">
+            <Button type="button" variant="outline" onClick={() => { setDialogOpen(false); setFormError(null) }}>
+              Cancelar
+            </Button>
+            <div className="flex gap-2">
+              {activeTab === "dados" && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setActiveTab("endereco")}
+                  className="text-emerald-600 border-emerald-500/30 hover:bg-emerald-50 dark:bg-emerald-950/300/10"
+                >
+                  Próximo: Endereço →
+                </Button>
+              )}
+              {activeTab === "endereco" && (
+                <>
+                  <Button type="button" variant="outline" onClick={() => setActiveTab("dados")}>
+                    ← Voltar
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setActiveTab("documentos")}
+                    className="text-emerald-600 border-emerald-500/30 hover:bg-emerald-50 dark:bg-emerald-950/300/10"
+                  >
+                    Próximo: Documentos →
+                  </Button>
+                </>
+              )}
+              {activeTab === "documentos" && (
+                <Button type="button" variant="outline" onClick={() => setActiveTab("endereco")}>
+                  ← Voltar
+                </Button>
+              )}
+              <Button type="submit" disabled={saving}>
+                {saving ? "Salvando..." : editing ? "Salvar" : "Criar Cliente"}
+              </Button>
+            </div>
+          </div>
+        </form>
+      </Dialog>
+    </div>
+  )
+}
