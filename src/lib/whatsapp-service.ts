@@ -20,42 +20,56 @@ type ConnectionState = {
   qrCode?: string
 }
 
-// Use globalThis to survive Next.js HMR reloads (same pattern as Prisma)
-const globalForWA = globalThis as unknown as {
-  __waState?: {
-    sock: any
-    currentQr: string | null
-    connectionState: "disconnected" | "connecting" | "open"
-    connecting: boolean
-    reconnectAttempts: number
-    initialized: boolean
-  }
+type UserWAState = {
+  sock: any
+  currentQr: string | null
+  connectionState: "disconnected" | "connecting" | "open"
+  connecting: boolean
+  reconnectAttempts: number
 }
 
-if (!globalForWA.__waState) {
-  globalForWA.__waState = {
-    sock: null,
-    currentQr: null,
-    connectionState: "disconnected",
-    connecting: false,
-    reconnectAttempts: 0,
-    initialized: false,
-  }
-}
-
-const wa = globalForWA.__waState
-const AUTH_DIR = process.env.WHATSAPP_AUTH_DIR || path.join(process.cwd(), ".whatsapp-auth")
+const BASE_AUTH_DIR = process.env.WHATSAPP_AUTH_DIR || path.join(process.cwd(), ".whatsapp-auth")
 const MAX_RECONNECT_ATTEMPTS = 3
 
-const ensureAuthDir = () => {
-  console.log("[WhatsApp] AUTH_DIR:", AUTH_DIR)
-  if (!fs.existsSync(AUTH_DIR)) {
-    fs.mkdirSync(AUTH_DIR, { recursive: true })
-    console.log("[WhatsApp] Created auth directory")
+// Per-user state map, survives HMR reloads
+const globalForWA = globalThis as unknown as {
+  __waUsers?: Map<string, UserWAState>
+}
+
+if (!globalForWA.__waUsers) {
+  globalForWA.__waUsers = new Map()
+}
+
+const users = globalForWA.__waUsers
+
+function getUserState(userId: string): UserWAState {
+  if (!users.has(userId)) {
+    users.set(userId, {
+      sock: null,
+      currentQr: null,
+      connectionState: "disconnected",
+      connecting: false,
+      reconnectAttempts: 0,
+    })
+  }
+  return users.get(userId)!
+}
+
+function getAuthDir(userId: string): string {
+  return path.join(BASE_AUTH_DIR, userId)
+}
+
+function ensureAuthDir(userId: string) {
+  const dir = getAuthDir(userId)
+  console.log(`[WhatsApp][${userId}] AUTH_DIR:`, dir)
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true })
+    console.log(`[WhatsApp][${userId}] Created auth directory`)
   }
 }
 
-const cleanupSocket = () => {
+function cleanupSocket(userId: string) {
+  const wa = getUserState(userId)
   if (wa.sock) {
     try { wa.sock.ev.removeAllListeners("connection.update") } catch {}
     try { wa.sock.ev.removeAllListeners("creds.update") } catch {}
@@ -64,19 +78,21 @@ const cleanupSocket = () => {
   }
 }
 
-const startSocket = async (): Promise<void> => {
+async function startSocket(userId: string): Promise<void> {
+  const wa = getUserState(userId)
   if (wa.connecting) {
-    console.log("[WhatsApp] Already connecting, skipping...")
+    console.log(`[WhatsApp][${userId}] Already connecting, skipping...`)
     return
   }
   wa.connecting = true
 
   try {
-    cleanupSocket()
-    ensureAuthDir()
+    cleanupSocket(userId)
+    ensureAuthDir(userId)
 
+    const authDir = getAuthDir(userId)
     const { makeWASocket, DisconnectReason, useMultiFileAuthState, fetchLatestBaileysVersion, makeCacheableSignalKeyStore } = await loadBaileys()
-    const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR)
+    const { state, saveCreds } = await useMultiFileAuthState(authDir)
     const { version } = await fetchLatestBaileysVersion()
 
     const newSock = makeWASocket({
@@ -94,7 +110,7 @@ const startSocket = async (): Promise<void> => {
 
     newSock.ev.on("creds.update", saveCreds)
 
-    newSock.ev.on("connection.update", async (update) => {
+    newSock.ev.on("connection.update", async (update: any) => {
       const { connection, lastDisconnect, qr } = update
 
       if (qr) {
@@ -111,7 +127,7 @@ const startSocket = async (): Promise<void> => {
       }
 
       if (connection === "open") {
-        console.log("[WhatsApp] Connected successfully")
+        console.log(`[WhatsApp][${userId}] Connected successfully`)
         wa.connectionState = "open"
         wa.currentQr = null
         wa.connecting = false
@@ -120,18 +136,17 @@ const startSocket = async (): Promise<void> => {
 
       if (connection === "close") {
         const reason = (lastDisconnect?.error as Boom)?.output?.statusCode
-        console.log("[WhatsApp] Connection closed, reason:", reason)
+        console.log(`[WhatsApp][${userId}] Connection closed, reason:`, reason)
         wa.connecting = false
 
         if (reason === DisconnectReason.loggedOut) {
-          try { fs.rmSync(AUTH_DIR, { recursive: true, force: true }) } catch {}
+          try { fs.rmSync(getAuthDir(userId), { recursive: true, force: true }) } catch {}
           wa.connectionState = "disconnected"
           wa.currentQr = null
           wa.sock = null
           wa.reconnectAttempts = 0
         } else if (reason === 440) {
-          // Conflict: another socket replaced this one. Do NOT reconnect.
-          console.log("[WhatsApp] Conflict (replaced by another session), stopping reconnect")
+          console.log(`[WhatsApp][${userId}] Conflict (replaced by another session), stopping reconnect`)
           wa.connectionState = "disconnected"
           wa.currentQr = null
           wa.sock = null
@@ -142,44 +157,47 @@ const startSocket = async (): Promise<void> => {
           wa.reconnectAttempts++
           wa.connectionState = "connecting"
           wa.sock = null
-          console.log(`[WhatsApp] Reconnecting (attempt ${wa.reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`)
-          setTimeout(() => startSocket(), 2000 * wa.reconnectAttempts)
+          console.log(`[WhatsApp][${userId}] Reconnecting (attempt ${wa.reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`)
+          setTimeout(() => startSocket(userId), 2000 * wa.reconnectAttempts)
         } else {
           wa.connectionState = "disconnected"
           wa.currentQr = null
           wa.sock = null
           if (wa.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-            console.log("[WhatsApp] Max reconnect attempts reached, stopping")
+            console.log(`[WhatsApp][${userId}] Max reconnect attempts reached, stopping`)
             wa.reconnectAttempts = 0
           }
         }
       }
     })
   } catch (err: any) {
-    console.error("[WhatsApp] Error starting socket:", err?.message || err)
-    console.error("[WhatsApp] Stack:", err?.stack)
+    console.error(`[WhatsApp][${userId}] Error starting socket:`, err?.message || err)
+    console.error(`[WhatsApp][${userId}] Stack:`, err?.stack)
+    const wa = getUserState(userId)
     wa.connecting = false
     wa.connectionState = "disconnected"
   }
 }
 
 export const whatsappService = {
-  async connect(): Promise<ConnectionState> {
+  async connect(userId: string): Promise<ConnectionState> {
+    const wa = getUserState(userId)
+
     if (wa.sock && wa.connectionState === "open") {
       return { connected: true, state: "open" }
     }
 
     wa.reconnectAttempts = 0
-    cleanupSocket()
+    cleanupSocket(userId)
     wa.connecting = false
     wa.currentQr = null
     wa.connectionState = "connecting"
 
-    await startSocket()
+    await startSocket(userId)
 
     const start = Date.now()
     const timeout = 25000
-    console.log("[WhatsApp] Waiting for QR code or connection...")
+    console.log(`[WhatsApp][${userId}] Waiting for QR code or connection...`)
     while (Date.now() - start < timeout) {
       if ((wa.connectionState as string) === "open") {
         return { connected: true, state: "open" }
@@ -197,7 +215,9 @@ export const whatsappService = {
     }
   },
 
-  async status(): Promise<ConnectionState> {
+  async status(userId: string): Promise<ConnectionState> {
+    const wa = getUserState(userId)
+
     if (wa.connectionState === "open" && wa.sock) {
       return { connected: true, state: "open" }
     }
@@ -210,12 +230,13 @@ export const whatsappService = {
     return { connected: false, state: wa.connectionState }
   },
 
-  async disconnect(): Promise<ConnectionState> {
+  async disconnect(userId: string): Promise<ConnectionState> {
+    const wa = getUserState(userId)
     wa.reconnectAttempts = MAX_RECONNECT_ATTEMPTS
     if (wa.sock) {
-      try { await wa.sock.logout() } catch { cleanupSocket() }
+      try { await wa.sock.logout() } catch { cleanupSocket(userId) }
     }
-    try { fs.rmSync(AUTH_DIR, { recursive: true, force: true }) } catch {}
+    try { fs.rmSync(getAuthDir(userId), { recursive: true, force: true }) } catch {}
 
     wa.connectionState = "disconnected"
     wa.currentQr = null
@@ -226,12 +247,15 @@ export const whatsappService = {
     return { connected: false, state: "disconnected" }
   },
 
-  async sendMessage(phone: string, text: string): Promise<boolean> {
+  async sendMessage(userId: string, phone: string, text: string): Promise<boolean> {
+    const wa = getUserState(userId)
+    const authDir = getAuthDir(userId)
+
     if (!wa.sock || wa.connectionState !== "open") {
-      if (!wa.connecting && fs.existsSync(path.join(AUTH_DIR, "creds.json"))) {
-        console.log("[WhatsApp] Not connected, attempting auto-reconnect...")
+      if (!wa.connecting && fs.existsSync(path.join(authDir, "creds.json"))) {
+        console.log(`[WhatsApp][${userId}] Not connected, attempting auto-reconnect...`)
         wa.reconnectAttempts = 0
-        await startSocket()
+        await startSocket(userId)
         const start = Date.now()
         while (Date.now() - start < 12000) {
           if (wa.connectionState === "open" && wa.sock) break
@@ -253,22 +277,16 @@ export const whatsappService = {
     if (num.startsWith("0")) num = "55" + num.substring(1)
     if (!num.startsWith("55")) num = "55" + num
 
-    // Brazil numbers: 55 + DDD(2) + phone(8 or 9 digits)
-    // WhatsApp may register with or without the 9th digit
-    // Try the number as-is first, then try toggling the 9
     const ddd = num.substring(2, 4)
     const phoneNum = num.substring(4)
 
     const variants: string[] = [num]
     if (phoneNum.length === 9 && phoneNum.startsWith("9")) {
-      // Has 9 prefix — also try without it
       variants.push("55" + ddd + phoneNum.substring(1))
     } else if (phoneNum.length === 8) {
-      // No 9 prefix — also try with it
       variants.push("55" + ddd + "9" + phoneNum)
     }
 
-    // Check which number exists on WhatsApp
     let jid: string | null = null
     try {
       const results = await wa.sock!.onWhatsApp(variants[0]) || []
@@ -286,29 +304,34 @@ export const whatsappService = {
       } catch {}
     }
 
-    // Fallback: use original number if lookup failed
     if (!jid) {
       jid = num + "@s.whatsapp.net"
     }
 
-    console.log("[WhatsApp] Sending message to:", jid)
+    console.log(`[WhatsApp][${userId}] Sending message to:`, jid)
     await wa.sock!.sendMessage(jid, { text })
-    console.log("[WhatsApp] Message sent successfully to:", jid)
+    console.log(`[WhatsApp][${userId}] Message sent successfully to:`, jid)
     return true
   },
 
-  isConnected(): boolean {
+  isConnected(userId: string): boolean {
+    const wa = getUserState(userId)
     return wa.connectionState === "open" && wa.sock !== null
   },
 }
 
-// Auto-reconnect on server start - only once thanks to globalThis
-if (!wa.initialized) {
-  wa.initialized = true
-  try {
-    if (fs.existsSync(AUTH_DIR) && fs.existsSync(path.join(AUTH_DIR, "creds.json"))) {
-      console.log("[WhatsApp] Auth found, auto-reconnecting on startup...")
-      startSocket().catch(() => {})
+// Auto-reconnect on server start for users that have saved credentials
+try {
+  if (fs.existsSync(BASE_AUTH_DIR)) {
+    const userDirs = fs.readdirSync(BASE_AUTH_DIR).filter((d) => {
+      const full = path.join(BASE_AUTH_DIR, d)
+      return fs.statSync(full).isDirectory() && fs.existsSync(path.join(full, "creds.json"))
+    })
+    for (const userId of userDirs) {
+      if (!getUserState(userId).sock) {
+        console.log(`[WhatsApp][${userId}] Auth found, auto-reconnecting on startup...`)
+        startSocket(userId).catch(() => {})
+      }
     }
-  } catch {}
-}
+  }
+} catch {}
