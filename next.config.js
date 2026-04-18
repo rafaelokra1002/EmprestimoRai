@@ -1,7 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {},
-  serverExternalPackages: ["@whiskeysockets/baileys", "qrcode"],
+  experimental: {
+    serverComponentsExternalPackages: [
+      "@whiskeysockets/baileys",
+      "qrcode",
+      "@hapi/boom",
+      "ws",
+      "bufferutil",
+      "utf-8-validate",
+    ],
+  },
 }
 
 module.exports = nextConfig
