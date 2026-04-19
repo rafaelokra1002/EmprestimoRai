@@ -168,7 +168,7 @@ export default function EmprestimosPage() {
   const [skipSunday, setSkipSunday] = useState(false)
   const [skipHolidays, setSkipHolidays] = useState(false)
   const [dailyInterest, setDailyInterest] = useState(true)
-  const [dailyInterestAmount, setDailyInterestAmount] = useState<number>(0)
+  const [dailyInterestAmount, setDailyInterestAmount] = useState<number>(15)
   const [penaltyFee, setPenaltyFee] = useState<number>(0)
   const [whatsappNotify, setWhatsappNotify] = useState(false)
   const [notes, setNotes] = useState("")
@@ -265,7 +265,7 @@ export default function EmprestimosPage() {
     setSkipSunday(false)
     setSkipHolidays(false)
     setDailyInterest(true)
-    setDailyInterestAmount(0)
+    setDailyInterestAmount(15)
     setPenaltyFee(0)
     setWhatsappNotify(false)
     setNotes("")
@@ -1139,11 +1139,13 @@ export default function EmprestimosPage() {
               const isPending = status.label === "Pendente"
               const isOrange = isDueToday || isPending
 
-              const cardBorder = isOrange ? "border-orange-400 dark:border-orange-700" : status.label === "Atrasado" || status.label === "Inadimplente" ? "border-red-400 dark:border-red-700" : status.label === "Só Juros" ? "border-purple-400 dark:border-purple-700" : status.label === "Quitado" ? "border-blue-400 dark:border-blue-700" : "border-emerald-400 dark:border-emerald-700"
-              const cardBg = isOrange ? "bg-orange-100 dark:bg-orange-950/30" : status.label === "Atrasado" || status.label === "Inadimplente" ? "bg-red-100 dark:bg-red-950/30" : status.label === "Só Juros" ? "bg-purple-100 dark:bg-purple-950/30" : status.label === "Quitado" ? "bg-blue-100 dark:bg-blue-950/30" : "bg-emerald-100 dark:bg-emerald-950/30"
-              const remainingColor = isOrange ? "text-orange-700 dark:text-orange-400" : status.label === "Atrasado" || status.label === "Inadimplente" ? "text-red-700 dark:text-red-400" : status.label === "Só Juros" ? "text-purple-700 dark:text-purple-400" : status.label === "Quitado" ? "text-blue-700 dark:text-blue-400" : "text-emerald-700 dark:text-emerald-400"
-              const remainingBg = isOrange ? "bg-orange-100 dark:bg-orange-900/40" : status.label === "Atrasado" || status.label === "Inadimplente" ? "bg-red-100 dark:bg-red-900/40" : status.label === "Só Juros" ? "bg-purple-100 dark:bg-purple-900/40" : status.label === "Quitado" ? "bg-blue-100 dark:bg-blue-900/40" : "bg-emerald-100 dark:bg-emerald-900/40"
-              const cellBg = isOrange ? "bg-orange-50 dark:bg-orange-950/20" : status.label === "Atrasado" || status.label === "Inadimplente" ? "bg-red-50 dark:bg-red-950/20" : status.label === "Só Juros" ? "bg-purple-50 dark:bg-purple-950/20" : status.label === "Quitado" ? "bg-blue-50 dark:bg-blue-950/20" : "bg-emerald-50 dark:bg-emerald-950/20"
+              const isPrice = loan.interestType === "TOTAL" || loan.interestType === "FIXED_AMOUNT"
+
+              const cardBorder = isPrice ? "border-blue-400 dark:border-blue-700" : isOrange ? "border-orange-400 dark:border-orange-700" : status.label === "Atrasado" || status.label === "Inadimplente" ? "border-red-400 dark:border-red-700" : status.label === "Só Juros" ? "border-purple-400 dark:border-purple-700" : status.label === "Quitado" ? "border-blue-400 dark:border-blue-700" : "border-emerald-400 dark:border-emerald-700"
+              const cardBg = isPrice ? "bg-blue-100 dark:bg-blue-950/30" : isOrange ? "bg-orange-100 dark:bg-orange-950/30" : status.label === "Atrasado" || status.label === "Inadimplente" ? "bg-red-100 dark:bg-red-950/30" : status.label === "Só Juros" ? "bg-purple-100 dark:bg-purple-950/30" : status.label === "Quitado" ? "bg-blue-100 dark:bg-blue-950/30" : "bg-emerald-100 dark:bg-emerald-950/30"
+              const remainingColor = isPrice ? "text-blue-700 dark:text-blue-400" : isOrange ? "text-orange-700 dark:text-orange-400" : status.label === "Atrasado" || status.label === "Inadimplente" ? "text-red-700 dark:text-red-400" : status.label === "Só Juros" ? "text-purple-700 dark:text-purple-400" : status.label === "Quitado" ? "text-blue-700 dark:text-blue-400" : "text-emerald-700 dark:text-emerald-400"
+              const remainingBg = isPrice ? "bg-blue-100 dark:bg-blue-900/40" : isOrange ? "bg-orange-100 dark:bg-orange-900/40" : status.label === "Atrasado" || status.label === "Inadimplente" ? "bg-red-100 dark:bg-red-900/40" : status.label === "Só Juros" ? "bg-purple-100 dark:bg-purple-900/40" : status.label === "Quitado" ? "bg-blue-100 dark:bg-blue-900/40" : "bg-emerald-100 dark:bg-emerald-900/40"
+              const cellBg = isPrice ? "bg-blue-50 dark:bg-blue-950/20" : isOrange ? "bg-orange-50 dark:bg-orange-950/20" : status.label === "Atrasado" || status.label === "Inadimplente" ? "bg-red-50 dark:bg-red-950/20" : status.label === "Só Juros" ? "bg-purple-50 dark:bg-purple-950/20" : status.label === "Quitado" ? "bg-blue-50 dark:bg-blue-950/20" : "bg-emerald-50 dark:bg-emerald-950/20"
 
               return (
                 <div key={group.clientId} className={`rounded-xl border overflow-hidden shadow-sm hover:shadow-md transition-shadow ${cardBorder} ${cardBg}`}>
@@ -1205,76 +1207,8 @@ export default function EmprestimosPage() {
                     <div className={`${remainingBg} rounded-lg px-4 py-3 text-center`}>
                       <p className={`text-lg font-bold tabular-nums tracking-tight ${remainingColor}`}>{formatCurrency(remaining)}</p>
                       <p className="text-[11px] text-gray-400 dark:text-zinc-500 mt-0.5">restante a receber</p>
-                      {(() => {
-                        const loanData = buildLoanData({
-                          amount: loan.amount, interestRate: loan.interestRate, interestType: loan.interestType,
-                          totalAmount: loan.totalAmount, dailyInterestAmount: loan.dailyInterestAmount || 0,
-                          dueDay: loan.dueDay, modality: loan.modality, firstInstallmentDate: loan.firstInstallmentDate,
-                          installments: loan.installments, payments: loan.payments,
-                        })
-                        const daysOverdue = getDaysOverdue(loanData)
-                        const dailyAmt = loan.dailyInterestAmount || 0
-                        const overdueExtra = remaining - loan.totalAmount + getPaidExcludingInterest(loan.payments || [])
-                        if (daysOverdue > 0 && overdueExtra > 0) {
-                          return <p className="text-[11px] text-green-600 dark:text-green-400 mt-1">contém {formatCurrency(overdueExtra)} de juros por atraso</p>
-                        }
-                        return null
-                      })()}
                     </div>
                   </div>
-
-                  {/* Parcelas em atraso - Breakdown */}
-                  {(() => {
-                    const loanData = buildLoanData({
-                      amount: loan.amount, interestRate: loan.interestRate, interestType: loan.interestType,
-                      totalAmount: loan.totalAmount, dailyInterestAmount: loan.dailyInterestAmount || 0,
-                      dueDay: loan.dueDay, modality: loan.modality, firstInstallmentDate: loan.firstInstallmentDate,
-                      installments: loan.installments, payments: loan.payments,
-                    })
-                    const daysOverdue = getDaysOverdue(loanData)
-                    const dailyAmt = loan.dailyInterestAmount || 0
-
-                    if (daysOverdue <= 0) return null
-
-                    const overdueInsts = loan.installments
-                      .filter((i: any) => i.status !== "PAID" && new Date(i.dueDate) < new Date())
-                      .sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
-                    const pendingInsts = loan.installments.filter((i: any) => i.status !== "PAID")
-                    const dailyPenalty = dailyAmt * daysOverdue
-
-                    return (
-                      <div className="mx-4 mb-2 px-3 py-2.5 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/50 space-y-2">
-                        {overdueInsts.map((inst: any, idx: number) => {
-                          const instDue = new Date(inst.dueDate)
-                          const instDays = Math.max(0, Math.floor((new Date().getTime() - instDue.getTime()) / (1000 * 60 * 60 * 24)))
-                          return (
-                            <div key={inst.id} className="flex items-center justify-between">
-                              <span className="text-xs font-medium text-red-700 dark:text-red-400">
-                                Parcela {inst.number}/{loan.installmentCount} em atraso
-                              </span>
-                              <span className="text-xs font-bold text-red-700 dark:text-red-400">{instDays} dias</span>
-                            </div>
-                          )
-                        })}
-                        {overdueInsts.map((inst: any) => (
-                          <div key={`val-${inst.id}`} className="flex items-center justify-between text-xs">
-                            <span className="text-gray-600 dark:text-zinc-400">Vencimento: {formatDate(inst.dueDate)}</span>
-                            <span className="text-gray-700 dark:text-zinc-300 font-medium">Valor: {formatCurrency(inst.amount)}</span>
-                          </div>
-                        ))}
-                        {dailyAmt > 0 && (
-                          <div className="flex items-center justify-between text-xs pt-1 border-t border-red-200 dark:border-red-800/40">
-                            <span className="text-red-600 dark:text-red-400">% Juros ({formatCurrency(dailyAmt)}/dia)</span>
-                            <span className="text-red-600 dark:text-red-400 font-bold">+{formatCurrency(dailyPenalty)}</span>
-                          </div>
-                        )}
-                        <div className="flex items-center justify-between text-xs pt-1 border-t border-red-200 dark:border-red-800/40">
-                          <span className="font-semibold text-red-700 dark:text-red-300">Total com Atraso:</span>
-                          <span className="font-bold text-red-700 dark:text-red-300">{formatCurrency(remaining)}</span>
-                        </div>
-                      </div>
-                    )
-                  })()}
 
                   {/* Grid de valores */}
                   <div className="mx-4 grid grid-cols-2 gap-px bg-gray-100 dark:bg-zinc-800 rounded-lg overflow-hidden border border-gray-100 dark:border-zinc-800">
@@ -1341,13 +1275,68 @@ export default function EmprestimosPage() {
                     )
                   })()}
 
+                  {/* Parcelas em atraso - Breakdown */}
+                  {(() => {
+                    const loanData = buildLoanData({
+                      amount: loan.amount, interestRate: loan.interestRate, interestType: loan.interestType,
+                      totalAmount: loan.totalAmount, dailyInterestAmount: loan.dailyInterestAmount || 0,
+                      dueDay: loan.dueDay, modality: loan.modality, firstInstallmentDate: loan.firstInstallmentDate,
+                      installments: loan.installments, payments: loan.payments,
+                    })
+                    const daysOverdue = getDaysOverdue(loanData)
+                    const dailyAmt = loan.dailyInterestAmount || 0
+
+                    if (daysOverdue <= 0) return null
+
+                    const overdueInsts = loan.installments
+                      .filter((i: any) => i.status !== "PAID" && new Date(i.dueDate) < new Date())
+                      .sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+
+                    return (
+                      <div className="mx-4 mt-2 px-3 py-2.5 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/50 space-y-2">
+                        {overdueInsts.map((inst: any, idx: number) => {
+                          const instDue = new Date(inst.dueDate)
+                          const instDays = Math.max(0, Math.floor((new Date().getTime() - instDue.getTime()) / (1000 * 60 * 60 * 24)))
+                          const instPenalty = dailyAmt > 0 ? dailyAmt * instDays : 0
+                          return (
+                            <div key={inst.id} className="space-y-1">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-medium text-red-700 dark:text-red-400">
+                                  Parcela {inst.number}/{loan.installmentCount} em atraso
+                                </span>
+                                <span className="text-xs font-bold text-red-700 dark:text-red-400">{instDays} dias</span>
+                              </div>
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="text-gray-600 dark:text-zinc-400">Vencimento: {formatDate(inst.dueDate)}</span>
+                                <span className="text-gray-700 dark:text-zinc-300 font-medium">Valor: {formatCurrency(inst.amount)}</span>
+                              </div>
+                              {dailyAmt > 0 && instDays > 0 && (
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="text-red-600 dark:text-red-400">% Juros ({formatCurrency(dailyAmt)}/dia)</span>
+                                  <span className="text-red-600 dark:text-red-400 font-bold">+{formatCurrency(instPenalty)}</span>
+                                </div>
+                              )}
+                              {idx < overdueInsts.length - 1 && (
+                                <div className="border-b border-red-200 dark:border-red-800/40 pt-1" />
+                              )}
+                            </div>
+                          )
+                        })}
+                        <div className="flex items-center justify-between text-xs pt-1 border-t border-red-200 dark:border-red-800/40">
+                          <span className="font-semibold text-red-700 dark:text-red-300">Total com Atraso:</span>
+                          <span className="font-bold text-red-700 dark:text-red-300">{formatCurrency(remaining)}</span>
+                        </div>
+                      </div>
+                    )
+                  })()}
+
                   {/* Ações */}
                   <div className="px-4 pt-3 pb-4 mt-2 border-t border-gray-100 dark:border-zinc-800 space-y-3">
                     {(status.label === "Atrasado" || status.label === "Inadimplente") && (
                       <div>
-                        <Button size="sm" onClick={() => openWhatsappDialog(loan)} className="w-full h-9 text-sm bg-green-600 hover:bg-green-700 text-white transition-colors">
-                          <MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Cobrar via WhatsApp
-                        </Button>
+                          <Button size="sm" onClick={() => openWhatsappDialog(loan)} className="w-full h-9 text-sm bg-green-600 hover:bg-green-700 text-white transition-colors">
+                            <MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Cobrar via WhatsApp
+                          </Button>
                       </div>
                     )}
                     <div className="flex items-center justify-center gap-2">
@@ -1899,29 +1888,14 @@ export default function EmprestimosPage() {
                 type="number"
                 step="0.01"
                 min={0}
-                value={dailyInterestAmount || ""}
+                value={dailyInterestAmount}
                 onChange={(e) => setDailyInterestAmount(Number(e.target.value) || 0)}
                 className="mt-1"
-                placeholder="Ex: 5.00 (0 = calcula automático)"
+                placeholder="Ex: 15.00"
               />
-              <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">Valor cobrado por dia de atraso. Se 0, será calculado automaticamente.</p>
+              <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">Valor cobrado por dia de atraso (padrão: R$ 15,00)</p>
             </div>
           )}
-
-          {/* Multa por Atraso */}
-          <div>
-            <Label className="text-sm font-medium">Multa Fixa por Atraso (R$)</Label>
-            <Input
-              type="number"
-              step="0.01"
-              min={0}
-              value={penaltyFee || ""}
-              onChange={(e) => setPenaltyFee(Number(e.target.value) || 0)}
-              className="mt-1"
-              placeholder="Ex: 50.00 (0 = sem multa)"
-            />
-            <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">Valor fixo cobrado quando a parcela estiver em atraso, além dos juros</p>
-          </div>
 
           {/* WhatsApp */}
           <div
