@@ -10,7 +10,8 @@ import { Textarea } from "@/components/ui/textarea"
 import {
   Plus, Trash2, Search, Calendar, Package, FileText, CreditCard,
   CheckCircle2, DollarSign, CalendarDays, ShoppingBag, User,
-  ClipboardList, Pencil, Copy, ChevronDown, ChevronUp, MessageCircle
+  ClipboardList, Pencil, Copy, ChevronDown, ChevronUp, MessageCircle,
+  Receipt, Send, Download
 } from "lucide-react"
 import { formatCurrency, formatDate } from "@/lib/utils"
 
@@ -119,6 +120,18 @@ export default function VendasPage() {
   const [payingSale, setPayingSale] = useState<any>(null)
   const [payAmount, setPayAmount] = useState("")
   const [payDate, setPayDate] = useState(new Date().toISOString().split("T")[0])
+
+  // Payment receipt dialog
+  const [paymentReceiptDialog, setPaymentReceiptDialog] = useState(false)
+  const [paymentReceiptInfo, setPaymentReceiptInfo] = useState<{
+    type: string
+    clientName: string
+    installmentLabel: string
+    amount: number
+    date: string
+    isCompleted: boolean
+    remainingBalance: number
+  } | null>(null)
 
   // Parcelas dialog
   const [parcelasDialogOpen, setParcelasDialogOpen] = useState(false)
@@ -238,15 +251,33 @@ export default function VendasPage() {
     const nextInst = payingSale.saleInstallments?.find((i: any) => i.status !== "PAID")
     if (!nextInst) return
 
+    const paidAmt = parseFloat(payAmount)
     await fetch(`/api/sales/${payingSale.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         payInstallmentId: nextInst.id,
-        payAmount: parseFloat(payAmount),
+        payAmount: paidAmt,
         payDate,
       }),
     })
+
+    // Show receipt
+    const allInsts = payingSale.saleInstallments || []
+    const paidCount = allInsts.filter((i: any) => i.status === "PAID").length
+    const willBeCompleted = (paidCount + 1) >= allInsts.length
+    const alreadyPaid = allInsts.reduce((s: number, i: any) => s + (i.paidAmount || 0), 0)
+    setPaymentReceiptInfo({
+      type: "Venda",
+      clientName: payingSale.client?.name || payingSale.clientName || "",
+      installmentLabel: `${nextInst.number || (paidCount + 1)}/${allInsts.length}`,
+      amount: paidAmt,
+      date: new Date(payDate + "T12:00:00").toLocaleDateString("pt-BR"),
+      isCompleted: willBeCompleted,
+      remainingBalance: Math.max(0, payingSale.totalAmount - alreadyPaid - paidAmt),
+    })
+    setPaymentReceiptDialog(true)
+
     setPayDialogOpen(false)
     setPayingSale(null)
     fetchSales()
@@ -859,6 +890,101 @@ export default function VendasPage() {
             </div>
           )
         })()}
+      </Dialog>
+
+      {/* ===== COMPROVANTE DE PAGAMENTO ===== */}
+      <Dialog open={paymentReceiptDialog} onClose={() => setPaymentReceiptDialog(false)} className="max-w-md">
+        {paymentReceiptInfo && (
+          <div className="space-y-5">
+            <div className="text-center">
+              <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-950/30">
+                <Receipt className="h-6 w-6 text-emerald-600" />
+              </div>
+              <h2 className="text-lg font-bold text-emerald-600">Pagamento Registrado!</h2>
+              <p className="text-sm text-gray-500 dark:text-zinc-400">Deseja baixar ou enviar o comprovante?</p>
+            </div>
+
+            <div className="rounded-lg border border-gray-200 dark:border-zinc-700 p-4 space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-500 dark:text-zinc-400">Tipo:</span>
+                <span className="font-semibold text-gray-900 dark:text-zinc-100">{paymentReceiptInfo.type}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500 dark:text-zinc-400">Cliente:</span>
+                <span className="font-bold text-gray-900 dark:text-zinc-100">{paymentReceiptInfo.clientName}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500 dark:text-zinc-400">Parcela:</span>
+                <span className="font-semibold text-gray-900 dark:text-zinc-100">{paymentReceiptInfo.installmentLabel}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500 dark:text-zinc-400">Valor Pago:</span>
+                <span className="font-bold text-emerald-600">{formatCurrency(paymentReceiptInfo.amount)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500 dark:text-zinc-400">Data:</span>
+                <span className="font-semibold text-gray-900 dark:text-zinc-100">{paymentReceiptInfo.date}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500 dark:text-zinc-400">Saldo Restante:</span>
+                <span className="font-bold text-gray-900 dark:text-zinc-100">{formatCurrency(paymentReceiptInfo.remainingBalance)}</span>
+              </div>
+            </div>
+
+            {paymentReceiptInfo.isCompleted && (
+              <div className="flex items-center justify-center gap-2 rounded-lg bg-emerald-100 dark:bg-emerald-950/40 py-2.5 px-4">
+                <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                <span className="font-bold text-emerald-700 dark:text-emerald-400">Contrato Quitado!</span>
+              </div>
+            )}
+
+            <div className="grid grid-cols-3 gap-2">
+              <Button
+                className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+                onClick={() => {
+                  const text = `📋 *Comprovante de Pagamento*\n\n📌 Tipo: ${paymentReceiptInfo.type}\n👤 Cliente: ${paymentReceiptInfo.clientName}\n📄 Parcela: ${paymentReceiptInfo.installmentLabel}\n💰 Valor Pago: ${formatCurrency(paymentReceiptInfo.amount)}\n📅 Data: ${paymentReceiptInfo.date}\n💵 Saldo Restante: ${formatCurrency(paymentReceiptInfo.remainingBalance)}${paymentReceiptInfo.isCompleted ? "\n\n✅ *Contrato Quitado!*" : ""}`
+                  navigator.clipboard.writeText(text)
+                  alert("Copiado!")
+                }}
+              >
+                <Copy className="h-4 w-4" /> Copiar
+              </Button>
+              <Button
+                className="gap-1.5 bg-green-600 hover:bg-green-700 text-white"
+                onClick={() => {
+                  const text = `📋 *Comprovante de Pagamento*\n\n📌 Tipo: ${paymentReceiptInfo.type}\n👤 Cliente: ${paymentReceiptInfo.clientName}\n📄 Parcela: ${paymentReceiptInfo.installmentLabel}\n💰 Valor Pago: ${formatCurrency(paymentReceiptInfo.amount)}\n📅 Data: ${paymentReceiptInfo.date}\n💵 Saldo Restante: ${formatCurrency(paymentReceiptInfo.remainingBalance)}${paymentReceiptInfo.isCompleted ? "\n\n✅ *Contrato Quitado!*" : ""}`
+                  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank")
+                }}
+              >
+                <Send className="h-4 w-4" /> Para Mim
+              </Button>
+              <Button
+                className="gap-1.5 bg-emerald-800 hover:bg-emerald-900 text-white"
+                onClick={() => {
+                  const printContent = `
+                    <html><head><title>Comprovante</title>
+                    <style>body{font-family:sans-serif;padding:40px;max-width:400px;margin:auto}
+                    h2{color:#059669;text-align:center}table{width:100%;border-collapse:collapse;margin:20px 0}
+                    td{padding:8px 4px;border-bottom:1px solid #e5e7eb}td:first-child{color:#6b7280}td:last-child{text-align:right;font-weight:600}
+                    .badge{background:#d1fae5;color:#047857;padding:8px 16px;border-radius:8px;text-align:center;font-weight:700;margin-top:16px}</style></head>
+                    <body><h2>📋 Comprovante de Pagamento</h2>
+                    <table><tr><td>Tipo:</td><td>${paymentReceiptInfo.type}</td></tr>
+                    <tr><td>Cliente:</td><td>${paymentReceiptInfo.clientName}</td></tr>
+                    <tr><td>Parcela:</td><td>${paymentReceiptInfo.installmentLabel}</td></tr>
+                    <tr><td>Valor Pago:</td><td style="color:#059669">${formatCurrency(paymentReceiptInfo.amount)}</td></tr>
+                    <tr><td>Data:</td><td>${paymentReceiptInfo.date}</td></tr>
+                    <tr><td>Saldo Restante:</td><td>${formatCurrency(paymentReceiptInfo.remainingBalance)}</td></tr></table>
+                    ${paymentReceiptInfo.isCompleted ? '<div class="badge">✅ Contrato Quitado!</div>' : ""}
+                    </body></html>`
+                  const w = window.open("", "_blank")
+                  if (w) { w.document.write(printContent); w.document.close(); w.print() }
+                }}
+              >
+                <Download className="h-4 w-4" /> PDF
+              </Button>
+            </div>
+          </div>
+        )}
       </Dialog>
 
       {/* ===== PARCELAS DIALOG ===== */}

@@ -149,6 +149,7 @@ export async function PUT(
             skipSunday: data.skipSunday ?? false,
             skipHolidays: data.skipHolidays ?? false,
             dailyInterest: data.dailyInterest ?? false,
+            dailyInterestAmount: data.dailyInterestAmount ?? 0,
             whatsappNotify: data.whatsappNotify ?? false,
             notes: data.notes,
             tags: Array.isArray(body.tags) ? body.tags.filter((t: unknown) => typeof t === "string" && (t as string).trim()) : undefined,
@@ -191,6 +192,9 @@ export async function PUT(
     }
     if (typeof body.dailyInterest === "boolean") {
       updateData.dailyInterest = body.dailyInterest
+    }
+    if (typeof body.dailyInterestAmount === "number") {
+      updateData.dailyInterestAmount = body.dailyInterestAmount
     }
     if (Array.isArray(body.tags)) {
       updateData.tags = body.tags.filter((t: unknown) => typeof t === "string" && (t as string).trim())

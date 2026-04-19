@@ -8,7 +8,7 @@ import { Avatar } from "@/components/avatar"
 import { Dialog } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ArrowLeft, Calendar, Check, CheckCircle2, DollarSign, Eye, FileText, Lock, Loader2, MessageCircle, Pencil, Receipt, RotateCcw, Send, Tag, Trash2, X, Plus } from "lucide-react"
+import { ArrowLeft, Calendar, Check, CheckCircle2, Copy, DollarSign, Download, Eye, FileText, Lock, Loader2, MessageCircle, Pencil, Receipt, RotateCcw, Send, Tag, Trash2, X, Plus } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import { formatCurrency, formatDate } from "@/lib/utils"
 import { buildLoanData, calculateTotalAmountWithLateFee, calculateOverdueInterest, getDaysOverdue, getNextDueDate as getNextDueDateFn } from "@/lib/loan-logic"
@@ -54,6 +54,9 @@ export default function ClienteEmprestimosPage() {
   const [tagColor, setTagColor] = useState("#10b981")
   const [showTagForm, setShowTagForm] = useState(false)
 
+  // Profile PIX key
+  const [profilePixKey, setProfilePixKey] = useState("")
+
   // WhatsApp state
   const [whatsappDialog, setWhatsappDialog] = useState(false)
   const [whatsappLoan, setWhatsappLoan] = useState<Loan | null>(null)
@@ -80,6 +83,20 @@ export default function ClienteEmprestimosPage() {
   const [payNotes, setPayNotes] = useState("")
   const [payNewDueDate, setPayNewDueDate] = useState("")
   const [payDiscount, setPayDiscount] = useState<number>(0)
+  const [paying, setPaying] = useState(false)
+
+  // Payment receipt dialog state
+  const [paymentReceiptDialog, setPaymentReceiptDialog] = useState(false)
+  const [paymentReceiptInfo, setPaymentReceiptInfo] = useState<{
+    type: string
+    clientName: string
+    clientPhone: string | null
+    installmentLabel: string
+    amount: number
+    date: string
+    isCompleted: boolean
+    remainingBalance: number
+  } | null>(null)
 
   const TAG_COLORS = ["#ef4444","#f97316","#f59e0b","#eab308","#84cc16","#22c55e","#10b981","#14b8a6","#06b6d4","#3b82f6","#8b5cf6","#ec4899"]
 
@@ -90,7 +107,7 @@ export default function ClienteEmprestimosPage() {
       const res = await fetch("/api/loans")
       const data = await res.json()
       const list = Array.isArray(data) ? data : []
-      setLoans(list.filter((loan: Loan) => loan.client?.id === clientId))
+      setLoans(list.filter((loan: Loan) => loan.client?.id === clientId && loan.status !== "COMPLETED"))
     } finally {
       setLoading(false)
     }
@@ -106,9 +123,18 @@ export default function ClienteEmprestimosPage() {
     } catch {}
   }
 
+  const fetchProfile = async () => {
+    try {
+      const res = await fetch("/api/profile")
+      const data = await res.json()
+      setProfilePixKey(data.pixKey || "")
+    } catch {}
+  }
+
   useEffect(() => {
     fetchLoans()
     fetchClientPhone()
+    fetchProfile()
   }, [clientId])
 
   const clientName = loans[0]?.client?.name || "Cliente"
@@ -146,7 +172,11 @@ export default function ClienteEmprestimosPage() {
       }
     }
 
-    return `Olá ${name}, tudo bem?\n\nIdentificamos que você possui ${count} parcela(s) em atraso no valor total de ${formatCurrency(totalOverdue)}.\n\n⏰ Atraso de ${daysLate} dia(s).\n\nPor favor, entre em contato para regularizar sua situação.\n\nAtenciosamente.`
+    const oldestOverdue = overdueInsts.length > 0 ? overdueInsts[0] : null
+    const vencimento = oldestOverdue ? formatDate(oldestOverdue.dueDate) : ""
+    const juros = loan.interestRate > 0 ? formatCurrency(totalOverdue * (loan.interestRate / 100)) : "0,00"
+
+    return `👤 Cliente: ${name}\n\n🔴 PARCELA EM ATRASO\n\n📅 Data de vencimento: ${vencimento}\n\n💰 pagamento total: ${formatCurrency(totalOverdue)}\n\n🔄 Valor para regularização parcial (juros): R$ ${juros}\n\n📆 Dias em atraso: ${daysLate} dias\n\n⚠️ Multa por atraso: R$ 15,00 por dia\n\n\n💳 Chave Pix: ${profilePixKey || "Não cadastrada"}`
   }
 
   const openWhatsappDialog = (loan: Loan) => {
@@ -296,6 +326,7 @@ export default function ClienteEmprestimosPage() {
 
   const handleRenegotiatePayment = async () => {
     if (!renegotiateDialog || !renegotiateMode) return
+    if (paying) return alert("Pagamento já está sendo processado, aguarde...")
     const targetInstId = renegotiateMode === "partial"
       ? renegotiateInstallmentId
       : getNextDueInst(renegotiateDialog)?.id
@@ -304,24 +335,74 @@ export default function ClienteEmprestimosPage() {
     const amount = renegotiateAmount
     if (!amount || amount <= 0) return alert("Informe o valor")
     if (renegotiateMode === "partial" && amount > intAmount) return alert(`Máximo: ${formatCurrency(intAmount)}`)
-    await fetch("/api/payments", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        loanId: renegotiateDialog.id,
-        installmentId: targetInstId,
-        amount,
-        date: renegotiateDate || new Date().toISOString(),
-        newDueDate: renegotiateMode === "full" ? (renegotiateNewDueDate || undefined) : undefined,
-        notes: (renegotiateNotes ? renegotiateNotes + " | " : "") + (renegotiateMode === "full" ? "Pagamento só juros" : "Pagamento parcial de juros"),
-      }),
-    })
-    setRenegotiateDialog(null)
-    setRenegotiateMode(null)
-    setRenegotiateAmount(0)
-    setRenegotiateNotes("")
-    setRenegotiateInstallmentId("")
-    fetchLoans()
+    const receiptLoan = renegotiateDialog
+    const receiptMode = renegotiateMode
+    const receiptAmount = amount
+    const receiptDate = renegotiateDate || new Date().toISOString().split("T")[0]
+    const allInsts = receiptLoan.installments
+    const instIdx = allInsts.findIndex((i: any) => i.id === targetInstId)
+
+    setPaying(true)
+    try {
+      // For partial mode, check if this payment completes the interest cycle
+      let sendNewDueDate: string | undefined = undefined
+      if (renegotiateMode === "full") {
+        sendNewDueDate = renegotiateNewDueDate || undefined
+      } else if (renegotiateMode === "partial") {
+        const partialPayments = renegotiateDialog.payments.filter((p: any) => {
+          const notes = (p.notes || "").toLowerCase()
+          return notes.includes("parcial de juros")
+        })
+        const totalPartialPaid = partialPayments.reduce((s: number, p: any) => s + p.amount, 0)
+        const cicloJurosPago = intAmount > 0 ? totalPartialPaid % intAmount : 0
+        const cicloJurosFaltante = intAmount > 0 ? intAmount - cicloJurosPago : intAmount
+        if (amount >= cicloJurosFaltante) {
+          const payDateObj = new Date((renegotiateDate || new Date().toISOString().split("T")[0]) + "T12:00:00")
+          payDateObj.setDate(payDateObj.getDate() + modalityDays(renegotiateDialog.modality))
+          sendNewDueDate = payDateObj.toISOString().split("T")[0]
+        }
+      }
+
+      const res = await fetch("/api/payments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          loanId: renegotiateDialog.id,
+          installmentId: targetInstId,
+          amount,
+          date: renegotiateDate || new Date().toISOString(),
+          newDueDate: sendNewDueDate,
+          notes: (renegotiateNotes ? renegotiateNotes + " | " : "") + (renegotiateMode === "full" ? "Pagamento só juros" : "Pagamento parcial de juros"),
+        }),
+      })
+      setRenegotiateDialog(null)
+      setRenegotiateMode(null)
+      setRenegotiateAmount(0)
+      setRenegotiateNotes("")
+      setRenegotiateInstallmentId("")
+
+      if (res.ok) {
+        const paidCount = allInsts.filter((i: any) => i.status === "PAID").length
+        const willBeCompleted = (paidCount + 1) >= allInsts.length
+        const dateStr = receiptDate
+        const alreadyPaid = receiptLoan.payments.reduce((s: number, p: any) => s + p.amount, 0)
+        setPaymentReceiptInfo({
+          type: receiptMode === "full" ? "Só Juros" : "Pagamento Parcial de Juros",
+          clientName: receiptLoan.client.name,
+          clientPhone: clientPhone,
+          installmentLabel: `${instIdx + 1}/${allInsts.length}`,
+          amount: receiptAmount,
+          date: new Date(dateStr.includes("T") ? dateStr : dateStr + "T12:00:00").toLocaleDateString("pt-BR"),
+          isCompleted: false,
+          remainingBalance: receiptLoan.totalAmount,
+        })
+        setPaymentReceiptDialog(true)
+      }
+
+      fetchLoans()
+    } finally {
+      setPaying(false)
+    }
   }
 
   const resetPaymentForm = () => {
@@ -349,29 +430,108 @@ export default function ClienteEmprestimosPage() {
 
   const handlePayment = async () => {
     if (!paymentDialog) return
-    const body: any = {
-      loanId: paymentDialog.id,
-      amount: payAmount,
-      date: payDate || new Date().toISOString(),
-      notes: payNotes,
+    if (paying) return alert("Pagamento já está sendo processado, aguarde...")
+    const receiptLoan = paymentDialog
+    const receiptAmount = payAmount
+    const receiptDate = payDate || new Date().toISOString().split("T")[0]
+
+    setPaying(true)
+    try {
+      if (paymentType === "total") {
+        // Pay all pending installments
+        const pendingInsts = paymentDialog.installments.filter((i: any) => i.status !== "PAID")
+        const paidCount = paymentDialog.installments.filter((i: any) => i.status === "PAID").length
+        let remainingToPay = payAmount
+        let allOk = true
+        for (let pi = 0; pi < pendingInsts.length; pi++) {
+          const inst = pendingInsts[pi]
+          const instRemaining = inst.amount - (inst.paidAmount || 0)
+          const payThis = Math.min(remainingToPay, instRemaining)
+          if (payThis <= 0) break
+          const notes = `Parcela ${paidCount + pi + 1} de ${paymentDialog.installmentCount}`
+          const res = await fetch("/api/payments", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              loanId: paymentDialog.id,
+              installmentId: inst.id,
+              amount: payThis,
+              date: payDate || new Date().toISOString(),
+              notes,
+            }),
+          })
+          if (!res.ok) { allOk = false; break }
+          remainingToPay -= payThis
+        }
+        setPaymentDialog(null)
+        resetPaymentForm()
+
+        if (allOk && pendingInsts.length > 0) {
+          const allInsts = receiptLoan.installments
+          const alreadyPaid = receiptLoan.payments.reduce((s: number, p: any) => s + p.amount, 0)
+          setPaymentReceiptInfo({
+            type: "Empréstimo",
+            clientName: receiptLoan.client.name,
+            clientPhone: clientPhone,
+            installmentLabel: `${paidCount + 1}/${allInsts.length}`,
+            amount: receiptAmount,
+            date: new Date(receiptDate.includes("T") ? receiptDate : receiptDate + "T12:00:00").toLocaleDateString("pt-BR"),
+            isCompleted: true,
+            remainingBalance: 0,
+          })
+          setPaymentReceiptDialog(true)
+        }
+      } else {
+        const body: any = {
+          loanId: paymentDialog.id,
+          amount: payAmount,
+          date: payDate || new Date().toISOString(),
+          notes: payNotes,
+        }
+        if (paymentType === "installment" && selectedInstallmentIds.length > 0) {
+          body.installmentId = selectedInstallmentIds[0]
+        } else if (paymentType === "partial" && selectedInstallmentIds.length > 0) {
+          body.installmentId = selectedInstallmentIds[0]
+        } else if (paymentType === "discount") {
+          body.discount = payDiscount
+          const pendingInst = paymentDialog.installments.find((i: any) => i.status !== "PAID")
+          if (pendingInst) body.installmentId = pendingInst.id
+        }
+        const receiptInstId = body.installmentId
+
+        const res = await fetch("/api/payments", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        })
+        setPaymentDialog(null)
+        resetPaymentForm()
+
+        if (res.ok && receiptInstId) {
+          const allInsts = receiptLoan.installments
+          const paidCount = allInsts.filter((i: any) => i.status === "PAID").length
+          const willBeCompleted = (paidCount + 1) >= allInsts.length
+          const instIdx = allInsts.findIndex((i: any) => i.id === receiptInstId)
+          const dateStr = receiptDate
+          const alreadyPaid = receiptLoan.payments.reduce((s: number, p: any) => s + p.amount, 0)
+          setPaymentReceiptInfo({
+            type: "Empréstimo",
+            clientName: receiptLoan.client.name,
+            clientPhone: clientPhone,
+            installmentLabel: `${instIdx + 1}/${allInsts.length}`,
+            amount: receiptAmount,
+            date: new Date(dateStr.includes("T") ? dateStr : dateStr + "T12:00:00").toLocaleDateString("pt-BR"),
+            isCompleted: willBeCompleted,
+            remainingBalance: Math.max(0, receiptLoan.totalAmount - alreadyPaid - receiptAmount),
+          })
+          setPaymentReceiptDialog(true)
+        }
+      }
+
+      fetchLoans()
+    } finally {
+      setPaying(false)
     }
-    if (paymentType === "installment" && selectedInstallmentIds.length > 0) {
-      body.installmentId = selectedInstallmentIds[0]
-    } else if (paymentType === "partial" && selectedInstallmentIds.length > 0) {
-      body.installmentId = selectedInstallmentIds[0]
-    } else if (paymentType === "discount") {
-      body.discount = payDiscount
-      const pendingInst = paymentDialog.installments.find((i: any) => i.status !== "PAID")
-      if (pendingInst) body.installmentId = pendingInst.id
-    }
-    await fetch("/api/payments", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    })
-    setPaymentDialog(null)
-    resetPaymentForm()
-    fetchLoans()
   }
 
   const handleSaveTags = async () => {
@@ -485,8 +645,73 @@ export default function ClienteEmprestimosPage() {
                   <div className={`${remainingBg} rounded-lg px-4 py-3 text-center`}>
                     <p className={`text-lg font-bold tabular-nums tracking-tight ${remainingColor}`}>{formatCurrency(remaining)}</p>
                     <p className="text-[11px] text-gray-400 dark:text-zinc-500 mt-0.5">restante a receber</p>
+                    {(() => {
+                      const loanData = buildLoanData({
+                        amount: loan.amount, interestRate: loan.interestRate, interestType: loan.interestType || "SIMPLE",
+                        totalAmount: loan.totalAmount, dailyInterestAmount: loan.dailyInterestAmount || 0,
+                        dueDay: loan.dueDay || new Date(loan.installments[0]?.dueDate || Date.now()).getDate(),
+                        modality: loan.modality, firstInstallmentDate: loan.firstInstallmentDate || loan.installments[0]?.dueDate || new Date().toISOString(),
+                        installments: loan.installments, payments: loan.payments,
+                      })
+                      const daysOverdue = getDaysOverdue(loanData)
+                      const overdueExtra = remaining - loan.totalAmount + paid
+                      if (daysOverdue > 0 && overdueExtra > 0) {
+                        return <p className="text-[11px] text-green-600 dark:text-green-400 mt-1">contém {formatCurrency(overdueExtra)} de juros por atraso</p>
+                      }
+                      return null
+                    })()}
                   </div>
                 </div>
+
+                {/* Parcelas em atraso - Breakdown */}
+                {(() => {
+                  const loanData = buildLoanData({
+                    amount: loan.amount, interestRate: loan.interestRate, interestType: loan.interestType || "SIMPLE",
+                    totalAmount: loan.totalAmount, dailyInterestAmount: loan.dailyInterestAmount || 0,
+                    dueDay: loan.dueDay || new Date(loan.installments[0]?.dueDate || Date.now()).getDate(),
+                    modality: loan.modality, firstInstallmentDate: loan.firstInstallmentDate || loan.installments[0]?.dueDate || new Date().toISOString(),
+                    installments: loan.installments, payments: loan.payments,
+                  })
+                  const daysOverdue = getDaysOverdue(loanData)
+                  const dailyAmt = loan.dailyInterestAmount || 0
+
+                  if (daysOverdue <= 0) return null
+
+                  const overdueInsts = loan.installments
+                    .filter((i: any) => i.status !== "PAID" && new Date(i.dueDate) < new Date())
+                    .sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+                  const dailyPenalty = dailyAmt * daysOverdue
+
+                  return (
+                    <div className="mx-4 mb-2 px-3 py-2.5 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/50 space-y-2">
+                      {overdueInsts.map((inst: any) => {
+                        const instDays = Math.max(0, Math.floor((new Date().getTime() - new Date(inst.dueDate).getTime()) / (1000 * 60 * 60 * 24)))
+                        return (
+                          <div key={inst.id}>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-medium text-red-700 dark:text-red-400">Parcela {inst.number}/{loan.installmentCount} em atraso</span>
+                              <span className="text-xs font-bold text-red-700 dark:text-red-400">{instDays} dias</span>
+                            </div>
+                            <div className="flex items-center justify-between text-xs mt-0.5">
+                              <span className="text-gray-600 dark:text-zinc-400">Vencimento: {formatDate(inst.dueDate)}</span>
+                              <span className="text-gray-700 dark:text-zinc-300 font-medium">Valor: {formatCurrency(inst.amount)}</span>
+                            </div>
+                          </div>
+                        )
+                      })}
+                      {dailyAmt > 0 && (
+                        <div className="flex items-center justify-between text-xs pt-1 border-t border-red-200 dark:border-red-800/40">
+                          <span className="text-red-600 dark:text-red-400">% Juros ({formatCurrency(dailyAmt)}/dia)</span>
+                          <span className="text-red-600 dark:text-red-400 font-bold">+{formatCurrency(dailyPenalty)}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between text-xs pt-1 border-t border-red-200 dark:border-red-800/40">
+                        <span className="font-semibold text-red-700 dark:text-red-300">Total com Atraso:</span>
+                        <span className="font-bold text-red-700 dark:text-red-300">{formatCurrency(remaining)}</span>
+                      </div>
+                    </div>
+                  )
+                })()}
 
                 {/* Grid de valores */}
                 <div className="mx-4 grid grid-cols-2 gap-px bg-gray-100 dark:bg-zinc-800 rounded-lg overflow-hidden border border-gray-100 dark:border-zinc-800">
@@ -522,10 +747,36 @@ export default function ClienteEmprestimosPage() {
                 </div>
 
                 {/* Juros por parcela */}
-                <div className="mx-4 mt-2 px-3 py-2 rounded-lg bg-gray-50 dark:bg-zinc-800/60 flex items-center justify-between">
-                  <span className="text-xs text-gray-500 dark:text-zinc-400">Só Juros (por parcela):</span>
-                  <span className="text-sm font-semibold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(intPerInst)}</span>
-                </div>
+                {(() => {
+                  const interestPayments = loan.payments.filter((p: any) => {
+                    const notes = (p.notes || "").toLowerCase()
+                    return notes.includes("parcial de juros")
+                  })
+                  const totalPartialPaid = interestPayments.reduce((s: number, p: any) => s + p.amount, 0)
+                  const jurosPago = intPerInst > 0 ? totalPartialPaid % intPerInst : 0
+                  const jurosPendente = intPerInst > 0 ? intPerInst - jurosPago : 0
+                  const hasPartialInterest = jurosPago > 0
+                  return (
+                    <div className="mx-4 mt-2 px-3 py-2 rounded-lg bg-gray-50 dark:bg-zinc-800/60 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-gray-500 dark:text-zinc-400">Só Juros (por parcela):</span>
+                        <span className="text-sm font-semibold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(intPerInst)}</span>
+                      </div>
+                      {hasPartialInterest && (
+                        <>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-yellow-600 dark:text-yellow-400 flex items-center gap-1">💳 Juros já pago:</span>
+                            <span className="text-sm font-semibold tabular-nums text-yellow-600 dark:text-yellow-400">{formatCurrency(jurosPago)}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-red-500 dark:text-red-400">Juros pendente:</span>
+                            <span className="text-sm font-semibold tabular-nums text-red-500 dark:text-red-400">{formatCurrency(jurosPendente)}</span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )
+                })()}
 
                 {/* Ações */}
                 <div className="px-4 pt-3 pb-4 mt-2 border-t border-gray-100 dark:border-zinc-800 space-y-3">
@@ -763,7 +1014,16 @@ export default function ClienteEmprestimosPage() {
                 const pendingInsts = renegotiateDialog.installments
                   .filter((i: any) => i.status !== "PAID")
                   .sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
-                const jurosPendente = Math.max(0, intPerInst - renegotiateAmount)
+                
+                // Calculate already paid partial interest in current cycle
+                const partialPayments = renegotiateDialog.payments.filter((p: any) => {
+                  const notes = (p.notes || "").toLowerCase()
+                  return notes.includes("parcial de juros")
+                })
+                const totalPartialPaid = partialPayments.reduce((s: number, p: any) => s + p.amount, 0)
+                const cicloJurosPago = intPerInst > 0 ? totalPartialPaid % intPerInst : 0
+                const cicloJurosFaltante = intPerInst > 0 ? intPerInst - cicloJurosPago : intPerInst
+                const jurosPendente = Math.max(0, cicloJurosFaltante - renegotiateAmount)
 
                 return (
                   <div className="rounded-xl border border-cyan-500 bg-cyan-950/20 p-5 space-y-5">
@@ -788,7 +1048,7 @@ export default function ClienteEmprestimosPage() {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label className="text-sm font-medium">Valor pago agora (R$) *</Label>
-                        <Input type="number" step="0.01" min={0} max={intPerInst} value={renegotiateAmount || ""} onChange={(e) => setRenegotiateAmount(Number(e.target.value) || 0)} className="mt-1" placeholder={`Ex: ${intPerInst.toFixed(2).replace(".", ",")}`} />
+                        <Input type="number" step="0.01" min={0} max={cicloJurosFaltante} value={renegotiateAmount || ""} onChange={(e) => setRenegotiateAmount(Number(e.target.value) || 0)} className="mt-1" placeholder={`Ex: ${cicloJurosFaltante.toFixed(2).replace(".", ",")}`} />
                       </div>
                       <div>
                         <Label className="text-sm font-medium">Data do pagamento *</Label>
@@ -801,6 +1061,12 @@ export default function ClienteEmprestimosPage() {
                         <span className="text-gray-700 dark:text-zinc-300">Juros total da parcela:</span>
                         <span className="font-bold text-gray-900 dark:text-zinc-100">{formatCurrency(intPerInst)}</span>
                       </div>
+                      {cicloJurosPago > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-yellow-600 dark:text-yellow-400">💳 Já pago neste ciclo:</span>
+                          <span className="font-bold text-yellow-600 dark:text-yellow-400">- {formatCurrency(cicloJurosPago)}</span>
+                        </div>
+                      )}
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-700 dark:text-zinc-300">Valor pago agora:</span>
                         <span className="font-bold text-gray-900 dark:text-zinc-100">- {formatCurrency(renegotiateAmount)}</span>
@@ -810,6 +1076,9 @@ export default function ClienteEmprestimosPage() {
                         <span className="text-gray-700 dark:text-zinc-300 font-semibold">Juros pendente final:</span>
                         <span className="font-bold text-cyan-600 text-base">{formatCurrency(jurosPendente)}</span>
                       </div>
+                      {jurosPendente === 0 && renegotiateAmount > 0 && (
+                        <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1">✅ Juros completo! A dívida renovará para o próximo mês.</p>
+                      )}
                     </div>
                   </div>
                 )
@@ -826,8 +1095,8 @@ export default function ClienteEmprestimosPage() {
                   </div>
                   <div className="flex justify-end gap-3 pt-2">
                     <Button variant="outline" onClick={() => { setRenegotiateDialog(null); setRenegotiateMode(null); setRenegotiateAmount(0); setRenegotiateNotes("") }}>Cancelar</Button>
-                    <Button onClick={handleRenegotiatePayment} disabled={!renegotiateAmount || renegotiateAmount <= 0} className="bg-emerald-600 hover:bg-emerald-700 text-white">
-                      {renegotiateMode === "partial" ? "Registrar Pagamento Parcial" : "Registrar Pagamento de Juros"}
+                    <Button onClick={handleRenegotiatePayment} disabled={!renegotiateAmount || renegotiateAmount <= 0 || paying} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                      {paying ? "Processando..." : renegotiateMode === "partial" ? "Registrar Pagamento Parcial" : "Registrar Pagamento de Juros"}
                     </Button>
                   </div>
                 </div>
@@ -933,7 +1202,7 @@ export default function ClienteEmprestimosPage() {
 
               <div className="flex justify-end gap-3 pt-2">
                 <Button variant="outline" onClick={() => { setPaymentDialog(null); resetPaymentForm() }}>Cancelar</Button>
-                <Button onClick={handlePayment} disabled={!payAmount || payAmount <= 0} className="bg-emerald-600 hover:bg-emerald-700 text-white">Registrar Pagamento</Button>
+                <Button onClick={handlePayment} disabled={!payAmount || payAmount <= 0 || paying} className="bg-emerald-600 hover:bg-emerald-700 text-white">{paying ? "Processando..." : "Registrar Pagamento"}</Button>
               </div>
             </div>
           )
@@ -1013,6 +1282,102 @@ export default function ClienteEmprestimosPage() {
             </>
           )}
         </div>
+      </Dialog>
+
+      {/* Dialog Comprovante de Pagamento */}
+      <Dialog open={paymentReceiptDialog} onClose={() => setPaymentReceiptDialog(false)} className="max-w-md">
+        {paymentReceiptInfo && (
+          <div className="space-y-5">
+            <div className="text-center">
+              <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-950/30">
+                <Receipt className="h-6 w-6 text-emerald-600" />
+              </div>
+              <h2 className="text-lg font-bold text-emerald-600">Pagamento Registrado!</h2>
+              <p className="text-sm text-gray-500 dark:text-zinc-400">Deseja baixar ou enviar o comprovante?</p>
+            </div>
+
+            <div className="rounded-lg border border-gray-200 dark:border-zinc-700 p-4 space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-500 dark:text-zinc-400">Tipo:</span>
+                <span className="font-semibold text-gray-900 dark:text-zinc-100">{paymentReceiptInfo.type}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500 dark:text-zinc-400">Cliente:</span>
+                <span className="font-bold text-gray-900 dark:text-zinc-100">{paymentReceiptInfo.clientName}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500 dark:text-zinc-400">Parcela:</span>
+                <span className="font-semibold text-gray-900 dark:text-zinc-100">{paymentReceiptInfo.installmentLabel}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500 dark:text-zinc-400">Valor Pago:</span>
+                <span className="font-bold text-emerald-600">{formatCurrency(paymentReceiptInfo.amount)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500 dark:text-zinc-400">Data:</span>
+                <span className="font-semibold text-gray-900 dark:text-zinc-100">{paymentReceiptInfo.date}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500 dark:text-zinc-400">Saldo Restante:</span>
+                <span className="font-bold text-gray-900 dark:text-zinc-100">{formatCurrency(paymentReceiptInfo.remainingBalance)}</span>
+              </div>
+            </div>
+
+            {paymentReceiptInfo.isCompleted && (
+              <div className="flex items-center justify-center gap-2 rounded-lg bg-emerald-100 dark:bg-emerald-950/40 py-2.5 px-4">
+                <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                <span className="font-bold text-emerald-700 dark:text-emerald-400">Contrato Quitado!</span>
+              </div>
+            )}
+
+            <div className="grid grid-cols-3 gap-2">
+              <Button
+                className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+                onClick={() => {
+                  const text = `📋 *Comprovante de Pagamento*\n\n📌 Tipo: ${paymentReceiptInfo.type}\n👤 Cliente: ${paymentReceiptInfo.clientName}\n📄 Parcela: ${paymentReceiptInfo.installmentLabel}\n💰 Valor Pago: ${formatCurrency(paymentReceiptInfo.amount)}\n📅 Data: ${paymentReceiptInfo.date}\n💵 Saldo Restante: ${formatCurrency(paymentReceiptInfo.remainingBalance)}${paymentReceiptInfo.isCompleted ? "\n\n✅ *Contrato Quitado!*" : ""}`
+                  navigator.clipboard.writeText(text)
+                  alert("Copiado!")
+                }}
+              >
+                <Copy className="h-4 w-4" /> Copiar
+              </Button>
+              <Button
+                className="gap-1.5 bg-green-600 hover:bg-green-700 text-white"
+                onClick={() => {
+                  const text = `📋 *Comprovante de Pagamento*\n\n📌 Tipo: ${paymentReceiptInfo.type}\n👤 Cliente: ${paymentReceiptInfo.clientName}\n📄 Parcela: ${paymentReceiptInfo.installmentLabel}\n💰 Valor Pago: ${formatCurrency(paymentReceiptInfo.amount)}\n📅 Data: ${paymentReceiptInfo.date}\n💵 Saldo Restante: ${formatCurrency(paymentReceiptInfo.remainingBalance)}${paymentReceiptInfo.isCompleted ? "\n\n✅ *Contrato Quitado!*" : ""}`
+                  const encoded = encodeURIComponent(text)
+                  window.open(`https://wa.me/?text=${encoded}`, "_blank")
+                }}
+              >
+                <Send className="h-4 w-4" /> Para Mim
+              </Button>
+              <Button
+                className="gap-1.5 bg-emerald-800 hover:bg-emerald-900 text-white"
+                onClick={() => {
+                  const printContent = `
+                    <html><head><title>Comprovante</title>
+                    <style>body{font-family:sans-serif;padding:40px;max-width:400px;margin:auto}
+                    h2{color:#059669;text-align:center}table{width:100%;border-collapse:collapse;margin:20px 0}
+                    td{padding:8px 4px;border-bottom:1px solid #e5e7eb}td:first-child{color:#6b7280}td:last-child{text-align:right;font-weight:600}
+                    .badge{background:#d1fae5;color:#047857;padding:8px 16px;border-radius:8px;text-align:center;font-weight:700;margin-top:16px}</style></head>
+                    <body><h2>📋 Comprovante de Pagamento</h2>
+                    <table><tr><td>Tipo:</td><td>${paymentReceiptInfo.type}</td></tr>
+                    <tr><td>Cliente:</td><td>${paymentReceiptInfo.clientName}</td></tr>
+                    <tr><td>Parcela:</td><td>${paymentReceiptInfo.installmentLabel}</td></tr>
+                    <tr><td>Valor Pago:</td><td style="color:#059669">${formatCurrency(paymentReceiptInfo.amount)}</td></tr>
+                    <tr><td>Data:</td><td>${paymentReceiptInfo.date}</td></tr>
+                    <tr><td>Saldo Restante:</td><td>${formatCurrency(paymentReceiptInfo.remainingBalance)}</td></tr></table>
+                    ${paymentReceiptInfo.isCompleted ? '<div class="badge">✅ Contrato Quitado!</div>' : ""}
+                    </body></html>`
+                  const w = window.open("", "_blank")
+                  if (w) { w.document.write(printContent); w.document.close(); w.print() }
+                }}
+              >
+                <Download className="h-4 w-4" /> PDF
+              </Button>
+            </div>
+          </div>
+        )}
       </Dialog>
     </div>
   )

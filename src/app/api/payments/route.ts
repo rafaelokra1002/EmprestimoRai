@@ -22,7 +22,7 @@ export async function POST(request: Request) {
       data: {
         loanId,
         amount: parseFloat(amount),
-        date: new Date(date),
+        date: new Date(date.includes("T") ? date : date + "T12:00:00"),
         notes,
       },
     })

@@ -6,32 +6,38 @@ import { Loader2, User, Building2, Phone, ExternalLink, Info, MessageCircle, Set
 
 /* ─── Default template contents ─── */
 const DEFAULT_TEMPLATES: Record<string, string> = {
-  ATRASO: `⚠ *Atenção {CLIENTE}*
+  ATRASO: `👤 Cliente: {CLIENTE}
 
-🧧 *PARCELA EM ATRASO*
+🔴 PARCELA EM ATRASO
 
-💵 *Valor:* {VALOR}
-📅 *{PARCELA}*
-📆 *Vencimento:* {DATA}
-😡 *Dias em Atraso:* {DIAS_ATRASO}
-{MULTA}{JUROS}{TOTAL}
+📅 Data de vencimento: {DATA}
 
-{PROGRESSO}
+💰 pagamento total: {TOTAL}
 
-{PIX}`,
-  VENCE_HOJE: `Olá *{CLIENTE}*!
+🔄 Valor para regularização parcial (juros): {JUROS}
 
-📆 *VENCIMENTO HOJE*
+📆 Dias em atraso: {DIAS_ATRASO} dias
 
-💵 *Valor:* {VALOR}
-📅 *{PARCELA}*
-📆 *Vencimento:* Hoje ({DATA})
+⚠️ Multa por atraso: R$ 15,00 por dia
 
-{PROGRESSO}
 
-{PIX}
+💳 Chave Pix: {PIX}`,
+  VENCE_HOJE: `👤 Cliente: {CLIENTE}
 
-Evite juros e multas pagando em dia!`,
+  VENCIMENTO HOJE
+
+📅 Data de vencimento: {DATA}
+
+💰 pagamento total : {TOTAL}
+
+🔄 Opção de renovação:
+Pague {JUROS} (juros) e receba +30 dias de prazo.
+
+⚠️ Em caso de atraso,
+será cobrado R$ 15,00 por dia.
+
+
+💳 Chave Pix: {PIX}`,
   ANTECIPADA: `Olá *{CLIENTE}*!
 
 📅 *LEMBRETE DE PAGAMENTO*

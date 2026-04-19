@@ -63,6 +63,7 @@ export default function EditarEmprestimoPage() {
   const [skipSunday, setSkipSunday] = useState(false)
   const [skipHolidays, setSkipHolidays] = useState(false)
   const [dailyInterest, setDailyInterest] = useState(false)
+  const [dailyInterestAmount, setDailyInterestAmount] = useState(0)
   const [whatsappNotify, setWhatsappNotify] = useState(false)
   const [installmentDates, setInstallmentDates] = useState<string[]>([])
   const [notes, setNotes] = useState("")
@@ -102,6 +103,7 @@ export default function EditarEmprestimoPage() {
         setLoanTags(Array.isArray(data.tags) ? data.tags : [])
         setWhatsappNotify(Boolean(data.whatsappNotify))
         setDailyInterest(Boolean(data.dailyInterest))
+        setDailyInterestAmount(data.dailyInterestAmount || 0)
         if (Array.isArray(data.installments)) {
           const sorted = [...data.installments].sort((a, b) => a.number - b.number)
           setInstallmentDates(sorted.map((inst) => inst.dueDate.split("T")[0]))
@@ -192,6 +194,7 @@ export default function EditarEmprestimoPage() {
           skipSunday,
           skipHolidays,
           dailyInterest,
+          dailyInterestAmount: dailyInterest ? dailyInterestAmount : 0,
           whatsappNotify,
           installmentDates,
           notes: notes || undefined,
@@ -432,6 +435,13 @@ export default function EditarEmprestimoPage() {
           <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-zinc-300">
             <input type="checkbox" checked={dailyInterest} onChange={(e) => setDailyInterest(e.target.checked)} /> Juros diário
           </label>
+          {dailyInterest && (
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-gray-700 dark:text-zinc-300">R$</label>
+              <input type="number" step="0.01" min="0" value={dailyInterestAmount || ""} onChange={(e) => setDailyInterestAmount(parseFloat(e.target.value) || 0)} className="w-24 px-2 py-1 text-sm border rounded dark:bg-zinc-800 dark:border-zinc-700 dark:text-white" placeholder="0.00" />
+              <span className="text-sm text-gray-500 dark:text-zinc-400">/dia</span>
+            </div>
+          )}
           <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-zinc-300">
             <input type="checkbox" checked={whatsappNotify} onChange={(e) => setWhatsappNotify(e.target.checked)} /> Notificar WhatsApp
           </label>
