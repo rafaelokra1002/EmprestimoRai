@@ -470,9 +470,14 @@ export default function EmprestimosPage() {
   const getLoanStatusInfo = (loan: Loan) => {
     if (loan.status === "COMPLETED") return { label: "Quitado", color: "bg-blue-50 dark:bg-blue-950/300/20 text-blue-600" }
     if (loan.status === "DEFAULTED") return { label: "Inadimplente", color: "bg-red-50 dark:bg-red-950/300/20 text-red-600" }
-    const paid = loan.payments.reduce((s: number, p: any) => s + p.amount, 0)
-    const interest = loan.totalAmount - loan.amount
-    if (interest > 0 && paid >= interest && paid < loan.totalAmount) return { label: "Só Juros", color: "bg-purple-50 dark:bg-purple-950/20 text-purple-600" }
+    const hasInterestPayment = loan.payments.some((p: any) => {
+      const notes = (p.notes || "").toLowerCase()
+      return notes.includes("só juros") || notes.includes("parcial de juros")
+    })
+    if (hasInterestPayment) {
+      const hasOverdue = loan.installments.some((i: any) => i.status !== "PAID" && toDateStr(new Date(i.dueDate)) < todayStr)
+      if (!hasOverdue) return { label: "Só Juros", color: "bg-purple-50 dark:bg-purple-950/20 text-purple-600" }
+    }
     const hasOverdue = loan.installments.some((i: any) => {
       if (i.status === "PAID") return false
       return toDateStr(new Date(i.dueDate)) < todayStr
@@ -879,9 +884,13 @@ export default function EmprestimosPage() {
     } else if (loanFilter === "interest_only") {
       result = result.filter(l => {
         if (l.status === "COMPLETED") return false
-        const paid = l.payments.reduce((s: number, p: any) => s + p.amount, 0)
-        const interest = l.totalAmount - l.amount
-        return interest > 0 && paid >= interest && paid < l.totalAmount
+        const hasInterestPayment = l.payments.some((p: any) => {
+          const notes = (p.notes || "").toLowerCase()
+          return notes.includes("só juros") || notes.includes("parcial de juros")
+        })
+        if (!hasInterestPayment) return false
+        const hasOverdue = l.installments.some((i: any) => i.status !== "PAID" && toDateStr(new Date(i.dueDate)) < todayStr)
+        return !hasOverdue
       })
     } else if (loanFilter === "monthly") {
       result = result.filter(l => l.modality === "MONTHLY")
@@ -1135,17 +1144,18 @@ export default function EmprestimosPage() {
               const profitPct = loan.profit > 0 ? Math.round((receivedProfit / loan.profit) * 100) : 0
               const nextInst = getNextDueInst(loan)
               const intPerInst = interestPerInst(loan)
+
+              const isAtrasado = status.label === "Atrasado" || status.label === "Inadimplente"
+              const isSoJuros = status.label === "Só Juros"
+              const isQuitado = status.label === "Quitado"
               const isDueToday = nextInst && toDateStr(new Date(nextInst.dueDate)) === todayStr
-              const isPending = status.label === "Pendente"
-              const isOrange = isDueToday || isPending
 
-              const isPrice = loan.interestType === "TOTAL" || loan.interestType === "FIXED_AMOUNT"
-
-              const cardBorder = isPrice ? "border-blue-400 dark:border-blue-700" : isOrange ? "border-orange-400 dark:border-orange-700" : status.label === "Atrasado" || status.label === "Inadimplente" ? "border-red-400 dark:border-red-700" : status.label === "Só Juros" ? "border-purple-400 dark:border-purple-700" : status.label === "Quitado" ? "border-blue-400 dark:border-blue-700" : "border-emerald-400 dark:border-emerald-700"
-              const cardBg = isPrice ? "bg-blue-100 dark:bg-blue-950/30" : isOrange ? "bg-orange-100 dark:bg-orange-950/30" : status.label === "Atrasado" || status.label === "Inadimplente" ? "bg-red-100 dark:bg-red-950/30" : status.label === "Só Juros" ? "bg-purple-100 dark:bg-purple-950/30" : status.label === "Quitado" ? "bg-blue-100 dark:bg-blue-950/30" : "bg-emerald-100 dark:bg-emerald-950/30"
-              const remainingColor = isPrice ? "text-blue-700 dark:text-blue-400" : isOrange ? "text-orange-700 dark:text-orange-400" : status.label === "Atrasado" || status.label === "Inadimplente" ? "text-red-700 dark:text-red-400" : status.label === "Só Juros" ? "text-purple-700 dark:text-purple-400" : status.label === "Quitado" ? "text-blue-700 dark:text-blue-400" : "text-emerald-700 dark:text-emerald-400"
-              const remainingBg = isPrice ? "bg-blue-100 dark:bg-blue-900/40" : isOrange ? "bg-orange-100 dark:bg-orange-900/40" : status.label === "Atrasado" || status.label === "Inadimplente" ? "bg-red-100 dark:bg-red-900/40" : status.label === "Só Juros" ? "bg-purple-100 dark:bg-purple-900/40" : status.label === "Quitado" ? "bg-blue-100 dark:bg-blue-900/40" : "bg-emerald-100 dark:bg-emerald-900/40"
-              const cellBg = isPrice ? "bg-blue-50 dark:bg-blue-950/20" : isOrange ? "bg-orange-50 dark:bg-orange-950/20" : status.label === "Atrasado" || status.label === "Inadimplente" ? "bg-red-50 dark:bg-red-950/20" : status.label === "Só Juros" ? "bg-purple-50 dark:bg-purple-950/20" : status.label === "Quitado" ? "bg-blue-50 dark:bg-blue-950/20" : "bg-emerald-50 dark:bg-emerald-950/20"
+              // Cores: Vence hoje=laranja, Atrasado=vermelho, Só Juros=roxo, Quitado=azul, resto=branco
+              const cardBorder = isDueToday ? "border-orange-400 dark:border-orange-700" : isAtrasado ? "border-red-400 dark:border-red-700" : isSoJuros ? "border-purple-400 dark:border-purple-700" : isQuitado ? "border-blue-400 dark:border-blue-700" : "border-gray-200 dark:border-zinc-700"
+              const cardBg = isDueToday ? "bg-orange-100 dark:bg-orange-950/30" : isAtrasado ? "bg-red-100 dark:bg-red-950/30" : isSoJuros ? "bg-purple-100 dark:bg-purple-950/30" : isQuitado ? "bg-blue-100 dark:bg-blue-950/30" : "bg-white dark:bg-zinc-900"
+              const remainingColor = isDueToday ? "text-orange-700 dark:text-orange-400" : isAtrasado ? "text-red-700 dark:text-red-400" : isSoJuros ? "text-purple-700 dark:text-purple-400" : isQuitado ? "text-blue-700 dark:text-blue-400" : "text-gray-900 dark:text-zinc-100"
+              const remainingBg = isDueToday ? "bg-orange-100 dark:bg-orange-900/40" : isAtrasado ? "bg-red-100 dark:bg-red-900/40" : isSoJuros ? "bg-purple-100 dark:bg-purple-900/40" : isQuitado ? "bg-blue-100 dark:bg-blue-900/40" : "bg-gray-100 dark:bg-zinc-800"
+              const cellBg = isDueToday ? "bg-orange-50 dark:bg-orange-950/20" : isAtrasado ? "bg-red-50 dark:bg-red-950/20" : isSoJuros ? "bg-purple-50 dark:bg-purple-950/20" : isQuitado ? "bg-blue-50 dark:bg-blue-950/20" : "bg-gray-50 dark:bg-zinc-800/50"
 
               return (
                 <div key={group.clientId} className={`rounded-xl border overflow-hidden shadow-sm hover:shadow-md transition-shadow ${cardBorder} ${cardBg}`}>
