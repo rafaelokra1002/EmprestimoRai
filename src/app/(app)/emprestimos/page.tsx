@@ -1149,13 +1149,14 @@ export default function EmprestimosPage() {
               const isSoJuros = status.label === "Só Juros"
               const isQuitado = status.label === "Quitado"
               const isDueToday = nextInst && toDateStr(new Date(nextInst.dueDate)) === todayStr
+              const isParcelado = loan.installmentCount > 1
 
-              // Cores: Vence hoje=laranja, Atrasado=vermelho, Só Juros=roxo, Quitado=azul, resto=branco
-              const cardBorder = isDueToday ? "border-orange-400 dark:border-orange-700" : isAtrasado ? "border-red-400 dark:border-red-700" : isSoJuros ? "border-purple-400 dark:border-purple-700" : isQuitado ? "border-blue-400 dark:border-blue-700" : "border-gray-200 dark:border-zinc-700"
-              const cardBg = isDueToday ? "bg-orange-100 dark:bg-orange-950/30" : isAtrasado ? "bg-red-100 dark:bg-red-950/30" : isSoJuros ? "bg-purple-100 dark:bg-purple-950/30" : isQuitado ? "bg-blue-100 dark:bg-blue-950/30" : "bg-white dark:bg-zinc-900"
-              const remainingColor = isDueToday ? "text-orange-700 dark:text-orange-400" : isAtrasado ? "text-red-700 dark:text-red-400" : isSoJuros ? "text-purple-700 dark:text-purple-400" : isQuitado ? "text-blue-700 dark:text-blue-400" : "text-gray-900 dark:text-zinc-100"
-              const remainingBg = isDueToday ? "bg-orange-100 dark:bg-orange-900/40" : isAtrasado ? "bg-red-100 dark:bg-red-900/40" : isSoJuros ? "bg-purple-100 dark:bg-purple-900/40" : isQuitado ? "bg-blue-100 dark:bg-blue-900/40" : "bg-gray-100 dark:bg-zinc-800"
-              const cellBg = isDueToday ? "bg-orange-50 dark:bg-orange-950/20" : isAtrasado ? "bg-red-50 dark:bg-red-950/20" : isSoJuros ? "bg-purple-50 dark:bg-purple-950/20" : isQuitado ? "bg-blue-50 dark:bg-blue-950/20" : "bg-gray-50 dark:bg-zinc-800/50"
+              // Cores: Vence hoje=laranja, Atrasado=vermelho, Só Juros=roxo, Quitado=azul, Parcelado=azul, resto=branco
+              const cardBorder = isAtrasado ? "border-red-400 dark:border-red-700" : isDueToday ? "border-orange-400 dark:border-orange-700" : isSoJuros ? "border-purple-400 dark:border-purple-700" : isQuitado ? "border-blue-400 dark:border-blue-700" : isParcelado ? "border-blue-400 dark:border-blue-700" : "border-gray-200 dark:border-zinc-700"
+              const cardBg = isAtrasado ? "bg-red-100 dark:bg-red-950/30" : isDueToday ? "bg-orange-100 dark:bg-orange-950/30" : isSoJuros ? "bg-purple-100 dark:bg-purple-950/30" : isQuitado ? "bg-blue-100 dark:bg-blue-950/30" : isParcelado ? "bg-blue-100 dark:bg-blue-950/30" : "bg-white dark:bg-zinc-900"
+              const remainingColor = isAtrasado ? "text-red-700 dark:text-red-400" : isDueToday ? "text-orange-700 dark:text-orange-400" : isSoJuros ? "text-purple-700 dark:text-purple-400" : isQuitado ? "text-blue-700 dark:text-blue-400" : isParcelado ? "text-blue-700 dark:text-blue-400" : "text-gray-900 dark:text-zinc-100"
+              const remainingBg = isAtrasado ? "bg-red-100 dark:bg-red-900/40" : isDueToday ? "bg-orange-100 dark:bg-orange-900/40" : isSoJuros ? "bg-purple-100 dark:bg-purple-900/40" : isQuitado ? "bg-blue-100 dark:bg-blue-900/40" : isParcelado ? "bg-blue-100 dark:bg-blue-900/40" : "bg-gray-100 dark:bg-zinc-800"
+              const cellBg = isAtrasado ? "bg-red-50 dark:bg-red-950/20" : isDueToday ? "bg-orange-50 dark:bg-orange-950/20" : isSoJuros ? "bg-purple-50 dark:bg-purple-950/20" : isQuitado ? "bg-blue-50 dark:bg-blue-950/20" : isParcelado ? "bg-blue-50 dark:bg-blue-950/20" : "bg-gray-50 dark:bg-zinc-800/50"
 
               return (
                 <div key={group.clientId} className={`rounded-xl border overflow-hidden shadow-sm hover:shadow-md transition-shadow ${cardBorder} ${cardBg}`}>
