@@ -72,7 +72,7 @@ export function Sidebar() {
       {/* Mobile toggle */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed top-4 left-4 z-50 lg:hidden bg-green-600 border border-green-500 rounded-md p-2 text-white"
+        className="fixed top-4 left-4 z-50 lg:hidden bg-[#0D47FF] border border-[#3D6EFF] rounded-md p-2 text-white"
       >
         {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </button>
@@ -88,17 +88,17 @@ export function Sidebar() {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed top-0 left-0 z-40 h-full w-64 bg-green-600 transition-transform duration-300 ease-in-out overflow-y-auto flex flex-col",
+          "fixed top-0 left-0 z-40 h-full w-64 bg-[#0D47FF] transition-transform duration-300 ease-in-out overflow-y-auto flex flex-col",
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
-        <div className="flex items-center gap-2 p-6 border-b border-green-500">
+        <div className="flex items-center gap-2 p-6 border-b border-[#3D6EFF]">
           <div className="h-8 w-8 rounded-lg bg-white/20 flex items-center justify-center">
             <Banknote className="h-5 w-5 text-white" />
           </div>
           <div>
             <span className="text-lg font-bold text-white">EmprestimoRAI</span>
-            <p className="text-[11px] text-emerald-200">Gestão Financeira</p>
+            <p className="text-[11px] text-blue-200">Gestão Financeira</p>
           </div>
         </div>
 
@@ -116,13 +116,13 @@ export function Sidebar() {
                     "flex items-center gap-3 rounded-xl px-3 py-3 text-sm transition-all",
                     isActive
                       ? "bg-white/20 text-white shadow-sm"
-                      : "bg-green-500/50 text-white/90 hover:bg-green-500/70"
+                      : "bg-[#3D6EFF]/50 text-white/90 hover:bg-[#3D6EFF]/70"
                   )}
                 >
                   <item.icon className="h-5 w-5 shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-sm leading-tight">{item.label}</p>
-                    <p className={cn("text-[11px] leading-tight", isActive ? "text-white/70" : "text-green-200")}>{item.subtitle}</p>
+                    <p className={cn("text-[11px] leading-tight", isActive ? "text-white/70" : "text-blue-200")}>{item.subtitle}</p>
                   </div>
                   <ChevronRight className="h-4 w-4 shrink-0 opacity-40" />
                 </Link>
@@ -146,7 +146,7 @@ export function Sidebar() {
                   <highlightItem.icon className={cn("h-5 w-5 shrink-0", isActive ? "text-white" : "text-amber-300")} />
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-sm leading-tight">{highlightItem.label}</p>
-                    <p className={cn("text-[11px] leading-tight", isActive ? "text-white/70" : "text-green-200")}>{highlightItem.subtitle}</p>
+                    <p className={cn("text-[11px] leading-tight", isActive ? "text-white/70" : "text-blue-200")}>{highlightItem.subtitle}</p>
                   </div>
                   <ChevronRight className="h-4 w-4 shrink-0 opacity-40" />
                 </Link>
@@ -154,7 +154,7 @@ export function Sidebar() {
             })()}
           </div>
 
-          <p className="px-3 pt-1 pb-2 text-[10px] font-semibold uppercase tracking-widest text-green-300">Menu</p>
+          <p className="px-3 pt-1 pb-2 text-[10px] font-semibold uppercase tracking-widest text-blue-200">Menu</p>
 
           {/* Regular menu items */}
           {menuItems.map((item) => {
@@ -168,7 +168,7 @@ export function Sidebar() {
                   "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
                   isActive
                     ? "bg-white/20 text-white shadow-sm"
-                    : "text-green-100 hover:text-white hover:bg-white/10"
+                    : "text-blue-100 hover:text-white hover:bg-white/10"
                 )}
               >
                 <item.icon className="h-4 w-4 shrink-0" />
@@ -179,10 +179,10 @@ export function Sidebar() {
         </nav>
 
         {/* Theme toggle + Sair */}
-        <div className="p-3 border-t border-green-500 mt-auto space-y-1">
+        <div className="p-3 border-t border-[#3D6EFF] mt-auto space-y-1">
           <button
             onClick={toggleTheme}
-            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-green-100 hover:text-white hover:bg-white/10 transition-all w-full"
+            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-blue-100 hover:text-white hover:bg-white/10 transition-all w-full"
           >
             {theme === "light" ? <Moon className="h-4 w-4 shrink-0" /> : <Sun className="h-4 w-4 shrink-0" />}
             <span>{theme === "light" ? "Modo Escuro" : "Modo Claro"}</span>
