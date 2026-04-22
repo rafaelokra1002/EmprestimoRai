@@ -315,131 +315,158 @@ export default function ContasPage() {
     return `${day} de ${month}`
   }
 
+  const saldoAtualEmCaixa = caixaInicial !== null
+    ? caixaInicial
+      - (dashboardData?.capitalOnStreet || 0)
+      + (dashboardData?.totalReceived || 0)
+      - stats.pagasTotal
+    : null
+
+  const caixaKpis = [
+    {
+      title: "Capital na Rua",
+      value: formatCurrency(dashboardData?.capitalOnStreet || 0),
+      icon: TrendingUp,
+      iconClassName: "text-sky-200",
+      iconBgClassName: "bg-sky-400/15",
+    },
+    {
+      title: "Total Recebido",
+      value: formatCurrency(dashboardData?.totalReceived || 0),
+      icon: DollarSign,
+      iconClassName: "text-emerald-200",
+      iconBgClassName: "bg-emerald-400/15",
+    },
+    {
+      title: "Saídas do Mês",
+      value: formatCurrency(stats.pagasTotal),
+      icon: ArrowDownCircle,
+      iconClassName: "text-amber-200",
+      iconBgClassName: "bg-amber-400/15",
+    },
+    {
+      title: "Juros Recebidos",
+      value: formatCurrency(dashboardData?.financials?.pendingInterest || 0),
+      icon: Receipt,
+      iconClassName: "text-violet-200",
+      iconBgClassName: "bg-violet-400/15",
+    },
+  ]
+
   return (
     <div className="space-y-6 pb-12">
-      {/* ===== HEADER ===== */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">Controle de Caixa</h1>
-          <p className="text-sm text-gray-500 dark:text-zinc-400">Acompanhe o saldo disponível e o fluxo de capital</p>
-        </div>
-      </div>
+      <section className="relative overflow-hidden rounded-[32px] border border-indigo-500/30 bg-[#0f1126] px-6 py-7 shadow-[0_24px_90px_-36px_rgba(79,70,229,0.75)] md:px-8">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(129,140,248,0.3),transparent_34%),radial-gradient(circle_at_top_right,rgba(34,211,238,0.16),transparent_28%),linear-gradient(135deg,#181b3a_0%,#11152f_48%,#101323_100%)]" />
+        <div className="pointer-events-none absolute -left-24 top-24 h-56 w-56 rounded-full bg-indigo-500/20 blur-3xl" />
+        <div className="pointer-events-none absolute right-0 top-0 h-72 w-72 rounded-full bg-violet-500/10 blur-3xl" />
 
-      {/* ===== CAIXA CARDS ===== */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="rounded-xl border border-gray-800 dark:border-zinc-700 bg-gradient-to-br from-gray-800 to-gray-900 dark:from-zinc-800 dark:to-zinc-900 p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <div className="h-9 w-9 rounded-lg bg-white/10 flex items-center justify-center">
-                <Receipt className="h-5 w-5 text-emerald-400" />
-              </div>
-              <span className="text-sm font-semibold text-white">Caixa Inicial</span>
+        <div className="relative space-y-5">
+          <div className="flex items-start justify-between">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight text-white">Controle de Caixa</h1>
+              <p className="mt-1 text-sm font-medium text-indigo-100/80">Acompanhe o saldo disponível e o fluxo de capital</p>
             </div>
-            {caixaInicial !== null && (
-              <button onClick={() => { setCaixaInput(caixaInicial.toFixed(2).replace(".", ",")); setCaixaDialogOpen(true) }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/20 text-white/70 text-xs font-medium hover:bg-white/10 transition">
-                <Pencil className="h-3 w-3" /> Editar
-              </button>
-            )}
           </div>
-          {caixaInicial !== null ? (
-            <div>
-              <p className="text-3xl font-bold text-white tabular-nums">{formatCurrency(caixaInicial)}</p>
-              <p className="text-xs text-white/50 mt-1">Caixa inicial</p>
-              <p className="text-xs text-white/50">Definido em {new Date().toLocaleDateString("pt-BR")}</p>
-            </div>
-          ) : (
-            <div>
-              <p className="text-white/60 text-sm">Não configurado</p>
-              <button onClick={() => setCaixaDialogOpen(true)} className="mt-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 text-white text-xs font-medium hover:bg-white/20 transition">
-                <Plus className="h-3.5 w-3.5" /> Configurar agora
-              </button>
-            </div>
-          )}
-        </div>
-        <div className="rounded-xl border border-emerald-600 dark:border-emerald-700 bg-gradient-to-br from-emerald-700 to-emerald-900 dark:from-emerald-800 dark:to-emerald-950 p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="h-9 w-9 rounded-lg bg-white/10 flex items-center justify-center">
-              <Landmark className="h-5 w-5 text-emerald-300" />
-            </div>
-            <span className="text-sm font-semibold text-white">Saldo Atual em Caixa</span>
-          </div>
-          {caixaInicial !== null ? (
-            <div>
-              <p className="text-3xl font-bold text-emerald-300 tabular-nums mb-4">
-                {formatCurrency(
-                  caixaInicial
-                  - (dashboardData?.capitalOnStreet || 0)
-                  + (dashboardData?.totalReceived || 0)
-                  - stats.pagasTotal
-                )}
-              </p>
-              <div className="space-y-2 border-t border-white/10 pt-3">
-                <div className="flex justify-between text-xs">
-                  <span className="text-white/60">Caixa inicial</span>
-                  <span className="text-white font-medium tabular-nums">{formatCurrency(caixaInicial)}</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-white/60">Capital na rua</span>
-                  <span className="text-red-400 font-medium tabular-nums">− {formatCurrency(dashboardData?.capitalOnStreet || 0)}</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-white/60">Entradas (parcelas pagas)</span>
-                  <span className="text-emerald-300 font-medium tabular-nums">+ {formatCurrency(dashboardData?.totalReceived || 0)}</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-white/60">Saídas (despesas do mês)</span>
-                  <span className="text-red-400 font-medium tabular-nums">− {formatCurrency(stats.pagasTotal)}</span>
-                </div>
-                <div className="flex justify-between text-xs border-t border-white/10 pt-2">
-                  <span className="text-white font-semibold">Saldo</span>
-                  <span className="text-emerald-300 font-bold tabular-nums">
-                    {formatCurrency(
-                      caixaInicial
-                      - (dashboardData?.capitalOnStreet || 0)
-                      + (dashboardData?.totalReceived || 0)
-                      - stats.pagasTotal
-                    )}
-                  </span>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <p className="text-white/60 text-sm">Configure o caixa inicial para ver o saldo</p>
-          )}
-        </div>
-      </div>
 
-      {/* ===== MINI KPI CARDS ===== */}
-      <div className="grid grid-cols-4 gap-3">
-        <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
-          <div className="h-8 w-8 rounded-lg bg-blue-50 dark:bg-blue-950/30 flex items-center justify-center mb-2">
-            <TrendingUp className="h-4 w-4 text-blue-600" />
+          <div className="grid gap-4 lg:grid-cols-[1fr_1.05fr]">
+            <div className="rounded-[24px] border border-white/12 bg-white/[0.08] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-md">
+              <div className="mb-5 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-slate-200/10 shadow-inner shadow-white/5">
+                    <Receipt className="h-5 w-5 text-slate-100" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-white">Caixa Inicial</p>
+                  </div>
+                </div>
+                {caixaInicial !== null ? (
+                  <button
+                    onClick={() => { setCaixaInput(caixaInicial.toFixed(2).replace(".", ",")); setCaixaDialogOpen(true) }}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/[0.04] px-3 py-2 text-xs font-semibold text-white/85 transition hover:bg-white/[0.1]"
+                  >
+                    <Pencil className="h-3.5 w-3.5" /> Editar
+                  </button>
+                ) : null}
+              </div>
+
+              {caixaInicial !== null ? (
+                <div>
+                  <p className="text-[2.15rem] font-bold tracking-tight text-white tabular-nums">{formatCurrency(caixaInicial)}</p>
+                  <p className="mt-2 text-sm text-indigo-100/75">Caixa inicial</p>
+                  <p className="text-sm text-indigo-100/65">Definido em {new Date().toLocaleDateString("pt-BR")}</p>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-sm text-indigo-100/80">Não configurado</p>
+                  <button
+                    onClick={() => setCaixaDialogOpen(true)}
+                    className="mt-4 inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/[0.06] px-3 py-2 text-sm font-semibold text-white transition hover:bg-white/[0.12]"
+                  >
+                    <Plus className="h-4 w-4" /> Configurar agora
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-[24px] border border-indigo-300/20 bg-[linear-gradient(180deg,rgba(133,92,248,0.2),rgba(72,52,145,0.12))] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-md">
+              <div className="mb-5 flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-300/15 bg-emerald-300/10 shadow-inner shadow-white/5">
+                  <Landmark className="h-5 w-5 text-emerald-300" />
+                </div>
+                <p className="text-sm font-semibold text-white">Saldo Atual em Caixa</p>
+              </div>
+
+              {caixaInicial !== null && saldoAtualEmCaixa !== null ? (
+                <div>
+                  <p className="mb-5 text-[2.2rem] font-bold tracking-tight text-emerald-400 tabular-nums">{formatCurrency(saldoAtualEmCaixa)}</p>
+                  <div className="space-y-2.5 border-t border-white/10 pt-3.5 text-sm">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-indigo-100/75">Caixa inicial</span>
+                      <span className="font-semibold text-white tabular-nums">{formatCurrency(caixaInicial)}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-indigo-100/75">Capital na rua</span>
+                      <span className="font-semibold text-rose-300 tabular-nums">− {formatCurrency(dashboardData?.capitalOnStreet || 0)}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-indigo-100/75">Entradas (parcelas pagas)</span>
+                      <span className="font-semibold text-emerald-300 tabular-nums">+ {formatCurrency(dashboardData?.totalReceived || 0)}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-indigo-100/75">Saídas (despesas do mês)</span>
+                      <span className="font-semibold text-amber-300 tabular-nums">− {formatCurrency(stats.pagasTotal)}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3 border-t border-white/10 pt-3">
+                      <span className="font-semibold text-white">Saldo</span>
+                      <span className="font-bold text-emerald-400 tabular-nums">{formatCurrency(saldoAtualEmCaixa)}</span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-indigo-100/75">Configure o caixa inicial para ver o saldo</p>
+              )}
+            </div>
           </div>
-          <p className="text-xs text-gray-500 dark:text-zinc-400">Capital na Rua</p>
-          <p className="text-lg font-bold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(dashboardData?.capitalOnStreet || 0)}</p>
-        </div>
-        <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
-          <div className="h-8 w-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center mb-2">
-            <DollarSign className="h-4 w-4 text-emerald-600" />
+
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {caixaKpis.map((item) => {
+              const Icon = item.icon
+              return (
+                <div
+                  key={item.title}
+                  className="rounded-[20px] border border-white/10 bg-white/[0.07] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] backdrop-blur-md"
+                >
+                  <div className={`mb-3 flex h-10 w-10 items-center justify-center rounded-xl ${item.iconBgClassName}`}>
+                    <Icon className={`h-5 w-5 ${item.iconClassName}`} />
+                  </div>
+                  <p className="text-sm font-medium text-indigo-100/75">{item.title}</p>
+                  <p className="mt-1 text-[1.7rem] font-bold tracking-tight text-white tabular-nums">{item.value}</p>
+                </div>
+              )
+            })}
           </div>
-          <p className="text-xs text-gray-500 dark:text-zinc-400">Total Recebido</p>
-          <p className="text-lg font-bold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(dashboardData?.totalReceived || 0)}</p>
         </div>
-        <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
-          <div className="h-8 w-8 rounded-lg bg-red-50 dark:bg-red-950/30 flex items-center justify-center mb-2">
-            <ArrowDownCircle className="h-4 w-4 text-red-500" />
-          </div>
-          <p className="text-xs text-gray-500 dark:text-zinc-400">Saídas do Mês</p>
-          <p className="text-lg font-bold tabular-nums text-red-600 dark:text-red-400">{formatCurrency(stats.pagasTotal)}</p>
-        </div>
-        <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
-          <div className="h-8 w-8 rounded-lg bg-violet-50 dark:bg-violet-950/30 flex items-center justify-center mb-2">
-            <Receipt className="h-4 w-4 text-violet-500" />
-          </div>
-          <p className="text-xs text-gray-500 dark:text-zinc-400">Juros Recebidos</p>
-          <p className="text-lg font-bold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(dashboardData?.financials?.pendingInterest || 0)}</p>
-        </div>
-      </div>
+      </section>
 
       {/* ===== EXPENSE CARDS ===== */}
       {loading ? (

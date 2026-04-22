@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { Avatar } from "@/components/avatar"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Search, Pencil, Trash2, User, MapPin, FileText, Mail, Phone, Instagram, Globe, Briefcase, Users, Camera, Upload, X, Eye, Download, Image, DollarSign } from "lucide-react"
+import { Plus, Search, Pencil, Trash2, User, MapPin, FileText, Mail, Phone, Instagram, Globe, Briefcase, Users, Camera, Upload, X, Eye, Download, Image, DollarSign, LayoutGrid, Rows3 } from "lucide-react"
 
 interface Client {
   id: string
@@ -42,7 +42,26 @@ interface Client {
   score: number
   status: "ACTIVE" | "INACTIVE"
   createdAt: string
-  loans: { id: string; amount: number; status: string }[]
+  loans: {
+    id: string
+    amount: number
+    totalAmount: number
+    profit: number
+    interestRate: number
+    modality: string
+    installmentCount: number
+    dailyInterest: boolean
+    dailyInterestAmount: number
+    status: string
+    installments: {
+      id: string
+      number: number
+      amount: number
+      paidAmount: number
+      status: string
+      dueDate: string
+    }[]
+  }[]
 }
 
 type DialogTab = "dados" | "endereco" | "documentos"
@@ -105,6 +124,7 @@ export default function ClientesPage() {
   const [filtered, setFiltered] = useState<Client[]>([])
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all")
+  const [viewMode, setViewMode] = useState<"table" | "cards">("table")
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<Client | null>(null)
   const [loading, setLoading] = useState(true)
@@ -116,6 +136,7 @@ export default function ClientesPage() {
   const [uploadingDoc, setUploadingDoc] = useState(false)
   const [selectedDocType, setSelectedDocType] = useState("OUTRO")
   const [previewDoc, setPreviewDoc] = useState<{ name: string; data: string; fileType: string } | null>(null)
+  const [profileImagePreview, setProfileImagePreview] = useState<{ name: string; src: string } | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -155,7 +176,7 @@ export default function ClientesPage() {
   }
 
   const fetchClients = async () => {
-    const res = await fetch("/api/clients")
+    const res = await fetch("/api/clients?includeInstallments=true")
     const data = await res.json()
     const list = Array.isArray(data) ? data : []
     setClients(list)
@@ -393,6 +414,25 @@ export default function ClientesPage() {
     return new Date(dateStr).toLocaleDateString("pt-BR")
   }
 
+  const formatCurrency = (value: number | null | undefined) => {
+    if (value == null) return "-"
+    return `R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
+  }
+
+  const getActiveLoanSummary = (client: Client) => {
+    const activeLoan = client.loans.find((loan) => loan.status === "ACTIVE")
+    if (!activeLoan) return null
+
+    const nextInstallment = activeLoan.installments
+      ?.filter((installment) => installment.status !== "PAID")
+      .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0]
+
+    return {
+      loan: activeLoan,
+      nextInstallment,
+    }
+  }
+
   return (
     <div className="space-y-4">
       {/* Title + Criar Empréstimo */}
@@ -419,6 +459,34 @@ export default function ClientesPage() {
           <Users className="h-4 w-4" />
           {filtered.length} clientes
         </div>
+        <div className="flex items-center rounded-lg border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-1">
+          <button
+            type="button"
+            onClick={() => setViewMode("table")}
+            className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors ${
+              viewMode === "table"
+                ? "bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
+                : "text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200"
+            }`}
+            title="Visualizar em tabela"
+          >
+            <Rows3 className="h-4 w-4" />
+            Tabela
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode("cards")}
+            className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors ${
+              viewMode === "cards"
+                ? "bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
+                : "text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200"
+            }`}
+            title="Visualizar em cards"
+          >
+            <LayoutGrid className="h-4 w-4" />
+            Cards
+          </button>
+        </div>
         <div className="flex items-center gap-4 text-sm">
           <button onClick={() => setStatusFilter(statusFilter === "inactive" ? "all" : "inactive")} className={`flex items-center gap-2 transition-opacity ${statusFilter === "inactive" ? "opacity-100" : "opacity-60 hover:opacity-100"}`}>
             <span className="font-semibold text-gray-400 dark:text-zinc-500 tabular-nums">{clients.filter(c => c.status === "INACTIVE" || (!c.loans?.some(l => l.status === "ACTIVE"))).length}</span>
@@ -435,71 +503,210 @@ export default function ClientesPage() {
         </Button>
       </div>
 
-      {/* Table */}
-      <div className="rounded-xl border border-gray-200 dark:border-zinc-800 overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Cliente</TableHead>
-              <TableHead>Cidade</TableHead>
-              <TableHead>Telefone</TableHead>
-              <TableHead>Renda</TableHead>
-              <TableHead>Valor Solicitado</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Score</TableHead>
-              <TableHead>Cadastrado em</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
+      {/* Listing */}
+      {viewMode === "table" ? (
+        <div className="rounded-xl border border-gray-200 dark:border-zinc-800 overflow-hidden">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-8 text-gray-500 dark:text-zinc-400">Carregando...</TableCell>
+                <TableHead>Cliente</TableHead>
+                <TableHead>Cidade</TableHead>
+                <TableHead>Telefone</TableHead>
+                <TableHead>Renda</TableHead>
+                <TableHead>Valor Solicitado</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Score</TableHead>
+                <TableHead>Cadastrado em</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
               </TableRow>
-            ) : filtered.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={9} className="text-center py-8 text-gray-500 dark:text-zinc-400">Nenhum cliente encontrado</TableCell>
-              </TableRow>
-            ) : (
-              filtered.map((client) => (
-                <TableRow key={client.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Avatar name={client.name} src={client.photo} size="sm" />
-                      <span className="font-medium">{client.name}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-gray-500 dark:text-zinc-400">{client.city || "-"}</TableCell>
-                  <TableCell>{client.phone || "-"}</TableCell>
-                  <TableCell className="text-gray-700 dark:text-zinc-300">{client.income ? `R$ ${client.income.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "-"}</TableCell>
-                  <TableCell className="text-gray-700 dark:text-zinc-300">{client.requestedAmount ? `R$ ${client.requestedAmount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "-"}</TableCell>
-                  <TableCell>
-                    <Badge variant={client.status === "ACTIVE" ? "success" : "warning"}>
-                      {client.status === "ACTIVE" ? "Ativo" : "Inativo"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${getScoreColor(client.score)}`}>
-                      {getScoreIcon(client.score)} {client.score}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-gray-500 dark:text-zinc-400">{formatDate(client.createdAt)}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="icon" onClick={() => handleEdit(client)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(client.id)}>
-                        <Trash2 className="h-4 w-4 text-red-600" />
-                      </Button>
-                    </div>
-                  </TableCell>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={9} className="text-center py-8 text-gray-500 dark:text-zinc-400">Carregando...</TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              ) : filtered.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={9} className="text-center py-8 text-gray-500 dark:text-zinc-400">Nenhum cliente encontrado</TableCell>
+                </TableRow>
+              ) : (
+                filtered.map((client) => (
+                  <TableRow key={client.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar name={client.name} src={client.photo} size="sm" />
+                        <span className="font-medium">{client.name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-gray-500 dark:text-zinc-400">{client.city || "-"}</TableCell>
+                    <TableCell>{client.phone || "-"}</TableCell>
+                    <TableCell className="text-gray-700 dark:text-zinc-300">{client.income ? `R$ ${client.income.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "-"}</TableCell>
+                    <TableCell className="text-gray-700 dark:text-zinc-300">{client.requestedAmount ? `R$ ${client.requestedAmount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "-"}</TableCell>
+                    <TableCell>
+                      <Badge variant={client.status === "ACTIVE" ? "success" : "warning"}>
+                        {client.status === "ACTIVE" ? "Ativo" : "Inativo"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${getScoreColor(client.score)}`}>
+                        {getScoreIcon(client.score)} {client.score}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-gray-500 dark:text-zinc-400">{formatDate(client.createdAt)}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button variant="ghost" size="icon" onClick={() => handleEdit(client)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleDelete(client.id)}>
+                          <Trash2 className="h-4 w-4 text-red-600" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      ) : loading ? (
+        <div className="rounded-xl border border-gray-200 dark:border-zinc-800 py-8 text-center text-gray-500 dark:text-zinc-400">
+          Carregando...
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="rounded-xl border border-gray-200 dark:border-zinc-800 py-8 text-center text-gray-500 dark:text-zinc-400">
+          Nenhum cliente encontrado
+        </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {filtered.map((client) => {
+            const loanSummary = getActiveLoanSummary(client)
+            const activeLoan = loanSummary?.loan
+            const nextInstallment = loanSummary?.nextInstallment
+            const hasActiveLoan = Boolean(activeLoan)
+
+            return (
+              <div key={client.id} className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <button
+                      type="button"
+                      onClick={() => client.photo && setProfileImagePreview({ name: client.name, src: client.photo })}
+                      className={`${client.photo ? "cursor-zoom-in" : "cursor-default"}`}
+                      title={client.photo ? "Ampliar foto" : undefined}
+                    >
+                      <Avatar name={client.name} src={client.photo} size="lg" className="h-16 w-16" />
+                    </button>
+                    <div className="min-w-0">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100 truncate">{client.name}</h3>
+                      <p className="text-base text-gray-500 dark:text-zinc-400 truncate">{client.phone || client.email || "Sem contato"}</p>
+                    </div>
+                  </div>
+                  <Badge variant={client.status === "ACTIVE" ? "success" : "warning"}>
+                    {client.status === "ACTIVE" ? "Ativo" : "Inativo"}
+                  </Badge>
+                </div>
+
+                <div className="mt-4 grid grid-cols-2 gap-3 text-base">
+                  <div className="rounded-lg bg-gray-50 dark:bg-zinc-800 p-3">
+                    <p className="text-sm text-gray-400 dark:text-zinc-500">Cidade</p>
+                    <p className="mt-1 text-base font-medium text-gray-900 dark:text-zinc-100">{client.city || "-"}</p>
+                  </div>
+                  <div className="rounded-lg bg-gray-50 dark:bg-zinc-800 p-3">
+                    <p className="text-sm text-gray-400 dark:text-zinc-500">Cadastrado em</p>
+                    <p className="mt-1 text-base font-medium text-gray-900 dark:text-zinc-100">{formatDate(client.createdAt)}</p>
+                  </div>
+                  <div className="rounded-lg bg-gray-50 dark:bg-zinc-800 p-3">
+                    <p className="text-sm text-gray-400 dark:text-zinc-500">Renda</p>
+                    <p className="mt-1 text-base font-medium text-gray-900 dark:text-zinc-100">{client.income ? `R$ ${client.income.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "-"}</p>
+                  </div>
+                  <div className="rounded-lg bg-gray-50 dark:bg-zinc-800 p-3">
+                    <p className="text-sm text-gray-400 dark:text-zinc-500">Valor solicitado</p>
+                    <p className="mt-1 text-base font-medium text-gray-900 dark:text-zinc-100">{formatCurrency(client.requestedAmount)}</p>
+                  </div>
+                </div>
+
+                <div className="mt-4 rounded-xl border border-emerald-100 dark:border-emerald-900/40 bg-emerald-50/60 dark:bg-emerald-950/20 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400">
+                      {hasActiveLoan ? "Empréstimo ativo" : "Sem empréstimo ativo"}
+                    </p>
+                    {activeLoan?.dailyInterest && (
+                      <span className="rounded-full bg-orange-100 dark:bg-orange-950/40 px-2.5 py-1 text-xs font-medium text-orange-700 dark:text-orange-400">
+                        Juros diário {formatCurrency(activeLoan.dailyInterestAmount)}
+                      </span>
+                    )}
+                  </div>
+
+                  {activeLoan ? (
+                    <div className="mt-3 grid grid-cols-2 gap-3 text-base">
+                      <div>
+                        <p className="text-sm text-gray-500 dark:text-zinc-400">Valor emprestado</p>
+                        <p className="mt-1 text-base font-semibold text-gray-900 dark:text-zinc-100">{formatCurrency(activeLoan.amount)}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500 dark:text-zinc-400">Próximo pagamento</p>
+                        <p className="mt-1 text-base font-semibold text-gray-900 dark:text-zinc-100">
+                          {nextInstallment ? formatDate(nextInstallment.dueDate) : "Sem pendência"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500 dark:text-zinc-400">Parcela atual</p>
+                        <p className="mt-1 text-base font-semibold text-gray-900 dark:text-zinc-100">
+                          {nextInstallment ? `${nextInstallment.number}/${activeLoan.installmentCount}` : `${activeLoan.installmentCount}/${activeLoan.installmentCount}`}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500 dark:text-zinc-400">Valor a pagar</p>
+                        <p className="mt-1 text-base font-semibold text-gray-900 dark:text-zinc-100">
+                          {nextInstallment ? formatCurrency(nextInstallment.amount - nextInstallment.paidAmount) : formatCurrency(0)}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-base text-gray-500 dark:text-zinc-400">Nenhum empréstimo ativo para exibir cobrança.</p>
+                  )}
+                </div>
+
+                <div className="mt-4 flex items-center justify-between gap-3">
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold ${getScoreColor(client.score)}`}>
+                    {getScoreIcon(client.score)} {client.score}
+                  </span>
+                  <span className={`text-sm font-medium ${hasActiveLoan ? "text-emerald-600 dark:text-emerald-400" : "text-gray-500 dark:text-zinc-400"}`}>
+                    {hasActiveLoan ? "Com empréstimo ativo" : "Sem empréstimo ativo"}
+                  </span>
+                </div>
+
+                <div className="mt-4 flex justify-end gap-2 border-t border-gray-100 dark:border-zinc-800 pt-3">
+                  <Button variant="ghost" size="icon" onClick={() => handleEdit(client)} title="Editar cliente">
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => handleDelete(client.id)} title="Excluir cliente">
+                    <Trash2 className="h-4 w-4 text-red-600" />
+                  </Button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      <Dialog
+        open={Boolean(profileImagePreview)}
+        onClose={() => setProfileImagePreview(null)}
+        title={profileImagePreview?.name || "Foto do perfil"}
+        className="max-w-2xl"
+      >
+        {profileImagePreview && (
+          <div className="flex justify-center">
+            <img
+              src={profileImagePreview.src}
+              alt={`Foto de ${profileImagePreview.name}`}
+              className="max-h-[82vh] w-auto rounded-xl object-contain"
+            />
+          </div>
+        )}
+      </Dialog>
 
       {/* Dialog Novo / Editar Cliente */}
       <Dialog

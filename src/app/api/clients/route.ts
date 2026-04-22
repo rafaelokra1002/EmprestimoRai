@@ -45,10 +45,16 @@ export async function GET(request: Request) {
                 amount: true,
                 totalAmount: true,
                 profit: true,
+                interestRate: true,
+                modality: true,
+                installmentCount: true,
+                dailyInterest: true,
+                dailyInterestAmount: true,
                 status: true,
                 installments: {
                   select: {
                     id: true,
+                    number: true,
                     amount: true,
                     paidAmount: true,
                     status: true,
