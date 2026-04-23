@@ -463,7 +463,7 @@ export default function ClientesPage() {
               <DollarSign className="h-4 w-4" />
               Criar Empréstimo
             </Button>
-            <Button onClick={openNewClient} className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 whitespace-nowrap">
+            <Button onClick={() => openNewClient()} className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 whitespace-nowrap">
               <Plus className="h-4 w-4" />
               Novo Cliente
             </Button>
