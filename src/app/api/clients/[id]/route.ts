@@ -137,10 +137,13 @@ export async function PATCH(
 
     const body = await request.json()
 
-    // Only allow specific partial updates (e.g. score)
+    // Only allow specific partial updates (e.g. score, status)
     const allowedFields: Record<string, any> = {}
     if (typeof body.score === "number") {
       allowedFields.score = Math.max(0, Math.min(200, body.score))
+    }
+    if (typeof body.status === "string" && ["ACTIVE", "INACTIVE", "DESAPARECIDO"].includes(body.status)) {
+      allowedFields.status = body.status
     }
 
     if (Object.keys(allowedFields).length === 0) {

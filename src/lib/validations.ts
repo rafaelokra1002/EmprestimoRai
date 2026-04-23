@@ -29,7 +29,7 @@ export const clientSchema = z.object({
   complement: z.preprocess(emptyToUndefined, z.string().optional()),
   number: z.preprocess(emptyToUndefined, z.string().optional()),
   notes: z.preprocess(emptyToUndefined, z.string().optional()),
-  status: z.enum(["ACTIVE", "INACTIVE"]).default("ACTIVE"),
+  status: z.enum(["ACTIVE", "INACTIVE", "DESAPARECIDO"]).default("ACTIVE"),
 })
 
 export const loanSchema = z.object({

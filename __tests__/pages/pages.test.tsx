@@ -160,6 +160,23 @@ describe("ClientesPage", () => {
   })
 })
 
+describe("ClientesDesaparecidosPage", () => {
+  let ClientesDesaparecidosPage: any
+
+  beforeAll(async () => {
+    const mod = await import("@/app/(app)/clientes/desaparecido/page")
+    ClientesDesaparecidosPage = mod.default
+  })
+
+  it("renders and calls API", async () => {
+    const { container } = render(<ClientesDesaparecidosPage />)
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalled()
+    })
+    expect(container.firstChild).toBeTruthy()
+  })
+})
+
 // ─── Empréstimos page ──────────────────────────────────────────
 describe("EmprestimosPage", () => {
   let EmprestimosPage: any

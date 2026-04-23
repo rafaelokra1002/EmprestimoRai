@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useRef } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { clientSchema, ClientFormData } from "@/lib/validations"
@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { Avatar } from "@/components/avatar"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Search, Pencil, Trash2, User, MapPin, FileText, Mail, Phone, Instagram, Globe, Briefcase, Users, Camera, Upload, X, Eye, Download, Image, DollarSign, LayoutGrid, Rows3 } from "lucide-react"
+import { Plus, Search, Pencil, Trash2, User, MapPin, FileText, Mail, Phone, Instagram, Globe, Briefcase, Users, Camera, Upload, X, Eye, Download, Image, DollarSign, LayoutGrid, Rows3, CalendarDays, Flame } from "lucide-react"
 
 interface Client {
   id: string
@@ -40,7 +40,7 @@ interface Client {
   number: string | null
   notes: string | null
   score: number
-  status: "ACTIVE" | "INACTIVE"
+  status: "ACTIVE" | "INACTIVE" | "DESAPARECIDO"
   createdAt: string
   loans: {
     id: string
@@ -120,6 +120,7 @@ function cepMask(value: string) {
 
 export default function ClientesPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [clients, setClients] = useState<Client[]>([])
   const [filtered, setFiltered] = useState<Client[]>([])
   const [search, setSearch] = useState("")
@@ -154,6 +155,8 @@ export default function ClientesPage() {
   const watchStatus = watch("status")
   const watchReferral = watch("referral")
   const watchZipCode = watch("zipCode") || ""
+  const newClientMode = searchParams.get("novo")
+  const requestedStatus = searchParams.get("status")
 
   const searchCep = async () => {
     const cep = watchZipCode.replace(/\D/g, "")
@@ -187,12 +190,14 @@ export default function ClientesPage() {
   useEffect(() => { fetchClients() }, [])
 
   useEffect(() => {
-    let list = clients.filter((c) =>
-      c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.email?.toLowerCase().includes(search.toLowerCase()) ||
-      c.phone?.includes(search) ||
-      c.document?.includes(search)
-    )
+    let list = clients
+      .filter((client) => client.status !== "DESAPARECIDO")
+      .filter((c) =>
+        c.name.toLowerCase().includes(search.toLowerCase()) ||
+        c.email?.toLowerCase().includes(search.toLowerCase()) ||
+        c.phone?.includes(search) ||
+        c.document?.includes(search)
+      )
     if (statusFilter === "active") {
       list = list.filter(c => c.status === "ACTIVE" || c.loans?.some(l => l.status === "ACTIVE"))
     } else if (statusFilter === "inactive") {
@@ -359,7 +364,7 @@ export default function ClientesPage() {
     }
   }
 
-  const openNewClient = () => {
+  const openNewClient = (initialStatus: Client["status"] = "ACTIVE") => {
     setEditing(null)
     setFormError(null)
     reset({
@@ -370,12 +375,19 @@ export default function ClientesPage() {
       referral: false, photo: "",
       address: "", city: "", state: "", zipCode: "",
       neighborhood: "", complement: "", number: "",
-      notes: "", status: "ACTIVE"
+      notes: "", status: initialStatus
     })
     setPhotoPreview(null)
     setActiveTab("dados")
     setDialogOpen(true)
   }
+
+  useEffect(() => {
+    if (newClientMode !== "true") return
+
+    const initialStatus: Client["status"] = requestedStatus === "DESAPARECIDO" ? "DESAPARECIDO" : "ACTIVE"
+    openNewClient(initialStatus)
+  }, [newClientMode, requestedStatus])
 
   const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -410,6 +422,13 @@ export default function ClientesPage() {
     return "bg-red-50 dark:bg-red-950/300/20 text-red-600"
   }
 
+  const getScoreLabel = (score: number) => {
+    if (score >= 150) return "Premium"
+    if (score >= 100) return "Excelente"
+    if (score >= 50) return "Bom"
+    return "Baixo"
+  }
+
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString("pt-BR")
   }
@@ -435,17 +454,51 @@ export default function ClientesPage() {
 
   return (
     <div className="space-y-4">
-      {/* Title + Criar Empréstimo */}
+      {/* Title + actions */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">Clientes</h1>
-        <Button onClick={() => router.push("/emprestimos?novo=true")} className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 whitespace-nowrap text-xs px-3 py-1.5 h-8">
-          <DollarSign className="h-4 w-4" />
-          Criar Empréstimo
-        </Button>
+        <div className="flex flex-col items-end gap-2">
+          <div className="flex items-center gap-2">
+            <Button onClick={() => router.push("/emprestimos?novo=true")} className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 whitespace-nowrap text-xs px-3 py-1.5 h-8">
+              <DollarSign className="h-4 w-4" />
+              Criar Empréstimo
+            </Button>
+            <Button onClick={openNewClient} className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 whitespace-nowrap">
+              <Plus className="h-4 w-4" />
+              Novo Cliente
+            </Button>
+          </div>
+          <div className="flex items-center rounded-lg border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-1">
+            <button
+              type="button"
+              onClick={() => setViewMode("table")}
+              className={`inline-flex items-center justify-center rounded-md px-2.5 py-1.5 text-sm transition-colors ${
+                viewMode === "table"
+                  ? "bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
+                  : "text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200"
+              }`}
+              title="Visualizar em tabela"
+            >
+              <Rows3 className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("cards")}
+              className={`inline-flex items-center justify-center rounded-md px-2.5 py-1.5 text-sm transition-colors ${
+                viewMode === "cards"
+                  ? "bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
+                  : "text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200"
+              }`}
+              title="Visualizar em cards"
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* Search bar with counter */}
-      <div className="flex items-center gap-3">
+      {/* Search bar with controls */}
+      <div className="flex items-start gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-zinc-500" />
           <Input
@@ -455,52 +508,22 @@ export default function ClientesPage() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-800 text-sm text-gray-500 dark:text-zinc-400 whitespace-nowrap">
-          <Users className="h-4 w-4" />
-          {filtered.length} clientes
+        <div className="flex flex-col items-end gap-2">
+          <div className="flex items-center gap-4 text-sm">
+            <button onClick={() => setStatusFilter(statusFilter === "inactive" ? "all" : "inactive")} className={`flex items-center gap-2 transition-opacity ${statusFilter === "inactive" ? "opacity-100" : "opacity-60 hover:opacity-100"}`}>
+              <span className="font-semibold text-gray-400 dark:text-zinc-500 tabular-nums">{clients.filter(c => c.status !== "DESAPARECIDO" && (c.status === "INACTIVE" || (!c.loans?.some(l => l.status === "ACTIVE")))).length}</span>
+              <span className={`font-medium ${statusFilter === "inactive" ? "text-yellow-600 dark:text-yellow-500 underline underline-offset-4" : "text-yellow-600 dark:text-yellow-500"}`}>Inativo</span>
+            </button>
+            <button onClick={() => setStatusFilter(statusFilter === "active" ? "all" : "active")} className={`flex items-center gap-2 transition-opacity ${statusFilter === "active" ? "opacity-100" : "opacity-60 hover:opacity-100"}`}>
+              <span className="font-semibold text-gray-400 dark:text-zinc-500 tabular-nums">{clients.filter(c => c.status !== "DESAPARECIDO" && (c.status === "ACTIVE" || c.loans?.some(l => l.status === "ACTIVE"))).length}</span>
+              <span className={`font-medium ${statusFilter === "active" ? "text-emerald-600 dark:text-emerald-400 underline underline-offset-4" : "text-emerald-600 dark:text-emerald-400"}`}>Ativo</span>
+            </button>
+            <div className="flex h-10 items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm text-gray-500 whitespace-nowrap dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-400">
+              <Users className="h-4 w-4" />
+              {filtered.length} clientes
+            </div>
+          </div>
         </div>
-        <div className="flex items-center rounded-lg border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-1">
-          <button
-            type="button"
-            onClick={() => setViewMode("table")}
-            className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors ${
-              viewMode === "table"
-                ? "bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
-                : "text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200"
-            }`}
-            title="Visualizar em tabela"
-          >
-            <Rows3 className="h-4 w-4" />
-            Tabela
-          </button>
-          <button
-            type="button"
-            onClick={() => setViewMode("cards")}
-            className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors ${
-              viewMode === "cards"
-                ? "bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
-                : "text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200"
-            }`}
-            title="Visualizar em cards"
-          >
-            <LayoutGrid className="h-4 w-4" />
-            Cards
-          </button>
-        </div>
-        <div className="flex items-center gap-4 text-sm">
-          <button onClick={() => setStatusFilter(statusFilter === "inactive" ? "all" : "inactive")} className={`flex items-center gap-2 transition-opacity ${statusFilter === "inactive" ? "opacity-100" : "opacity-60 hover:opacity-100"}`}>
-            <span className="font-semibold text-gray-400 dark:text-zinc-500 tabular-nums">{clients.filter(c => c.status === "INACTIVE" || (!c.loans?.some(l => l.status === "ACTIVE"))).length}</span>
-            <span className={`font-medium ${statusFilter === "inactive" ? "text-yellow-600 dark:text-yellow-500 underline underline-offset-4" : "text-yellow-600 dark:text-yellow-500"}`}>Inativo</span>
-          </button>
-          <button onClick={() => setStatusFilter(statusFilter === "active" ? "all" : "active")} className={`flex items-center gap-2 transition-opacity ${statusFilter === "active" ? "opacity-100" : "opacity-60 hover:opacity-100"}`}>
-            <span className="font-semibold text-gray-400 dark:text-zinc-500 tabular-nums">{clients.filter(c => c.status === "ACTIVE" || c.loans?.some(l => l.status === "ACTIVE")).length}</span>
-            <span className={`font-medium ${statusFilter === "active" ? "text-emerald-600 dark:text-emerald-400 underline underline-offset-4" : "text-emerald-600 dark:text-emerald-400"}`}>Ativo</span>
-          </button>
-        </div>
-        <Button onClick={openNewClient} className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 whitespace-nowrap">
-          <Plus className="h-4 w-4" />
-          Novo Cliente
-        </Button>
       </div>
 
       {/* Listing */}
@@ -544,7 +567,7 @@ export default function ClientesPage() {
                     <TableCell className="text-gray-700 dark:text-zinc-300">{client.requestedAmount ? `R$ ${client.requestedAmount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "-"}</TableCell>
                     <TableCell>
                       <Badge variant={client.status === "ACTIVE" ? "success" : "warning"}>
-                        {client.status === "ACTIVE" ? "Ativo" : "Inativo"}
+                        {client.status === "ACTIVE" ? "Ativo" : client.status === "DESAPARECIDO" ? "Desaparecido" : "Inativo"}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -582,108 +605,145 @@ export default function ClientesPage() {
           {filtered.map((client) => {
             const loanSummary = getActiveLoanSummary(client)
             const activeLoan = loanSummary?.loan
-            const nextInstallment = loanSummary?.nextInstallment
             const hasActiveLoan = Boolean(activeLoan)
 
+            const infoCards = [
+              {
+                label: "Telefone",
+                value: client.phone || "-",
+                icon: Phone,
+                iconClassName: "text-blue-600",
+                toneClassName: "bg-blue-50 dark:bg-blue-950/30",
+              },
+              {
+                label: "Cadastrado em",
+                value: formatDate(client.createdAt),
+                icon: CalendarDays,
+                iconClassName: "text-blue-600",
+                toneClassName: "bg-blue-50 dark:bg-blue-950/30",
+              },
+              {
+                label: "Renda",
+                value: formatCurrency(client.income),
+                icon: DollarSign,
+                iconClassName: "text-emerald-600",
+                toneClassName: "bg-emerald-50 dark:bg-emerald-950/30",
+              },
+              {
+                label: "Valor solicitado",
+                value: formatCurrency(client.requestedAmount),
+                icon: FileText,
+                iconClassName: "text-blue-600",
+                toneClassName: "bg-blue-50 dark:bg-blue-950/30",
+              },
+              {
+                label: "Cidade",
+                value: client.city || "-",
+                icon: MapPin,
+                iconClassName: "text-zinc-500 dark:text-zinc-300",
+                toneClassName: "bg-zinc-100 dark:bg-zinc-800",
+              },
+            ]
+
             return (
-              <div key={client.id} className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-sm">
+              <div key={client.id} className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
                 <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3 min-w-0">
+                  <div className="min-w-0 flex items-center gap-3">
                     <button
                       type="button"
                       onClick={() => client.photo && setProfileImagePreview({ name: client.name, src: client.photo })}
-                      className={`${client.photo ? "cursor-zoom-in" : "cursor-default"}`}
+                      className={`${client.photo ? "cursor-zoom-in" : "cursor-default"} shrink-0`}
                       title={client.photo ? "Ampliar foto" : undefined}
                     >
-                      <Avatar name={client.name} src={client.photo} size="lg" className="h-16 w-16" />
+                      <Avatar name={client.name} src={client.photo} size="lg" className="h-14 w-14 border border-emerald-100 dark:border-emerald-900/40" />
                     </button>
                     <div className="min-w-0">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100 truncate">{client.name}</h3>
-                      <p className="text-base text-gray-500 dark:text-zinc-400 truncate">{client.phone || client.email || "Sem contato"}</p>
+                      <h3 className="truncate text-xl font-semibold tracking-tight text-gray-900 dark:text-zinc-100">{client.name}</h3>
                     </div>
                   </div>
-                  <Badge variant={client.status === "ACTIVE" ? "success" : "warning"}>
-                    {client.status === "ACTIVE" ? "Ativo" : "Inativo"}
-                  </Badge>
-                </div>
-
-                <div className="mt-4 grid grid-cols-2 gap-3 text-base">
-                  <div className="rounded-lg bg-gray-50 dark:bg-zinc-800 p-3">
-                    <p className="text-sm text-gray-400 dark:text-zinc-500">Cidade</p>
-                    <p className="mt-1 text-base font-medium text-gray-900 dark:text-zinc-100">{client.city || "-"}</p>
-                  </div>
-                  <div className="rounded-lg bg-gray-50 dark:bg-zinc-800 p-3">
-                    <p className="text-sm text-gray-400 dark:text-zinc-500">Cadastrado em</p>
-                    <p className="mt-1 text-base font-medium text-gray-900 dark:text-zinc-100">{formatDate(client.createdAt)}</p>
-                  </div>
-                  <div className="rounded-lg bg-gray-50 dark:bg-zinc-800 p-3">
-                    <p className="text-sm text-gray-400 dark:text-zinc-500">Renda</p>
-                    <p className="mt-1 text-base font-medium text-gray-900 dark:text-zinc-100">{client.income ? `R$ ${client.income.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "-"}</p>
-                  </div>
-                  <div className="rounded-lg bg-gray-50 dark:bg-zinc-800 p-3">
-                    <p className="text-sm text-gray-400 dark:text-zinc-500">Valor solicitado</p>
-                    <p className="mt-1 text-base font-medium text-gray-900 dark:text-zinc-100">{formatCurrency(client.requestedAmount)}</p>
+                  <div className="flex items-center gap-2">
+                    <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${client.status === "ACTIVE" ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400" : client.status === "DESAPARECIDO" ? "bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-400" : "bg-yellow-50 text-yellow-700 dark:bg-yellow-950/30 dark:text-yellow-400"}`}>
+                      {client.status === "ACTIVE" ? "Ativo" : client.status === "DESAPARECIDO" ? "Desaparecido" : "Inativo"}
+                    </span>
                   </div>
                 </div>
 
-                <div className="mt-4 rounded-xl border border-emerald-100 dark:border-emerald-900/40 bg-emerald-50/60 dark:bg-emerald-950/20 p-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400">
-                      {hasActiveLoan ? "Empréstimo ativo" : "Sem empréstimo ativo"}
-                    </p>
-                    {activeLoan?.dailyInterest && (
-                      <span className="rounded-full bg-orange-100 dark:bg-orange-950/40 px-2.5 py-1 text-xs font-medium text-orange-700 dark:text-orange-400">
-                        Juros diário {formatCurrency(activeLoan.dailyInterestAmount)}
-                      </span>
-                    )}
+                <div className="mt-4 rounded-2xl border border-gray-200 bg-white p-3.5 dark:border-zinc-800 dark:bg-zinc-900">
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {infoCards.slice(0, 2).map((item, index) => (
+                      <div
+                        key={item.label}
+                        className={`flex items-center gap-3 ${index === 0 ? "md:border-r md:border-gray-200 md:pr-3 dark:md:border-zinc-800" : "md:pl-1"}`}
+                      >
+                        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${item.toneClassName}`}>
+                          <item.icon className={`h-5 w-5 ${item.iconClassName}`} />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm text-gray-500 dark:text-zinc-400">{item.label}</p>
+                          <p className="truncate text-lg font-semibold text-gray-900 dark:text-zinc-100">{item.value}</p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
+                </div>
 
-                  {activeLoan ? (
-                    <div className="mt-3 grid grid-cols-2 gap-3 text-base">
-                      <div>
-                        <p className="text-sm text-gray-500 dark:text-zinc-400">Valor emprestado</p>
-                        <p className="mt-1 text-base font-semibold text-gray-900 dark:text-zinc-100">{formatCurrency(activeLoan.amount)}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500 dark:text-zinc-400">Próximo pagamento</p>
-                        <p className="mt-1 text-base font-semibold text-gray-900 dark:text-zinc-100">
-                          {nextInstallment ? formatDate(nextInstallment.dueDate) : "Sem pendência"}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500 dark:text-zinc-400">Parcela atual</p>
-                        <p className="mt-1 text-base font-semibold text-gray-900 dark:text-zinc-100">
-                          {nextInstallment ? `${nextInstallment.number}/${activeLoan.installmentCount}` : `${activeLoan.installmentCount}/${activeLoan.installmentCount}`}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500 dark:text-zinc-400">Valor a pagar</p>
-                        <p className="mt-1 text-base font-semibold text-gray-900 dark:text-zinc-100">
-                          {nextInstallment ? formatCurrency(nextInstallment.amount - nextInstallment.paidAmount) : formatCurrency(0)}
-                        </p>
+                <div className="mt-3.5 grid gap-3 md:grid-cols-2">
+                  {infoCards.slice(2).map((item) => (
+                    <div key={item.label} className="rounded-2xl border border-gray-200 bg-white p-3.5 dark:border-zinc-800 dark:bg-zinc-900">
+                      <div className="flex items-center gap-3">
+                        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${item.toneClassName}`}>
+                          <item.icon className={`h-5 w-5 ${item.iconClassName}`} />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm text-gray-500 dark:text-zinc-400">{item.label}</p>
+                          <p className="truncate text-lg font-semibold text-gray-900 dark:text-zinc-100">{item.value}</p>
+                        </div>
                       </div>
                     </div>
-                  ) : (
-                    <p className="mt-2 text-base text-gray-500 dark:text-zinc-400">Nenhum empréstimo ativo para exibir cobrança.</p>
-                  )}
+                  ))}
+
+                  <div className="rounded-2xl border border-gray-200 bg-white p-3.5 dark:border-zinc-800 dark:bg-zinc-900">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-orange-50 dark:bg-orange-950/30">
+                        <Flame className="h-5 w-5 text-orange-500" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm text-gray-500 dark:text-zinc-400">Score de Crédito</p>
+                        <div className="mt-1 flex items-center gap-3">
+                          <span className="text-3xl font-semibold leading-none text-orange-600">{client.score}</span>
+                          <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${getScoreColor(client.score)}`}>
+                            {getScoreLabel(client.score)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="mt-4 flex items-center justify-between gap-3">
-                  <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold ${getScoreColor(client.score)}`}>
-                    {getScoreIcon(client.score)} {client.score}
-                  </span>
-                  <span className={`text-sm font-medium ${hasActiveLoan ? "text-emerald-600 dark:text-emerald-400" : "text-gray-500 dark:text-zinc-400"}`}>
-                    {hasActiveLoan ? "Com empréstimo ativo" : "Sem empréstimo ativo"}
-                  </span>
-                </div>
+                <div className="mt-4 flex items-center justify-between gap-4 border-t border-gray-100 pt-3.5 dark:border-zinc-800">
+                  <div className={`flex items-center gap-2 text-sm font-medium ${hasActiveLoan ? "text-emerald-600 dark:text-emerald-400" : "text-gray-500 dark:text-zinc-400"}`}>
+                    <span className="text-base">{getScoreIcon(client.score)}</span>
+                    <span>{hasActiveLoan ? "Com empréstimo ativo" : "Sem empréstimo ativo"}</span>
+                  </div>
 
-                <div className="mt-4 flex justify-end gap-2 border-t border-gray-100 dark:border-zinc-800 pt-3">
-                  <Button variant="ghost" size="icon" onClick={() => handleEdit(client)} title="Editar cliente">
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => handleDelete(client.id)} title="Excluir cliente">
-                    <Trash2 className="h-4 w-4 text-red-600" />
-                  </Button>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => handleEdit(client)}
+                      title="Editar cliente"
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-full text-blue-600 transition hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/30"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(client.id)}
+                      title="Excluir cliente"
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-full text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
             )
@@ -903,28 +963,23 @@ export default function ClientesPage() {
 
               {/* Tipo de Cliente - removed */}
 
-              {/* Cliente Ativo */}
-              <div className="flex items-center justify-between px-4 py-3 rounded-lg border border-gray-200 dark:border-zinc-800">
-                <div className="flex items-center gap-3">
-                  <User className="h-5 w-5 text-emerald-500" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-800 dark:text-zinc-200">Cliente Ativo</p>
-                    <p className="text-xs text-gray-400 dark:text-zinc-500">Este cliente pode receber novos empréstimos</p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setValue("status", watchStatus === "ACTIVE" ? "INACTIVE" : "ACTIVE")}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    watchStatus === "ACTIVE" ? "bg-emerald-50 dark:bg-emerald-950/300" : "bg-gray-200 dark:bg-zinc-700"
-                  }`}
+              <div>
+                <Label className="font-medium">Status do Cliente</Label>
+                <select
+                  {...register("status")}
+                  className="mt-1 flex h-10 w-full rounded-md border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 px-3 py-2 text-sm text-gray-900 dark:text-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                 >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white dark:bg-zinc-900 transition-transform ${
-                      watchStatus === "ACTIVE" ? "translate-x-6" : "translate-x-1"
-                    }`}
-                  />
-                </button>
+                  <option value="ACTIVE">Ativo</option>
+                  <option value="INACTIVE">Inativo</option>
+                  <option value="DESAPARECIDO">Desaparecido</option>
+                </select>
+                <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">
+                  {watchStatus === "DESAPARECIDO"
+                    ? "Clientes desaparecidos saem da listagem principal e aparecem na página Desaparecido."
+                    : watchStatus === "INACTIVE"
+                      ? "Clientes inativos continuam cadastrados, mas sem novas operações no fluxo normal."
+                      : "Clientes ativos seguem disponíveis para novos empréstimos."}
+                </p>
               </div>
 
               {/* Observações */}
