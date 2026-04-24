@@ -59,6 +59,7 @@ const menuItems = [
   { href: "/calendario", label: "Calendário de Cobranças", icon: Calendar },
   { href: "/simulador", label: "Simulador", icon: Calculator },
   { href: "/contas", label: "Caixa", icon: CreditCard },
+  { href: "/despesas", label: "Despesas", icon: Receipt },
   { href: "/backup", label: "Backup", icon: HardDrive },
   { href: "/configuracoes", label: "Configurações", icon: Settings },
 ]

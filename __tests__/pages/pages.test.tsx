@@ -249,6 +249,23 @@ describe("ContasPage", () => {
   })
 })
 
+describe("DespesasPage", () => {
+  let DespesasPage: any
+
+  beforeAll(async () => {
+    const mod = await import("@/app/(app)/despesas/page")
+    DespesasPage = mod.default
+  })
+
+  it("renders and calls API", async () => {
+    const { container } = render(<DespesasPage />)
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalled()
+    })
+    expect(container.firstChild).toBeTruthy()
+  })
+})
+
 // ─── Score page ────────────────────────────────────────────────
 describe("ScorePage", () => {
   let ScorePage: any

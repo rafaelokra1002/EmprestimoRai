@@ -1,12 +1,13 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Avatar } from "@/components/avatar"
 import { Button } from "@/components/ui/button"
 import { Dialog } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Search, Users, Phone, MapPin, FileText, CalendarDays, Percent, Wallet, AlertTriangle, Plus, Banknote, LayoutGrid, Rows3 } from "lucide-react"
+import { Search, Users, Phone, MapPin, FileText, CalendarDays, Percent, Wallet, AlertTriangle, Plus, Banknote, LayoutGrid, Rows3, Camera, Upload, X } from "lucide-react"
 
 interface DisappearedClient {
   id: string
@@ -51,7 +52,7 @@ function formatDate(value: string | null | undefined) {
 }
 
 function getOutstandingBalance(client: DisappearedClient) {
-  return client.loans
+  return (client.loans || [])
     .filter((loan) => loan.status === "ACTIVE")
     .reduce((clientTotal, loan) => {
       const loanBalance = loan.installments.reduce((sum, installment) => {
@@ -62,7 +63,7 @@ function getOutstandingBalance(client: DisappearedClient) {
 }
 
 function getActiveLoans(client: DisappearedClient) {
-  return client.loans.filter((loan) => loan.status === "ACTIVE")
+  return (client.loans || []).filter((loan) => loan.status === "ACTIVE")
 }
 
 function getNextDueDate(client: DisappearedClient) {
@@ -87,10 +88,25 @@ export default function ClientesDesaparecidosPage() {
   const [clients, setClients] = useState<DisappearedClient[]>([])
   const [search, setSearch] = useState("")
   const [pickerSearch, setPickerSearch] = useState("")
+  const [createForm, setCreateForm] = useState({
+    name: "",
+    phone: "",
+    document: "",
+    rg: "",
+    city: "",
+    notes: "",
+    photo: "",
+  })
+  const [pendingDocuments, setPendingDocuments] = useState<PendingDocument[]>([])
   const [loading, setLoading] = useState(true)
   const [savingId, setSavingId] = useState<string | null>(null)
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [createOpen, setCreateOpen] = useState(false)
+  const [createSaving, setCreateSaving] = useState(false)
+  const [createError, setCreateError] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<"cards" | "table">("cards")
+  const photoInputRef = useRef<HTMLInputElement>(null)
+  const documentInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const fetchClients = async () => {
@@ -134,8 +150,8 @@ export default function ClientesDesaparecidosPage() {
         )
       })
       .sort((left, right) => {
-        const leftHasActiveLoan = left.loans.some((loan) => loan.status === "ACTIVE")
-        const rightHasActiveLoan = right.loans.some((loan) => loan.status === "ACTIVE")
+        const leftHasActiveLoan = (left.loans || []).some((loan) => loan.status === "ACTIVE")
+        const rightHasActiveLoan = (right.loans || []).some((loan) => loan.status === "ACTIVE")
 
         if (leftHasActiveLoan === rightHasActiveLoan) {
           return left.name.localeCompare(right.name)
@@ -169,6 +185,114 @@ export default function ClientesDesaparecidosPage() {
     }
   }
 
+  const resetCreateForm = () => {
+    setCreateForm({
+      name: "",
+      phone: "",
+      document: "",
+      rg: "",
+      city: "",
+      notes: "",
+      photo: "",
+    })
+    setPendingDocuments([])
+    setCreateError(null)
+  }
+
+  const handleCreatePhotoSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      const base64 = reader.result as string
+      setCreateForm((current) => ({ ...current, photo: base64 }))
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleCreateDocumentsSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || [])
+    if (files.length === 0) return
+
+    Promise.all(files.map((file) => new Promise<PendingDocument>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        const fileData = reader.result as string
+        resolve({
+          name: file.name,
+          type: "RG",
+          fileData,
+          fileType: file.type || "application/octet-stream",
+        })
+      }
+      reader.onerror = () => reject(new Error(`Falha ao ler ${file.name}`))
+      reader.readAsDataURL(file)
+    })))
+      .then((documents) => {
+        setPendingDocuments((current) => [...current, ...documents])
+        if (documentInputRef.current) documentInputRef.current.value = ""
+      })
+      .catch(() => {
+        setCreateError("Não foi possível carregar um dos arquivos selecionados.")
+      })
+  }
+
+  const removePendingDocument = (index: number) => {
+    setPendingDocuments((current) => current.filter((_, currentIndex) => currentIndex !== index))
+  }
+
+  const createDisappearedClient = async () => {
+    if (createForm.name.trim().length < 2) {
+      setCreateError("Informe um nome com pelo menos 2 caracteres.")
+      return
+    }
+
+    setCreateSaving(true)
+    setCreateError(null)
+
+    try {
+      const response = await fetch("/api/clients", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: createForm.name.trim(),
+          phone: createForm.phone.trim() || undefined,
+          document: createForm.document.trim() || undefined,
+          rg: createForm.rg.trim() || undefined,
+          city: createForm.city.trim() || undefined,
+          notes: createForm.notes.trim() || undefined,
+          photo: createForm.photo || undefined,
+          status: "DESAPARECIDO",
+        }),
+      })
+
+      const data = await response.json().catch(() => null)
+
+      if (!response.ok) {
+        throw new Error(data?.error || "Falha ao cadastrar cliente desaparecido")
+      }
+
+      if (pendingDocuments.length > 0) {
+        await Promise.all(
+          pendingDocuments.map((document) => fetch(`/api/clients/${data.id}/documents`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(document),
+          }))
+        )
+      }
+
+      setClients((current) => [{ ...data, loans: Array.isArray(data?.loans) ? data.loans : [] }, ...current])
+      setCreateOpen(false)
+      resetCreateForm()
+    } catch (error: any) {
+      setCreateError(error.message || "Falha ao cadastrar cliente desaparecido")
+    } finally {
+      setCreateSaving(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
@@ -179,6 +303,17 @@ export default function ClientesDesaparecidosPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            onClick={() => {
+              resetCreateForm()
+              setCreateOpen(true)
+            }}
+            variant="outline"
+            className="border-gray-200 dark:border-zinc-700"
+          >
+            <Plus className="h-4 w-4" />
+            Cadastrar Desaparecido
+          </Button>
           <div className="flex h-10 items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-950/20 dark:text-red-300">
             <Users className="h-4 w-4" />
             {filteredClients.length} clientes
@@ -427,6 +562,175 @@ export default function ClientesDesaparecidosPage() {
       )}
 
       <Dialog
+        open={createOpen}
+        onClose={() => {
+          setCreateOpen(false)
+          resetCreateForm()
+        }}
+        title="Cadastrar cliente desaparecido"
+        className="max-w-xl"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-500 dark:text-zinc-400">
+            Cadastre um novo cliente já com status desaparecido.
+          </p>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="sm:col-span-2 flex flex-col items-center gap-3 rounded-xl border border-dashed border-gray-200 px-4 py-5 dark:border-zinc-800">
+              {createForm.photo ? (
+                <img
+                  src={createForm.photo}
+                  alt="Foto do cliente"
+                  className="h-24 w-24 rounded-full border border-red-200 object-cover dark:border-red-900/40"
+                />
+              ) : (
+                <Avatar name={createForm.name || "Cliente"} size="xl" className="h-24 w-24 border border-gray-200 dark:border-zinc-800" />
+              )}
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleCreatePhotoSelect}
+              />
+              <Button type="button" variant="outline" onClick={() => photoInputRef.current?.click()}>
+                <Camera className="h-4 w-4" />
+                Adicionar foto do cliente
+              </Button>
+            </div>
+
+            <div className="sm:col-span-2">
+              <p className="mb-1.5 text-sm font-medium text-gray-900 dark:text-zinc-100">Nome</p>
+              <Input
+                value={createForm.name}
+                onChange={(event) => setCreateForm((current) => ({ ...current, name: event.target.value }))}
+                placeholder="Nome do cliente"
+              />
+            </div>
+
+            <div>
+              <p className="mb-1.5 text-sm font-medium text-gray-900 dark:text-zinc-100">Telefone</p>
+              <Input
+                value={createForm.phone}
+                onChange={(event) => setCreateForm((current) => ({ ...current, phone: phoneMask(event.target.value) }))}
+                placeholder="(00) 00000-0000"
+              />
+            </div>
+
+            <div>
+              <p className="mb-1.5 text-sm font-medium text-gray-900 dark:text-zinc-100">CPF</p>
+              <Input
+                value={createForm.document}
+                onChange={(event) => setCreateForm((current) => ({ ...current, document: cpfMask(event.target.value) }))}
+                placeholder="000.000.000-00"
+              />
+            </div>
+
+            <div>
+              <p className="mb-1.5 text-sm font-medium text-gray-900 dark:text-zinc-100">RG</p>
+              <Input
+                value={createForm.rg}
+                onChange={(event) => setCreateForm((current) => ({ ...current, rg: rgMask(event.target.value) }))}
+                placeholder="00.000.000-0"
+              />
+            </div>
+
+            <div className="sm:col-span-2">
+              <p className="mb-1.5 text-sm font-medium text-gray-900 dark:text-zinc-100">Cidade</p>
+              <Input
+                value={createForm.city}
+                onChange={(event) => setCreateForm((current) => ({ ...current, city: event.target.value }))}
+                placeholder="Cidade"
+              />
+            </div>
+
+            <div className="sm:col-span-2">
+              <p className="mb-1.5 text-sm font-medium text-gray-900 dark:text-zinc-100">Observações</p>
+              <Textarea
+                value={createForm.notes}
+                onChange={(event) => setCreateForm((current) => ({ ...current, notes: event.target.value }))}
+                placeholder="Informações úteis sobre o desaparecimento"
+                rows={4}
+              />
+            </div>
+
+            <div className="sm:col-span-2 rounded-xl border border-gray-200 p-4 dark:border-zinc-800">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">Fotos do documento</p>
+                  <p className="mt-1 text-xs text-gray-500 dark:text-zinc-400">Adicione frente, verso ou PDF do documento do desaparecido.</p>
+                </div>
+                <input
+                  ref={documentInputRef}
+                  type="file"
+                  accept="image/*,.pdf"
+                  multiple
+                  className="hidden"
+                  onChange={handleCreateDocumentsSelect}
+                />
+                <Button type="button" variant="outline" onClick={() => documentInputRef.current?.click()}>
+                  <Upload className="h-4 w-4" />
+                  Adicionar arquivos
+                </Button>
+              </div>
+
+              {pendingDocuments.length > 0 ? (
+                <div className="mt-4 space-y-2">
+                  {pendingDocuments.map((document, index) => (
+                    <div key={`${document.name}-${index}`} className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 px-3 py-2 dark:border-zinc-800">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-gray-900 dark:text-zinc-100">{document.name}</p>
+                        <p className="text-xs text-gray-500 dark:text-zinc-400">Documento anexado para envio no cadastro</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removePendingDocument(index)}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-md text-gray-500 transition hover:bg-gray-100 hover:text-gray-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+                        aria-label={`Remover ${document.name}`}
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="mt-4 rounded-lg border border-dashed border-gray-200 px-4 py-6 text-center text-sm text-gray-500 dark:border-zinc-800 dark:text-zinc-400">
+                  Nenhum documento anexado.
+                </div>
+              )}
+            </div>
+          </div>
+
+          {createError ? (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-950/20 dark:text-red-300">
+              {createError}
+            </div>
+          ) : null}
+
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setCreateOpen(false)
+                resetCreateForm()
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={createDisappearedClient}
+              disabled={createSaving}
+              className="bg-red-600 text-white hover:bg-red-700"
+            >
+              {createSaving ? "Salvando..." : "Cadastrar"}
+            </Button>
+          </div>
+        </div>
+      </Dialog>
+
+      <Dialog
         open={pickerOpen}
         onClose={() => {
           setPickerOpen(false)
@@ -501,4 +805,37 @@ export default function ClientesDesaparecidosPage() {
       </Dialog>
     </div>
   )
+}
+
+interface PendingDocument {
+  name: string
+  type: string
+  fileData: string
+  fileType: string
+}
+
+function cpfMask(value: string) {
+  return value
+    .replace(/\D/g, "")
+    .slice(0, 11)
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d{1,2})$/, "$1-$2")
+}
+
+function rgMask(value: string) {
+  return value
+    .replace(/\D/g, "")
+    .slice(0, 9)
+    .replace(/(\d{2})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d{1})$/, "$1-$2")
+}
+
+function phoneMask(value: string) {
+  return value
+    .replace(/\D/g, "")
+    .slice(0, 11)
+    .replace(/(\d{2})(\d)/, "($1) $2")
+    .replace(/(\d{5})(\d)/, "$1-$2")
 }
