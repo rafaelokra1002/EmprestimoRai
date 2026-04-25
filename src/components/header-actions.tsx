@@ -44,14 +44,14 @@ export function HeaderActions({ email }: HeaderActionsProps) {
       <button
         type="button"
         onClick={toggleTheme}
-        className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-gray-700 dark:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+        className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-600 dark:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
         aria-label={theme === "light" ? "Ativar modo escuro" : "Ativar modo claro"}
       >
         {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
       </button>
 
-      <div className="inline-flex h-10 items-center gap-2 rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 text-sm font-medium text-gray-900 dark:text-zinc-100">
-        <User className="h-4 w-4 text-gray-500 dark:text-zinc-400" />
+      <div className="inline-flex h-10 items-center gap-2 rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 text-sm font-medium text-slate-700 dark:text-zinc-100">
+        <User className="h-4 w-4 text-slate-500 dark:text-zinc-400" />
         <span className="max-w-[220px] truncate">{email || "Usuário"}</span>
       </div>
     </div>

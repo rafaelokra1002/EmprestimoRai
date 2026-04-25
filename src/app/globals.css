@@ -54,7 +54,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-gray-50 dark:bg-zinc-950 text-gray-900 dark:text-zinc-100 antialiased font-sans;
+    @apply bg-gray-50 dark:bg-zinc-950 text-slate-700 dark:text-zinc-100 antialiased font-sans;
     font-feature-settings: "tnum" 1, "lnum" 1;
   }
 }
@@ -83,4 +83,40 @@
 /* Selection color */
 ::selection {
   background: rgba(16, 185, 129, 0.2);
+}
+
+html:not(.dark) .text-gray-900,
+html:not(.dark) .text-slate-800 {
+  color: rgb(51 65 85);
+}
+
+html:not(.dark) .text-gray-800,
+html:not(.dark) .text-gray-700,
+html:not(.dark) .text-slate-700 {
+  color: rgb(71 85 105);
+}
+
+html:not(.dark) .text-gray-600,
+html:not(.dark) .text-slate-600 {
+  color: rgb(100 116 139);
+}
+
+html:not(.dark) .text-gray-500,
+html:not(.dark) .text-slate-500 {
+  color: rgb(120 134 156);
+}
+
+html:not(.dark) .text-gray-400,
+html:not(.dark) .text-slate-400 {
+  color: rgb(148 163 184);
+}
+
+html:not(.dark) .hover\:text-gray-900:hover,
+html:not(.dark) .hover\:text-slate-700:hover {
+  color: rgb(71 85 105);
+}
+
+html:not(.dark) .hover\:text-gray-800:hover,
+html:not(.dark) .hover\:text-gray-700:hover {
+  color: rgb(100 116 139);
 }

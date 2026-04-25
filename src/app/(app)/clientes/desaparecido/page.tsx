@@ -1,13 +1,15 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
+import { useRouter } from "next/navigation"
 import { Avatar } from "@/components/avatar"
 import { Button } from "@/components/ui/button"
 import { Dialog } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Search, Users, Phone, MapPin, FileText, CalendarDays, Percent, Wallet, AlertTriangle, Plus, Banknote, LayoutGrid, Rows3, Camera, Upload, X } from "lucide-react"
+import { Search, Users, Phone, MapPin, FileText, CalendarDays, Percent, Wallet, AlertTriangle, Plus, Banknote, LayoutGrid, Rows3, Camera, Upload, RotateCcw, Trash2, Eye, Download, X } from "lucide-react"
+import { buildLoanData, calculateOverdueInterest, calculateTotalAmountWithLateFee, getDaysOverdue } from "@/lib/loan-logic"
 
 interface DisappearedClient {
   id: string
@@ -25,11 +27,18 @@ interface DisappearedClient {
     totalAmount: number
     profit: number
     interestRate: number
+    interestType: string
     modality: string
     installmentCount: number
     dailyInterest: boolean
     dailyInterestAmount: number
+    dueDay: number | null
+    firstInstallmentDate: string
     status: string
+    payments: {
+      amount: number
+      notes?: string | null
+    }[]
     installments: {
       id: string
       number: number
@@ -39,6 +48,18 @@ interface DisappearedClient {
       dueDate: string
     }[]
   }[]
+}
+
+interface ClientDocumentSummary {
+  id: string
+  name: string
+  type: string
+  fileType: string
+  createdAt: string
+}
+
+interface ClientDocumentDetail extends ClientDocumentSummary {
+  fileData: string
 }
 
 function formatCurrency(value: number | null | undefined) {
@@ -84,7 +105,55 @@ function getInterestSummary(client: DisappearedClient) {
     .join(" | ")
 }
 
+function getLoanOverdueDetails(loan: DisappearedClient["loans"][number]) {
+  const loanData = buildLoanData({
+    amount: loan.amount,
+    interestRate: loan.interestRate,
+    interestType: loan.interestType || "SIMPLE",
+    totalAmount: loan.totalAmount,
+    dailyInterestAmount: loan.dailyInterestAmount || 0,
+    dueDay: loan.dueDay || new Date(loan.installments[0]?.dueDate || loan.firstInstallmentDate || Date.now()).getDate(),
+    modality: loan.modality,
+    firstInstallmentDate: loan.firstInstallmentDate || loan.installments[0]?.dueDate || new Date().toISOString(),
+    installments: loan.installments,
+    payments: loan.payments || [],
+  })
+
+  const daysOverdue = getDaysOverdue(loanData)
+  const totalWithLateFee = calculateTotalAmountWithLateFee(loanData)
+  const totalPaid = (loan.payments || []).reduce((sum, payment) => sum + Number(payment.amount || 0), 0)
+  const overdueExtra = Math.max(0, totalWithLateFee - loan.totalAmount + totalPaid)
+  const overdueInterest = daysOverdue >= 30
+    ? calculateOverdueInterest(
+        loan.totalAmount,
+        loan.amount,
+        loan.interestRate,
+        daysOverdue,
+        (loan.interestType || "SIMPLE").toLowerCase() === "compound" ? "compound" : "simple"
+      )
+    : 0
+  const dailyPenalty = daysOverdue > 0 ? (loan.dailyInterestAmount || 0) * daysOverdue : 0
+
+  const overdueInstallments = loan.installments
+    .filter((installment) => installment.status !== "PAID" && new Date(installment.dueDate) < new Date())
+    .sort((left, right) => new Date(left.dueDate).getTime() - new Date(right.dueDate).getTime())
+    .map((installment) => ({
+      ...installment,
+      daysOverdue: Math.max(0, Math.floor((new Date().getTime() - new Date(installment.dueDate).getTime()) / (1000 * 60 * 60 * 24))),
+    }))
+
+  return {
+    daysOverdue,
+    overdueExtra,
+    overdueInterest,
+    dailyPenalty,
+    totalWithLateFee,
+    overdueInstallments,
+  }
+}
+
 export default function ClientesDesaparecidosPage() {
+  const router = useRouter()
   const [clients, setClients] = useState<DisappearedClient[]>([])
   const [search, setSearch] = useState("")
   const [pickerSearch, setPickerSearch] = useState("")
@@ -100,13 +169,35 @@ export default function ClientesDesaparecidosPage() {
   const [pendingDocuments, setPendingDocuments] = useState<PendingDocument[]>([])
   const [loading, setLoading] = useState(true)
   const [savingId, setSavingId] = useState<string | null>(null)
+  const [actionId, setActionId] = useState<string | null>(null)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
   const [createSaving, setCreateSaving] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<"cards" | "table">("cards")
+  const [documentsOpen, setDocumentsOpen] = useState(false)
+  const [selectedClient, setSelectedClient] = useState<DisappearedClient | null>(null)
+  const [clientDocuments, setClientDocuments] = useState<ClientDocumentSummary[]>([])
+  const [docsLoading, setDocsLoading] = useState(false)
+  const [docsError, setDocsError] = useState<string | null>(null)
+  const [openingDocId, setOpeningDocId] = useState<string | null>(null)
   const photoInputRef = useRef<HTMLInputElement>(null)
   const documentInputRef = useRef<HTMLInputElement>(null)
+
+  const getDocTypeLabel = (type: string) => {
+    switch (type) {
+      case "RG":
+        return "RG"
+      case "CPF":
+        return "CPF"
+      case "CNH":
+        return "CNH"
+      case "COMPROVANTE_RESIDENCIA":
+        return "Comprovante"
+      default:
+        return type || "Documento"
+    }
+  }
 
   useEffect(() => {
     const fetchClients = async () => {
@@ -293,6 +384,153 @@ export default function ClientesDesaparecidosPage() {
     }
   }
 
+  const restoreClient = async (clientId: string) => {
+    setActionId(clientId)
+
+    try {
+      const response = await fetch(`/api/clients/${clientId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "ACTIVE" }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Falha ao atualizar cliente")
+      }
+
+      setClients((current) => current.map((client) => (
+        client.id === clientId ? { ...client, status: "ACTIVE" } : client
+      )))
+
+      router.push("/emprestimos")
+    } finally {
+      setActionId(null)
+    }
+  }
+
+  const deleteClient = async (clientId: string) => {
+    if (!confirm("Excluir este cliente desaparecido?")) return
+
+    setActionId(clientId)
+
+    try {
+      const response = await fetch(`/api/clients/${clientId}`, {
+        method: "DELETE",
+      })
+
+      if (!response.ok) {
+        throw new Error("Falha ao excluir cliente")
+      }
+
+      setClients((current) => current.filter((client) => client.id !== clientId))
+    } finally {
+      setActionId(null)
+    }
+  }
+
+  const openClientDocuments = async (client: DisappearedClient) => {
+    setSelectedClient(client)
+    setDocumentsOpen(true)
+    setDocsLoading(true)
+    setDocsError(null)
+
+    try {
+      const response = await fetch(`/api/clients/${client.id}/documents`)
+      const data = await response.json().catch(() => [])
+
+      if (!response.ok) {
+        throw new Error(data?.error || "Falha ao carregar documentos")
+      }
+
+      setClientDocuments(Array.isArray(data) ? data : [])
+    } catch (error: any) {
+      setClientDocuments([])
+      setDocsError(error.message || "Falha ao carregar documentos")
+    } finally {
+      setDocsLoading(false)
+    }
+  }
+
+  const handleOpenDocument = async (document: ClientDocumentSummary, download = false) => {
+    if (!selectedClient) return
+
+    const previewWindow = download ? null : window.open("about:blank", "_blank")
+
+    setOpeningDocId(document.id)
+    setDocsError(null)
+
+    if (previewWindow) {
+      previewWindow.document.title = document.name
+      previewWindow.document.body.innerHTML = "<p style='font-family: Arial, sans-serif; padding: 24px; color: #475569;'>Carregando documento...</p>"
+    }
+
+    try {
+      const response = await fetch(`/api/clients/${selectedClient.id}/documents?docId=${document.id}`)
+      const data = await response.json().catch(() => null)
+
+      if (!response.ok || !data?.fileData) {
+        throw new Error(data?.error || "Falha ao abrir documento")
+      }
+
+      if (download) {
+        const link = window.document.createElement("a")
+        link.href = data.fileData
+        link.download = document.name
+        link.target = "_blank"
+        link.click()
+        return
+      }
+
+      if (!previewWindow) {
+        throw new Error("O navegador bloqueou a abertura do documento")
+      }
+
+      const isImage = typeof data.fileType === "string" && data.fileType.startsWith("image/")
+      const previewContent = isImage
+        ? `<img src="${data.fileData}" alt="${document.name}" style="max-width: 100%; height: auto; display: block; margin: 0 auto;" />`
+        : `<iframe src="${data.fileData}" title="${document.name}" style="width: 100%; height: 100vh; border: 0;"></iframe>`
+
+      previewWindow.document.open()
+      previewWindow.document.write(`
+        <!DOCTYPE html>
+        <html lang="pt-BR">
+          <head>
+            <meta charset="UTF-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+            <title>${document.name}</title>
+            <style>
+              body {
+                margin: 0;
+                background: #f8fafc;
+                font-family: Arial, sans-serif;
+              }
+              .frame {
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 24px;
+                box-sizing: border-box;
+              }
+              iframe {
+                background: #fff;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="frame">${previewContent}</div>
+          </body>
+        </html>
+      `)
+      previewWindow.document.close()
+    } catch (error: any) {
+      previewWindow?.close()
+      setDocsError(error.message || "Falha ao abrir documento")
+    } finally {
+      setOpeningDocId(null)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
@@ -429,12 +667,12 @@ export default function ClientesDesaparecidosPage() {
             const outstandingBalance = getOutstandingBalance(client)
 
             return (
-              <div key={client.id} className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+              <div key={client.id} className="rounded-2xl border border-gray-200 bg-white p-3.5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-3">
-                    <Avatar name={client.name} src={client.photo} size="lg" className="h-12 w-12 border border-red-100 dark:border-red-900/40" />
+                    <Avatar name={client.name} src={client.photo} size="lg" className="h-11 w-11 border border-red-100 dark:border-red-900/40" />
                     <div className="min-w-0">
-                      <h2 className="truncate text-lg font-semibold text-gray-900 dark:text-zinc-100">{client.name}</h2>
+                      <h2 className="truncate text-base font-semibold text-gray-900 dark:text-zinc-100">{client.name}</h2>
                       <p className="mt-0.5 text-xs text-gray-500 dark:text-zinc-400">Marcado como desaparecido</p>
                     </div>
                   </div>
@@ -444,28 +682,28 @@ export default function ClientesDesaparecidosPage() {
                 </div>
 
                 <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                  <div className="rounded-xl border border-gray-200 bg-gray-50 p-2.5 dark:border-zinc-800 dark:bg-zinc-800/80">
+                  <div className="rounded-xl border border-gray-200 bg-gray-50 p-2 dark:border-zinc-800 dark:bg-zinc-800/80">
                     <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-gray-500 dark:text-zinc-400">
                       <Phone className="h-3.5 w-3.5" />
                       Telefone
                     </div>
                     <p className="mt-2 text-sm font-semibold text-gray-900 dark:text-zinc-100">{client.phone || "-"}</p>
                   </div>
-                  <div className="rounded-xl border border-gray-200 bg-gray-50 p-2.5 dark:border-zinc-800 dark:bg-zinc-800/80">
+                  <div className="rounded-xl border border-gray-200 bg-gray-50 p-2 dark:border-zinc-800 dark:bg-zinc-800/80">
                     <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-gray-500 dark:text-zinc-400">
                       <FileText className="h-3.5 w-3.5" />
                       Documento
                     </div>
                     <p className="mt-2 text-sm font-semibold text-gray-900 dark:text-zinc-100">{client.document || "-"}</p>
                   </div>
-                  <div className="rounded-xl border border-gray-200 bg-gray-50 p-2.5 dark:border-zinc-800 dark:bg-zinc-800/80">
+                  <div className="rounded-xl border border-gray-200 bg-gray-50 p-2 dark:border-zinc-800 dark:bg-zinc-800/80">
                     <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-gray-500 dark:text-zinc-400">
                       <MapPin className="h-3.5 w-3.5" />
                       Cidade
                     </div>
                     <p className="mt-2 text-sm font-semibold text-gray-900 dark:text-zinc-100">{client.city || "-"}</p>
                   </div>
-                  <div className="rounded-xl border border-red-200 bg-red-50 p-2.5 dark:border-red-900/40 dark:bg-red-950/20">
+                  <div className="rounded-xl border border-red-200 bg-red-50 p-2 dark:border-red-900/40 dark:bg-red-950/20">
                     <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-red-600 dark:text-red-300">
                       <Wallet className="h-3.5 w-3.5" />
                       Saldo em aberto
@@ -474,7 +712,7 @@ export default function ClientesDesaparecidosPage() {
                   </div>
                 </div>
 
-                <div className="mt-3 rounded-xl border border-gray-200 p-3 dark:border-zinc-800">
+                <div className="mt-3 rounded-xl border border-gray-200 p-2.5 dark:border-zinc-800">
                   <div className="flex items-center justify-between gap-3">
                     <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-700 dark:text-zinc-300">Observações</h3>
                     <span className="text-xs text-gray-400 dark:text-zinc-500">Cadastrado em {formatDate(client.createdAt)}</span>
@@ -482,7 +720,48 @@ export default function ClientesDesaparecidosPage() {
                   <p className="mt-2 line-clamp-3 text-sm leading-5 text-gray-600 dark:text-zinc-400">{client.notes || "Sem observações registradas."}</p>
                 </div>
 
-                <div className="mt-3 space-y-2.5">
+                <div className="mt-3 rounded-xl border border-gray-200 bg-gray-50/80 p-2.5 dark:border-zinc-800 dark:bg-zinc-800/50">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Documentos do cliente</p>
+                      <p className="mt-1 text-xs text-gray-500 dark:text-zinc-400">Abra os arquivos para conferir RG, CPF e comprovantes.</p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => openClientDocuments(client)}
+                      className="rounded-xl border-gray-200 dark:border-zinc-700"
+                    >
+                      <FileText className="h-4 w-4" />
+                      Ver documentos
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => restoreClient(client.id)}
+                    disabled={actionId === client.id}
+                    className="justify-center rounded-xl border-emerald-200 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-900/40 dark:text-emerald-300 dark:hover:bg-emerald-950/20"
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                    {actionId === client.id ? "Atualizando..." : "Cliente reapareceu"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => deleteClient(client.id)}
+                    disabled={actionId === client.id}
+                    className="justify-center rounded-xl border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900/40 dark:text-red-300 dark:hover:bg-red-950/20"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Excluir
+                  </Button>
+                </div>
+
+                <div className="mt-3 space-y-2">
                   {activeLoans.length === 0 ? (
                     <div className="rounded-xl border border-dashed border-gray-200 px-4 py-5 text-center text-sm text-gray-500 dark:border-zinc-800 dark:text-zinc-400">
                       Nenhum empréstimo ativo vinculado a este cliente.
@@ -494,9 +773,10 @@ export default function ClientesDesaparecidosPage() {
                       const nextInstallment = pendingInstallments
                         .slice()
                         .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0]
+                      const overdueDetails = getLoanOverdueDetails(loan)
 
                       return (
-                        <div key={loan.id} className="rounded-xl border border-gray-200 bg-gray-50/70 p-3 dark:border-zinc-800 dark:bg-zinc-800/60">
+                        <div key={loan.id} className="rounded-xl border border-gray-200 bg-gray-50/70 p-2.5 dark:border-zinc-800 dark:bg-zinc-800/60">
                           <div className="flex flex-wrap items-center justify-between gap-3">
                             <div>
                               <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Empréstimo ativo</h3>
@@ -506,7 +786,7 @@ export default function ClientesDesaparecidosPage() {
                             </span>
                           </div>
 
-                          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                          <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
                             <div>
                               <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-gray-500 dark:text-zinc-400">
                                 <Wallet className="h-3.5 w-3.5" />
@@ -550,6 +830,51 @@ export default function ClientesDesaparecidosPage() {
                               {overdueInstallments.length} atrasadas
                             </span>
                           </div>
+
+                          {overdueDetails.daysOverdue > 0 && (
+                            <div className="mt-3 rounded-xl border border-red-200 bg-red-50 px-2.5 py-2.5 dark:border-red-900/40 dark:bg-red-950/20">
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <p className="text-sm font-semibold text-red-700 dark:text-red-300">Atraso detalhado</p>
+                                <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-red-700 dark:bg-zinc-900 dark:text-red-300">
+                                  {overdueDetails.daysOverdue} dias em atraso
+                                </span>
+                              </div>
+
+                              <div className="mt-3 grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
+                                <div>
+                                  <p className="text-[11px] uppercase tracking-wide text-red-500 dark:text-red-300">Juros por atraso</p>
+                                  <p className="mt-1 text-sm font-semibold text-red-700 dark:text-red-200">{formatCurrency(overdueDetails.overdueInterest)}</p>
+                                </div>
+                                <div>
+                                  <p className="text-[11px] uppercase tracking-wide text-red-500 dark:text-red-300">Multa diária</p>
+                                  <p className="mt-1 text-sm font-semibold text-red-700 dark:text-red-200">{formatCurrency(overdueDetails.dailyPenalty)}</p>
+                                </div>
+                                <div>
+                                  <p className="text-[11px] uppercase tracking-wide text-red-500 dark:text-red-300">Extra acumulado</p>
+                                  <p className="mt-1 text-sm font-semibold text-red-700 dark:text-red-200">{formatCurrency(overdueDetails.overdueExtra)}</p>
+                                </div>
+                                <div>
+                                  <p className="text-[11px] uppercase tracking-wide text-red-500 dark:text-red-300">Total atualizado</p>
+                                  <p className="mt-1 text-sm font-semibold text-red-700 dark:text-red-200">{formatCurrency(overdueDetails.totalWithLateFee)}</p>
+                                </div>
+                              </div>
+
+                              <div className="mt-3 space-y-2 border-t border-red-200 pt-2.5 dark:border-red-900/30">
+                                {overdueDetails.overdueInstallments.map((installment) => (
+                                  <div key={installment.id} className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                                    <div>
+                                      <p className="font-semibold text-red-700 dark:text-red-200">Parcela {installment.number}/{loan.installmentCount}</p>
+                                      <p className="mt-0.5 text-red-500 dark:text-red-300">Venceu em {formatDate(installment.dueDate)}</p>
+                                    </div>
+                                    <div className="text-right">
+                                      <p className="font-semibold text-red-700 dark:text-red-200">{installment.daysOverdue} dias</p>
+                                      <p className="mt-0.5 text-red-500 dark:text-red-300">Valor {formatCurrency(installment.amount)}</p>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )
                     })
@@ -801,6 +1126,82 @@ export default function ClientesDesaparecidosPage() {
               })
             )}
           </div>
+        </div>
+      </Dialog>
+
+      <Dialog
+        open={documentsOpen}
+        onClose={() => {
+          setDocumentsOpen(false)
+          setSelectedClient(null)
+          setClientDocuments([])
+          setDocsError(null)
+          setOpeningDocId(null)
+        }}
+        title={selectedClient ? `Documentos de ${selectedClient.name}` : "Documentos do cliente"}
+        className="max-w-2xl"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-500 dark:text-zinc-400">
+            Use esta área para verificar os documentos enviados do cliente desaparecido.
+          </p>
+
+          {docsError && (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-900/40 dark:bg-red-950/20 dark:text-red-300">
+              {docsError}
+            </div>
+          )}
+
+          {docsLoading ? (
+            <div className="rounded-xl border border-gray-200 px-4 py-8 text-center text-sm text-gray-500 dark:border-zinc-800 dark:text-zinc-400">
+              Carregando documentos...
+            </div>
+          ) : clientDocuments.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-gray-200 px-4 py-8 text-center dark:border-zinc-800">
+              <FileText className="mx-auto h-8 w-8 text-gray-400 dark:text-zinc-500" />
+              <p className="mt-3 text-sm text-gray-500 dark:text-zinc-400">Nenhum documento cadastrado para este cliente.</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {clientDocuments.map((document) => (
+                <div
+                  key={document.id}
+                  className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-gray-900 dark:text-zinc-100">{document.name}</p>
+                    <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-zinc-400">
+                      <span className="rounded-full bg-gray-100 px-2 py-0.5 dark:bg-zinc-800">{getDocTypeLabel(document.type)}</span>
+                      <span>{new Date(document.createdAt).toLocaleDateString("pt-BR")}</span>
+                      <span>{document.fileType}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => handleOpenDocument(document)}
+                      disabled={openingDocId === document.id}
+                      className="rounded-xl"
+                    >
+                      <Eye className="h-4 w-4" />
+                      {openingDocId === document.id ? "Abrindo..." : "Visualizar"}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => handleOpenDocument(document, true)}
+                      disabled={openingDocId === document.id}
+                      className="rounded-xl"
+                    >
+                      <Download className="h-4 w-4" />
+                      Baixar
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </Dialog>
     </div>

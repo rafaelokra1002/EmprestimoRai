@@ -266,6 +266,15 @@ export default function PerfilPage() {
     })
   }, [profile?.createdAt])
 
+  const subscriptionValidUntil = useMemo(() => {
+    if (!profile?.subscription?.validUntil) return "-"
+    return new Date(profile.subscription.validUntil).toLocaleDateString("pt-BR", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    })
+  }, [profile?.subscription?.validUntil])
+
   if (loading) {
     return (
       <div className="flex min-h-[420px] items-center justify-center">
@@ -275,15 +284,15 @@ export default function PerfilPage() {
   }
 
   return (
-    <div className="space-y-6 pb-10">
-      <div className="flex items-start justify-between">
+    <div className="max-w-6xl space-y-6 pb-10">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-xl font-bold text-gray-900 dark:text-zinc-100">Meu Perfil</h1>
-          <p className="text-sm text-gray-500 dark:text-zinc-400">Informações da sua conta</p>
+          <h1 className="text-[1.7rem] font-bold tracking-[-0.02em] text-slate-700 dark:text-zinc-100 sm:text-[1.85rem]">Meu Perfil</h1>
+          <p className="text-sm font-medium text-slate-400 dark:text-zinc-400">Informações da sua conta</p>
         </div>
         <Button
           variant="outline"
-          className="gap-2"
+          className="h-11 gap-2 rounded-xl border-gray-200 px-5 text-slate-500 shadow-sm hover:bg-gray-50 dark:border-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-800"
           onClick={() => {
             setEditType("profile")
             setEditOpen(true)
@@ -299,49 +308,107 @@ export default function PerfilPage() {
         </div>
       )}
 
-      <Card className={cardClass}>
-        <div className="h-24 rounded-t-xl bg-emerald-600" />
-        <CardContent className="relative -mt-10 flex items-center gap-4 px-6 pb-5">
+      <Card className="overflow-hidden rounded-[22px] border border-emerald-100 bg-white shadow-[0_18px_40px_-28px_rgba(16,185,129,0.45)] dark:border-emerald-900/60 dark:bg-zinc-900">
+        <div className="h-20 bg-gradient-to-r from-emerald-600 via-emerald-600 to-green-600 sm:h-24" />
+        <CardContent className="relative -mt-8 px-5 pb-5 sm:px-7 sm:pb-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
           <Avatar
             name={profile?.name || "Usuário"}
             src={profile?.logoUrl || undefined}
             size="lg"
-            className="h-16 w-16 border-4 border-white dark:border-zinc-900 text-xl shadow-sm"
+                className="h-20 w-20 border-4 border-white bg-emerald-600 text-2xl text-white shadow-lg dark:border-zinc-900 sm:h-24 sm:w-24"
           />
-        </CardContent>
-        <CardContent className="px-6 pb-6 pt-0">
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-zinc-100">{profile?.name || "Usuário"}</h2>
-            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/30 px-2.5 py-0.5 text-xs font-medium text-emerald-600">✓ Ativo</span>
+              <div className="space-y-1.5">
+                <h2 className="text-[1.05rem] font-semibold tracking-[-0.02em] text-slate-600 dark:text-zinc-100 sm:text-[1.2rem]">{profile?.name || "Usuário"}</h2>
+                <span className="inline-flex w-fit items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-medium text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  Ativo
+                </span>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card className={cardClass}>
-          <CardHeader>
-            <CardTitle className="text-gray-900 dark:text-zinc-100">Informações Pessoais</CardTitle>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card className="rounded-[18px] border border-emerald-100 bg-white shadow-sm dark:border-emerald-900/50 dark:bg-zinc-900">
+          <CardHeader className="pb-5">
+            <CardTitle className="flex items-center gap-2 text-[1.05rem] font-semibold tracking-[-0.02em] text-slate-600 dark:text-zinc-100">
+              <User className="h-4 w-4 text-emerald-600" />
+              Informações Pessoais
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4 text-gray-800 dark:text-zinc-200">
-            <div className="flex items-center gap-3"><Mail className="h-4 w-4 text-gray-400 dark:text-zinc-500" /><div><p className="text-[11px] text-gray-400 dark:text-zinc-500">Email 🔒</p><p className="text-sm font-semibold">{profile?.email}</p><p className="text-[11px] text-gray-400 dark:text-zinc-500">Não pode ser alterado</p></div></div>
-            <div className="flex items-center gap-3"><Phone className="h-4 w-4 text-gray-400 dark:text-zinc-500" /><div><p className="text-[11px] text-gray-400 dark:text-zinc-500">WhatsApp</p><p className="text-sm font-semibold">{profile?.phone || "Não informado"}</p></div></div>
-            <div className="flex items-center gap-3"><Calendar className="h-4 w-4 text-gray-400 dark:text-zinc-500" /><div><p className="text-[11px] text-gray-400 dark:text-zinc-500">Membro desde</p><p className="text-sm font-semibold">{memberSince}</p></div></div>
+          <CardContent className="space-y-5 text-slate-600 dark:text-zinc-200">
+            <div className="flex items-start gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-500 dark:bg-zinc-800 dark:text-zinc-400">
+                <Mail className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-[12px] font-medium text-slate-400/90 dark:text-zinc-500">Email</p>
+                <p className="text-[1.05rem] font-semibold leading-tight text-slate-600 dark:text-zinc-100 sm:text-lg">{profile?.email}</p>
+                <p className="text-[12px] text-slate-400/90 dark:text-zinc-500">Não pode ser alterado</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-500 dark:bg-zinc-800 dark:text-zinc-400">
+                <Phone className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-[12px] font-medium text-slate-400/90 dark:text-zinc-500">WhatsApp</p>
+                <p className="text-[1.12rem] font-semibold leading-tight tracking-[-0.02em] text-slate-600 dark:text-zinc-100 sm:text-[1.18rem]">{profile?.phone || "Não informado"}</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-500 dark:bg-zinc-800 dark:text-zinc-400">
+                <Calendar className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-[12px] font-medium text-slate-400/90 dark:text-zinc-500">Membro desde</p>
+                <p className="text-[1.12rem] font-semibold leading-tight tracking-[-0.02em] text-slate-600 dark:text-zinc-100 sm:text-[1.18rem]">{memberSince}</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
-        <Card className={cardClass}>
-          <CardHeader>
-            <CardTitle className="text-gray-900 dark:text-zinc-100">Estatísticas da Conta</CardTitle>
+        <Card className="rounded-[18px] border border-emerald-100 bg-white shadow-sm dark:border-emerald-900/50 dark:bg-zinc-900">
+          <CardHeader className="pb-5">
+            <CardTitle className="flex items-center gap-2 text-[1.05rem] font-semibold tracking-[-0.02em] text-slate-600 dark:text-zinc-100">
+              <TrendingUp className="h-4 w-4 text-emerald-600" />
+              Estatísticas da Conta
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4 text-gray-800 dark:text-zinc-200">
-            <div className="flex items-center gap-3"><Users className="h-4 w-4 text-blue-600" /><div><p className="text-[11px] text-gray-400 dark:text-zinc-500">Total de Clientes</p><p className="text-base font-bold tabular-nums">{profile?.stats?.totalClients || 0}</p></div></div>
-            <div className="flex items-center gap-3"><Wallet className="h-4 w-4 text-amber-600" /><div><p className="text-[11px] text-gray-400 dark:text-zinc-500">Total Emprestado</p><p className="text-base font-bold tabular-nums">{formatCurrency(profile?.stats?.totalLoaned || 0)}</p></div></div>
-            <div className="flex items-center gap-3"><TrendingUp className="h-4 w-4 text-emerald-600" /><div><p className="text-[11px] text-gray-400 dark:text-zinc-500">Total Recebido</p><p className="text-base font-bold tabular-nums">{formatCurrency(profile?.stats?.totalReceived || 0)}</p></div></div>
+          <CardContent className="space-y-5 text-slate-600 dark:text-zinc-200">
+            <div className="flex items-start gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-300">
+                <Users className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-[12px] font-medium text-slate-400/90 dark:text-zinc-500">Total de Clientes</p>
+                <p className="text-[1.12rem] font-semibold tabular-nums leading-tight tracking-[-0.02em] text-slate-600 dark:text-zinc-100 sm:text-[1.18rem]">{profile?.stats?.totalClients || 0}</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-300">
+                <Wallet className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-[12px] font-medium text-slate-400/90 dark:text-zinc-500">Total Emprestado</p>
+                <p className="text-[1.12rem] font-semibold tabular-nums leading-tight tracking-[-0.02em] text-slate-600 dark:text-zinc-100 sm:text-[1.18rem]">{formatCurrency(profile?.stats?.totalLoaned || 0)}</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-300">
+                <TrendingUp className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-[12px] font-medium text-slate-400/90 dark:text-zinc-500">Total Recebido</p>
+                <p className="text-[1.12rem] font-semibold tabular-nums leading-tight tracking-[-0.02em] text-slate-600 dark:text-zinc-100 sm:text-[1.18rem]">{formatCurrency(profile?.stats?.totalReceived || 0)}</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
-
-
 
       <Card className={cardClass}>
         <CardHeader className="flex flex-row items-center justify-between">

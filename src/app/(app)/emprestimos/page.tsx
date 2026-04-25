@@ -57,6 +57,8 @@ interface Client {
 
 const today = () => new Date().toISOString().split("T")[0]
 
+const getTagName = (tag: string) => (tag.includes("|") ? tag.split("|")[0] : tag).trim()
+
 export default function EmprestimosPage() {
   const router = useRouter()
   const [loans, setLoans] = useState<Loan[]>([])
@@ -68,7 +70,7 @@ export default function EmprestimosPage() {
   const [search, setSearch] = useState("")
   const [activeTab, setActiveTab] = useState<"all" | "daily" | "price" | "received">("all")
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
-  const [loanFilter, setLoanFilter] = useState<"all" | "on_time" | "due_today" | "overdue" | "installments" | "interest_only" | "monthly">("all")
+  const [loanFilter, setLoanFilter] = useState<"all" | "on_time" | "due_today" | "overdue" | "installments" | "interest_only" | "monthly" | "tagged">("all")
   const [filterOpen, setFilterOpen] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState<string | null>(null)
   const [payMenuOpen, setPayMenuOpen] = useState<string | null>(null)
@@ -868,7 +870,11 @@ export default function EmprestimosPage() {
     if (activeTab !== "received") result = result.filter(l => l.status !== "COMPLETED")
     if (search.trim()) {
       const q = search.toLowerCase()
-      result = result.filter(l => l.client.name.toLowerCase().includes(q))
+      result = result.filter((loan) => {
+        const matchesClient = loan.client.name.toLowerCase().includes(q)
+        const matchesTag = (loan.tags || []).some((tag) => getTagName(tag).toLowerCase().includes(q))
+        return matchesClient || matchesTag
+      })
     }
     const now = new Date()
     const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`
@@ -894,8 +900,52 @@ export default function EmprestimosPage() {
       })
     } else if (loanFilter === "monthly") {
       result = result.filter(l => l.modality === "MONTHLY")
+    } else if (loanFilter === "tagged") {
+      result = result.filter(l => (l.tags || []).length > 0)
     }
-    return result
+
+    const getEarliestPendingDueAt = (loan: Loan) => {
+      const pendingInstallments = loan.installments
+        .filter((installment: any) => installment.status !== "PAID")
+        .map((installment: any) => new Date(installment.dueDate).getTime())
+
+      if (pendingInstallments.length === 0) {
+        return Number.POSITIVE_INFINITY
+      }
+
+      return Math.min(...pendingInstallments)
+    }
+
+    const getEarliestOverdueDueAt = (loan: Loan) => {
+      const overdueInstallments = loan.installments
+        .filter((installment: any) => installment.status !== "PAID" && getLocalDateStr(new Date(installment.dueDate)) < todayStr)
+        .map((installment: any) => new Date(installment.dueDate).getTime())
+
+      if (overdueInstallments.length === 0) {
+        return null
+      }
+
+      return Math.min(...overdueInstallments)
+    }
+
+    return [...result].sort((left, right) => {
+      const leftOverdueAt = getEarliestOverdueDueAt(left)
+      const rightOverdueAt = getEarliestOverdueDueAt(right)
+
+      if (leftOverdueAt !== null && rightOverdueAt !== null) {
+        return leftOverdueAt - rightOverdueAt
+      }
+
+      if (leftOverdueAt !== null) return -1
+      if (rightOverdueAt !== null) return 1
+
+      const pendingDifference = getEarliestPendingDueAt(left) - getEarliestPendingDueAt(right)
+      if (pendingDifference !== 0) {
+        return pendingDifference
+      }
+
+      return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime()
+    })
   }, [loans, activeTab, search, loanFilter])
 
   const groupedByClient = useMemo(() => {
@@ -966,14 +1016,16 @@ export default function EmprestimosPage() {
       </div>
 
       {/* Search + New Button */}
-      <div className="flex items-center gap-4">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-zinc-500" />
-          <Input placeholder="Buscar..." className="pl-10" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <Input placeholder="Buscar cliente ou etiqueta..." className="pl-10" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
-        <Button onClick={() => { resetForm(); setDialogOpen(true) }} className="bg-emerald-600 hover:bg-emerald-700 text-white">
-          <Plus className="h-4 w-4 mr-2" /> Novo Empréstimo
-        </Button>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center lg:flex-none">
+          <Button onClick={() => { resetForm(); setDialogOpen(true) }} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+            <Plus className="h-4 w-4 mr-2" /> Novo Empréstimo
+          </Button>
+        </div>
       </div>
 
       {/* Filters + View Toggle */}
@@ -985,6 +1037,7 @@ export default function EmprestimosPage() {
             { value: "due_today", label: "Vence Hoje", color: "text-yellow-600 dark:text-yellow-400 border-yellow-400 dark:border-yellow-500", activeColor: "bg-yellow-500 dark:bg-yellow-500 text-white border-yellow-500 dark:border-yellow-500" },
             { value: "overdue", label: "Atrasados", color: "text-red-600 dark:text-red-400 border-red-400 dark:border-red-500", activeColor: "bg-red-600 dark:bg-red-500 text-white border-red-600 dark:border-red-500" },
             { value: "installments", label: "Parcelados", color: "text-purple-600 dark:text-purple-400 border-purple-400 dark:border-purple-500", activeColor: "bg-purple-600 dark:bg-purple-500 text-white border-purple-600 dark:border-purple-500" },
+            { value: "tagged", label: "Etiqueta", color: "text-emerald-600 dark:text-emerald-400 border-emerald-400 dark:border-emerald-500", activeColor: "bg-emerald-600 dark:bg-emerald-500 text-white border-emerald-600 dark:border-emerald-500" },
             { value: "interest_only", label: "Só Juros", color: "text-orange-600 dark:text-orange-400 border-orange-400 dark:border-orange-500", activeColor: "bg-orange-600 dark:bg-orange-500 text-white border-orange-600 dark:border-orange-500" },
             { value: "monthly", label: "Mensal", color: "text-cyan-600 dark:text-cyan-400 border-cyan-400 dark:border-cyan-500", activeColor: "bg-cyan-600 dark:bg-cyan-500 text-white border-cyan-600 dark:border-cyan-500" },
           ].map((opt) => (

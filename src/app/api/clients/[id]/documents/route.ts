@@ -22,6 +22,29 @@ export async function GET(
       return NextResponse.json({ error: "Cliente não encontrado" }, { status: 404 })
     }
 
+    const { searchParams } = new URL(request.url)
+    const docId = searchParams.get("docId")
+
+    if (docId) {
+      const document = await prisma.clientDocument.findFirst({
+        where: { id: docId, clientId: params.id },
+        select: {
+          id: true,
+          name: true,
+          type: true,
+          fileType: true,
+          fileData: true,
+          createdAt: true,
+        },
+      })
+
+      if (!document) {
+        return NextResponse.json({ error: "Documento não encontrado" }, { status: 404 })
+      }
+
+      return NextResponse.json(document)
+    }
+
     const documents = await prisma.clientDocument.findMany({
       where: { clientId: params.id },
       select: {

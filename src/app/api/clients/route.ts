@@ -46,11 +46,20 @@ export async function GET(request: Request) {
                 totalAmount: true,
                 profit: true,
                 interestRate: true,
+                interestType: true,
                 modality: true,
                 installmentCount: true,
                 dailyInterest: true,
                 dailyInterestAmount: true,
+                dueDay: true,
+                firstInstallmentDate: true,
                 status: true,
+                payments: {
+                  select: {
+                    amount: true,
+                    notes: true,
+                  },
+                },
                 installments: {
                   select: {
                     id: true,
