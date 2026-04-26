@@ -119,7 +119,7 @@ export default function EmprestimoDetalhesPage() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 pt-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{loan.client.name}</h1>

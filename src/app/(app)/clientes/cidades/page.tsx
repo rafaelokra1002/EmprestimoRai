@@ -55,7 +55,7 @@ export default function ClientesCidadesPage() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 pt-6">
       <div>
         <h1 className="text-xl font-bold text-gray-900 dark:text-zinc-100">Clientes por Cidade</h1>
         <p className="text-sm text-gray-500 dark:text-zinc-400">Distribuição dos clientes por cidade</p>

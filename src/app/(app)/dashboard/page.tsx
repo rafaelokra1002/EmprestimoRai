@@ -173,7 +173,7 @@ export default function DashboardPage() {
   const weekContractsDelta = data?.weeklySummary?.deltas?.contractsPct || 0
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 pt-6">
       {/* Welcome */}
       <div className="flex items-center gap-3">
         <div>

@@ -551,7 +551,7 @@ export default function ClienteEmprestimosPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pt-6">
       {/* Header */}
       <div className="flex items-center gap-4">
         <button onClick={() => router.push("/emprestimos")} className="flex items-center gap-2 text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200 transition-colors">

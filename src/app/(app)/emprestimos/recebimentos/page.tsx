@@ -201,7 +201,7 @@ export default function RecebimentosPage() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pt-6">
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">Empréstimos</h1>

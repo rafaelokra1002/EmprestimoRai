@@ -352,7 +352,7 @@ export default function ConfiguracoesPage() {
   }
 
   return (
-    <div className="max-w-3xl space-y-6 pb-10">
+    <div className="max-w-3xl space-y-6 pt-6 pb-10">
       {/* ─── Header ─── */}
       <div className="flex flex-col items-start gap-3">
         <div>

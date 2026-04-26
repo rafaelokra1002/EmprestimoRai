@@ -368,7 +368,7 @@ export default function RelatorioEmprestimosPage() {
   const FILTER_LABELS: Record<string, string> = { all: "Todos", daily: "Diário", monthly: "Mensal", price: "Tabela Price" }
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-6 pt-6 pb-12">
       {/* ===== HEADER ===== */}
       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
         <div>

@@ -1032,7 +1032,7 @@ export default function EmprestimosPage() {
   ] as const
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pt-6">
       {/* Title + Vence Hoje / Atrasados */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">Empréstimos</h1>

@@ -560,7 +560,7 @@ export default function ClientesDesaparecidosPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pt-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">Desaparecido</h1>

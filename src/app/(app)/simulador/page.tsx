@@ -141,7 +141,7 @@ export default function SimuladorPage() {
     d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-6 pt-6 pb-12">
       {/* ===== HEADER ===== */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">Simulador de Empréstimo</h1>

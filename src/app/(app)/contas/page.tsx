@@ -281,7 +281,7 @@ export default function ContasPage() {
   ]
 
   return (
-    <div className="space-y-8 pb-12">
+    <div className="space-y-8 pt-6 pb-12">
       <div className="flex min-h-[calc(100vh-12rem)] items-center justify-center">
         <section className="relative w-full max-w-6xl overflow-hidden rounded-[32px] border border-gray-200 bg-white px-6 py-7 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 md:px-8">
 

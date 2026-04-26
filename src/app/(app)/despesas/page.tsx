@@ -282,7 +282,7 @@ export default function DespesasPage() {
   const maxCategoryValue = sortedCategoryData[0]?.value || 1
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-6 pt-6 pb-12">
       <div className="grid gap-5 xl:grid-cols-[1.25fr_1fr_0.9fr]">
         <section className="rounded-[28px] border border-gray-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
           <div className="flex items-start justify-between gap-3">

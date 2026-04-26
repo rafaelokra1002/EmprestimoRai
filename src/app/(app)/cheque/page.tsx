@@ -28,7 +28,7 @@ export default function ChequePage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pt-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100 flex items-center gap-2">
           <Receipt className="h-6 w-6 text-emerald-500" />

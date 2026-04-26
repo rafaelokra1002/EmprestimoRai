@@ -284,7 +284,7 @@ export default function PerfilPage() {
   }
 
   return (
-    <div className="max-w-6xl space-y-6 pb-10">
+    <div className="max-w-6xl space-y-6 pt-6 pb-10">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-[1.7rem] font-bold tracking-[-0.02em] text-slate-700 dark:text-zinc-100 sm:text-[1.85rem]">Meu Perfil</h1>

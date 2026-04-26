@@ -49,7 +49,7 @@ export default function ClientesAtivosPage() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 pt-6">
       <div>
         <h1 className="text-xl font-bold text-gray-900 dark:text-zinc-100">Clientes Ativos</h1>
         <p className="text-sm text-gray-500 dark:text-zinc-400">Clientes com empréstimos ativos</p>

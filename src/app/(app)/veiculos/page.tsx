@@ -472,7 +472,7 @@ export default function VeiculosPage() {
   }
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-6 pt-6 pb-12">
       {/* ===== HEADER ===== */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">Veículos</h1>
