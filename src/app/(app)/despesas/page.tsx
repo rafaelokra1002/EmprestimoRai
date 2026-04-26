@@ -275,12 +275,12 @@ export default function DespesasPage() {
     }
   }
 
-  const statusFilters: { key: StatusFilter; label: string }[] = [
-    { key: "todas", label: "Todas" },
-    { key: "vence_hoje", label: "Vence Hoje" },
-    { key: "pendentes", label: "Pendentes" },
-    { key: "atrasadas", label: "Atrasadas" },
-    { key: "pagas", label: "Pagas" },
+  const statusFilters: { value: StatusFilter; label: string }[] = [
+    { value: "todas", label: "Todas" },
+    { value: "vence_hoje", label: "Vence Hoje" },
+    { value: "pendentes", label: "Pendentes" },
+    { value: "atrasadas", label: "Atrasadas" },
+    { value: "pagas", label: "Pagas" },
   ]
 
   const isFormValid = fDescription.trim().length >= 2
