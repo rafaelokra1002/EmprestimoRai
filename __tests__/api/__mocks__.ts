@@ -12,8 +12,78 @@ export const mockSession = {
   expires: "2100-01-01T00:00:00.000Z",
 }
 
+type MockFn = jest.MockedFunction<(...args: any[]) => any>
+
+type MockPrisma = {
+  user: {
+    findUnique: MockFn
+    create: MockFn
+    update: MockFn
+  }
+  client: {
+    findMany: MockFn
+    findFirst: MockFn
+    create: MockFn
+    update: MockFn
+    delete: MockFn
+    count: MockFn
+  }
+  loan: {
+    findMany: MockFn
+    findFirst: MockFn
+    findUnique: MockFn
+    create: MockFn
+    update: MockFn
+    delete: MockFn
+  }
+  installment: {
+    createMany: MockFn
+    findUnique: MockFn
+    findMany: MockFn
+    update: MockFn
+    updateMany: MockFn
+    findFirst: MockFn
+    count: MockFn
+  }
+  payment: {
+    create: MockFn
+    findMany: MockFn
+  }
+  sale: {
+    findMany: MockFn
+    create: MockFn
+    update: MockFn
+    delete: MockFn
+  }
+  vehicle: {
+    findMany: MockFn
+    create: MockFn
+    update: MockFn
+    delete: MockFn
+  }
+  expense: {
+    findMany: MockFn
+    create: MockFn
+    update: MockFn
+    delete: MockFn
+  }
+  employee: {
+    findMany: MockFn
+    create: MockFn
+    update: MockFn
+    delete: MockFn
+  }
+  whatsAppTemplate: {
+    findMany: MockFn
+    create: MockFn
+    updateMany: MockFn
+    deleteMany: MockFn
+  }
+  $transaction: MockFn
+}
+
 // Mock Prisma client
-export const mockPrisma = {
+export const mockPrisma: MockPrisma = {
   user: {
     findUnique: jest.fn(),
     create: jest.fn(),
@@ -78,8 +148,10 @@ export const mockPrisma = {
     updateMany: jest.fn(),
     deleteMany: jest.fn(),
   },
-  $transaction: jest.fn((fn: any) => fn(mockPrisma)),
+  $transaction: jest.fn(),
 }
+
+mockPrisma.$transaction.mockImplementation((fn: (tx: MockPrisma) => unknown) => fn(mockPrisma))
 
 // Setup module mocks
 jest.mock("@/lib/prisma", () => ({
