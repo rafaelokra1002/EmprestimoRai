@@ -1048,67 +1048,85 @@ export default function EmprestimosPage() {
       {/* Filters + View Toggle */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="relative">
-            <button
-              onClick={() => {
-                setFilterOpen((current) => !current)
-                setTagFilterOpen(false)
-              }}
-              className="inline-flex items-center gap-2 rounded-2xl border border-emerald-500 bg-white px-4 py-2 text-sm font-semibold text-emerald-600 transition hover:bg-emerald-50 dark:bg-zinc-900 dark:hover:bg-zinc-800"
-            >
-              <Filter className="h-4 w-4" />
-              Filtros
-              <ChevronDown className={`h-4 w-4 transition-transform ${filterOpen ? "rotate-180" : ""}`} />
-            </button>
-            {filterOpen && (
-              <div className="absolute left-0 top-full z-20 mt-2 min-w-[180px] rounded-2xl border border-gray-200 bg-white p-2 shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
-                {filterOptions.map((opt) => (
-                  <button
-                    key={opt.value}
-                    onClick={() => {
-                      setLoanFilter(opt.value)
-                      setFilterOpen(false)
-                    }}
-                    className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm transition-colors ${loanFilter === opt.value ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400" : "text-gray-600 hover:bg-gray-50 dark:text-zinc-300 dark:hover:bg-zinc-800"}`}
-                  >
-                    <span>{opt.label}</span>
-                    {loanFilter === opt.value && <Check className="h-4 w-4" />}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          <button
+            onClick={() => {
+              setFilterOpen((current) => !current)
+              setTagFilterOpen(false)
+            }}
+            className="inline-flex items-center gap-2 rounded-2xl border border-emerald-500 bg-white px-4 py-2 text-sm font-semibold text-emerald-600 transition hover:bg-emerald-50 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+          >
+            <Filter className="h-4 w-4" />
+            Filtros
+            <ChevronDown className={`h-4 w-4 transition-transform ${filterOpen ? "rotate-180" : ""}`} />
+          </button>
 
-          <div className="relative">
-            <button
-              onClick={() => {
-                setTagFilterOpen((current) => !current)
-                setFilterOpen(false)
-              }}
-              className="inline-flex items-center gap-2 rounded-2xl border border-orange-500 bg-white px-4 py-2 text-sm font-semibold text-orange-500 transition hover:bg-orange-50 dark:bg-zinc-900 dark:hover:bg-zinc-800"
-            >
-              <Tag className="h-4 w-4" />
-              Etiqueta
-              <ChevronDown className={`h-4 w-4 transition-transform ${tagFilterOpen ? "rotate-180" : ""}`} />
-            </button>
-            {tagFilterOpen && (
-              <div className="absolute left-0 top-full z-20 mt-2 min-w-[180px] rounded-2xl border border-gray-200 bg-white p-2 shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
-                {tagOptions.map((opt) => (
+          {filterOpen && (
+            <div className="flex items-center gap-2 flex-wrap">
+              {filterOptions.map((opt) => {
+                const isActive = loanFilter === opt.value
+                const toneClass =
+                  opt.value === "overdue"
+                    ? isActive
+                      ? "border-red-500 bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-300"
+                      : "border-red-300 text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950/20"
+                    : opt.value === "due_today"
+                      ? isActive
+                        ? "border-orange-500 bg-orange-50 text-orange-600 dark:bg-orange-950/30 dark:text-orange-300"
+                        : "border-orange-300 text-orange-600 hover:bg-orange-50 dark:border-orange-800 dark:text-orange-300 dark:hover:bg-orange-950/20"
+                      : opt.value === "interest_only"
+                        ? isActive
+                          ? "border-purple-500 bg-purple-50 text-purple-600 dark:bg-purple-950/30 dark:text-purple-300"
+                          : "border-purple-300 text-purple-600 hover:bg-purple-50 dark:border-purple-800 dark:text-purple-300 dark:hover:bg-purple-950/20"
+                        : opt.value === "monthly" || opt.value === "installments"
+                          ? isActive
+                            ? "border-blue-500 bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-300"
+                            : "border-blue-300 text-blue-600 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-300 dark:hover:bg-blue-950/20"
+                          : isActive
+                            ? "border-emerald-500 bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-300"
+                            : "border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+
+                return (
                   <button
                     key={opt.value}
-                    onClick={() => {
-                      setLoanFilter(opt.value)
-                      setTagFilterOpen(false)
-                    }}
-                    className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm transition-colors ${loanFilter === opt.value ? "bg-orange-50 text-orange-500 dark:bg-orange-950/30 dark:text-orange-400" : "text-gray-600 hover:bg-gray-50 dark:text-zinc-300 dark:hover:bg-zinc-800"}`}
+                    onClick={() => setLoanFilter(opt.value)}
+                    className={`inline-flex items-center gap-2 rounded-2xl border px-4 py-2 text-sm font-semibold transition ${toneClass}`}
                   >
-                    <span>{opt.label}</span>
-                    {loanFilter === opt.value && <Check className="h-4 w-4" />}
+                    {opt.label}
                   </button>
-                ))}
-              </div>
-            )}
-          </div>
+                )
+              })}
+            </div>
+          )}
+
+          <button
+            onClick={() => {
+              setTagFilterOpen((current) => !current)
+              setFilterOpen(false)
+            }}
+            className="inline-flex items-center gap-2 rounded-2xl border border-orange-500 bg-white px-4 py-2 text-sm font-semibold text-orange-500 transition hover:bg-orange-50 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+          >
+            <Tag className="h-4 w-4" />
+            Etiqueta
+            <ChevronDown className={`h-4 w-4 transition-transform ${tagFilterOpen ? "rotate-180" : ""}`} />
+          </button>
+
+          {tagFilterOpen && (
+            <div className="flex items-center gap-2 flex-wrap">
+              {tagOptions.map((opt) => {
+                const isActive = loanFilter === opt.value
+
+                return (
+                  <button
+                    key={opt.value}
+                    onClick={() => setLoanFilter(opt.value)}
+                    className={`inline-flex items-center gap-2 rounded-2xl border px-4 py-2 text-sm font-semibold transition ${isActive ? "border-orange-500 bg-orange-50 text-orange-500 dark:bg-orange-950/30 dark:text-orange-300" : "border-orange-300 text-orange-500 hover:bg-orange-50 dark:border-orange-800 dark:text-orange-300 dark:hover:bg-orange-950/20"}`}
+                  >
+                    {opt.label}
+                  </button>
+                )
+              })}
+            </div>
+          )}
         </div>
         <div className="flex bg-gray-50 dark:bg-zinc-800 rounded-lg p-1 border border-gray-200 dark:border-zinc-800">
           <button
