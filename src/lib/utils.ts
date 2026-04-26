@@ -1,6 +1,8 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 
+export const DEFAULT_DAILY_INTEREST_AMOUNT = 15
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
@@ -117,6 +119,21 @@ export function calculateLoan(
     totalInterest: Math.round(totalInterest * 100) / 100,
     installmentAmount: Math.round(installmentAmount * 100) / 100,
   }
+}
+
+export function resolveDailyInterestAmount(
+  enabled: boolean,
+  explicitAmount: number | undefined,
+  amount: number,
+  interestRate: number,
+  modality: string
+): number {
+  if (!enabled) return 0
+  if (typeof explicitAmount === "number" && explicitAmount > 0) {
+    return Math.round(explicitAmount * 100) / 100
+  }
+
+  return DEFAULT_DAILY_INTEREST_AMOUNT
 }
 
 export function generateInstallmentDates(

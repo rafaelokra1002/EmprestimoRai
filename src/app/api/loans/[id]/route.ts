@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { loanSchema } from "@/lib/validations"
-import { calculateLoan, generateInstallmentDates } from "@/lib/utils"
+import { calculateLoan, generateInstallmentDates, resolveDailyInterestAmount } from "@/lib/utils"
 
 async function resolveSessionUserId(session: any) {
   const sessionUserId = (session?.user as any)?.id as string | undefined
@@ -108,6 +108,13 @@ export async function PUT(
         data.interestType,
         data.totalInterestAmount
       )
+      const dailyInterestAmount = resolveDailyInterestAmount(
+        data.dailyInterest ?? false,
+        data.dailyInterestAmount,
+        data.amount,
+        data.interestRate,
+        data.modality
+      )
 
       const firstDate = new Date(data.firstInstallmentDate)
       const contractDate = new Date(data.contractDate)
@@ -149,7 +156,7 @@ export async function PUT(
             skipSunday: data.skipSunday ?? false,
             skipHolidays: data.skipHolidays ?? false,
             dailyInterest: data.dailyInterest ?? false,
-            dailyInterestAmount: data.dailyInterestAmount ?? 0,
+            dailyInterestAmount,
             whatsappNotify: data.whatsappNotify ?? false,
             notes: data.notes,
             tags: Array.isArray(body.tags) ? body.tags.filter((t: unknown) => typeof t === "string" && (t as string).trim()) : undefined,

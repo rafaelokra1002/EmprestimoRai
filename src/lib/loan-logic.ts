@@ -1,3 +1,5 @@
+import { resolveDailyInterestAmount } from "@/lib/utils"
+
 /**
  * Lógica de empréstimos - 4 camadas de cálculo
  *
@@ -14,6 +16,7 @@ export interface LoanData {
   interestRate: number    // taxa (ex: 30 = 30%)
   interestType: string    // 'simple' | 'compound' | 'PER_INSTALLMENT' etc
   finalAmount: number     // valor final calculado na criação
+  dailyInterest: boolean  // juros diário habilitado
   dailyInterestAmount: number // multa diária em R$ (0 se não configurado)
   dueDay: number          // dia fixo do vencimento
   modality: string        // MONTHLY, BIWEEKLY, WEEKLY, DAILY
@@ -86,10 +89,20 @@ export function calculateOverdueInterest(
 
 /**
  * Retorna o valor da multa diária em R$.
- * Prioridade: loan.dailyInterestAmount → 0
+ * Prioridade: loan.dailyInterestAmount → fallback calculado → 0
  */
-export function getOverdueDailyAmountBRL(dailyInterestAmount: number): number {
-  return dailyInterestAmount || 0
+export function getOverdueDailyAmountBRL(loan: Pick<LoanData, "dailyInterest" | "dailyInterestAmount" | "amount" | "interestRate" | "modality">): number {
+  if (!loan.dailyInterest && (loan.dailyInterestAmount ?? 0) <= 0 && loan.interestRate > 0) {
+    return resolveDailyInterestAmount(true, undefined, loan.amount, loan.interestRate, loan.modality)
+  }
+
+  return resolveDailyInterestAmount(
+    loan.dailyInterest,
+    loan.dailyInterestAmount,
+    loan.amount,
+    loan.interestRate,
+    loan.modality
+  )
 }
 
 // ─── 4. Cálculo Total Final ──────────────────────────────────────────
@@ -128,7 +141,7 @@ export function calculateTotalAmountWithLateFee(loan: LoanData): number {
 
     // Multa diária (> 0 dias)
     if (daysOverdue > 0) {
-      total += getOverdueDailyAmountBRL(loan.dailyInterestAmount) * daysOverdue
+      total += getOverdueDailyAmountBRL(loan) * daysOverdue
     }
   }
 
@@ -220,6 +233,7 @@ export function buildLoanData(loan: {
   interestRate: number
   interestType: string
   totalAmount: number
+  dailyInterest?: boolean
   dailyInterestAmount?: number
   dueDay?: number
   modality?: string
@@ -232,6 +246,7 @@ export function buildLoanData(loan: {
     interestRate: loan.interestRate,
     interestType: loan.interestType === "compound" ? "compound" : "simple",
     finalAmount: loan.totalAmount,
+    dailyInterest: loan.dailyInterest ?? false,
     dailyInterestAmount: loan.dailyInterestAmount ?? 0,
     dueDay: loan.dueDay || extractDueDay(loan.firstInstallmentDate),
     modality: loan.modality || "MONTHLY",

@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Avatar } from "@/components/avatar"
 import { CalendarDays, ChevronDown, RefreshCw, Plus, X } from "lucide-react"
-import { calculateLoan, formatCurrency, generateInstallmentDates } from "@/lib/utils"
+import { calculateLoan, formatCurrency, generateInstallmentDates, resolveDailyInterestAmount } from "@/lib/utils"
 
 interface Client {
   id: string
@@ -181,6 +181,14 @@ export default function EditarEmprestimoPage() {
     setSaving(true)
     setError(null)
     try {
+      const resolvedDailyInterestAmount = resolveDailyInterestAmount(
+        dailyInterest,
+        dailyInterestAmount,
+        amount,
+        interestRate,
+        modality
+      )
+
       const res = await fetch(`/api/loans/${loanId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -198,7 +206,7 @@ export default function EditarEmprestimoPage() {
           skipSunday,
           skipHolidays,
           dailyInterest,
-          dailyInterestAmount: dailyInterest ? dailyInterestAmount : 0,
+          dailyInterestAmount: resolvedDailyInterestAmount,
           whatsappNotify,
           installmentDates,
           notes: notes || undefined,

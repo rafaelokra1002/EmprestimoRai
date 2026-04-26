@@ -8,8 +8,8 @@ import { Dialog } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Search, Users, Phone, MapPin, FileText, CalendarDays, Percent, Wallet, AlertTriangle, Plus, Banknote, LayoutGrid, Rows3, Camera, Upload, RotateCcw, Trash2, Eye, Download, X } from "lucide-react"
-import { buildLoanData, calculateOverdueInterest, calculateTotalAmountWithLateFee, getDaysOverdue } from "@/lib/loan-logic"
+import { Search, Users, Phone, MapPin, FileText, CalendarDays, Percent, Wallet, AlertTriangle, Plus, Banknote, LayoutGrid, Rows3, Camera, Upload, RotateCcw, Trash2, Eye, Download, X, ArrowLeft } from "lucide-react"
+import { buildLoanData, calculateOverdueInterest, calculateTotalAmountWithLateFee, getDaysOverdue, getOverdueDailyAmountBRL } from "@/lib/loan-logic"
 
 interface DisappearedClient {
   id: string
@@ -72,15 +72,28 @@ function formatDate(value: string | null | undefined) {
   return new Date(value).toLocaleDateString("pt-BR")
 }
 
+function getLoanCurrentBalance(loan: DisappearedClient["loans"][number]) {
+  const loanData = buildLoanData({
+    amount: loan.amount,
+    interestRate: loan.interestRate,
+    interestType: loan.interestType || "SIMPLE",
+    totalAmount: loan.totalAmount,
+    dailyInterest: loan.dailyInterest,
+    dailyInterestAmount: loan.dailyInterestAmount || 0,
+    dueDay: loan.dueDay || new Date(loan.installments[0]?.dueDate || loan.firstInstallmentDate || Date.now()).getDate(),
+    modality: loan.modality,
+    firstInstallmentDate: loan.firstInstallmentDate || loan.installments[0]?.dueDate || new Date().toISOString(),
+    installments: loan.installments,
+    payments: loan.payments || [],
+  })
+
+  return calculateTotalAmountWithLateFee(loanData)
+}
+
 function getOutstandingBalance(client: DisappearedClient) {
   return (client.loans || [])
     .filter((loan) => loan.status === "ACTIVE")
-    .reduce((clientTotal, loan) => {
-      const loanBalance = loan.installments.reduce((sum, installment) => {
-        return sum + Math.max(installment.amount - installment.paidAmount, 0)
-      }, 0)
-      return clientTotal + loanBalance
-    }, 0)
+    .reduce((clientTotal, loan) => clientTotal + getLoanCurrentBalance(loan), 0)
 }
 
 function getActiveLoans(client: DisappearedClient) {
@@ -101,7 +114,17 @@ function getInterestSummary(client: DisappearedClient) {
   if (activeLoans.length === 0) return "-"
 
   return activeLoans
-    .map((loan) => loan.dailyInterest ? `${loan.interestRate}% + ${formatCurrency(loan.dailyInterestAmount)}/dia` : `${loan.interestRate}%`)
+    .map((loan) => {
+      const dailyAmount = getOverdueDailyAmountBRL({
+        dailyInterest: loan.dailyInterest,
+        dailyInterestAmount: loan.dailyInterestAmount || 0,
+        amount: loan.amount,
+        interestRate: loan.interestRate,
+        modality: loan.modality,
+      })
+
+      return dailyAmount > 0 ? `${loan.interestRate}% + ${formatCurrency(dailyAmount)}/dia` : `${loan.interestRate}%`
+    })
     .join(" | ")
 }
 
@@ -111,6 +134,7 @@ function getLoanOverdueDetails(loan: DisappearedClient["loans"][number]) {
     interestRate: loan.interestRate,
     interestType: loan.interestType || "SIMPLE",
     totalAmount: loan.totalAmount,
+    dailyInterest: loan.dailyInterest,
     dailyInterestAmount: loan.dailyInterestAmount || 0,
     dueDay: loan.dueDay || new Date(loan.installments[0]?.dueDate || loan.firstInstallmentDate || Date.now()).getDate(),
     modality: loan.modality,
@@ -122,6 +146,7 @@ function getLoanOverdueDetails(loan: DisappearedClient["loans"][number]) {
   const daysOverdue = getDaysOverdue(loanData)
   const totalWithLateFee = calculateTotalAmountWithLateFee(loanData)
   const totalPaid = (loan.payments || []).reduce((sum, payment) => sum + Number(payment.amount || 0), 0)
+  const baseAmount = Math.max(0, loan.totalAmount - totalPaid)
   const overdueExtra = Math.max(0, totalWithLateFee - loan.totalAmount + totalPaid)
   const overdueInterest = daysOverdue >= 30
     ? calculateOverdueInterest(
@@ -132,7 +157,8 @@ function getLoanOverdueDetails(loan: DisappearedClient["loans"][number]) {
         (loan.interestType || "SIMPLE").toLowerCase() === "compound" ? "compound" : "simple"
       )
     : 0
-  const dailyPenalty = daysOverdue > 0 ? (loan.dailyInterestAmount || 0) * daysOverdue : 0
+  const dailyRate = getOverdueDailyAmountBRL(loanData)
+  const dailyPenalty = daysOverdue > 0 ? dailyRate * daysOverdue : 0
 
   const overdueInstallments = loan.installments
     .filter((installment) => installment.status !== "PAID" && new Date(installment.dueDate) < new Date())
@@ -143,7 +169,9 @@ function getLoanOverdueDetails(loan: DisappearedClient["loans"][number]) {
     }))
 
   return {
+    baseAmount,
     daysOverdue,
+    dailyRate,
     overdueExtra,
     overdueInterest,
     dailyPenalty,
@@ -542,6 +570,14 @@ export default function ClientesDesaparecidosPage() {
         </div>
         <div className="flex items-center gap-2">
           <Button
+            onClick={() => router.push("/clientes")}
+            variant="outline"
+            className="border-gray-200 dark:border-zinc-700"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Ir para Clientes
+          </Button>
+          <Button
             onClick={() => {
               resetCreateForm()
               setCreateOpen(true)
@@ -774,6 +810,8 @@ export default function ClientesDesaparecidosPage() {
                         .slice()
                         .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0]
                       const overdueDetails = getLoanOverdueDetails(loan)
+                      const currentLoanBalance = getLoanCurrentBalance(loan)
+                      const totalLabel = overdueDetails.daysOverdue > 0 ? "Total atualizado" : "Total previsto"
 
                       return (
                         <div key={loan.id} className="rounded-xl border border-gray-200 bg-gray-50/70 p-2.5 dark:border-zinc-800 dark:bg-zinc-800/60">
@@ -797,9 +835,9 @@ export default function ClientesDesaparecidosPage() {
                             <div>
                               <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-gray-500 dark:text-zinc-400">
                                 <Wallet className="h-3.5 w-3.5" />
-                                Total previsto
+                                {totalLabel}
                               </div>
-                              <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-zinc-100">{formatCurrency(loan.totalAmount)}</p>
+                              <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-zinc-100">{formatCurrency(overdueDetails.daysOverdue > 0 ? currentLoanBalance : loan.totalAmount)}</p>
                             </div>
                             <div>
                               <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-gray-500 dark:text-zinc-400">
@@ -807,7 +845,17 @@ export default function ClientesDesaparecidosPage() {
                                 Juros
                               </div>
                               <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-zinc-100">
-                                {loan.interestRate}% {loan.dailyInterest ? `• diário ${formatCurrency(loan.dailyInterestAmount)}` : ""}
+                                {(() => {
+                                  const dailyAmount = getOverdueDailyAmountBRL({
+                                    dailyInterest: loan.dailyInterest,
+                                    dailyInterestAmount: loan.dailyInterestAmount || 0,
+                                    amount: loan.amount,
+                                    interestRate: loan.interestRate,
+                                    modality: loan.modality,
+                                  })
+
+                                  return `${loan.interestRate}%${dailyAmount > 0 ? ` • diário ${formatCurrency(dailyAmount)}` : ""}`
+                                })()}
                               </p>
                             </div>
                             <div>
@@ -848,14 +896,17 @@ export default function ClientesDesaparecidosPage() {
                                 <div>
                                   <p className="text-[11px] uppercase tracking-wide text-red-500 dark:text-red-300">Multa diária</p>
                                   <p className="mt-1 text-sm font-semibold text-red-700 dark:text-red-200">{formatCurrency(overdueDetails.dailyPenalty)}</p>
+                                  <p className="mt-1 text-[11px] text-red-500 dark:text-red-300">{overdueDetails.daysOverdue} x {formatCurrency(overdueDetails.dailyRate)}</p>
                                 </div>
                                 <div>
                                   <p className="text-[11px] uppercase tracking-wide text-red-500 dark:text-red-300">Extra acumulado</p>
                                   <p className="mt-1 text-sm font-semibold text-red-700 dark:text-red-200">{formatCurrency(overdueDetails.overdueExtra)}</p>
+                                  <p className="mt-1 text-[11px] text-red-500 dark:text-red-300">Acréscimos do atraso</p>
                                 </div>
                                 <div>
                                   <p className="text-[11px] uppercase tracking-wide text-red-500 dark:text-red-300">Total atualizado</p>
                                   <p className="mt-1 text-sm font-semibold text-red-700 dark:text-red-200">{formatCurrency(overdueDetails.totalWithLateFee)}</p>
+                                  <p className="mt-1 text-[11px] text-red-500 dark:text-red-300">Base {formatCurrency(overdueDetails.baseAmount)} + atraso {formatCurrency(overdueDetails.overdueExtra)}</p>
                                 </div>
                               </div>
 
@@ -868,7 +919,8 @@ export default function ClientesDesaparecidosPage() {
                                     </div>
                                     <div className="text-right">
                                       <p className="font-semibold text-red-700 dark:text-red-200">{installment.daysOverdue} dias</p>
-                                      <p className="mt-0.5 text-red-500 dark:text-red-300">Valor {formatCurrency(installment.amount)}</p>
+                                      <p className="mt-0.5 text-red-500 dark:text-red-300">Base {formatCurrency(installment.amount)}</p>
+                                      <p className="mt-0.5 text-red-500 dark:text-red-300">Com atraso {formatCurrency(installment.amount + installment.daysOverdue * overdueDetails.dailyRate)}</p>
                                     </div>
                                   </div>
                                 ))}

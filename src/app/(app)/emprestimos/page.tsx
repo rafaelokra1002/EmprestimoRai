@@ -15,7 +15,7 @@ import {
   MessageCircle, Send, Loader2
 } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
-import { formatCurrency, formatDate, calculateLoan, generateInstallmentDates } from "@/lib/utils"
+import { formatCurrency, formatDate, calculateLoan, generateInstallmentDates, resolveDailyInterestAmount } from "@/lib/utils"
 import { buildLoanData, calculateTotalAmountWithLateFee, calculateOverdueInterest, getDaysOverdue, getNextDueDate, getPaidExcludingInterest } from "@/lib/loan-logic"
 
 interface Loan {
@@ -72,6 +72,7 @@ export default function EmprestimosPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [loanFilter, setLoanFilter] = useState<"all" | "on_time" | "due_today" | "overdue" | "installments" | "interest_only" | "monthly" | "tagged">("all")
   const [filterOpen, setFilterOpen] = useState(false)
+  const [tagFilterOpen, setTagFilterOpen] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState<string | null>(null)
   const [payMenuOpen, setPayMenuOpen] = useState<string | null>(null)
   const [expandedLoan, setExpandedLoan] = useState<string | null>(null)
@@ -281,12 +282,13 @@ export default function EmprestimosPage() {
     if (!amount || amount <= 0) return alert("Informe o valor")
     if (!installmentCount || installmentCount < 1) return alert("Informe o número de parcelas")
 
-    // Calculate daily interest amount
-    const modDays = modality === "DAILY" ? 1 : modality === "WEEKLY" ? 7 : modality === "BIWEEKLY" ? 15 : 30
-    const interestPerInstallment = amount * (interestRate / 100)
-    const calculatedDailyInterest = dailyInterest
-      ? (dailyInterestAmount > 0 ? dailyInterestAmount : Math.round((interestPerInstallment / modDays) * 100) / 100)
-      : 0
+    const calculatedDailyInterest = resolveDailyInterestAmount(
+      dailyInterest,
+      dailyInterestAmount,
+      amount,
+      interestRate,
+      modality
+    )
 
     const res = await fetch("/api/loans", {
       method: "POST",
@@ -970,6 +972,21 @@ export default function EmprestimosPage() {
 
   const selectClass = "flex h-10 w-full rounded-md border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 px-3 py-2 text-sm text-gray-900 dark:text-zinc-100"
 
+  const filterOptions = [
+    { value: "all", label: "Todos" },
+    { value: "on_time", label: "Em Dia" },
+    { value: "due_today", label: "Vence Hoje" },
+    { value: "overdue", label: "Atrasados" },
+    { value: "installments", label: "Parcelados" },
+    { value: "interest_only", label: "Só Juros" },
+    { value: "monthly", label: "Mensal" },
+  ] as const
+
+  const tagOptions = [
+    { value: "all", label: "Todas" },
+    { value: "tagged", label: "Com etiqueta" },
+  ] as const
+
   return (
     <div className="space-y-6">
       {/* Title + Vence Hoje / Atrasados */}
@@ -1031,26 +1048,67 @@ export default function EmprestimosPage() {
       {/* Filters + View Toggle */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 flex-wrap">
-          {[
-            { value: "all", label: "Todos", color: "text-gray-700 dark:text-zinc-300 border-gray-300 dark:border-zinc-600", activeColor: "bg-gray-800 dark:bg-zinc-200 text-white dark:text-zinc-900 border-gray-800 dark:border-zinc-200" },
-            { value: "on_time", label: "Em Dia", color: "text-blue-600 dark:text-blue-400 border-blue-400 dark:border-blue-500", activeColor: "bg-blue-600 dark:bg-blue-500 text-white border-blue-600 dark:border-blue-500" },
-            { value: "due_today", label: "Vence Hoje", color: "text-yellow-600 dark:text-yellow-400 border-yellow-400 dark:border-yellow-500", activeColor: "bg-yellow-500 dark:bg-yellow-500 text-white border-yellow-500 dark:border-yellow-500" },
-            { value: "overdue", label: "Atrasados", color: "text-red-600 dark:text-red-400 border-red-400 dark:border-red-500", activeColor: "bg-red-600 dark:bg-red-500 text-white border-red-600 dark:border-red-500" },
-            { value: "installments", label: "Parcelados", color: "text-purple-600 dark:text-purple-400 border-purple-400 dark:border-purple-500", activeColor: "bg-purple-600 dark:bg-purple-500 text-white border-purple-600 dark:border-purple-500" },
-            { value: "tagged", label: "Etiqueta", color: "text-emerald-600 dark:text-emerald-400 border-emerald-400 dark:border-emerald-500", activeColor: "bg-emerald-600 dark:bg-emerald-500 text-white border-emerald-600 dark:border-emerald-500" },
-            { value: "interest_only", label: "Só Juros", color: "text-orange-600 dark:text-orange-400 border-orange-400 dark:border-orange-500", activeColor: "bg-orange-600 dark:bg-orange-500 text-white border-orange-600 dark:border-orange-500" },
-            { value: "monthly", label: "Mensal", color: "text-cyan-600 dark:text-cyan-400 border-cyan-400 dark:border-cyan-500", activeColor: "bg-cyan-600 dark:bg-cyan-500 text-white border-cyan-600 dark:border-cyan-500" },
-          ].map((opt) => (
+          <div className="relative">
             <button
-              key={opt.value}
-              onClick={() => setLoanFilter(opt.value as any)}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-                loanFilter === opt.value ? opt.activeColor : opt.color + " bg-transparent hover:opacity-80"
-              }`}
+              onClick={() => {
+                setFilterOpen((current) => !current)
+                setTagFilterOpen(false)
+              }}
+              className="inline-flex items-center gap-2 rounded-2xl border border-emerald-500 bg-white px-4 py-2 text-sm font-semibold text-emerald-600 transition hover:bg-emerald-50 dark:bg-zinc-900 dark:hover:bg-zinc-800"
             >
-              {opt.label}
+              <Filter className="h-4 w-4" />
+              Filtros
+              <ChevronDown className={`h-4 w-4 transition-transform ${filterOpen ? "rotate-180" : ""}`} />
             </button>
-          ))}
+            {filterOpen && (
+              <div className="absolute left-0 top-full z-20 mt-2 min-w-[180px] rounded-2xl border border-gray-200 bg-white p-2 shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
+                {filterOptions.map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => {
+                      setLoanFilter(opt.value)
+                      setFilterOpen(false)
+                    }}
+                    className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm transition-colors ${loanFilter === opt.value ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400" : "text-gray-600 hover:bg-gray-50 dark:text-zinc-300 dark:hover:bg-zinc-800"}`}
+                  >
+                    <span>{opt.label}</span>
+                    {loanFilter === opt.value && <Check className="h-4 w-4" />}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="relative">
+            <button
+              onClick={() => {
+                setTagFilterOpen((current) => !current)
+                setFilterOpen(false)
+              }}
+              className="inline-flex items-center gap-2 rounded-2xl border border-orange-500 bg-white px-4 py-2 text-sm font-semibold text-orange-500 transition hover:bg-orange-50 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+            >
+              <Tag className="h-4 w-4" />
+              Etiqueta
+              <ChevronDown className={`h-4 w-4 transition-transform ${tagFilterOpen ? "rotate-180" : ""}`} />
+            </button>
+            {tagFilterOpen && (
+              <div className="absolute left-0 top-full z-20 mt-2 min-w-[180px] rounded-2xl border border-gray-200 bg-white p-2 shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
+                {tagOptions.map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => {
+                      setLoanFilter(opt.value)
+                      setTagFilterOpen(false)
+                    }}
+                    className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm transition-colors ${loanFilter === opt.value ? "bg-orange-50 text-orange-500 dark:bg-orange-950/30 dark:text-orange-400" : "text-gray-600 hover:bg-gray-50 dark:text-zinc-300 dark:hover:bg-zinc-800"}`}
+                  >
+                    <span>{opt.label}</span>
+                    {loanFilter === opt.value && <Check className="h-4 w-4" />}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
         <div className="flex bg-gray-50 dark:bg-zinc-800 rounded-lg p-1 border border-gray-200 dark:border-zinc-800">
           <button
@@ -1570,7 +1628,7 @@ export default function EmprestimosPage() {
                   {/* Lista de empréstimos */}
                   <div className="px-4 py-3 mt-2">
                     <p className="text-[11px] uppercase text-gray-400 dark:text-zinc-500 font-semibold tracking-wider mb-2">Empréstimos na Pasta</p>
-                    <div className="space-y-1.5">
+                    <div className="grid grid-cols-1 gap-1.5 lg:grid-cols-3">
                       {group.loans.map((loan) => {
                         const nextI = getNextDueInst(loan)
                         return (

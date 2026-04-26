@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { loanSchema } from "@/lib/validations"
-import { calculateLoan, generateInstallmentDates } from "@/lib/utils"
+import { calculateLoan, generateInstallmentDates, resolveDailyInterestAmount } from "@/lib/utils"
 
 export async function GET() {
   try {
@@ -49,6 +49,13 @@ export async function POST(request: Request) {
     )
     const { totalAmount, profit, installmentAmount, totalInterest } = loanCalc
     const sacInstallments = (loanCalc as any).sacInstallments as number[] | undefined
+    const dailyInterestAmount = resolveDailyInterestAmount(
+      data.dailyInterest ?? false,
+      data.dailyInterestAmount,
+      data.amount,
+      data.interestRate,
+      data.modality
+    )
 
     const firstDate = new Date(data.firstInstallmentDate + (data.firstInstallmentDate.includes("T") ? "" : "T12:00:00"))
     const contractDate = new Date(data.contractDate + (data.contractDate.includes("T") ? "" : "T12:00:00"))
@@ -88,7 +95,7 @@ export async function POST(request: Request) {
         skipSunday: data.skipSunday ?? false,
         skipHolidays: data.skipHolidays ?? false,
         dailyInterest: data.dailyInterest ?? false,
-        dailyInterestAmount: data.dailyInterestAmount ?? 0,
+        dailyInterestAmount,
         penaltyFee: data.penaltyFee ?? 0,
         lateCycles: 0,
         dueDay: firstDate.getDate(),

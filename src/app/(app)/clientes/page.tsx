@@ -10,10 +10,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
+import { FilterDropdown } from "@/components/ui/filter-dropdown"
 import { Textarea } from "@/components/ui/textarea"
 import { Avatar } from "@/components/avatar"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Search, Pencil, Trash2, User, MapPin, FileText, Mail, Phone, Instagram, Globe, Briefcase, Users, Camera, Upload, X, Eye, Download, Image, DollarSign, LayoutGrid, Rows3, CalendarDays, Flame } from "lucide-react"
+import { Plus, Search, Pencil, Trash2, User, MapPin, FileText, Mail, Phone, Instagram, Globe, Briefcase, Users, Camera, Upload, X, Eye, Download, Image, DollarSign, LayoutGrid, Rows3, CalendarDays, Flame, Filter } from "lucide-react"
 
 interface Client {
   id: string
@@ -510,14 +511,19 @@ export default function ClientesPage() {
         </div>
         <div className="flex flex-col items-end gap-2">
           <div className="flex items-center gap-4 text-sm">
-            <button onClick={() => setStatusFilter(statusFilter === "inactive" ? "all" : "inactive")} className={`flex items-center gap-2 transition-opacity ${statusFilter === "inactive" ? "opacity-100" : "opacity-60 hover:opacity-100"}`}>
-              <span className="font-semibold text-gray-400 dark:text-zinc-500 tabular-nums">{clients.filter(c => c.status !== "DESAPARECIDO" && (c.status === "INACTIVE" || (!c.loans?.some(l => l.status === "ACTIVE")))).length}</span>
-              <span className={`font-medium ${statusFilter === "inactive" ? "text-yellow-600 dark:text-yellow-500 underline underline-offset-4" : "text-yellow-600 dark:text-yellow-500"}`}>Inativo</span>
-            </button>
-            <button onClick={() => setStatusFilter(statusFilter === "active" ? "all" : "active")} className={`flex items-center gap-2 transition-opacity ${statusFilter === "active" ? "opacity-100" : "opacity-60 hover:opacity-100"}`}>
-              <span className="font-semibold text-gray-400 dark:text-zinc-500 tabular-nums">{clients.filter(c => c.status !== "DESAPARECIDO" && (c.status === "ACTIVE" || c.loans?.some(l => l.status === "ACTIVE"))).length}</span>
-              <span className={`font-medium ${statusFilter === "active" ? "text-emerald-600 dark:text-emerald-400 underline underline-offset-4" : "text-emerald-600 dark:text-emerald-400"}`}>Ativo</span>
-            </button>
+            <FilterDropdown
+              label="Filtros"
+              icon={<Filter className="h-4 w-4" />}
+              tone="emerald"
+              value={statusFilter}
+              onChange={(value) => setStatusFilter(value as "all" | "active" | "inactive")}
+              options={[
+                { value: "all", label: "Todos" },
+                { value: "active", label: `Ativos (${clients.filter(c => c.status !== "DESAPARECIDO" && (c.status === "ACTIVE" || c.loans?.some(l => l.status === "ACTIVE"))).length})` },
+                { value: "inactive", label: `Inativos (${clients.filter(c => c.status !== "DESAPARECIDO" && (c.status === "INACTIVE" || (!c.loans?.some(l => l.status === "ACTIVE")))).length})` },
+              ]}
+              minWidthClassName="min-w-[190px]"
+            />
             <div className="flex h-10 items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm text-gray-500 whitespace-nowrap dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-400">
               <Users className="h-4 w-4" />
               {filtered.length} clientes

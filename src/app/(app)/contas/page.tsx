@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import {
   Plus, Trash2, Search, ChevronDown, DollarSign, AlertTriangle,
-  CheckCircle2, CreditCard, Pencil, Undo2, Copy, Calendar,
+  CheckCircle2, CreditCard, Pencil, Undo2, Copy,
   Package, TrendingUp, ArrowDownCircle, Receipt, Landmark,
 } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
@@ -102,7 +102,7 @@ export default function ContasPage() {
     try {
       const amount = parseFloat(fAmount.replace(/\./g, "").replace(",", ".")) || 0
       if (amount <= 0) return alert("Valor deve ser maior que zero")
-      if (!fDescription.trim()) return alert("Nome da conta é obrigatório")
+      if (!fDescription.trim()) return alert("Descricao e obrigatoria")
 
       const payload = {
         description: fDescription,
@@ -245,13 +245,6 @@ export default function ContasPage() {
 
   const isFormValid = fDescription.trim().length >= 2
 
-  const formatDueDateShort = (dateStr: string) => {
-    const date = new Date(dateStr)
-    const day = date.getDate()
-    const month = date.toLocaleString("pt-BR", { month: "short" }).replace(".", "")
-    return `${day} de ${month}`
-  }
-
   const saldoAtualEmCaixa = caixaInicial !== null
     ? caixaInicial - (dashboardData?.capitalOnStreet || 0) + (dashboardData?.totalReceived || 0) - stats.pagasTotal
     : null
@@ -291,9 +284,6 @@ export default function ContasPage() {
     <div className="space-y-8 pb-12">
       <div className="flex min-h-[calc(100vh-12rem)] items-center justify-center">
         <section className="relative w-full max-w-6xl overflow-hidden rounded-[32px] border border-gray-200 bg-white px-6 py-7 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 md:px-8">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.1),transparent_34%),radial-gradient(circle_at_top_right,rgba(245,158,11,0.08),transparent_28%)] dark:bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.12),transparent_34%),radial-gradient(circle_at_top_right,rgba(245,158,11,0.08),transparent_28%)]" />
-          <div className="pointer-events-none absolute -left-24 top-24 h-56 w-56 rounded-full bg-emerald-500/10 blur-3xl" />
-          <div className="pointer-events-none absolute right-0 top-0 h-72 w-72 rounded-full bg-amber-500/10 blur-3xl" />
 
           <div className="relative space-y-5">
             <div className="flex items-start justify-between">
@@ -329,7 +319,7 @@ export default function ContasPage() {
 
                 {caixaInicial !== null ? (
                   <div>
-                    <p className="text-[2.15rem] font-bold tracking-tight text-gray-900 dark:text-zinc-100 tabular-nums">{formatCurrency(caixaInicial)}</p>
+                    <p className="text-[1.9rem] font-bold tracking-tight text-gray-900 dark:text-zinc-100 tabular-nums">{formatCurrency(caixaInicial)}</p>
                     <p className="mt-2 text-sm text-gray-500 dark:text-zinc-400">Caixa inicial</p>
                     <p className="text-sm text-gray-400 dark:text-zinc-500">Definido em {new Date().toLocaleDateString("pt-BR")}</p>
                   </div>
@@ -346,17 +336,17 @@ export default function ContasPage() {
                 )}
               </div>
 
-              <div className="rounded-[24px] border border-emerald-200/80 bg-emerald-50/50 p-5 shadow-sm backdrop-blur-md dark:border-emerald-900/40 dark:bg-emerald-950/10">
+              <div className="rounded-[24px] border border-gray-200 bg-white/90 p-5 shadow-sm backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-900/80">
                 <div className="mb-5 flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-200 bg-white/80 dark:border-emerald-900/40 dark:bg-zinc-900/60">
-                    <Landmark className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-gray-50 dark:border-zinc-700 dark:bg-zinc-800">
+                    <Landmark className="h-5 w-5 text-gray-600 dark:text-zinc-300" />
                   </div>
                   <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Saldo Atual em Caixa</p>
                 </div>
 
                 {caixaInicial !== null && saldoAtualEmCaixa !== null ? (
                   <div>
-                    <p className="mb-5 text-[2.2rem] font-bold tracking-tight text-emerald-600 dark:text-emerald-400 tabular-nums">{formatCurrency(saldoAtualEmCaixa)}</p>
+                    <p className="mb-5 text-[1.95rem] font-bold tracking-tight text-gray-900 dark:text-zinc-100 tabular-nums">{formatCurrency(saldoAtualEmCaixa)}</p>
                     <div className="space-y-2.5 border-t border-gray-200 pt-3.5 text-sm dark:border-zinc-800">
                       <div className="flex items-center justify-between gap-3">
                         <span className="text-gray-500 dark:text-zinc-400">Caixa inicial</span>
@@ -364,11 +354,11 @@ export default function ContasPage() {
                       </div>
                       <div className="flex items-center justify-between gap-3">
                         <span className="text-gray-500 dark:text-zinc-400">Capital na rua</span>
-                        <span className="font-semibold text-orange-500 dark:text-orange-400 tabular-nums">− {formatCurrency(dashboardData?.capitalOnStreet || 0)}</span>
+                        <span className="font-semibold text-gray-900 dark:text-zinc-100 tabular-nums">− {formatCurrency(dashboardData?.capitalOnStreet || 0)}</span>
                       </div>
                       <div className="flex items-center justify-between gap-3">
                         <span className="text-gray-500 dark:text-zinc-400">Entradas (parcelas pagas)</span>
-                        <span className="font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">+ {formatCurrency(dashboardData?.totalReceived || 0)}</span>
+                        <span className="font-semibold text-gray-900 dark:text-zinc-100 tabular-nums">+ {formatCurrency(dashboardData?.totalReceived || 0)}</span>
                       </div>
                       <div className="flex items-center justify-between gap-3">
                         <span className="text-gray-500 dark:text-zinc-400">Saídas (despesas do mês)</span>
@@ -376,7 +366,7 @@ export default function ContasPage() {
                       </div>
                       <div className="flex items-center justify-between gap-3 border-t border-gray-200 pt-3 dark:border-zinc-800">
                         <span className="font-semibold text-gray-900 dark:text-zinc-100">Saldo</span>
-                        <span className="font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{formatCurrency(saldoAtualEmCaixa)}</span>
+                        <span className="font-bold text-gray-900 dark:text-zinc-100 tabular-nums">{formatCurrency(saldoAtualEmCaixa)}</span>
                       </div>
                     </div>
                   </div>
@@ -398,7 +388,7 @@ export default function ContasPage() {
                       <Icon className={`h-5 w-5 ${item.iconClassName}`} />
                     </div>
                     <p className="text-sm font-medium text-gray-500 dark:text-zinc-400">{item.title}</p>
-                    <p className="mt-1 text-[1.7rem] font-bold tracking-tight text-gray-900 dark:text-zinc-100 tabular-nums">{item.value}</p>
+                    <p className="mt-1 text-[1.45rem] font-bold tracking-tight text-gray-900 dark:text-zinc-100 tabular-nums">{item.value}</p>
                   </div>
                 )
               })}
@@ -407,125 +397,12 @@ export default function ContasPage() {
         </section>
       </div>
 
-      {loading ? (
-        <div className="py-12 text-center text-gray-500 dark:text-zinc-400">Carregando...</div>
-      ) : filteredExpenses.length === 0 ? (
-        <div className="py-12 text-center text-gray-400 dark:text-zinc-500">
-          <CreditCard className="mx-auto mb-3 h-12 w-12 text-gray-500 dark:text-zinc-400" />
-          <p className="text-sm">Nenhuma conta encontrada</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          {filteredExpenses.map((expense) => {
-            const status = getExpenseStatus(expense)
-            const isPaid = status === "pago"
-            const isOverdue = status === "atrasado"
-
-            const cardBg = isPaid
-              ? "bg-gradient-to-br from-emerald-600/90 to-emerald-700/80 border-emerald-500/50"
-              : isOverdue
-                ? "bg-gradient-to-br from-red-600/90 to-red-700/80 border-red-500/50"
-                : "bg-gradient-to-br from-gray-100/90 to-white/80 border-gray-300 dark:border-zinc-700"
-
-            return (
-              <div key={expense.id} className={`relative overflow-hidden rounded-xl border ${cardBg} p-4 space-y-3`}>
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white dark:bg-zinc-900/10">
-                      <Package className="h-4 w-4 text-white/80" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-white">{expense.description}</p>
-                      {expense.supplier && <p className="text-xs text-white/60">{expense.supplier}</p>}
-                    </div>
-                  </div>
-                  <Badge className={`text-xs ${
-                    isPaid ? "border-emerald-400/30 bg-emerald-50 text-emerald-100 dark:bg-emerald-950/300/20"
-                    : isOverdue ? "bg-red-400/20 text-red-100 border-red-400/30"
-                    : "bg-amber-400/20 text-amber-100 border-amber-400/30"
-                  }`}>
-                    {isPaid ? "Pago" : isOverdue ? "Atrasado" : "Pendente"}
-                  </Badge>
-                </div>
-
-                <div>
-                  <p className="text-2xl font-bold text-white">{formatCurrency(expense.amount)}</p>
-                  <div className="mt-1 flex flex-wrap items-center gap-2">
-                    <span className="flex items-center gap-1 text-xs text-white/70">
-                      <Calendar className="h-3 w-3" />
-                      Vence {formatDueDateShort(expense.dueDate)}
-                    </span>
-                    {expense.recurring && (
-                      <Badge className="border-emerald-400/30 bg-emerald-50 px-1.5 py-0 text-[10px] text-emerald-200 dark:bg-emerald-950/300/20">
-                        ↻ Recorrente
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-
-                {expense.pixKey && (
-                  <div className="flex items-center justify-between rounded-lg bg-white p-2.5 dark:bg-zinc-900/10">
-                    <div>
-                      <p className="text-[10px] font-medium uppercase tracking-wide text-white/50">CHAVE PIX</p>
-                      <p className="mt-0.5 text-xs text-white/80">{expense.pixKey}</p>
-                    </div>
-                    <button
-                      onClick={() => copyToClipboard(expense.pixKey)}
-                      className="rounded-md p-1.5 transition hover:bg-white dark:hover:bg-zinc-900/10"
-                    >
-                      <Copy className="h-3.5 w-3.5 text-white/60" />
-                    </button>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-2 pt-1">
-                  {isPaid ? (
-                    <>
-                      <button className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg bg-emerald-50 text-sm font-medium text-emerald-100 transition hover:bg-emerald-50 dark:bg-emerald-950/300/20 dark:hover:bg-emerald-950/300/30">
-                        <CheckCircle2 className="h-3.5 w-3.5" /> Pago
-                      </button>
-                      <button
-                        onClick={() => handleUnpay(expense.id)}
-                        className="flex h-9 w-9 items-center justify-center rounded-lg bg-white transition hover:bg-white dark:bg-zinc-900/10 dark:hover:bg-zinc-900/20"
-                      >
-                        <Undo2 className="h-3.5 w-3.5 text-white/60" />
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      onClick={() => handlePay(expense.id)}
-                      className={`flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg text-sm font-medium transition ${
-                        isOverdue
-                          ? "bg-white text-white hover:bg-white dark:bg-zinc-900/20 dark:hover:bg-zinc-900/30"
-                          : "bg-emerald-50 text-emerald-100 hover:bg-emerald-50 dark:bg-emerald-950/300/20 dark:hover:bg-emerald-950/300/30"
-                      }`}
-                    >
-                      <CheckCircle2 className="h-3.5 w-3.5" /> Pagar
-                    </button>
-                  )}
-                  <button
-                    onClick={() => openEditDialog(expense)}
-                    className="flex h-9 w-9 items-center justify-center rounded-lg bg-white transition hover:bg-white dark:bg-zinc-900/10 dark:hover:bg-zinc-900/20"
-                  >
-                    <Pencil className="h-3.5 w-3.5 text-white/60" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(expense.id)}
-                    className="flex h-9 w-9 items-center justify-center rounded-lg bg-white transition hover:bg-white dark:bg-zinc-900/10 dark:hover:bg-zinc-900/20"
-                  >
-                    <Trash2 className="h-3.5 w-3.5 text-red-300" />
-                  </button>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      )}
+      {/* Cards de contas ocultados temporariamente nesta tela. */}
 
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} title={editingId ? "Editar Conta" : "Adicionar Nova Conta"}>
         <div className="space-y-5">
           <div>
-            <Label className="font-semibold">Nome da Conta *</Label>
+            <Label className="font-semibold">Descricao *</Label>
             <Input
               value={fDescription}
               onChange={(e) => setFDescription(e.target.value)}

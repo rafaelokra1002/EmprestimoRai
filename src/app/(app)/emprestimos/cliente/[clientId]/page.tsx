@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label"
 import { ArrowLeft, Calendar, Check, CheckCircle2, Copy, DollarSign, Download, Eye, FileText, Lock, Loader2, MessageCircle, Pencil, Receipt, RotateCcw, Send, Tag, Trash2, X, Plus } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import { formatCurrency, formatDate } from "@/lib/utils"
-import { buildLoanData, calculateTotalAmountWithLateFee, calculateOverdueInterest, getDaysOverdue, getNextDueDate as getNextDueDateFn } from "@/lib/loan-logic"
+import { buildLoanData, calculateTotalAmountWithLateFee, calculateOverdueInterest, getDaysOverdue, getNextDueDate as getNextDueDateFn, getOverdueDailyAmountBRL } from "@/lib/loan-logic"
 
 interface Loan {
   id: string
@@ -23,6 +23,7 @@ interface Loan {
   installmentCount: number
   installmentValue: number
   penaltyFee: number
+  dailyInterest: boolean
   dailyInterestAmount: number
   dueDay: number
   modality: string
@@ -212,6 +213,7 @@ export default function ClienteEmprestimosPage() {
       interestRate: loan.interestRate,
       interestType: loan.interestType || "SIMPLE",
       totalAmount: loan.totalAmount,
+      dailyInterest: loan.dailyInterest,
       dailyInterestAmount: loan.dailyInterestAmount || 0,
       dueDay: loan.dueDay || new Date(loan.installments[0]?.dueDate || Date.now()).getDate(),
       modality: loan.modality,
@@ -271,6 +273,7 @@ export default function ClienteEmprestimosPage() {
       interestRate: loan.interestRate,
       interestType: loan.interestType || "SIMPLE",
       totalAmount: loan.totalAmount,
+      dailyInterest: loan.dailyInterest,
       dailyInterestAmount: loan.dailyInterestAmount || 0,
       dueDay: loan.dueDay || new Date(loan.installments[0]?.dueDate || Date.now()).getDate(),
       modality: loan.modality,
@@ -567,7 +570,7 @@ export default function ClienteEmprestimosPage() {
       ) : loans.length === 0 ? (
         <div className="text-gray-400 dark:text-zinc-500">Nenhum empréstimo encontrado para este cliente.</div>
       ) : (
-        <div className="grid md:grid-cols-2 gap-4">
+        <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
           {loans.map((loan) => {
             const status = getLoanStatusInfo(loan)
             const paid = getPaidTotal(loan)
@@ -577,11 +580,23 @@ export default function ClienteEmprestimosPage() {
             const nextInst = getNextDueInst(loan)
             const intPerInst = interestPerInst(loan)
 
-            const cardBorder = status.label === "Atrasado" || status.label === "Inadimplente" ? "border-red-400 dark:border-red-700" : status.label === "Só Juros" ? "border-purple-400 dark:border-purple-700" : status.label === "Quitado" ? "border-blue-400 dark:border-blue-700" : "border-emerald-400 dark:border-emerald-700"
-            const cardBg = status.label === "Atrasado" || status.label === "Inadimplente" ? "bg-red-100 dark:bg-red-950/30" : status.label === "Só Juros" ? "bg-purple-100 dark:bg-purple-950/30" : status.label === "Quitado" ? "bg-blue-100 dark:bg-blue-950/30" : "bg-emerald-100 dark:bg-emerald-950/30"
-            const remainingColor = status.label === "Atrasado" || status.label === "Inadimplente" ? "text-red-700 dark:text-red-400" : status.label === "Só Juros" ? "text-purple-700 dark:text-purple-400" : status.label === "Quitado" ? "text-blue-700 dark:text-blue-400" : "text-emerald-700 dark:text-emerald-400"
-            const remainingBg = status.label === "Atrasado" || status.label === "Inadimplente" ? "bg-red-100 dark:bg-red-900/40" : status.label === "Só Juros" ? "bg-purple-100 dark:bg-purple-900/40" : status.label === "Quitado" ? "bg-blue-100 dark:bg-blue-900/40" : "bg-emerald-100 dark:bg-emerald-900/40"
-            const cellBg = status.label === "Atrasado" || status.label === "Inadimplente" ? "bg-red-50 dark:bg-red-950/20" : status.label === "Só Juros" ? "bg-purple-50 dark:bg-purple-950/20" : status.label === "Quitado" ? "bg-blue-50 dark:bg-blue-950/20" : "bg-emerald-50 dark:bg-emerald-950/20"
+            const isAtrasado = status.label === "Atrasado" || status.label === "Inadimplente"
+            const isSoJuros = status.label === "Só Juros"
+            const isQuitado = status.label === "Quitado"
+            const isDueToday = nextInst
+              ? (() => {
+                  const dueDate = new Date(nextInst.dueDate)
+                  const today = new Date()
+                  return dueDate.getDate() === today.getDate() && dueDate.getMonth() === today.getMonth() && dueDate.getFullYear() === today.getFullYear()
+                })()
+              : false
+            const isParcelado = loan.installmentCount > 1
+
+            const cardBorder = isAtrasado ? "border-red-400 dark:border-red-700" : isDueToday ? "border-orange-400 dark:border-orange-700" : isSoJuros ? "border-purple-400 dark:border-purple-700" : isQuitado ? "border-blue-400 dark:border-blue-700" : isParcelado ? "border-blue-400 dark:border-blue-700" : "border-gray-200 dark:border-zinc-700"
+            const cardBg = isAtrasado ? "bg-red-100 dark:bg-red-950/30" : isDueToday ? "bg-orange-100 dark:bg-orange-950/30" : isSoJuros ? "bg-purple-100 dark:bg-purple-950/30" : isQuitado ? "bg-blue-100 dark:bg-blue-950/30" : isParcelado ? "bg-blue-100 dark:bg-blue-950/30" : "bg-white dark:bg-zinc-900"
+            const remainingColor = isAtrasado ? "text-red-700 dark:text-red-400" : isDueToday ? "text-orange-700 dark:text-orange-400" : isSoJuros ? "text-purple-700 dark:text-purple-400" : isQuitado ? "text-blue-700 dark:text-blue-400" : isParcelado ? "text-blue-700 dark:text-blue-400" : "text-gray-900 dark:text-zinc-100"
+            const remainingBg = isAtrasado ? "bg-red-100 dark:bg-red-900/40" : isDueToday ? "bg-orange-100 dark:bg-orange-900/40" : isSoJuros ? "bg-purple-100 dark:bg-purple-900/40" : isQuitado ? "bg-blue-100 dark:bg-blue-900/40" : isParcelado ? "bg-blue-100 dark:bg-blue-900/40" : "bg-gray-100 dark:bg-zinc-800"
+            const cellBg = isAtrasado ? "bg-red-50 dark:bg-red-950/20" : isDueToday ? "bg-orange-50 dark:bg-orange-950/20" : isSoJuros ? "bg-purple-50 dark:bg-purple-950/20" : isQuitado ? "bg-blue-50 dark:bg-blue-950/20" : isParcelado ? "bg-blue-50 dark:bg-blue-950/20" : "bg-gray-50 dark:bg-zinc-800/50"
 
             return (
               <div key={loan.id} className={`rounded-xl border overflow-hidden shadow-sm hover:shadow-md transition-shadow ${cardBorder} ${cardBg}`}>
@@ -648,7 +663,7 @@ export default function ClienteEmprestimosPage() {
                     {(() => {
                       const loanData = buildLoanData({
                         amount: loan.amount, interestRate: loan.interestRate, interestType: loan.interestType || "SIMPLE",
-                        totalAmount: loan.totalAmount, dailyInterestAmount: loan.dailyInterestAmount || 0,
+                        totalAmount: loan.totalAmount, dailyInterest: loan.dailyInterest, dailyInterestAmount: loan.dailyInterestAmount || 0,
                         dueDay: loan.dueDay || new Date(loan.installments[0]?.dueDate || Date.now()).getDate(),
                         modality: loan.modality, firstInstallmentDate: loan.firstInstallmentDate || loan.installments[0]?.dueDate || new Date().toISOString(),
                         installments: loan.installments, payments: loan.payments,
@@ -673,7 +688,7 @@ export default function ClienteEmprestimosPage() {
                     installments: loan.installments, payments: loan.payments,
                   })
                   const daysOverdue = getDaysOverdue(loanData)
-                  const dailyAmt = loan.dailyInterestAmount || 0
+                  const dailyAmt = getOverdueDailyAmountBRL(loanData)
 
                   if (daysOverdue <= 0) return null
 
@@ -880,6 +895,7 @@ export default function ClienteEmprestimosPage() {
               interestRate: renegotiateDialog.interestRate,
               interestType: renegotiateDialog.interestType || "SIMPLE",
               totalAmount: renegotiateDialog.totalAmount,
+              dailyInterest: renegotiateDialog.dailyInterest,
               dailyInterestAmount: renegotiateDialog.dailyInterestAmount || 0,
               dueDay: renegotiateDialog.dueDay || new Date(renegotiateDialog.installments[0]?.dueDate || Date.now()).getDate(),
               modality: renegotiateDialog.modality,
@@ -896,7 +912,7 @@ export default function ClienteEmprestimosPage() {
               daysOverdue,
               (renegotiateDialog.interestType || "SIMPLE") as "SIMPLE" | "COMPOUND"
             )
-            const dailyPenalty = (renegotiateDialog.dailyInterestAmount || 0) * daysOverdue
+            const dailyPenalty = getOverdueDailyAmountBRL(loanData) * daysOverdue
             return overdueInterest + dailyPenalty
           })()
           const totalJuros = intPerInst + nextInstOverdue

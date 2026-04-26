@@ -352,9 +352,9 @@ export default function ConfiguracoesPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-3xl mx-auto pb-10">
+    <div className="max-w-3xl space-y-6 pb-10">
       {/* ─── Header ─── */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col items-start gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">Configurações</h1>
           <p className="text-gray-500 dark:text-zinc-400 text-sm">Gerencie seu perfil e preferências</p>

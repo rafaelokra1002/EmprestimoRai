@@ -1,9 +1,10 @@
 "use client"
 
-import { useEffect, useState, useMemo, useCallback, useRef } from "react"
+import { useEffect, useState, useMemo, useCallback } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { FilterDropdown } from "@/components/ui/filter-dropdown"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { formatCurrency, formatDate } from "@/lib/utils"
 import { useTheme } from "@/lib/theme-provider"
@@ -13,7 +14,7 @@ import {
 import {
   Calendar, Download, RefreshCw, ChevronDown, ChevronUp,
   Wallet, TrendingUp, DollarSign, CheckCircle2, Clock, AlertTriangle,
-  Percent, ArrowUpRight, ArrowDownLeft, Pencil, Plus,
+  Percent, Filter,
   Users, ToggleLeft, ToggleRight
 } from "lucide-react"
 
@@ -68,15 +69,9 @@ export default function RelatorioEmprestimosPage() {
   const [startDate, setStartDate] = useState(firstOfMonth())
   const [endDate, setEndDate] = useState(today())
   const [paymentFilter, setPaymentFilter] = useState<"all" | "daily" | "monthly" | "price">("all")
-  const [showFilters, setShowFilters] = useState(false)
   const [caixaExtra, setCaixaExtra] = useState(0)
-  const [editingCaixa, setEditingCaixa] = useState(false)
-  const [caixaInput, setCaixaInput] = useState("0")
-  const [showSaidas, setShowSaidas] = useState(true)
-  const [showEntradas, setShowEntradas] = useState(true)
   const [includeExpenses, setIncludeExpenses] = useState(true)
   const [updatedAt, setUpdatedAt] = useState("")
-  const caixaRef = useRef<HTMLInputElement>(null)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -288,18 +283,56 @@ export default function RelatorioEmprestimosPage() {
     ]
   }, [capitalNaRua, totalRecebidoHistorico, faltaReceber, emAtraso])
 
-  // Caixa edit
-  const startEditCaixa = () => {
-    setEditingCaixa(true)
-    setCaixaInput(caixaExtra.toString())
-    setTimeout(() => caixaRef.current?.focus(), 50)
-  }
-  const saveCaixa = () => {
-    setCaixaExtra(Number(caixaInput) || 0)
-    setEditingCaixa(false)
-  }
-
   const clearDates = () => { setStartDate(""); setEndDate("") }
+
+  /*
+    Fluxo de caixa ocultado temporariamente.
+    Mantemos a implementacao anterior aqui para poder reutilizar mais a frente.
+
+      <Card className="border-gray-200 dark:border-zinc-800">
+        <CardContent className="p-6 space-y-4">
+          <div className="flex items-center gap-3">
+            <Wallet className="h-5 w-5 text-emerald-600" />
+            <h2 className="text-lg font-bold text-gray-900 dark:text-zinc-100">Fluxo de Caixa</h2>
+            <Badge className="bg-emerald-50 dark:bg-emerald-950/300/20 text-emerald-600 border-0 text-xs">Novidade</Badge>
+          </div>
+
+          <div className="rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800/40 p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-full bg-gray-200 dark:bg-zinc-700/50 flex items-center justify-center">
+                <DollarSign className="h-4 w-4 text-gray-500 dark:text-zinc-400" />
+              </div>
+              <div>
+                <p className="font-medium text-gray-900 dark:text-zinc-100">Caixa Extra</p>
+                <p className="text-xs text-gray-400 dark:text-zinc-500">Valor informado manualmente</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-center">
+            <ChevronDown className="h-4 w-4 text-gray-500 dark:text-zinc-400" />
+          </div>
+
+          <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-950/10 overflow-hidden">
+            <div className="w-full flex items-center justify-between px-4 py-3 hover:bg-red-50 dark:bg-red-950/30 transition-colors">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-red-600 uppercase tracking-wide">Saidas</span>
+              </div>
+              <span className="text-sm font-bold text-red-600">-{formatCurrency(saidas)}</span>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 overflow-hidden">
+            <div className="w-full flex items-center justify-between px-4 py-3 hover:bg-emerald-50 dark:bg-emerald-950/30 transition-colors">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-emerald-600 uppercase tracking-wide">Entradas</span>
+              </div>
+              <span className="text-sm font-bold text-emerald-600">+{formatCurrency(entradas)}</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+  */
 
   const FILTER_LABELS: Record<string, string> = { all: "Todos", daily: "Diário", monthly: "Mensal", price: "Tabela Price" }
 
@@ -346,180 +379,32 @@ export default function RelatorioEmprestimosPage() {
       {/* ===== PAYMENT TYPE FILTER ===== */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <span className="text-sm text-gray-500 dark:text-zinc-400 flex items-center gap-1.5">
-            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" /></svg>
-            Tipo de Pagamento:
-          </span>
-          <div className="flex gap-1.5">
-            {(["all", "daily", "monthly", "price"] as const).map((f) => (
-              <button
-                key={f}
-                onClick={() => setPaymentFilter(f)}
-                className={`text-xs px-3 py-1 rounded-full transition-colors ${
-                  paymentFilter === f
-                    ? "bg-emerald-50 dark:bg-emerald-950/300 text-white"
-                    : "bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400 hover:bg-gray-200 dark:hover:bg-zinc-700 dark:bg-zinc-700"
-                }`}
-              >
-                {FILTER_LABELS[f]}
-              </button>
-            ))}
-          </div>
+          <FilterDropdown
+            label="Filtros"
+            icon={<Filter className="h-4 w-4" />}
+            tone="emerald"
+            value={paymentFilter}
+            onChange={(value) => setPaymentFilter(value as "all" | "daily" | "monthly" | "price")}
+            options={(["all", "daily", "monthly", "price"] as const).map((value) => ({ value, label: FILTER_LABELS[value] }))}
+            minWidthClassName="min-w-[180px]"
+          />
+          <FilterDropdown
+            label="Saídas"
+            icon={<Wallet className="h-4 w-4" />}
+            tone="orange"
+            value={includeExpenses ? "with_expenses" : "without_expenses"}
+            onChange={(value) => setIncludeExpenses(value === "with_expenses")}
+            options={[
+              { value: "with_expenses", label: "Com contas a pagar" },
+              { value: "without_expenses", label: "Sem contas a pagar" },
+            ]}
+            minWidthClassName="min-w-[220px]"
+          />
           <span className="text-sm text-emerald-600 ml-2">Na Rua: {formatCurrency(capitalNaRua)}</span>
         </div>
-        <button
-          onClick={() => setShowFilters(!showFilters)}
-          className="text-sm text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 dark:text-zinc-200 flex items-center gap-1"
-        >
-          Ver Filtros {showFilters ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-        </button>
       </div>
 
-      {showFilters && (
-        <Card>
-          <CardContent className="p-4 flex items-center gap-4">
-            <span className="text-sm text-gray-500 dark:text-zinc-400">Incluir contas a pagar nas saídas:</span>
-            <button onClick={() => setIncludeExpenses(!includeExpenses)} className="text-emerald-600">
-              {includeExpenses ? <ToggleRight className="h-6 w-6" /> : <ToggleLeft className="h-6 w-6 text-gray-400 dark:text-zinc-500" />}
-            </button>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* ===== FLUXO DE CAIXA ===== */}
-      <Card className="border-gray-200 dark:border-zinc-800">
-        <CardContent className="p-6 space-y-4">
-          <div className="flex items-center gap-3">
-            <Wallet className="h-5 w-5 text-emerald-600" />
-            <h2 className="text-lg font-bold text-gray-900 dark:text-zinc-100">Fluxo de Caixa</h2>
-            <Badge className="bg-emerald-50 dark:bg-emerald-950/300/20 text-emerald-600 border-0 text-xs">Novidade</Badge>
-          </div>
-
-          {/* Caixa Extra */}
-          <div className="rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800/40 p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-full bg-gray-200 dark:bg-zinc-700/50 flex items-center justify-center">
-                <DollarSign className="h-4 w-4 text-gray-500 dark:text-zinc-400" />
-              </div>
-              <div>
-                <p className="font-medium text-gray-900 dark:text-zinc-100">Caixa Extra</p>
-                <p className="text-xs text-gray-400 dark:text-zinc-500">Valor informado manualmente</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {editingCaixa ? (
-                <input
-                  ref={caixaRef}
-                  type="number"
-                  value={caixaInput}
-                  onChange={(e) => setCaixaInput(e.target.value)}
-                  onBlur={saveCaixa}
-                  onKeyDown={(e) => e.key === "Enter" && saveCaixa()}
-                  className="bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded px-2 py-1 text-sm text-emerald-600 font-bold w-28 text-right outline-none"
-                />
-              ) : (
-                <span className="text-lg font-bold text-emerald-600">{formatCurrency(caixaExtra)}</span>
-              )}
-              <button onClick={editingCaixa ? saveCaixa : startEditCaixa} className="text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 dark:text-zinc-200">
-                <Pencil className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-
-          <div className="flex justify-center">
-            <ChevronDown className="h-4 w-4 text-gray-500 dark:text-zinc-400" />
-          </div>
-
-          {/* ===== SAÍDAS ===== */}
-          <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-950/10 overflow-hidden">
-            <button
-              onClick={() => setShowSaidas(!showSaidas)}
-              className="w-full flex items-center justify-between px-4 py-3 hover:bg-red-50 dark:bg-red-950/30 transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <ArrowUpRight className="h-4 w-4 text-red-600" />
-                <span className="text-sm font-bold text-red-600 uppercase tracking-wide">Saídas</span>
-              </div>
-              <span className="text-sm font-bold text-red-600">-{formatCurrency(saidas)}</span>
-            </button>
-            {showSaidas && (
-              <div className="px-4 pb-4 space-y-3">
-                <div className="flex items-center justify-between py-2">
-                  <div className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-red-50 dark:bg-red-950/300" />
-                    <span className="text-sm text-gray-700 dark:text-zinc-300">Empréstimos concedidos</span>
-                  </div>
-                  <span className="text-sm font-medium text-red-600">-{formatCurrency(emprestimosNoPeriodo)}</span>
-                </div>
-                {includeExpenses && (
-                  <div className="flex items-center justify-between py-2">
-                    <div className="flex items-center gap-2">
-                      <span className="h-2 w-2 rounded-full bg-red-50 dark:bg-red-950/300" />
-                      <span className="text-sm text-gray-700 dark:text-zinc-300">Contas a pagar</span>
-                      <span className="text-xs text-gray-400 dark:text-zinc-500">({contasPagarCount} contas)</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-red-600">-{formatCurrency(contasPagar)}</span>
-                      <button onClick={() => setIncludeExpenses(!includeExpenses)}>
-                        {includeExpenses
-                          ? <ToggleRight className="h-5 w-5 text-emerald-600" />
-                          : <ToggleLeft className="h-5 w-5 text-gray-400 dark:text-zinc-500" />}
-                      </button>
-                    </div>
-                  </div>
-                )}
-                <div className="pl-4">
-                  <div className="flex items-center gap-2">
-                    <Wallet className="h-3.5 w-3.5 text-gray-400 dark:text-zinc-500" />
-                    <span className="text-xs text-gray-400 dark:text-zinc-500">Custos extras</span>
-                  </div>
-                  <button className="text-xs text-gray-400 dark:text-zinc-500 hover:text-gray-700 dark:text-zinc-300 mt-1 flex items-center gap-1 pl-5">
-                    <Plus className="h-3 w-3" /> Adicionar custo extra
-                  </button>
-                </div>
-              </div>
-            )}
-            <div className="flex justify-center py-1">
-              <ChevronDown className="h-4 w-4 text-gray-500 dark:text-zinc-400" />
-            </div>
-          </div>
-
-          {/* ===== ENTRADAS ===== */}
-          <div className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 overflow-hidden">
-            <button
-              onClick={() => setShowEntradas(!showEntradas)}
-              className="w-full flex items-center justify-between px-4 py-3 hover:bg-emerald-50 dark:bg-emerald-950/30 transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <ArrowDownLeft className="h-4 w-4 text-emerald-600" />
-                <span className="text-sm font-bold text-emerald-600 uppercase tracking-wide">Entradas</span>
-              </div>
-              <span className="text-sm font-bold text-emerald-600">+{formatCurrency(entradas)}</span>
-            </button>
-            {showEntradas && (
-              <div className="px-4 pb-4 space-y-3">
-                <div className="flex items-center justify-between py-2">
-                  <div className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-emerald-50 dark:bg-emerald-950/300" />
-                    <span className="text-sm text-gray-700 dark:text-zinc-300">Pagamentos recebidos</span>
-                  </div>
-                  <span className="text-sm font-medium text-emerald-600">+{formatCurrency(pagamentosNoPeriodo)}</span>
-                </div>
-                <div className="flex items-center justify-between py-2 pl-4">
-                  <div className="flex items-center gap-2">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/300" />
-                    <span className="text-xs text-gray-500 dark:text-zinc-400">dos quais juros</span>
-                  </div>
-                  <span className="text-xs font-medium text-gray-700 dark:text-zinc-300">{formatCurrency(jurosRecebidos)}</span>
-                </div>
-              </div>
-            )}
-            <div className="flex justify-center py-1">
-              <ChevronDown className="h-4 w-4 text-gray-500 dark:text-zinc-400" />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Fluxo de caixa ocultado temporariamente. Implementacao mantida em comentario no corpo do componente para reutilizacao futura. */}
 
       {/* ===== RESULTADO DO PERÍODO ===== */}
       <div className={`rounded-xl border p-6 text-center ${

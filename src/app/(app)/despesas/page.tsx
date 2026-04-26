@@ -6,11 +6,13 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
+import { FilterDropdown } from "@/components/ui/filter-dropdown"
 import { Textarea } from "@/components/ui/textarea"
 import {
   Plus, Trash2, Search, ChevronLeft, ChevronRight, ChevronDown,
-  AlertTriangle, CheckCircle2, CreditCard, Pencil, Undo2,
+  CheckCircle2, CreditCard, Pencil, Undo2,
   Calendar, Package, Receipt,
+  Filter,
 } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
 
@@ -53,8 +55,6 @@ export default function DespesasPage() {
 
   const [fAccountType, setFAccountType] = useState("PESSOAL")
   const [fDescription, setFDescription] = useState("")
-  const [fSupplier, setFSupplier] = useState("")
-  const [fPixKey, setFPixKey] = useState("")
   const [fAmount, setFAmount] = useState("0,00")
   const [fDueDate, setFDueDate] = useState(() => new Date().toISOString().split("T")[0])
   const [fCategory, setFCategory] = useState("Outros")
@@ -74,8 +74,8 @@ export default function DespesasPage() {
   }, [])
 
   const resetForm = () => {
-    setFAccountType("PESSOAL"); setFDescription(""); setFSupplier("")
-    setFPixKey(""); setFAmount("0,00"); setFDueDate(new Date().toISOString().split("T")[0])
+    setFAccountType("PESSOAL"); setFDescription("")
+    setFAmount("0,00"); setFDueDate(new Date().toISOString().split("T")[0])
     setFCategory("Outros"); setFRecurring(false); setFNotes(""); setEditingId(null)
   }
 
@@ -88,8 +88,6 @@ export default function DespesasPage() {
     setEditingId(exp.id)
     setFAccountType(exp.accountType || "PESSOAL")
     setFDescription(exp.description || "")
-    setFSupplier(exp.supplier || "")
-    setFPixKey(exp.pixKey || "")
     setFAmount(exp.amount?.toFixed(2).replace(".", ",") || "0,00")
     setFDueDate(exp.dueDate ? new Date(exp.dueDate).toISOString().split("T")[0] : "")
     setFCategory(exp.category || "Outros")
@@ -102,12 +100,10 @@ export default function DespesasPage() {
     try {
       const amount = parseFloat(fAmount.replace(/\./g, "").replace(",", ".")) || 0
       if (amount <= 0) return alert("Valor deve ser maior que zero")
-      if (!fDescription.trim()) return alert("Nome da conta é obrigatório")
+      if (!fDescription.trim()) return alert("Descricao e obrigatoria")
 
       const payload = {
         description: fDescription,
-        supplier: fSupplier || undefined,
-        pixKey: fPixKey || undefined,
         accountType: fAccountType,
         amount,
         category: fCategory,
@@ -238,7 +234,6 @@ export default function DespesasPage() {
       const query = search.toLowerCase()
       list = list.filter((expense) =>
         expense.description?.toLowerCase().includes(query) ||
-        expense.supplier?.toLowerCase().includes(query) ||
         expense.category?.toLowerCase().includes(query)
       )
     }
@@ -248,7 +243,16 @@ export default function DespesasPage() {
     else if (statusFilter === "atrasadas") list = list.filter((expense) => getExpenseStatus(expense) === "atrasado")
     else if (statusFilter === "pagas") list = list.filter((expense) => getExpenseStatus(expense) === "pago")
 
-    return list
+    return [...list].sort((left, right) => {
+      const leftCreatedAt = left.createdAt ? new Date(left.createdAt).getTime() : 0
+      const rightCreatedAt = right.createdAt ? new Date(right.createdAt).getTime() : 0
+
+      if (leftCreatedAt !== rightCreatedAt) {
+        return rightCreatedAt - leftCreatedAt
+      }
+
+      return new Date(right.dueDate).getTime() - new Date(left.dueDate).getTime()
+    })
   }, [monthExpenses, search, statusFilter, typeFilter, categoryFilter])
 
   const prevMonth = () => {
@@ -439,32 +443,35 @@ export default function DespesasPage() {
               />
             </div>
 
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="flex h-10 min-w-[180px] rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-            >
-              <option value="">Todas categorias</option>
-              {CATEGORIES.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
-            </select>
-
-            <select
+            <FilterDropdown
+              label="Filtros"
+              icon={<Filter className="h-4 w-4" />}
+              tone="emerald"
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-              className="flex h-10 min-w-[160px] rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-            >
-              {statusFilters.map((item) => <option key={item.key} value={item.key}>{item.label}</option>)}
-            </select>
+              onChange={(value) => setStatusFilter(value as StatusFilter)}
+              options={statusFilters}
+              minWidthClassName="min-w-[180px]"
+            />
 
-            <select
+            <FilterDropdown
+              label="Categoria"
+              icon={<Package className="h-4 w-4" />}
+              tone="orange"
+              value={categoryFilter || "__all__"}
+              onChange={(value) => setCategoryFilter(value === "__all__" ? "" : value)}
+              options={[{ value: "__all__", label: "Todas categorias" }, ...CATEGORIES.map((cat) => ({ value: cat, label: cat }))]}
+              minWidthClassName="min-w-[200px]"
+            />
+
+            <FilterDropdown
+              label="Tipo"
+              icon={<Receipt className="h-4 w-4" />}
+              tone="blue"
               value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value as TypeFilter)}
-              className="flex h-10 min-w-[150px] rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-            >
-              <option value="todas">Todos os tipos</option>
-              <option value="pessoal">Pessoal</option>
-              <option value="empresa">Empresa</option>
-            </select>
+              onChange={(value) => setTypeFilter(value as TypeFilter)}
+              options={[{ value: "todas", label: "Todos os tipos" }, { value: "pessoal", label: "Pessoal" }, { value: "empresa", label: "Empresa" }]}
+              minWidthClassName="min-w-[180px]"
+            />
           </div>
         </div>
 
@@ -504,7 +511,6 @@ export default function DespesasPage() {
                           </div>
                           <div>
                             <p className="font-semibold text-gray-900 dark:text-zinc-100">{exp.description}</p>
-                            <p className="text-xs text-gray-500 dark:text-zinc-400">{exp.supplier || "Sem fornecedor"}</p>
                           </div>
                         </div>
                       </td>
@@ -566,7 +572,7 @@ export default function DespesasPage() {
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} title={editingId ? "Editar Conta" : "Adicionar Nova Conta"}>
         <div className="space-y-5">
           <div>
-            <Label className="font-semibold">Nome da Conta *</Label>
+            <Label className="font-semibold">Descricao *</Label>
             <Input
               value={fDescription}
               onChange={(e) => setFDescription(e.target.value)}
@@ -576,39 +582,16 @@ export default function DespesasPage() {
           </div>
 
           <div>
-            <Label className="font-semibold">Fornecedor/Empresa *</Label>
+            <Label className="font-semibold">Valor *</Label>
             <Input
-              value={fSupplier}
-              onChange={(e) => setFSupplier(e.target.value)}
+              value={fAmount}
+              onChange={(e) => setFAmount(e.target.value)}
               className="mt-1"
-              placeholder="Ex: CEMIG, Vivo, Nubank..."
+              placeholder="0,00"
             />
-          </div>
-
-          <div>
-            <Label className="font-semibold">Chave PIX do Fornecedor (opcional)</Label>
-            <Input
-              value={fPixKey}
-              onChange={(e) => setFPixKey(e.target.value)}
-              className="mt-1"
-              placeholder="CPF, CNPJ, E-mail, Telefone ou Chave Aleatória"
-            />
-            <p className="mt-1 flex items-center gap-1 text-xs text-amber-600/80">
-              <AlertTriangle className="h-3 w-3" />
-              A chave PIX será incluída nos lembretes. Verifique se está correta — a responsabilidade é sua.
-            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label className="font-semibold">Valor *</Label>
-              <Input
-                value={fAmount}
-                onChange={(e) => setFAmount(e.target.value)}
-                className="mt-1"
-                placeholder="0,00"
-              />
-            </div>
             <div>
               <Label className="font-semibold">Vencimento *</Label>
               <Input
@@ -617,6 +600,20 @@ export default function DespesasPage() {
                 onChange={(e) => setFDueDate(e.target.value)}
                 className="mt-1"
               />
+            </div>
+            <div>
+              <Label className="font-semibold">Tipo de Conta</Label>
+              <div className="relative mt-1">
+                <select
+                  value={fAccountType}
+                  onChange={(e) => setFAccountType(e.target.value)}
+                  className="flex h-10 w-full appearance-none rounded-md border border-gray-300 bg-gray-50 px-3 pr-8 text-sm text-gray-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                >
+                  <option value="PESSOAL">Pessoal</option>
+                  <option value="EMPRESA">Empresa</option>
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-zinc-500" />
+              </div>
             </div>
           </div>
 

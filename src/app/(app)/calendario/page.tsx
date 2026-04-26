@@ -192,7 +192,7 @@ export default function CalendarioPage() {
       </div>
 
       {/* ===== CALENDAR + SIDE PANEL ===== */}
-      <div className="flex gap-6 items-start">
+      <div className="flex gap-6 items-end">
         {/* Calendar */}
         <Card className="border-gray-200 dark:border-zinc-800 flex-1 min-w-0">
           <CardContent className="p-6">
@@ -290,14 +290,6 @@ export default function CalendarioPage() {
               <span>Empréstimo</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="h-2.5 w-2.5 rounded-full bg-blue-500" />
-              <span>Veículo</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-              <span>Produto</span>
-            </div>
-            <div className="flex items-center gap-1.5">
               <div className="h-2.5 w-2.5 rounded-full bg-red-500" />
               <span>Vencido</span>
             </div>
@@ -306,7 +298,7 @@ export default function CalendarioPage() {
       </Card>
 
         {/* ===== SIDE PANEL - DAY DETAILS ===== */}
-        <div className="w-[380px] shrink-0 sticky top-6">
+        <div className="w-[380px] shrink-0 self-end translate-y-4">
           <Card className="border-gray-200 dark:border-zinc-800">
             <CardContent className="p-5">
               {(() => {
