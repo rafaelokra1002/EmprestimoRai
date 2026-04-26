@@ -418,43 +418,47 @@ export default function DespesasPage() {
       </div>
 
       <section className="rounded-[28px] border border-gray-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-        <div className="flex flex-col gap-4 border-b border-gray-200 px-5 py-5 dark:border-zinc-800 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex flex-col gap-5 border-b border-gray-200 px-5 py-5 dark:border-zinc-800 xl:flex-row xl:items-end xl:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400 dark:text-zinc-500">Lançamentos</p>
             <h2 className="mt-2 text-xl font-bold text-gray-900 dark:text-zinc-100">Tabela de Despesas</h2>
             <p className="mt-1 text-sm text-gray-500 dark:text-zinc-400">{filteredExpenses.length} resultado(s) encontrados neste filtro.</p>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            <div className="relative min-w-[220px]">
+          <div className="rounded-2xl border border-gray-200 bg-gray-50/80 p-3 dark:border-zinc-800 dark:bg-zinc-950/40 xl:min-w-[640px]">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+              <div className="relative min-w-0 flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-zinc-500" />
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Buscar despesa"
-                className="pl-10"
+                className="h-11 rounded-xl border-gray-200 bg-white pl-10 shadow-none dark:border-zinc-700 dark:bg-zinc-900"
               />
+              </div>
+
+              <div className="flex flex-wrap gap-3 lg:flex-nowrap lg:justify-end">
+                <FilterDropdown
+                  label="Filtros"
+                  icon={<Filter className="h-4 w-4" />}
+                  tone="emerald"
+                  value={statusFilter}
+                  onChange={(value) => setStatusFilter(value as StatusFilter)}
+                  options={statusFilters}
+                  minWidthClassName="min-w-[190px]"
+                />
+
+                <FilterDropdown
+                  label="Categoria"
+                  icon={<Package className="h-4 w-4" />}
+                  tone="orange"
+                  value={categoryFilter || "__all__"}
+                  onChange={(value) => setCategoryFilter(value === "__all__" ? "" : value)}
+                  options={[{ value: "__all__", label: "Todas categorias" }, ...CATEGORIES.map((cat) => ({ value: cat, label: cat }))]}
+                  minWidthClassName="min-w-[220px]"
+                />
+              </div>
             </div>
-
-            <FilterDropdown
-              label="Filtros"
-              icon={<Filter className="h-4 w-4" />}
-              tone="emerald"
-              value={statusFilter}
-              onChange={(value) => setStatusFilter(value as StatusFilter)}
-              options={statusFilters}
-              minWidthClassName="min-w-[180px]"
-            />
-
-            <FilterDropdown
-              label="Categoria"
-              icon={<Package className="h-4 w-4" />}
-              tone="orange"
-              value={categoryFilter || "__all__"}
-              onChange={(value) => setCategoryFilter(value === "__all__" ? "" : value)}
-              options={[{ value: "__all__", label: "Todas categorias" }, ...CATEGORIES.map((cat) => ({ value: cat, label: cat }))]}
-              minWidthClassName="min-w-[200px]"
-            />
           </div>
         </div>
 
