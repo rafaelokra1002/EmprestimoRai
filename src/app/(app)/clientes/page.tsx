@@ -14,7 +14,7 @@ import { FilterDropdown } from "@/components/ui/filter-dropdown"
 import { Textarea } from "@/components/ui/textarea"
 import { Avatar } from "@/components/avatar"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Search, Pencil, Trash2, User, MapPin, FileText, Mail, Phone, Instagram, Globe, Briefcase, Users, Camera, Upload, X, Eye, Download, Image, DollarSign, LayoutGrid, Rows3, CalendarDays, Flame, Filter } from "lucide-react"
+import { Plus, Search, Pencil, Trash2, User, MapPin, FileText, Mail, Phone, Instagram, Globe, Briefcase, Users, Camera, Upload, X, Eye, Download, Image, DollarSign, LayoutGrid, Rows3, CalendarDays, Flame, Filter, CheckCircle2 } from "lucide-react"
 
 interface Client {
   id: string
@@ -31,6 +31,8 @@ interface Client {
   income: number | null
   requestedAmount: number | null
   referral: boolean
+  referralName: string | null
+  referralPhone: string | null
   photo: string | null
   address: string | null
   city: string | null
@@ -149,6 +151,8 @@ export default function ClientesPage() {
     defaultValues: {
       status: "ACTIVE",
       referral: false,
+      referralName: "",
+      referralPhone: "",
     }
   })
 
@@ -269,6 +273,8 @@ export default function ClientesPage() {
       income: client.income || undefined,
       requestedAmount: client.requestedAmount || undefined,
       referral: client.referral || false,
+      referralName: client.referralName || "",
+      referralPhone: client.referralPhone || "",
       photo: client.photo || "",
       address: client.address || "",
       city: client.city || "",
@@ -373,7 +379,7 @@ export default function ClientesPage() {
       instagram: "", facebook: "", profession: "",
       workplace: "", category: "",
       income: undefined, requestedAmount: undefined,
-      referral: false, photo: "",
+      referral: false, referralName: "", referralPhone: "", photo: "",
       address: "", city: "", state: "", zipCode: "",
       neighborhood: "", complement: "", number: "",
       notes: "", status: initialStatus
@@ -437,6 +443,16 @@ export default function ClientesPage() {
   const formatCurrency = (value: number | null | undefined) => {
     if (value == null) return "-"
     return `R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
+  }
+
+  const isInactiveClient = (client: Client) => {
+    return client.status === "INACTIVE" || !client.loans?.some((loan) => loan.status === "ACTIVE")
+  }
+
+  const getDisplayedClientStatus = (client: Client): Client["status"] => {
+    if (client.status === "DESAPARECIDO") return "DESAPARECIDO"
+    if (statusFilter === "inactive" && isInactiveClient(client)) return "INACTIVE"
+    return client.status
   }
 
   const getActiveLoanSummary = (client: Client) => {
@@ -572,8 +588,8 @@ export default function ClientesPage() {
                     <TableCell className="text-gray-700 dark:text-zinc-300">{client.income ? `R$ ${client.income.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "-"}</TableCell>
                     <TableCell className="text-gray-700 dark:text-zinc-300">{client.requestedAmount ? `R$ ${client.requestedAmount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "-"}</TableCell>
                     <TableCell>
-                      <Badge variant={client.status === "ACTIVE" ? "success" : "warning"}>
-                        {client.status === "ACTIVE" ? "Ativo" : client.status === "DESAPARECIDO" ? "Desaparecido" : "Inativo"}
+                      <Badge variant={getDisplayedClientStatus(client) === "ACTIVE" ? "success" : "warning"}>
+                        {getDisplayedClientStatus(client) === "ACTIVE" ? "Ativo" : getDisplayedClientStatus(client) === "DESAPARECIDO" ? "Desaparecido" : "Inativo"}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -612,6 +628,7 @@ export default function ClientesPage() {
             const loanSummary = getActiveLoanSummary(client)
             const activeLoan = loanSummary?.loan
             const hasActiveLoan = Boolean(activeLoan)
+            const displayStatus = getDisplayedClientStatus(client)
 
             const infoCards = [
               {
@@ -668,8 +685,8 @@ export default function ClientesPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${client.status === "ACTIVE" ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400" : client.status === "DESAPARECIDO" ? "bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-400" : "bg-yellow-50 text-yellow-700 dark:bg-yellow-950/30 dark:text-yellow-400"}`}>
-                      {client.status === "ACTIVE" ? "Ativo" : client.status === "DESAPARECIDO" ? "Desaparecido" : "Inativo"}
+                    <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${displayStatus === "ACTIVE" ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400" : displayStatus === "DESAPARECIDO" ? "bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-400" : "bg-yellow-50 text-yellow-700 dark:bg-yellow-950/30 dark:text-yellow-400"}`}>
+                      {displayStatus === "ACTIVE" ? "Ativo" : displayStatus === "DESAPARECIDO" ? "Desaparecido" : "Inativo"}
                     </span>
                   </div>
                 </div>
@@ -782,13 +799,13 @@ export default function ClientesPage() {
         className="max-w-2xl"
       >
         {/* Tabs */}
-        <div className="flex bg-gray-50 dark:bg-zinc-800 rounded-lg p-1 mb-6">
+        <div className="grid grid-cols-1 gap-1 rounded-lg bg-gray-50 p-1 mb-6 dark:bg-zinc-800 sm:grid-cols-3">
           {tabs.map((tab) => (
             <button
               key={tab.key}
               type="button"
               onClick={() => setActiveTab(tab.key)}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-md text-sm font-medium transition-colors ${
+              className={`flex items-center justify-start gap-2 rounded-md px-4 py-2.5 text-sm font-medium transition-colors sm:justify-center ${
                 activeTab === tab.key
                   ? "bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                   : "text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:text-zinc-300"
@@ -865,7 +882,7 @@ export default function ClientesPage() {
               </div>
 
               {/* Telefone */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <Label className="font-medium">Telefone (com DDD)</Label>
                   <Input
@@ -889,7 +906,7 @@ export default function ClientesPage() {
               </div>
 
               {/* Profissão e Local de Trabalho */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <Label className="flex items-center gap-1.5">
                     <Briefcase className="h-3.5 w-3.5" /> Profissão
@@ -911,7 +928,7 @@ export default function ClientesPage() {
               </div>
 
               {/* Renda e Valor Solicitado */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <Label>Renda</Label>
                   <Input
@@ -954,18 +971,45 @@ export default function ClientesPage() {
               {/* Cliente veio por indicação */}
               <div
                 className="flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-200 dark:border-zinc-800 cursor-pointer hover:bg-white dark:bg-zinc-900 transition-colors"
-                onClick={() => setValue("referral", !watchReferral)}
+                onClick={() => {
+                  const nextReferral = !watchReferral
+                  setValue("referral", nextReferral)
+                  if (!nextReferral) {
+                    setValue("referralName", "")
+                    setValue("referralPhone", "")
+                  }
+                }}
               >
-                <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center transition-colors ${
-                  watchReferral ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/300" : "border-gray-300 dark:border-zinc-700"
-                }`}>
-                  {watchReferral && (
-                    <div className="h-2 w-2 rounded-full bg-white dark:bg-zinc-900" />
-                  )}
+                <div className="flex h-5 w-5 items-center justify-center rounded-full text-emerald-600 dark:text-emerald-400">
+                  <CheckCircle2 className={`h-5 w-5 transition-opacity ${watchReferral ? "opacity-100" : "opacity-30"}`} />
                 </div>
                 <Users className="h-4 w-4 text-gray-500 dark:text-zinc-400" />
                 <span className="text-sm text-gray-700 dark:text-zinc-300">Cliente veio por indicação</span>
               </div>
+
+              {watchReferral && (
+                <div className="rounded-2xl border border-gray-200 bg-gray-50/80 p-4 dark:border-zinc-800 dark:bg-zinc-900/80">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                      <Label>Nome de quem indicou</Label>
+                      <Input
+                        {...register("referralName")}
+                        placeholder="Nome do indicador"
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label>Telefone de quem indicou</Label>
+                      <Input
+                        {...register("referralPhone")}
+                        placeholder="(00) 00000-0000"
+                        className="mt-1"
+                        onChange={(e) => setValue("referralPhone", phoneMask(e.target.value))}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Tipo de Cliente - removed */}
 
@@ -1006,7 +1050,7 @@ export default function ClientesPage() {
               {/* CEP com botão Buscar */}
               <div>
                 <Label className="font-semibold">CEP</Label>
-                <div className="flex gap-2 mt-1">
+                <div className="mt-1 flex flex-col gap-2 sm:flex-row">
                   <Input
                     {...register("zipCode")}
                     placeholder="00000-000"
@@ -1018,7 +1062,7 @@ export default function ClientesPage() {
                     type="button"
                     onClick={searchCep}
                     disabled={cepLoading}
-                    className="flex items-center gap-2 px-4 py-2 rounded-md border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 text-sm text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 dark:bg-zinc-800 transition-colors disabled:opacity-50"
+                    className="flex w-full items-center justify-center gap-2 rounded-md border border-gray-300 bg-gray-50 px-4 py-2 text-sm text-gray-700 transition-colors disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800 sm:w-auto"
                   >
                     <Search className="h-4 w-4" />
                     {cepLoading ? "Buscando..." : "Buscar"}
@@ -1033,7 +1077,7 @@ export default function ClientesPage() {
               </div>
 
               {/* Número e Complemento */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <Label className="font-semibold">Número</Label>
                   <Input {...register("number")} placeholder="123" className="mt-1" />
@@ -1051,7 +1095,7 @@ export default function ClientesPage() {
               </div>
 
               {/* Cidade e Estado */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <Label className="font-semibold">Cidade</Label>
                   <Input {...register("city")} placeholder="Preenchido automaticamente" className="mt-1" />
@@ -1081,11 +1125,11 @@ export default function ClientesPage() {
                     <p className="text-sm text-gray-700 dark:text-zinc-300 mb-1">Enviar documento</p>
                     <p className="text-xs text-gray-400 dark:text-zinc-500 mb-4">PDF, imagens (JPG, PNG) — máx. 5MB</p>
 
-                    <div className="flex items-center justify-center gap-3">
+                    <div className="flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
                       <select
                         value={selectedDocType}
                         onChange={(e) => setSelectedDocType(e.target.value)}
-                        className="h-9 rounded-md border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 px-3 text-sm text-gray-900 dark:text-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                        className="h-9 rounded-md border border-gray-300 bg-gray-50 px-3 text-sm text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
                       >
                         {DOC_TYPES.map((dt) => (
                           <option key={dt.value} value={dt.value}>{dt.label}</option>
@@ -1103,7 +1147,7 @@ export default function ClientesPage() {
                         type="button"
                         onClick={() => docFileInputRef.current?.click()}
                         disabled={uploadingDoc}
-                        className="flex items-center gap-2 px-4 py-2 rounded-md bg-emerald-600 text-sm text-white font-medium hover:bg-emerald-700 transition-colors disabled:opacity-50"
+                        className="flex w-full items-center justify-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-50 sm:w-auto"
                       >
                         <Upload className="h-4 w-4" />
                         {uploadingDoc ? "Enviando..." : "Selecionar Arquivo"}
@@ -1126,7 +1170,7 @@ export default function ClientesPage() {
                         {clientDocs.map((doc) => (
                           <div
                             key={doc.id}
-                            className="flex items-center justify-between px-4 py-3 rounded-lg border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-gray-50 dark:bg-zinc-800 transition-colors"
+                            className="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 transition-colors hover:bg-gray-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800 sm:flex-row sm:items-center sm:justify-between"
                           >
                             <div className="flex items-center gap-3">
                               {getDocIcon(doc.fileType)}
@@ -1168,11 +1212,11 @@ export default function ClientesPage() {
               {formError}
             </div>
           )}
-          <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-zinc-800">
+          <div className="flex flex-col gap-3 border-t border-gray-200 pt-4 dark:border-zinc-800 sm:flex-row sm:items-center sm:justify-between">
             <Button type="button" variant="outline" onClick={() => { setDialogOpen(false); setFormError(null) }}>
               Cancelar
             </Button>
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
               {activeTab === "dados" && (
                 <Button
                   type="button"

@@ -1305,7 +1305,7 @@ export default function EmprestimosPage() {
         </div>
         </>
       ) : (
-        <div className="grid md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
           {groupedByClient.map((group) => {
             if (group.loans.length === 1) {
               /* ===== SINGLE LOAN CARD ===== */
@@ -1347,8 +1347,8 @@ export default function EmprestimosPage() {
                   </div>
 
                   {/* Avatar + badges + ações */}
-                  <div className="px-4 pt-3 pb-2 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
+                  <div className="flex flex-col gap-2 px-4 pb-2 pt-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="flex min-w-0 flex-wrap items-center gap-2">
                       <Avatar name={group.clientName} src={group.clientPhoto} size="sm" />
                       <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${status.color}`}>
                         {status.label}
@@ -1357,7 +1357,7 @@ export default function EmprestimosPage() {
                         {MODALITY_LABELS[loan.modality] || loan.modality}
                       </span>
                     </div>
-                    <div className="flex items-center gap-1">
+                    <div className="flex flex-wrap items-center gap-1 sm:justify-end">
                       <button
                         onClick={() => { setEditingTags(loan.tags || []); setTagInput(""); setShowTagForm(false); setTagDialog(loan) }}
                         className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors"
@@ -1429,13 +1429,13 @@ export default function EmprestimosPage() {
                       <p className="mt-3 text-xs text-orange-500 dark:text-orange-300/80">Lembre o cliente para evitar atrasos</p>
                     </div>
                   ) : (
-                    <div className="mx-4 mt-3 flex items-center justify-between text-xs text-gray-500 dark:text-zinc-400">
-                      <div className="flex items-center gap-1.5">
+                    <div className="mx-4 mt-3 flex flex-col gap-2 text-xs text-gray-500 dark:text-zinc-400 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex flex-wrap items-center gap-1.5">
                         <Calendar className="h-3.5 w-3.5" />
                         <span>Venc: {nextInst ? formatDate(nextInst.dueDate) : "—"}</span>
                         <Pencil className="h-3 w-3 text-gray-300 dark:text-zinc-600" />
                       </div>
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex flex-wrap items-center gap-1.5 sm:justify-end">
                         <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
                         <span className="font-medium text-gray-700 dark:text-zinc-300">Pago: {formatCurrency(paid)}</span>
                       </div>
@@ -1539,10 +1539,10 @@ export default function EmprestimosPage() {
                       </div>
                     )}
                     <div className="flex flex-wrap items-center justify-center gap-2 pb-1">
-                      <Button size="sm" onClick={() => openPaymentDialog(loan)} className="h-9 min-w-[132px] rounded-xl border border-emerald-100 bg-emerald-50 px-5 text-sm font-medium text-emerald-700 shadow-none transition-colors hover:bg-emerald-100 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300 dark:hover:bg-emerald-900/30">
+                      <Button size="sm" onClick={() => openPaymentDialog(loan)} className="h-9 min-w-0 flex-1 rounded-xl border border-emerald-100 bg-emerald-50 px-4 text-sm font-medium text-emerald-700 shadow-none transition-colors hover:bg-emerald-100 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300 dark:hover:bg-emerald-900/30 sm:flex-none sm:min-w-[132px] sm:px-5">
                         <Receipt className="mr-1.5 h-4 w-4" /> Pagar
                       </Button>
-                      <Button size="sm" onClick={() => openInterestRenegotiateDialog(loan)} className="h-9 min-w-[170px] rounded-xl border border-emerald-100 bg-emerald-50 px-5 text-sm font-medium text-emerald-700 shadow-none transition-colors hover:bg-emerald-100 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300 dark:hover:bg-emerald-900/30">
+                      <Button size="sm" onClick={() => openInterestRenegotiateDialog(loan)} className="h-9 min-w-0 flex-1 rounded-xl border border-emerald-100 bg-emerald-50 px-4 text-sm font-medium text-emerald-700 shadow-none transition-colors hover:bg-emerald-100 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300 dark:hover:bg-emerald-900/30 sm:flex-none sm:min-w-[170px] sm:px-5">
                         <DollarSign className="mr-1.5 h-4 w-4" /> Pagar Juros
                       </Button>
                       <button className="rounded-xl bg-emerald-50 p-2.5 text-emerald-600 transition-colors hover:bg-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-400 dark:hover:bg-emerald-900/40" onClick={() => router.push(`/emprestimos/${loan.id}`)} title="Histórico">
@@ -1606,7 +1606,7 @@ export default function EmprestimosPage() {
                       {/* Detalhes do Contrato */}
                       <div className="px-3 py-2 rounded-lg bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700">
                         <p className="text-xs font-semibold text-gray-700 dark:text-zinc-300 mb-2 flex items-center gap-1"><FileText className="h-3 w-3" /> Detalhes do Contrato</p>
-                        <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
                           <div>
                             <p className="text-gray-400 dark:text-zinc-500">Data do Contrato</p>
                             <p className="font-medium text-gray-900 dark:text-zinc-100">{formatDate(loan.contractDate)}</p>
@@ -1666,7 +1666,7 @@ export default function EmprestimosPage() {
                   </div>
 
                   {/* Avatar + badges */}
-                  <div className="px-4 pt-3 pb-2 flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2 px-4 pb-2 pt-3">
                     <Avatar name={group.clientName} src={group.clientPhoto} size="sm" />
                     <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-600 dark:bg-zinc-600 text-white flex items-center gap-1">
                       <FolderOpen className="h-3 w-3" />
@@ -1711,14 +1711,14 @@ export default function EmprestimosPage() {
                   {/* Lista de empréstimos */}
                   <div className="px-4 py-3 mt-2">
                     <p className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-zinc-500">Empréstimos na Pasta</p>
-                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 2xl:grid-cols-3">
                       {group.loans.map((loan) => {
                         const nextI = getNextDueInst(loan)
                         const loanStatus = getLoanStatusInfo(loan)
                         return (
                           <div key={loan.id} className="rounded-xl border border-gray-200 bg-white/90 p-3 shadow-sm dark:border-zinc-700 dark:bg-zinc-900/80">
-                            <div className="flex items-start justify-between gap-3">
-                              <div>
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                              <div className="min-w-0">
                                 <p className="text-[11px] uppercase tracking-[0.08em] text-gray-400 dark:text-zinc-500">Emprestado</p>
                                 <p className="mt-1 text-base font-semibold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(loan.amount)}</p>
                               </div>
@@ -1727,7 +1727,7 @@ export default function EmprestimosPage() {
                               </span>
                             </div>
 
-                            <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
+                            <div className="mt-3 grid grid-cols-1 gap-3 text-xs sm:grid-cols-2">
                               <div className="rounded-lg bg-gray-50 px-2.5 py-2 dark:bg-zinc-800/70">
                                 <p className="text-[10px] uppercase tracking-[0.08em] text-gray-400 dark:text-zinc-500">Vencimento</p>
                                 <p className="mt-1 font-medium text-gray-700 dark:text-zinc-300">{nextI ? formatDate(nextI.dueDate) : "—"}</p>

@@ -69,6 +69,9 @@ describe("clientSchema", () => {
       state: "SP",
       zipCode: "01234-000",
       neighborhood: "Centro",
+      referral: true,
+      referralName: "Carlos Souza",
+      referralPhone: "(11) 98888-7777",
       notes: "Observação",
     })
     expect(result.success).toBe(true)

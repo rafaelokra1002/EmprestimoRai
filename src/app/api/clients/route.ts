@@ -122,6 +122,8 @@ export async function POST(request: Request) {
       income: data.income ?? null,
       requestedAmount: data.requestedAmount ?? null,
       referral: data.referral ?? false,
+      referralName: data.referral ? data.referralName || null : null,
+      referralPhone: data.referral ? data.referralPhone || null : null,
       photo: data.photo || null,
       address: data.address || null,
       city: data.city || null,

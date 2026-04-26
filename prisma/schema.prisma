@@ -81,6 +81,8 @@ model Client {
   income       Float?
   requestedAmount Float?
   referral     Boolean          @default(false)
+  referralName String?
+  referralPhone String?
   clientType   String           @default("EMPRESTIMO")
   photo        String?
   address      String?
