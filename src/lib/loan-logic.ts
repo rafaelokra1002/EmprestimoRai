@@ -241,13 +241,15 @@ export function buildLoanData(loan: {
   installments: { dueDate: Date | string; status: string; amount: number; paidAmount: number }[]
   payments: { amount: number; notes?: string | null }[]
 }): LoanData {
+  const resolvedDailyInterestAmount = loan.dailyInterestAmount ?? 0
+
   return {
     amount: loan.amount,
     interestRate: loan.interestRate,
     interestType: loan.interestType === "compound" ? "compound" : "simple",
     finalAmount: loan.totalAmount,
-    dailyInterest: loan.dailyInterest ?? false,
-    dailyInterestAmount: loan.dailyInterestAmount ?? 0,
+    dailyInterest: loan.dailyInterest ?? resolvedDailyInterestAmount > 0,
+    dailyInterestAmount: resolvedDailyInterestAmount,
     dueDay: loan.dueDay || extractDueDay(loan.firstInstallmentDate),
     modality: loan.modality || "MONTHLY",
     installments: loan.installments.map(i => ({

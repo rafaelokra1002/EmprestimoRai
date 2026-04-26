@@ -17,7 +17,6 @@ import {
 import { formatCurrency } from "@/lib/utils"
 
 type StatusFilter = "todas" | "vence_hoje" | "pendentes" | "atrasadas" | "pagas"
-type TypeFilter = "todas" | "pessoal" | "empresa"
 
 const CATEGORIES = [
   "Aluguel", "Energia", "Água", "Internet", "Telefone/Celular",
@@ -46,14 +45,12 @@ export default function DespesasPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("todas")
-  const [typeFilter, setTypeFilter] = useState<TypeFilter>("todas")
   const [categoryFilter, setCategoryFilter] = useState("")
   const [showAllMonths, setShowAllMonths] = useState(false)
 
   const [currentMonth, setCurrentMonth] = useState(() => new Date().getMonth())
   const [currentYear, setCurrentYear] = useState(() => new Date().getFullYear())
 
-  const [fAccountType, setFAccountType] = useState("PESSOAL")
   const [fDescription, setFDescription] = useState("")
   const [fAmount, setFAmount] = useState("0,00")
   const [fDueDate, setFDueDate] = useState(() => new Date().toISOString().split("T")[0])
@@ -74,7 +71,7 @@ export default function DespesasPage() {
   }, [])
 
   const resetForm = () => {
-    setFAccountType("PESSOAL"); setFDescription("")
+    setFDescription("")
     setFAmount("0,00"); setFDueDate(new Date().toISOString().split("T")[0])
     setFCategory("Outros"); setFRecurring(false); setFNotes(""); setEditingId(null)
   }
@@ -86,7 +83,6 @@ export default function DespesasPage() {
 
   const openEditDialog = (exp: any) => {
     setEditingId(exp.id)
-    setFAccountType(exp.accountType || "PESSOAL")
     setFDescription(exp.description || "")
     setFAmount(exp.amount?.toFixed(2).replace(".", ",") || "0,00")
     setFDueDate(exp.dueDate ? new Date(exp.dueDate).toISOString().split("T")[0] : "")
@@ -104,7 +100,7 @@ export default function DespesasPage() {
 
       const payload = {
         description: fDescription,
-        accountType: fAccountType,
+        accountType: "EMPRESA",
         amount,
         category: fCategory,
         dueDate: fDueDate,
@@ -227,9 +223,6 @@ export default function DespesasPage() {
       list = list.filter((expense) => expense.category === categoryFilter)
     }
 
-    if (typeFilter === "pessoal") list = list.filter((expense) => (expense.accountType || "PESSOAL") === "PESSOAL")
-    else if (typeFilter === "empresa") list = list.filter((expense) => (expense.accountType || "PESSOAL") === "EMPRESA")
-
     if (search.trim()) {
       const query = search.toLowerCase()
       list = list.filter((expense) =>
@@ -253,7 +246,7 @@ export default function DespesasPage() {
 
       return new Date(right.dueDate).getTime() - new Date(left.dueDate).getTime()
     })
-  }, [monthExpenses, search, statusFilter, typeFilter, categoryFilter])
+  }, [monthExpenses, search, statusFilter, categoryFilter])
 
   const prevMonth = () => {
     setShowAllMonths(false)
@@ -432,7 +425,7 @@ export default function DespesasPage() {
             <p className="mt-1 text-sm text-gray-500 dark:text-zinc-400">{filteredExpenses.length} resultado(s) encontrados neste filtro.</p>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             <div className="relative min-w-[220px]">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-zinc-500" />
               <Input
@@ -461,16 +454,6 @@ export default function DespesasPage() {
               onChange={(value) => setCategoryFilter(value === "__all__" ? "" : value)}
               options={[{ value: "__all__", label: "Todas categorias" }, ...CATEGORIES.map((cat) => ({ value: cat, label: cat }))]}
               minWidthClassName="min-w-[200px]"
-            />
-
-            <FilterDropdown
-              label="Tipo"
-              icon={<Receipt className="h-4 w-4" />}
-              tone="blue"
-              value={typeFilter}
-              onChange={(value) => setTypeFilter(value as TypeFilter)}
-              options={[{ value: "todas", label: "Todos os tipos" }, { value: "pessoal", label: "Pessoal" }, { value: "empresa", label: "Empresa" }]}
-              minWidthClassName="min-w-[180px]"
             />
           </div>
         </div>
@@ -591,7 +574,7 @@ export default function DespesasPage() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <Label className="font-semibold">Vencimento *</Label>
               <Input
@@ -603,16 +586,8 @@ export default function DespesasPage() {
             </div>
             <div>
               <Label className="font-semibold">Tipo de Conta</Label>
-              <div className="relative mt-1">
-                <select
-                  value={fAccountType}
-                  onChange={(e) => setFAccountType(e.target.value)}
-                  className="flex h-10 w-full appearance-none rounded-md border border-gray-300 bg-gray-50 px-3 pr-8 text-sm text-gray-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
-                >
-                  <option value="PESSOAL">Pessoal</option>
-                  <option value="EMPRESA">Empresa</option>
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-zinc-500" />
+              <div className="mt-1 flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 text-sm font-medium text-gray-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
+                Empresa
               </div>
             </div>
           </div>

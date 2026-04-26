@@ -123,6 +123,7 @@ export default function EmprestimosPage() {
   // Renegotiate dialog state
   const [renegotiateDialog, setRenegotiateDialog] = useState<Loan | null>(null)
   const [renegotiateMode, setRenegotiateMode] = useState<"total" | "full" | "partial" | null>(null)
+  const [renegotiateEntry, setRenegotiateEntry] = useState<"all" | "interest">("all")
   const [renegotiateAmount, setRenegotiateAmount] = useState<number>(0)
   const [renegotiateDate, setRenegotiateDate] = useState(today())
   const [renegotiateNewDueDate, setRenegotiateNewDueDate] = useState("")
@@ -146,6 +147,7 @@ export default function EmprestimosPage() {
   // Form state
   const [clientId, setClientId] = useState("")
   const [clientSearch, setClientSearch] = useState("")
+  const [clientPickerOpen, setClientPickerOpen] = useState(true)
   const [amount, setAmount] = useState<number>(0)
   const [interestRate, setInterestRate] = useState<number>(0)
   const [interestType, setInterestType] = useState("PER_INSTALLMENT")
@@ -224,6 +226,11 @@ export default function EmprestimosPage() {
     )
   }, [clients, clientSearch])
 
+  const selectedLoanClient = useMemo(
+    () => clients.find((client) => client.id === clientId) || null,
+    [clients, clientId]
+  )
+
   const fetchLoans = async () => {
     const res = await fetch("/api/loans")
     const data = await res.json()
@@ -252,9 +259,22 @@ export default function EmprestimosPage() {
     fetchProfile()
   }, [])
 
+  useEffect(() => {
+    const handleLoansUpdated = () => {
+      fetchLoans()
+    }
+
+    window.addEventListener("loans:updated", handleLoansUpdated)
+
+    return () => {
+      window.removeEventListener("loans:updated", handleLoansUpdated)
+    }
+  }, [])
+
   const resetForm = () => {
     setClientId("")
     setClientSearch("")
+    setClientPickerOpen(true)
     setAmount(0)
     setInterestRate(0)
     setInterestType("PER_INSTALLMENT")
@@ -746,6 +766,7 @@ export default function EmprestimosPage() {
   }
 
   const openRenegotiateDialog = (loan: Loan) => {
+    setRenegotiateEntry("all")
     setRenegotiateDialog(loan)
     setRenegotiateMode(null)
     setRenegotiateAmount(0)
@@ -759,6 +780,29 @@ export default function EmprestimosPage() {
     if (nextInst) {
       setRenegotiateInstallmentId(nextInst.id)
       // Nova data = próximo vencimento mantendo dia fixo
+      const dueDay = loan.dueDay || new Date(loan.firstInstallmentDate).getDate()
+      const nextDue = getNextDueDate(dueDay, new Date())
+      setRenegotiateNewDueDate(nextDue.toISOString().split("T")[0])
+    } else {
+      setRenegotiateInstallmentId("")
+      setRenegotiateNewDueDate("")
+    }
+  }
+
+  const openInterestRenegotiateDialog = (loan: Loan) => {
+    setRenegotiateEntry("interest")
+    setRenegotiateDialog(loan)
+    setRenegotiateMode(null)
+    setRenegotiateAmount(0)
+    setRenegotiateDate(today())
+    setRenegotiateNotes("[OVERDUE_CONFIG:fixed:15]")
+
+    const pendingInsts = loan.installments
+      .filter((i: any) => i.status !== "PAID")
+      .sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+    const nextInst = pendingInsts[0]
+    if (nextInst) {
+      setRenegotiateInstallmentId(nextInst.id)
       const dueDay = loan.dueDay || new Date(loan.firstInstallmentDate).getDate()
       const nextDue = getNextDueDate(dueDay, new Date())
       setRenegotiateNewDueDate(nextDue.toISOString().split("T")[0])
@@ -1289,9 +1333,17 @@ export default function EmprestimosPage() {
 
               return (
                 <div key={group.clientId} className={`rounded-xl border overflow-hidden shadow-sm hover:shadow-md transition-shadow ${cardBorder} ${cardBg}`}>
-                  {/* Header - nome centralizado */}
-                  <div className="px-4 pt-4 pb-2 text-center border-b border-gray-100 dark:border-zinc-800">
-                    <h3 className="font-semibold text-base text-gray-900 dark:text-zinc-100">{group.clientName}</h3>
+                  {/* Header - nome + etiqueta */}
+                  <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-4 pb-2 pt-4 dark:border-zinc-800">
+                    <h3 className="truncate font-semibold text-base text-gray-900 dark:text-zinc-100">{group.clientName}</h3>
+                    {(loan.tags || []).length > 0 && (() => {
+                      const [name, color] = loan.tags[0].includes("|") ? loan.tags[0].split("|") : [loan.tags[0], "#ef4444"]
+                      return (
+                        <span className="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium text-white" style={{ backgroundColor: color }}>
+                          {name}
+                        </span>
+                      )
+                    })()}
                   </div>
 
                   {/* Avatar + badges + ações */}
@@ -1330,18 +1382,6 @@ export default function EmprestimosPage() {
                     </div>
                   </div>
 
-                  {/* Etiquetas */}
-                  {(loan.tags || []).length > 0 && (
-                    <div className="px-4 pb-2 flex flex-wrap gap-1">
-                      {loan.tags.map((tag, i) => {
-                        const [name, color] = tag.includes("|") ? tag.split("|") : [tag, "#ef4444"]
-                        return (
-                          <span key={i} className="px-2 py-0.5 rounded-full text-xs font-medium text-white" style={{ backgroundColor: color }}>{name}</span>
-                        )
-                      })}
-                    </div>
-                  )}
-
                   {/* Valor Restante */}
                   <div className="px-4 pb-3">
                     <div className={`${remainingBg} rounded-lg px-4 py-3 text-center`}>
@@ -1371,17 +1411,36 @@ export default function EmprestimosPage() {
                   </div>
 
                   {/* Info row */}
-                  <div className="mx-4 mt-3 flex items-center justify-between text-xs text-gray-500 dark:text-zinc-400">
-                    <div className="flex items-center gap-1.5">
-                      <Calendar className="h-3.5 w-3.5" />
-                      <span>Venc: {nextInst ? formatDate(nextInst.dueDate) : "—"}</span>
-                      <Pencil className="h-3 w-3 text-gray-300 dark:text-zinc-600" />
+                  {isDueToday && nextInst ? (
+                    <div className="mx-4 mt-3 rounded-2xl border border-orange-300 bg-orange-50/90 px-4 py-3 dark:border-orange-800 dark:bg-orange-950/20">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <div className="flex items-center gap-2 text-orange-700 dark:text-orange-300">
+                            <Clock className="h-4 w-4" />
+                            <span className="text-base font-semibold">Vence Hoje!</span>
+                          </div>
+                          <p className="mt-1 text-xs text-orange-600 dark:text-orange-300/90">Parcela {nextInst.number}/{loan.installmentCount}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xl font-bold tabular-nums text-orange-700 dark:text-orange-300">{formatCurrency(nextInst.amount)}</p>
+                          <p className="mt-1 text-xs text-orange-600 dark:text-orange-300/90">Vencimento: {formatDate(nextInst.dueDate)}</p>
+                        </div>
+                      </div>
+                      <p className="mt-3 text-xs text-orange-500 dark:text-orange-300/80">Lembre o cliente para evitar atrasos</p>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
-                      <span className="font-medium text-gray-700 dark:text-zinc-300">Pago: {formatCurrency(paid)}</span>
+                  ) : (
+                    <div className="mx-4 mt-3 flex items-center justify-between text-xs text-gray-500 dark:text-zinc-400">
+                      <div className="flex items-center gap-1.5">
+                        <Calendar className="h-3.5 w-3.5" />
+                        <span>Venc: {nextInst ? formatDate(nextInst.dueDate) : "—"}</span>
+                        <Pencil className="h-3 w-3 text-gray-300 dark:text-zinc-600" />
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
+                        <span className="font-medium text-gray-700 dark:text-zinc-300">Pago: {formatCurrency(paid)}</span>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Juros por parcela */}
                   {(() => {
@@ -1479,20 +1538,26 @@ export default function EmprestimosPage() {
                           </Button>
                       </div>
                     )}
-                    <div className="flex items-center justify-center gap-2">
-                      <Button size="sm" onClick={() => openRenegotiateDialog(loan)} className="h-9 px-4 text-sm bg-emerald-600 hover:bg-emerald-700 text-white transition-colors">
-                        <DollarSign className="h-4 w-4 mr-1" /> Pagar
+                    <div className="flex flex-wrap items-center justify-center gap-2 pb-1">
+                      <Button size="sm" onClick={() => openPaymentDialog(loan)} className="h-9 min-w-[132px] rounded-xl border border-emerald-100 bg-emerald-50 px-5 text-sm font-medium text-emerald-700 shadow-none transition-colors hover:bg-emerald-100 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300 dark:hover:bg-emerald-900/30">
+                        <Receipt className="mr-1.5 h-4 w-4" /> Pagar
                       </Button>
-                      <button className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors" onClick={() => router.push(`/emprestimos/${loan.id}`)} title="Histórico">
+                      <Button size="sm" onClick={() => openInterestRenegotiateDialog(loan)} className="h-9 min-w-[170px] rounded-xl border border-emerald-100 bg-emerald-50 px-5 text-sm font-medium text-emerald-700 shadow-none transition-colors hover:bg-emerald-100 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300 dark:hover:bg-emerald-900/30">
+                        <DollarSign className="mr-1.5 h-4 w-4" /> Pagar Juros
+                      </Button>
+                      <button className="rounded-xl bg-emerald-50 p-2.5 text-emerald-600 transition-colors hover:bg-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-400 dark:hover:bg-emerald-900/40" onClick={() => router.push(`/emprestimos/${loan.id}`)} title="Histórico">
                         <RotateCcw className="h-4 w-4" />
                       </button>
-                      <button className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors" onClick={() => router.push(`/emprestimos/${loan.id}/editar`)} title="Editar">
+                      <button className="rounded-xl bg-blue-50 p-2.5 text-blue-600 transition-colors hover:bg-blue-100 dark:bg-blue-950/30 dark:text-blue-400 dark:hover:bg-blue-900/40" onClick={() => router.push(`/emprestimos/${loan.id}/editar`)} title="Editar">
                         <Pencil className="h-4 w-4" />
                       </button>
-                      <button className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors" onClick={() => openPaymentDialog(loan)} title="Renovar">
+                      <button className="rounded-xl bg-orange-50 p-2.5 text-orange-500 transition-colors hover:bg-orange-100 dark:bg-orange-950/30 dark:text-orange-400 dark:hover:bg-orange-900/40" onClick={() => openPaymentDialog(loan)} title="Pagamento">
+                        <DollarSign className="h-4 w-4" />
+                      </button>
+                      <button className="rounded-xl bg-amber-50 p-2.5 text-amber-500 transition-colors hover:bg-amber-100 dark:bg-amber-950/30 dark:text-amber-400 dark:hover:bg-amber-900/40" onClick={() => openInterestRenegotiateDialog(loan)} title="Pagar juros">
                         <RotateCcw className="h-4 w-4" />
                       </button>
-                      <button className="p-2.5 rounded-xl bg-red-50 dark:bg-red-950/30 text-red-500 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors" onClick={() => handleDelete(loan.id)} title="Excluir">
+                      <button className="rounded-xl bg-red-50 p-2.5 text-red-500 transition-colors hover:bg-red-100 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-900/40" onClick={() => handleDelete(loan.id)} title="Excluir">
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
@@ -1645,24 +1710,37 @@ export default function EmprestimosPage() {
 
                   {/* Lista de empréstimos */}
                   <div className="px-4 py-3 mt-2">
-                    <p className="text-[11px] uppercase text-gray-400 dark:text-zinc-500 font-semibold tracking-wider mb-2">Empréstimos na Pasta</p>
-                    <div className="grid grid-cols-1 gap-1.5 lg:grid-cols-3">
+                    <p className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-zinc-500">Empréstimos na Pasta</p>
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
                       {group.loans.map((loan) => {
                         const nextI = getNextDueInst(loan)
+                        const loanStatus = getLoanStatusInfo(loan)
                         return (
-                          <div key={loan.id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-gray-50 dark:bg-zinc-800/60 text-xs">
-                            <div className="flex items-center gap-2">
-                              <DollarSign className="h-3 w-3 text-gray-400 dark:text-zinc-500" />
-                              <span className="text-gray-900 dark:text-zinc-100 font-medium text-sm">{formatCurrency(loan.amount)}</span>
-                              <span className="text-gray-400 dark:text-zinc-600">·</span>
-                              <span className="text-gray-500 dark:text-zinc-400">Venc: {nextI ? formatDate(nextI.dueDate) : "—"}</span>
+                          <div key={loan.id} className="rounded-xl border border-gray-200 bg-white/90 p-3 shadow-sm dark:border-zinc-700 dark:bg-zinc-900/80">
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <p className="text-[11px] uppercase tracking-[0.08em] text-gray-400 dark:text-zinc-500">Emprestado</p>
+                                <p className="mt-1 text-base font-semibold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(loan.amount)}</p>
+                              </div>
+                              <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${loanStatus.color}`}>
+                                {loanStatus.label}
+                              </span>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-semibold tabular-nums text-gray-700 dark:text-zinc-300">{formatCurrency(loan.totalAmount)}</span>
-                              <Button size="sm" onClick={() => openRenegotiateDialog(loan)} className="h-7 px-3 text-xs bg-emerald-600 hover:bg-emerald-700 text-white transition-colors">
-                                <DollarSign className="h-3.5 w-3.5 mr-1" /> Pagar
-                              </Button>
+
+                            <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
+                              <div className="rounded-lg bg-gray-50 px-2.5 py-2 dark:bg-zinc-800/70">
+                                <p className="text-[10px] uppercase tracking-[0.08em] text-gray-400 dark:text-zinc-500">Vencimento</p>
+                                <p className="mt-1 font-medium text-gray-700 dark:text-zinc-300">{nextI ? formatDate(nextI.dueDate) : "—"}</p>
+                              </div>
+                              <div className="rounded-lg bg-gray-50 px-2.5 py-2 dark:bg-zinc-800/70">
+                                <p className="text-[10px] uppercase tracking-[0.08em] text-gray-400 dark:text-zinc-500">Total</p>
+                                <p className="mt-1 font-semibold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(loan.totalAmount)}</p>
+                              </div>
                             </div>
+
+                            <Button size="sm" onClick={() => openRenegotiateDialog(loan)} className="mt-3 h-8 w-full rounded-xl border border-emerald-100 bg-emerald-50 text-xs font-medium text-emerald-700 shadow-none hover:bg-emerald-100 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300 dark:hover:bg-emerald-900/30">
+                              <Receipt className="mr-1.5 h-3.5 w-3.5" /> Pagar
+                            </Button>
                           </div>
                         )
                       })}
@@ -1711,24 +1789,72 @@ export default function EmprestimosPage() {
             >
               <Plus className="h-4 w-4" /> Cadastrar novo cliente
             </button>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-zinc-500" />
-              <select
-                value={clientId}
-                onChange={(e) => {
-                  setClientId(e.target.value)
-                  const c = clients.find((cl) => cl.id === e.target.value)
-                  if (c) setClientSearch(c.name)
-                }}
-                className={`${selectClass} pl-9`}
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => setClientPickerOpen((open) => !open)}
+                className="flex h-10 w-full items-center justify-between rounded-md border border-gray-300 bg-white px-3 text-left text-sm text-gray-900 transition hover:border-emerald-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
               >
-                <option value="">Buscar cliente por nome, telefone ou CPF...</option>
-                {filteredClients.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name} {c.document ? `- ${c.document}` : ""} {c.phone ? `- ${c.phone}` : ""}
-                  </option>
-                ))}
-              </select>
+                <span className={`${selectedLoanClient ? "text-gray-900 dark:text-zinc-100" : "text-gray-500 dark:text-zinc-400"}`}>
+                  {selectedLoanClient
+                    ? `${selectedLoanClient.name}${selectedLoanClient.phone ? ` - ${selectedLoanClient.phone}` : selectedLoanClient.document ? ` - ${selectedLoanClient.document}` : ""}`
+                    : "Buscar cliente por nome, telefone ou CPF..."}
+                </span>
+                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform dark:text-zinc-500 ${clientPickerOpen ? "rotate-180" : ""}`} />
+              </button>
+
+              {clientPickerOpen && (
+                <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
+                  <div className="border-b border-gray-100 p-3 dark:border-zinc-800">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-zinc-500" />
+                      <Input
+                        value={clientSearch}
+                        onChange={(e) => setClientSearch(e.target.value)}
+                        placeholder="Buscar cliente..."
+                        className="pl-9"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="max-h-72 overflow-y-auto p-2">
+                    {filteredClients.length === 0 ? (
+                      <div className="rounded-lg px-3 py-6 text-center text-sm text-gray-500 dark:text-zinc-400">
+                        Nenhum cliente encontrado.
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        {filteredClients.map((client) => {
+                          const isSelected = client.id === clientId
+                          return (
+                            <button
+                              key={client.id}
+                              type="button"
+                              onClick={() => {
+                                setClientId(client.id)
+                                setClientSearch(client.name)
+                                setClientPickerOpen(false)
+                              }}
+                              className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left transition-colors ${isSelected ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300" : "hover:bg-gray-50 dark:hover:bg-zinc-800/70"}`}
+                            >
+                              <div className="flex min-w-0 items-center gap-3">
+                                <Avatar name={client.name} src={client.photo} size="sm" />
+                                <div className="min-w-0">
+                                  <p className="truncate text-sm font-medium text-gray-900 dark:text-zinc-100">{client.name}</p>
+                                  <p className="truncate text-xs text-gray-500 dark:text-zinc-400">
+                                    {client.phone || client.document || "Sem telefone ou CPF"}
+                                  </p>
+                                </div>
+                              </div>
+                              {isSelected && <Check className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-300" />}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -2655,7 +2781,7 @@ export default function EmprestimosPage() {
       {/* ===== RENEGOCIAR DÍVIDA DIALOG ===== */}
       <Dialog
         open={!!renegotiateDialog}
-        onClose={() => { setRenegotiateDialog(null); setRenegotiateMode(null); setRenegotiateAmount(0); setRenegotiateNotes("") }}
+        onClose={() => { setRenegotiateDialog(null); setRenegotiateMode(null); setRenegotiateEntry("all"); setRenegotiateAmount(0); setRenegotiateNotes("") }}
         title="Renegociar Dívida"
         className="max-w-lg"
       >
@@ -2706,24 +2832,26 @@ export default function EmprestimosPage() {
               {/* Mode not selected - show options */}
               {!renegotiateMode && (
                 <>
-                  <button
-                    onClick={() => { setRenegotiateMode("total"); setRenegotiateDialog(null); openPaymentDialog(renegotiateDialog) }}
-                    className="w-full text-left rounded-xl border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:border-emerald-500 p-4 transition-colors flex items-center gap-4"
-                  >
-                    <div className="h-10 w-10 rounded-full bg-emerald-50 dark:bg-emerald-950/20 flex items-center justify-center shrink-0">
-                      <Receipt className="h-5 w-5 text-emerald-600" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-emerald-600">Pagamento Total</p>
-                      <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">Registrar pagamento completo da parcela</p>
-                    </div>
-                  </button>
+                  {renegotiateEntry === "all" && (
+                    <button
+                      onClick={() => { setRenegotiateMode("total"); setRenegotiateDialog(null); setRenegotiateEntry("all"); openPaymentDialog(renegotiateDialog) }}
+                      className="w-full text-left rounded-xl border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:border-emerald-500 p-4 transition-colors flex items-center gap-4"
+                    >
+                      <div className="h-10 w-10 rounded-full bg-emerald-50 dark:bg-emerald-950/20 flex items-center justify-center shrink-0">
+                        <Receipt className="h-5 w-5 text-emerald-600" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-emerald-600">Pagamento Total</p>
+                        <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">Registrar pagamento completo da parcela</p>
+                      </div>
+                    </button>
+                  )}
 
                   <button
                     onClick={() => { setRenegotiateMode("full"); setRenegotiateAmount(totalJuros) }}
-                    className="w-full text-left rounded-xl border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:border-emerald-500 p-4 transition-colors flex items-center gap-4"
+                    className="w-full text-left rounded-2xl border-2 border-emerald-600 bg-emerald-50/70 p-4 transition-colors flex items-center gap-4 shadow-sm dark:border-emerald-500 dark:bg-emerald-950/20"
                   >
-                    <div className="h-10 w-10 rounded-full bg-emerald-50 dark:bg-emerald-950/20 flex items-center justify-center shrink-0">
+                    <div className="h-12 w-12 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center shrink-0">
                       <DollarSign className="h-5 w-5 text-emerald-600" />
                     </div>
                     <div>
@@ -2734,10 +2862,10 @@ export default function EmprestimosPage() {
 
                   <button
                     onClick={() => { setRenegotiateMode("partial"); setRenegotiateAmount(0) }}
-                    className="w-full text-left rounded-xl border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:border-cyan-500 p-4 transition-colors flex items-center gap-4"
+                    className="w-full text-left rounded-2xl border-2 border-cyan-500 bg-cyan-50/70 p-4 transition-colors flex items-center gap-4 shadow-sm dark:border-cyan-500 dark:bg-cyan-950/20"
                   >
-                    <div className="h-10 w-10 rounded-full bg-gray-200 dark:bg-zinc-700/50 flex items-center justify-center shrink-0">
-                      <DollarSign className="h-5 w-5 text-gray-700 dark:text-zinc-300" />
+                    <div className="h-12 w-12 rounded-full bg-cyan-100 dark:bg-cyan-900/40 flex items-center justify-center shrink-0">
+                      <DollarSign className="h-5 w-5 text-cyan-600" />
                     </div>
                     <div>
                       <p className="font-semibold text-cyan-600">Pagamento parcial de juros</p>

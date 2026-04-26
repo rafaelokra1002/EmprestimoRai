@@ -59,6 +59,7 @@ interface Expense {
 
 export default function RelatorioEmprestimosPage() {
   const [loans, setLoans] = useState<Loan[]>([])
+  const [clients, setClients] = useState<Array<{ id: string; phone: string | null }>>([])
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [loading, setLoading] = useState(true)
   const { theme } = useTheme()
@@ -76,14 +77,17 @@ export default function RelatorioEmprestimosPage() {
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      const [loansRes, expensesRes] = await Promise.all([
+      const [loansRes, expensesRes, clientsRes] = await Promise.all([
         fetch("/api/loans"),
         fetch("/api/expenses"),
+        fetch("/api/clients"),
       ])
       const loansData = await loansRes.json()
       const expensesData = await expensesRes.json()
+      const clientsData = await clientsRes.json()
       setLoans(Array.isArray(loansData) ? loansData : [])
       setExpenses(Array.isArray(expensesData) ? expensesData : [])
+      setClients(Array.isArray(clientsData) ? clientsData : [])
       setUpdatedAt(new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }))
     } catch {}
     setLoading(false)
@@ -240,6 +244,33 @@ export default function RelatorioEmprestimosPage() {
       })
       .sort((a, b) => new Date(a.vencimento).getTime() - new Date(b.vencimento).getTime())
   }, [activeLoans])
+
+  const contratosEmAtraso = useMemo(() => {
+    const now = new Date()
+
+    return activeLoans
+      .map((loan) => {
+        const paid = loan.payments.reduce((sum: number, payment: any) => sum + payment.amount, 0)
+        const nextInst = loan.installments
+          .filter((installment: any) => installment.status !== "PAID")
+          .sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0]
+
+        if (!nextInst || new Date(nextInst.dueDate) >= now) return null
+
+        const clientPhone = clients.find((client) => client.id === loan.client.id)?.phone || null
+
+        return {
+          id: loan.id,
+          clientName: loan.client.name,
+          atraso: Math.max(0, loan.totalAmount - paid),
+          emprestado: loan.amount,
+          vencimento: nextInst.dueDate,
+          telefone: clientPhone,
+        }
+      })
+      .filter((loan): loan is NonNullable<typeof loan> => loan !== null)
+      .sort((a, b) => new Date(a.vencimento).getTime() - new Date(b.vencimento).getTime())
+  }, [activeLoans, clients])
 
   // Monthly evolution chart data (last 6 months)
   const monthlyEvolution = useMemo(() => {
@@ -625,6 +656,55 @@ export default function RelatorioEmprestimosPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right text-gray-700 dark:text-zinc-300">{formatDate(c.vencimento)}</TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-red-200 bg-red-50/30 dark:border-red-900/40 dark:bg-red-950/10">
+        <CardContent className="p-4 sm:p-6">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              <h3 className="font-bold text-red-500 dark:text-red-400">Contratos em Atraso</h3>
+            </div>
+            <div className="flex h-7 min-w-7 items-center justify-center rounded-full bg-red-500 px-2 text-xs font-semibold text-white">
+              {contratosEmAtraso.length}
+            </div>
+          </div>
+
+          <div className="overflow-hidden rounded-xl border border-red-200/80 bg-white/70 dark:border-red-900/30 dark:bg-zinc-900/40">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-red-100 dark:border-red-900/20 hover:bg-transparent">
+                  <TableHead className="text-xs font-medium text-gray-500 dark:text-zinc-400">Cliente</TableHead>
+                  <TableHead className="text-xs font-medium text-center text-gray-500 dark:text-zinc-400">Atraso</TableHead>
+                  <TableHead className="text-xs font-medium text-center text-gray-500 dark:text-zinc-400">Emprestado</TableHead>
+                  <TableHead className="text-xs font-medium text-right text-gray-500 dark:text-zinc-400">Vencimento</TableHead>
+                  <TableHead className="text-xs font-medium text-left text-gray-500 dark:text-zinc-400">Telefone</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="py-8 text-center text-gray-500 dark:text-zinc-400">Carregando...</TableCell>
+                  </TableRow>
+                ) : contratosEmAtraso.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="py-8 text-center text-gray-500 dark:text-zinc-400">Nenhum contrato em atraso</TableCell>
+                  </TableRow>
+                ) : (
+                  contratosEmAtraso.map((contrato) => (
+                    <TableRow key={contrato.id} className="border-red-100/80 dark:border-red-900/20">
+                      <TableCell className="font-semibold text-gray-900 dark:text-zinc-100">{contrato.clientName}</TableCell>
+                      <TableCell className="text-center font-semibold text-red-500 dark:text-red-400">{formatCurrency(contrato.atraso)}</TableCell>
+                      <TableCell className="text-center text-gray-700 dark:text-zinc-300">{formatCurrency(contrato.emprestado)}</TableCell>
+                      <TableCell className="text-right text-gray-700 dark:text-zinc-300">{formatDate(contrato.vencimento)}</TableCell>
+                      <TableCell className="text-gray-600 dark:text-zinc-400">{contrato.telefone || "-"}</TableCell>
                     </TableRow>
                   ))
                 )}

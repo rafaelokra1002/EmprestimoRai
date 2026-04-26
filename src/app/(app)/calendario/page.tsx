@@ -153,9 +153,9 @@ export default function CalendarioPage() {
   }
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-8 pt-6 pb-12">
       {/* ===== HEADER ===== */}
-      <div>
+      <div className="pt-3">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">Calendário de Vencimentos</h1>
         <p className="text-sm text-gray-500 dark:text-zinc-400">Visualize todos os vencimentos dos seus empréstimos</p>
       </div>
@@ -192,7 +192,7 @@ export default function CalendarioPage() {
       </div>
 
       {/* ===== CALENDAR + SIDE PANEL ===== */}
-      <div className="flex gap-6 items-end">
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-stretch">
         {/* Calendar */}
         <Card className="border-gray-200 dark:border-zinc-800 flex-1 min-w-0">
           <CardContent className="p-6">
@@ -298,9 +298,9 @@ export default function CalendarioPage() {
       </Card>
 
         {/* ===== SIDE PANEL - DAY DETAILS ===== */}
-        <div className="w-[380px] shrink-0 self-end translate-y-4">
-          <Card className="border-gray-200 dark:border-zinc-800">
-            <CardContent className="p-5">
+        <div className="w-full shrink-0 lg:w-[380px] lg:self-stretch">
+          <Card className="h-full border-gray-200 dark:border-zinc-800">
+            <CardContent className="flex h-full flex-col p-5">
               {(() => {
                 const dateText = selectedDay
                   ? new Date(year, month, selectedDay).toLocaleDateString("pt-BR", { day: "numeric", month: "long" })
@@ -315,7 +315,7 @@ export default function CalendarioPage() {
 
                 if (!selectedDay) {
                   return (
-                    <div className="flex flex-col items-center justify-center py-16 text-gray-400 dark:text-zinc-500">
+                    <div className="flex flex-1 flex-col items-center justify-center text-gray-400 dark:text-zinc-500">
                       <CalIcon className="h-10 w-10 mb-3" />
                       <p className="text-sm">Clique em uma data</p>
                       <p className="text-xs">para ver os vencimentos</p>
@@ -325,11 +325,11 @@ export default function CalendarioPage() {
 
                 if (selectedEntries.length === 0 || unpaidEntries.length === 0) {
                   return (
-                    <div className="space-y-4">
+                    <div className="flex h-full flex-col space-y-4">
                       <div className="flex items-center justify-between">
                         <h3 className="text-lg font-bold text-gray-900 dark:text-zinc-100 capitalize">{dateText}</h3>
                       </div>
-                      <div className="flex flex-col items-center justify-center py-12 text-gray-400 dark:text-zinc-500">
+                      <div className="flex flex-1 flex-col items-center justify-center text-gray-400 dark:text-zinc-500">
                         <CalIcon className="h-10 w-10 mb-3" />
                         <p className="text-sm">Nenhum vencimento neste dia</p>
                       </div>
@@ -338,7 +338,7 @@ export default function CalendarioPage() {
                 }
 
                 return (
-                  <div className="space-y-4">
+                  <div className="flex h-full flex-col space-y-4">
                     {/* Header */}
                     <div className="flex items-center justify-between">
                       <h3 className="text-lg font-bold text-gray-900 dark:text-zinc-100 capitalize">{dateText}</h3>
@@ -363,7 +363,7 @@ export default function CalendarioPage() {
                     </div>
 
                     {/* Entry cards */}
-                    <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                    <div className="flex-1 space-y-3 overflow-y-auto pr-1">
                       {unpaidEntries.map((entry) => {
                         const typeIcon = entry.type === "loan"
                           ? <Wallet className="h-4 w-4 text-amber-600" />
