@@ -77,6 +77,13 @@ interface ClientDoc {
   createdAt: string
 }
 
+interface ClientLoanAmount {
+  amount: number
+  client: {
+    id: string
+  }
+}
+
 const DOC_TYPES = [
   { value: "CPF", label: "CPF" },
   { value: "RG", label: "RG" },
@@ -126,6 +133,7 @@ export default function ClientesPage() {
   const searchParams = useSearchParams()
   const [clients, setClients] = useState<Client[]>([])
   const [filtered, setFiltered] = useState<Client[]>([])
+  const [loanAmountsByClient, setLoanAmountsByClient] = useState<Record<string, number>>({})
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all")
   const [viewMode, setViewMode] = useState<"table" | "cards">("table")
@@ -184,11 +192,26 @@ export default function ClientesPage() {
   }
 
   const fetchClients = async () => {
-    const res = await fetch("/api/clients?includeInstallments=true")
-    const data = await res.json()
-    const list = Array.isArray(data) ? data : []
+    const [clientsRes, loansRes] = await Promise.all([
+      fetch("/api/clients?includeInstallments=true"),
+      fetch("/api/loans"),
+    ])
+
+    const [clientsData, loansData] = await Promise.all([
+      clientsRes.json(),
+      loansRes.json(),
+    ])
+
+    const list = Array.isArray(clientsData) ? clientsData : []
+    const loanAmountMap = (Array.isArray(loansData) ? loansData : []).reduce<Record<string, number>>((acc, loan: ClientLoanAmount) => {
+      if (!loan?.client?.id || acc[loan.client.id] != null) return acc
+      acc[loan.client.id] = loan.amount
+      return acc
+    }, {})
+
     setClients(list)
     setFiltered(list)
+    setLoanAmountsByClient(loanAmountMap)
     setLoading(false)
   }
 
@@ -469,6 +492,13 @@ export default function ClientesPage() {
     }
   }
 
+  const getDisplayedRequestedAmount = (client: Client) => {
+    const loanAmount = loanAmountsByClient[client.id]
+    if (loanAmount != null) return loanAmount
+
+    return client.requestedAmount
+  }
+
   return (
     <div className="space-y-4 pt-6">
       {/* Title + actions */}
@@ -575,7 +605,10 @@ export default function ClientesPage() {
                   <TableCell colSpan={9} className="text-center py-8 text-gray-500 dark:text-zinc-400">Nenhum cliente encontrado</TableCell>
                 </TableRow>
               ) : (
-                filtered.map((client) => (
+                filtered.map((client) => {
+                  const displayedRequestedAmount = getDisplayedRequestedAmount(client)
+
+                  return (
                   <TableRow key={client.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
@@ -586,7 +619,7 @@ export default function ClientesPage() {
                     <TableCell className="text-gray-500 dark:text-zinc-400">{client.city || "-"}</TableCell>
                     <TableCell>{client.phone || "-"}</TableCell>
                     <TableCell className="text-gray-700 dark:text-zinc-300">{client.income ? `R$ ${client.income.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "-"}</TableCell>
-                    <TableCell className="text-gray-700 dark:text-zinc-300">{client.requestedAmount ? `R$ ${client.requestedAmount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "-"}</TableCell>
+                    <TableCell className="text-gray-700 dark:text-zinc-300">{displayedRequestedAmount ? `R$ ${displayedRequestedAmount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "-"}</TableCell>
                     <TableCell>
                       <Badge variant={getDisplayedClientStatus(client) === "ACTIVE" ? "success" : "warning"}>
                         {getDisplayedClientStatus(client) === "ACTIVE" ? "Ativo" : getDisplayedClientStatus(client) === "DESAPARECIDO" ? "Desaparecido" : "Inativo"}
@@ -609,7 +642,7 @@ export default function ClientesPage() {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))
+                )})
               )}
             </TableBody>
           </Table>
@@ -629,6 +662,7 @@ export default function ClientesPage() {
             const activeLoan = loanSummary?.loan
             const hasActiveLoan = Boolean(activeLoan)
             const displayStatus = getDisplayedClientStatus(client)
+            const displayedRequestedAmount = getDisplayedRequestedAmount(client)
 
             const infoCards = [
               {
@@ -654,7 +688,7 @@ export default function ClientesPage() {
               },
               {
                 label: "Valor solicitado",
-                value: formatCurrency(client.requestedAmount),
+                value: formatCurrency(displayedRequestedAmount),
                 icon: FileText,
                 iconClassName: "text-blue-600",
                 toneClassName: "bg-blue-50 dark:bg-blue-950/30",
