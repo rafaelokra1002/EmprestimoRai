@@ -493,6 +493,8 @@ export default function ClientesPage() {
   }
 
   const getDisplayedRequestedAmount = (client: Client) => {
+    if (getDisplayedClientStatus(client) !== "ACTIVE") return null
+
     const loanAmount = loanAmountsByClient[client.id]
     if (loanAmount != null) return loanAmount
 
