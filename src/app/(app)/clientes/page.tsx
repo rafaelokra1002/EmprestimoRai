@@ -231,6 +231,7 @@ export default function ClientesPage() {
     } else if (statusFilter === "inactive") {
       list = list.filter(c => !c.loans?.some(l => l.status === "ACTIVE"))
     }
+    list = [...list].sort((left, right) => left.name.localeCompare(right.name, "pt-BR"))
     setFiltered(list)
   }, [search, clients, statusFilter])
 
