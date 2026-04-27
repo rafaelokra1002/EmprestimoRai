@@ -204,8 +204,8 @@ export default function ClientesPage() {
 
     const list = Array.isArray(clientsData) ? clientsData : []
     const loanAmountMap = (Array.isArray(loansData) ? loansData : []).reduce<Record<string, number>>((acc, loan: ClientLoanAmount) => {
-      if (!loan?.client?.id || acc[loan.client.id] != null) return acc
-      acc[loan.client.id] = loan.amount
+      if (!loan?.client?.id) return acc
+      acc[loan.client.id] = (acc[loan.client.id] || 0) + loan.amount
       return acc
     }, {})
 
