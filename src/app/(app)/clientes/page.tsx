@@ -157,7 +157,7 @@ export default function ClientesPage() {
   const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<ClientFormData>({
     resolver: zodResolver(clientSchema),
     defaultValues: {
-      status: "ACTIVE",
+      status: "INACTIVE",
       referral: false,
       referralName: "",
       referralPhone: "",
@@ -227,9 +227,9 @@ export default function ClientesPage() {
         c.document?.includes(search)
       )
     if (statusFilter === "active") {
-      list = list.filter(c => c.status === "ACTIVE" || c.loans?.some(l => l.status === "ACTIVE"))
+      list = list.filter(c => c.loans?.some(l => l.status === "ACTIVE"))
     } else if (statusFilter === "inactive") {
-      list = list.filter(c => c.status === "INACTIVE" || (!c.loans?.some(l => l.status === "ACTIVE")))
+      list = list.filter(c => !c.loans?.some(l => l.status === "ACTIVE"))
     }
     setFiltered(list)
   }, [search, clients, statusFilter])
@@ -394,7 +394,7 @@ export default function ClientesPage() {
     }
   }
 
-  const openNewClient = (initialStatus: Client["status"] = "ACTIVE") => {
+  const openNewClient = (initialStatus: Client["status"] = "INACTIVE") => {
     setEditing(null)
     setFormError(null)
     reset({
@@ -415,7 +415,7 @@ export default function ClientesPage() {
   useEffect(() => {
     if (newClientMode !== "true") return
 
-    const initialStatus: Client["status"] = requestedStatus === "DESAPARECIDO" ? "DESAPARECIDO" : "ACTIVE"
+    const initialStatus: Client["status"] = requestedStatus === "DESAPARECIDO" ? "DESAPARECIDO" : "INACTIVE"
     openNewClient(initialStatus)
   }, [newClientMode, requestedStatus])
 
@@ -469,13 +469,13 @@ export default function ClientesPage() {
   }
 
   const isInactiveClient = (client: Client) => {
-    return client.status === "INACTIVE" || !client.loans?.some((loan) => loan.status === "ACTIVE")
+    return !client.loans?.some((loan) => loan.status === "ACTIVE")
   }
 
   const getDisplayedClientStatus = (client: Client): Client["status"] => {
     if (client.status === "DESAPARECIDO") return "DESAPARECIDO"
-    if (statusFilter === "inactive" && isInactiveClient(client)) return "INACTIVE"
-    return client.status
+    if (client.loans?.some((loan) => loan.status === "ACTIVE")) return "ACTIVE"
+    return "INACTIVE"
   }
 
   const getActiveLoanSummary = (client: Client) => {
@@ -567,8 +567,8 @@ export default function ClientesPage() {
               onChange={(value) => setStatusFilter(value as "all" | "active" | "inactive")}
               options={[
                 { value: "all", label: "Todos" },
-                { value: "active", label: `Ativos (${clients.filter(c => c.status !== "DESAPARECIDO" && (c.status === "ACTIVE" || c.loans?.some(l => l.status === "ACTIVE"))).length})` },
-                { value: "inactive", label: `Inativos (${clients.filter(c => c.status !== "DESAPARECIDO" && (c.status === "INACTIVE" || (!c.loans?.some(l => l.status === "ACTIVE")))).length})` },
+                { value: "active", label: `Ativos (${clients.filter(c => c.status !== "DESAPARECIDO" && c.loans?.some(l => l.status === "ACTIVE")).length})` },
+                { value: "inactive", label: `Inativos (${clients.filter(c => c.status !== "DESAPARECIDO" && !c.loans?.some(l => l.status === "ACTIVE")).length})` },
               ]}
               minWidthClassName="min-w-[190px]"
             />

@@ -75,49 +75,58 @@ export async function POST(request: Request) {
       )
     }
 
-    const loan = await prisma.loan.create({
-      data: {
-        clientId: data.clientId,
-        userId: (session.user as any).id,
-        amount: data.amount,
-        interestRate: data.interestRate,
-        interestType: data.interestType,
-        modality: data.modality,
-        totalInterest,
-        installmentValue: installmentAmount,
-        totalAmount,
-        profit,
-        installmentCount: data.installmentCount,
-        contractDate,
-        firstInstallmentDate: firstDate,
-        startDate: contractDate,
-        skipSaturday: data.skipSaturday ?? false,
-        skipSunday: data.skipSunday ?? false,
-        skipHolidays: data.skipHolidays ?? false,
-        dailyInterest: data.dailyInterest ?? false,
-        dailyInterestAmount,
-        penaltyFee: data.penaltyFee ?? 0,
-        lateCycles: 0,
-        dueDay: firstDate.getDate(),
-        whatsappNotify: data.whatsappNotify ?? false,
-        notes: data.notes,
-        tags: Array.isArray(body.tags) ? body.tags.filter((t: unknown) => typeof t === "string" && (t as string).trim()) : [],
-        installments: {
-          create: installmentDates.map((date, index) => ({
-            number: index + 1,
-            amount: data.interestType === "SAC" && sacInstallments
-              ? sacInstallments[index]
-              : data.interestType === "CUSTOM" && data.customInstallmentAmounts
-              ? data.customInstallmentAmounts[index]
-              : installmentAmount,
-            dueDate: date,
-          })),
+    const loan = await prisma.$transaction(async (tx) => {
+      const createdLoan = await tx.loan.create({
+        data: {
+          clientId: data.clientId,
+          userId: (session.user as any).id,
+          amount: data.amount,
+          interestRate: data.interestRate,
+          interestType: data.interestType,
+          modality: data.modality,
+          totalInterest,
+          installmentValue: installmentAmount,
+          totalAmount,
+          profit,
+          installmentCount: data.installmentCount,
+          contractDate,
+          firstInstallmentDate: firstDate,
+          startDate: contractDate,
+          skipSaturday: data.skipSaturday ?? false,
+          skipSunday: data.skipSunday ?? false,
+          skipHolidays: data.skipHolidays ?? false,
+          dailyInterest: data.dailyInterest ?? false,
+          dailyInterestAmount,
+          penaltyFee: data.penaltyFee ?? 0,
+          lateCycles: 0,
+          dueDay: firstDate.getDate(),
+          whatsappNotify: data.whatsappNotify ?? false,
+          notes: data.notes,
+          tags: Array.isArray(body.tags) ? body.tags.filter((t: unknown) => typeof t === "string" && (t as string).trim()) : [],
+          installments: {
+            create: installmentDates.map((date, index) => ({
+              number: index + 1,
+              amount: data.interestType === "SAC" && sacInstallments
+                ? sacInstallments[index]
+                : data.interestType === "CUSTOM" && data.customInstallmentAmounts
+                ? data.customInstallmentAmounts[index]
+                : installmentAmount,
+              dueDate: date,
+            })),
+          },
         },
-      },
-      include: {
-        installments: true,
-        client: { select: { name: true } },
-      },
+        include: {
+          installments: true,
+          client: { select: { name: true } },
+        },
+      })
+
+      await tx.client.update({
+        where: { id: data.clientId },
+        data: { status: "ACTIVE" },
+      })
+
+      return createdLoan
     })
 
     return NextResponse.json(loan, { status: 201 })

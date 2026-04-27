@@ -133,7 +133,7 @@ export async function POST(request: Request) {
       complement: data.complement || null,
       number: data.number || null,
       notes: data.notes || null,
-      status: data.status ?? "ACTIVE",
+      status: data.status ?? "INACTIVE",
       userId,
     }
 
