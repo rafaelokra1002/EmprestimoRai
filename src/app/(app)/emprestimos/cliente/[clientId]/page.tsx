@@ -235,10 +235,17 @@ export default function ClienteEmprestimosPage() {
   const getLoanStatusInfo = (loan: Loan) => {
     if (loan.status === "COMPLETED") return { label: "Quitado", color: "bg-blue-50 dark:bg-blue-950/20 text-blue-600" }
     if (loan.status === "DEFAULTED") return { label: "Inadimplente", color: "bg-red-50 dark:bg-red-950/20 text-red-600" }
-    const paid = loan.payments.reduce((s: number, p: any) => s + p.amount, 0)
-    const interest = loan.totalAmount - loan.amount
-    if (interest > 0 && paid >= interest && paid < loan.totalAmount) return { label: "Só Juros", color: "bg-purple-50 dark:bg-purple-950/20 text-purple-600" }
     const hasOverdue = loan.installments.some((i: any) => i.status !== "PAID" && toDateStr(new Date(i.dueDate)) < todayStr)
+    const paid = loan.payments.reduce((sum: number, payment: any) => sum + payment.amount, 0)
+    const contractInterest = loan.totalAmount - loan.amount
+    const hasCoveredContractInterest = contractInterest > 0 && paid >= contractInterest && paid < loan.totalAmount
+    const hasInterestPayment = loan.payments.some((payment: any) => {
+      const notes = (payment.notes || "").toLowerCase()
+      return notes.includes("só juros") || notes.includes("parcial de juros")
+    })
+    if (!hasOverdue && (hasInterestPayment || hasCoveredContractInterest)) {
+      return { label: "Só Juros", color: "bg-purple-50 dark:bg-purple-950/20 text-purple-600" }
+    }
     if (hasOverdue) return { label: "Atrasado", color: "bg-red-50 dark:bg-red-950/20 text-red-600" }
     return { label: "Pendente", color: "bg-orange-50 dark:bg-orange-950/20 text-orange-600" }
   }
@@ -290,6 +297,47 @@ export default function ClienteEmprestimosPage() {
       daysOverdue,
       (loan.interestType || "SIMPLE") as "SIMPLE" | "COMPOUND"
     )
+  }
+  const getCurrentOverdueCharge = (loan: Loan) => {
+    const loanData = buildLoanData({
+      amount: loan.amount,
+      interestRate: loan.interestRate,
+      interestType: loan.interestType || "SIMPLE",
+      totalAmount: loan.totalAmount,
+      dailyInterest: loan.dailyInterest,
+      dailyInterestAmount: loan.dailyInterestAmount || 0,
+      dueDay: loan.dueDay || new Date(loan.installments[0]?.dueDate || Date.now()).getDate(),
+      modality: loan.modality,
+      firstInstallmentDate: loan.firstInstallmentDate || loan.installments[0]?.dueDate || new Date().toISOString(),
+      installments: loan.installments,
+      payments: loan.payments,
+    })
+    const daysOverdue = getDaysOverdue(loanData)
+    if (daysOverdue <= 0) return 0
+
+    const overdueInterest = daysOverdue >= 30
+      ? calculateOverdueInterest(
+          loan.totalAmount,
+          loan.amount,
+          loan.interestRate,
+          daysOverdue,
+          (loan.interestType || "SIMPLE") as "SIMPLE" | "COMPOUND"
+        )
+      : 0
+
+    return overdueInterest + (getOverdueDailyAmountBRL(loanData) * daysOverdue)
+  }
+  const getInstallmentPayableAmount = (loan: Loan, installment: Loan["installments"][number]) => {
+    const baseRemaining = Math.max(0, installment.amount - (installment.paidAmount || 0))
+    const firstPendingInstallment = loan.installments
+      .filter((i: any) => i.status !== "PAID")
+      .sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0]
+
+    if (!firstPendingInstallment || firstPendingInstallment.id !== installment.id) {
+      return baseRemaining
+    }
+
+    return baseRemaining + getCurrentOverdueCharge(loan)
   }
   const getNextDueInst = (loan: Loan) =>
     loan.installments
@@ -424,7 +472,7 @@ export default function ClienteEmprestimosPage() {
     const pendingInst = loan.installments.find((i: any) => i.status !== "PAID")
     if (pendingInst) {
       setSelectedInstallmentIds([pendingInst.id])
-      setPayAmount(pendingInst.amount - pendingInst.paidAmount)
+      setPayAmount(getInstallmentPayableAmount(loan, pendingInst))
     }
     const nextMonth = new Date()
     nextMonth.setMonth(nextMonth.getMonth() + 1)
@@ -795,10 +843,25 @@ export default function ClienteEmprestimosPage() {
 
                 {/* Ações */}
                 <div className="px-4 pt-3 pb-4 mt-2 border-t border-gray-100 dark:border-zinc-800 space-y-3">
-                  <div>
-                    <Button size="sm" variant="outline" onClick={() => openRenegotiateDialog(loan)} className="w-full h-9 text-sm border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-400 transition-colors">
-                      <Receipt className="h-3.5 w-3.5 mr-1.5" /> Pagar
+                  <div className="grid w-full min-w-0 grid-cols-[minmax(0,2.6fr)_repeat(5,minmax(0,1fr))] gap-1.5">
+                    <Button size="sm" variant="outline" onClick={() => openRenegotiateDialog(loan)} className="min-w-0 h-10 px-2 text-xs border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-400 transition-colors sm:text-sm">
+                      <Receipt className="h-3.5 w-3.5 mr-1" /> Pagar
                     </Button>
+                    <button className="flex min-w-0 w-full items-center justify-center rounded-xl bg-emerald-50 p-2 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors" onClick={() => router.push(`/emprestimos/${loan.id}`)} title="Histórico">
+                      <RotateCcw className="h-4 w-4" />
+                    </button>
+                    <button className="flex min-w-0 w-full items-center justify-center rounded-xl bg-blue-50 p-2 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors" onClick={() => router.push(`/emprestimos/${loan.id}/editar`)} title="Editar">
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button className="flex min-w-0 w-full items-center justify-center rounded-xl bg-emerald-50 p-2 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors" onClick={() => router.push(`/emprestimos/${loan.id}`)} title="Pagar Juros">
+                      <DollarSign className="h-4 w-4" />
+                    </button>
+                    <button className="flex min-w-0 w-full items-center justify-center rounded-xl bg-amber-50 p-2 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors" onClick={() => router.push(`/emprestimos/${loan.id}`)} title="Renovar">
+                      <RotateCcw className="h-4 w-4" />
+                    </button>
+                    <button className="flex min-w-0 w-full items-center justify-center rounded-xl bg-red-50 p-2 dark:bg-red-950/30 text-red-500 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors" onClick={() => handleDelete(loan.id)} title="Excluir">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
                   {(status.label === "Atrasado" || status.label === "Inadimplente") && (
                     <div>
@@ -807,23 +870,6 @@ export default function ClienteEmprestimosPage() {
                       </Button>
                     </div>
                   )}
-                  <div className="flex items-center justify-center gap-2">
-                    <button className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors" onClick={() => router.push(`/emprestimos/${loan.id}`)} title="Histórico">
-                      <RotateCcw className="h-4 w-4" />
-                    </button>
-                    <button className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors" onClick={() => router.push(`/emprestimos/${loan.id}/editar`)} title="Editar">
-                      <Pencil className="h-4 w-4" />
-                    </button>
-                    <button className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors" onClick={() => router.push(`/emprestimos/${loan.id}`)} title="Pagar Juros">
-                      <DollarSign className="h-4 w-4" />
-                    </button>
-                    <button className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors" onClick={() => router.push(`/emprestimos/${loan.id}`)} title="Renovar">
-                      <RotateCcw className="h-4 w-4" />
-                    </button>
-                    <button className="p-2.5 rounded-xl bg-red-50 dark:bg-red-950/30 text-red-500 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors" onClick={() => handleDelete(loan.id)} title="Excluir">
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
                 </div>
               </div>
             )
@@ -1137,6 +1183,7 @@ export default function ClienteEmprestimosPage() {
           const principalPerInst = paymentDialog.amount / paymentDialog.installmentCount
           const firstInst = pendingInstallments[0]
           const totalOfInst = firstInst ? firstInst.amount : 0
+          const firstInstPayable = firstInst ? getInstallmentPayableAmount(paymentDialog, firstInst) : 0
           const now = new Date()
           const hasOverdueInst = pendingInstallments.some((i: any) => new Date(i.dueDate) < now)
           const penalty = hasOverdueInst ? (paymentDialog.penaltyFee || 0) : 0
@@ -1153,7 +1200,7 @@ export default function ClienteEmprestimosPage() {
                   </div>
                 </div>
                 <p className="text-xs text-gray-400 dark:text-zinc-500 mt-2">
-                  Parcela: {formatCurrency(totalOfInst)} ({formatCurrency(principalPerInst)} + {formatCurrency(interestPI)} juros)
+                  Parcela: {formatCurrency(firstInstPayable || totalOfInst)} ({formatCurrency(principalPerInst)} + {formatCurrency(interestPI)} juros)
                 </p>
               </div>
 
@@ -1170,7 +1217,7 @@ export default function ClienteEmprestimosPage() {
                       setPaymentType(t.key)
                       if (t.key === "total") { setPayAmount(totalWithPenalty); setSelectedInstallmentIds([]) }
                       else if (t.key === "installment") {
-                        const total = selectedInsts.reduce((s: number, i: any) => s + (i.amount - i.paidAmount), 0)
+                        const total = selectedInsts.reduce((sum: number, installment: any) => sum + getInstallmentPayableAmount(paymentDialog, installment), 0)
                         setPayAmount(total)
                       } else if (t.key === "partial") { setPayAmount(0); if (selectedInstallmentIds.length > 1) setSelectedInstallmentIds(selectedInstallmentIds.slice(0, 1)) }
                       else if (t.key === "discount") { setPayAmount(0); setPayDiscount(0); setSelectedInstallmentIds([]) }
@@ -1187,15 +1234,18 @@ export default function ClienteEmprestimosPage() {
                   <div className="space-y-2 max-h-48 overflow-y-auto mt-2">
                     {pendingInstallments.map((inst: any) => {
                       const isSelected = selectedInstallmentIds.includes(inst.id)
+                      const payableAmount = getInstallmentPayableAmount(paymentDialog, inst)
+                      const overdueCharge = Math.max(0, payableAmount - Math.max(0, inst.amount - (inst.paidAmount || 0)))
                       return (
                         <button key={inst.id} type="button" onClick={() => {
                           let newIds = isSelected ? selectedInstallmentIds.filter((id: string) => id !== inst.id) : [...selectedInstallmentIds, inst.id]
                           setSelectedInstallmentIds(newIds)
-                          setPayAmount(paymentDialog.installments.filter((i: any) => newIds.includes(i.id)).reduce((s: number, i: any) => s + (i.amount - i.paidAmount), 0))
+                          setPayAmount(paymentDialog.installments.filter((i: any) => newIds.includes(i.id)).reduce((sum: number, installment: any) => sum + getInstallmentPayableAmount(paymentDialog, installment), 0))
                         }} className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors text-left ${isSelected ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30" : "border-gray-200 dark:border-zinc-700"}`}>
                           <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">Parcela {inst.number}/{paymentDialog.installmentCount}</span>
                           <div className="text-right">
-                            <p className="text-sm font-bold text-gray-900 dark:text-zinc-100">{formatCurrency(inst.amount - inst.paidAmount)}</p>
+                            <p className="text-sm font-bold text-gray-900 dark:text-zinc-100">{formatCurrency(payableAmount)}</p>
+                            {overdueCharge > 0 && <p className="text-[10px] text-red-500">+ {formatCurrency(overdueCharge)} juros</p>}
                             <p className="text-[10px] text-gray-400">{formatDate(inst.dueDate)}</p>
                           </div>
                         </button>

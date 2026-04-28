@@ -169,7 +169,6 @@ export default function ClientesPage() {
   const watchReferral = watch("referral")
   const watchZipCode = watch("zipCode") || ""
   const newClientMode = searchParams.get("novo")
-  const requestedStatus = searchParams.get("status")
 
   const searchCep = async () => {
     const cep = watchZipCode.replace(/\D/g, "")
@@ -203,6 +202,7 @@ export default function ClientesPage() {
     ])
 
     const list = Array.isArray(clientsData) ? clientsData : []
+    const visibleClients = list.filter((client) => client.status !== "DESAPARECIDO")
     const loanAmountMap = (Array.isArray(loansData) ? loansData : []).reduce<Record<string, number>>((acc, loan: ClientLoanAmount) => {
       if (!loan?.client?.id) return acc
       acc[loan.client.id] = (acc[loan.client.id] || 0) + loan.amount
@@ -210,7 +210,7 @@ export default function ClientesPage() {
     }, {})
 
     setClients(list)
-    setFiltered(list)
+    setFiltered(visibleClients)
     setLoanAmountsByClient(loanAmountMap)
     setLoading(false)
   }
@@ -415,10 +415,8 @@ export default function ClientesPage() {
 
   useEffect(() => {
     if (newClientMode !== "true") return
-
-    const initialStatus: Client["status"] = requestedStatus === "DESAPARECIDO" ? "DESAPARECIDO" : "INACTIVE"
-    openNewClient(initialStatus)
-  }, [newClientMode, requestedStatus])
+    openNewClient("INACTIVE")
+  }, [newClientMode])
 
   const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -473,8 +471,7 @@ export default function ClientesPage() {
     return !client.loans?.some((loan) => loan.status === "ACTIVE")
   }
 
-  const getDisplayedClientStatus = (client: Client): Client["status"] => {
-    if (client.status === "DESAPARECIDO") return "DESAPARECIDO"
+  const getDisplayedClientStatus = (client: Client): "ACTIVE" | "INACTIVE" => {
     if (client.loans?.some((loan) => loan.status === "ACTIVE")) return "ACTIVE"
     return "INACTIVE"
   }
@@ -625,7 +622,7 @@ export default function ClientesPage() {
                     <TableCell className="text-gray-700 dark:text-zinc-300">{displayedRequestedAmount ? `R$ ${displayedRequestedAmount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "-"}</TableCell>
                     <TableCell>
                       <Badge variant={getDisplayedClientStatus(client) === "ACTIVE" ? "success" : "warning"}>
-                        {getDisplayedClientStatus(client) === "ACTIVE" ? "Ativo" : getDisplayedClientStatus(client) === "DESAPARECIDO" ? "Desaparecido" : "Inativo"}
+                        {getDisplayedClientStatus(client) === "ACTIVE" ? "Ativo" : "Inativo"}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -722,8 +719,8 @@ export default function ClientesPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${displayStatus === "ACTIVE" ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400" : displayStatus === "DESAPARECIDO" ? "bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-400" : "bg-yellow-50 text-yellow-700 dark:bg-yellow-950/30 dark:text-yellow-400"}`}>
-                      {displayStatus === "ACTIVE" ? "Ativo" : displayStatus === "DESAPARECIDO" ? "Desaparecido" : "Inativo"}
+                    <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${displayStatus === "ACTIVE" ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400" : "bg-yellow-50 text-yellow-700 dark:bg-yellow-950/30 dark:text-yellow-400"}`}>
+                      {displayStatus === "ACTIVE" ? "Ativo" : "Inativo"}
                     </span>
                   </div>
                 </div>
@@ -1058,14 +1055,11 @@ export default function ClientesPage() {
                 >
                   <option value="ACTIVE">Ativo</option>
                   <option value="INACTIVE">Inativo</option>
-                  <option value="DESAPARECIDO">Desaparecido</option>
                 </select>
                 <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">
-                  {watchStatus === "DESAPARECIDO"
-                    ? "Clientes desaparecidos saem da listagem principal e aparecem na página Desaparecido."
-                    : watchStatus === "INACTIVE"
-                      ? "Clientes inativos continuam cadastrados, mas sem novas operações no fluxo normal."
-                      : "Clientes ativos seguem disponíveis para novos empréstimos."}
+                  {watchStatus === "INACTIVE"
+                    ? "Clientes inativos continuam cadastrados, mas sem novas operações no fluxo normal."
+                    : "Clientes ativos seguem disponíveis para novos empréstimos."}
                 </p>
               </div>
 

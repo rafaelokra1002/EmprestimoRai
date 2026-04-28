@@ -1,21 +1,29 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
-import { useRouter } from "next/navigation"
 import { Avatar } from "@/components/avatar"
 import { Button } from "@/components/ui/button"
 import { Dialog } from "@/components/ui/dialog"
+import { LoanDetailsContent } from "@/app/(app)/emprestimos/_components/loan-details-content"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Search, Users, Phone, MapPin, FileText, CalendarDays, Percent, Wallet, AlertTriangle, Plus, Banknote, LayoutGrid, Rows3, Camera, Upload, RotateCcw, Trash2, Eye, Download, X, ArrowLeft } from "lucide-react"
+import { Search, Users, Phone, MapPin, FileText, CalendarDays, Percent, Wallet, AlertTriangle, Plus, Banknote, LayoutGrid, Rows3, Camera, Upload, RotateCcw, Trash2, Eye, Download, X } from "lucide-react"
 import { buildLoanData, calculateOverdueInterest, calculateTotalAmountWithLateFee, getDaysOverdue, getOverdueDailyAmountBRL } from "@/lib/loan-logic"
+
+const MODALITY_LABELS: Record<string, string> = {
+  MONTHLY: "MENSAL",
+  BIWEEKLY: "QUINZENAL",
+  WEEKLY: "SEMANAL",
+  DAILY: "DIÁRIO",
+}
 
 interface DisappearedClient {
   id: string
   name: string
   phone: string | null
   document: string | null
+  instagram: string | null
   city: string | null
   notes: string | null
   photo: string | null
@@ -128,6 +136,29 @@ function getInterestSummary(client: DisappearedClient) {
     .join(" | ")
 }
 
+function getPaidTotal(loan: DisappearedClient["loans"][number]) {
+  return (loan.payments || []).reduce((sum, payment) => sum + Number(payment.amount || 0), 0)
+}
+
+function getReceivedProfit(loan: DisappearedClient["loans"][number]) {
+  const paidInstallments = loan.installments.filter((installment) => installment.status === "PAID").length
+  if (paidInstallments === 0) return 0
+  return Math.round(paidInstallments * (loan.profit / Math.max(1, loan.installmentCount)) * 100) / 100
+}
+
+function getPrimaryLoan(loans: DisappearedClient["loans"]) {
+  return [...loans].sort((left, right) => {
+    const leftPending = left.installments
+      .filter((installment) => installment.status !== "PAID")
+      .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0]
+    const rightPending = right.installments
+      .filter((installment) => installment.status !== "PAID")
+      .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0]
+
+    return new Date(leftPending?.dueDate || left.firstInstallmentDate).getTime() - new Date(rightPending?.dueDate || right.firstInstallmentDate).getTime()
+  })[0]
+}
+
 function getLoanOverdueDetails(loan: DisappearedClient["loans"][number]) {
   const loanData = buildLoanData({
     amount: loan.amount,
@@ -181,8 +212,8 @@ function getLoanOverdueDetails(loan: DisappearedClient["loans"][number]) {
 }
 
 export default function ClientesDesaparecidosPage() {
-  const router = useRouter()
   const [clients, setClients] = useState<DisappearedClient[]>([])
+  const [activeSection, setActiveSection] = useState<"desaparecido" | "clientes">("desaparecido")
   const [search, setSearch] = useState("")
   const [pickerSearch, setPickerSearch] = useState("")
   const [createForm, setCreateForm] = useState({
@@ -204,6 +235,7 @@ export default function ClientesDesaparecidosPage() {
   const [createError, setCreateError] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<"cards" | "table">("cards")
   const [documentsOpen, setDocumentsOpen] = useState(false)
+  const [detailsLoanId, setDetailsLoanId] = useState<string | null>(null)
   const [selectedClient, setSelectedClient] = useState<DisappearedClient | null>(null)
   const [clientDocuments, setClientDocuments] = useState<ClientDocumentSummary[]>([])
   const [docsLoading, setDocsLoading] = useState(false)
@@ -254,7 +286,6 @@ export default function ClientesDesaparecidosPage() {
       )
     })
   }, [disappearedClients, search])
-
   const candidateClients = useMemo(() => {
     const term = pickerSearch.toLowerCase()
 
@@ -297,6 +328,7 @@ export default function ClientesDesaparecidosPage() {
       setClients((current) => current.map((client) => (
         client.id === clientId ? { ...client, status: "DESAPARECIDO" } : client
       )))
+      setActiveSection("desaparecido")
       setPickerOpen(false)
       setPickerSearch("")
     } finally {
@@ -429,8 +461,7 @@ export default function ClientesDesaparecidosPage() {
       setClients((current) => current.map((client) => (
         client.id === clientId ? { ...client, status: "ACTIVE" } : client
       )))
-
-      router.push("/emprestimos")
+      setActiveSection("clientes")
     } finally {
       setActionId(null)
     }
@@ -559,46 +590,74 @@ export default function ClientesDesaparecidosPage() {
     }
   }
 
+  const openLoanDetails = (loanId: string | null | undefined) => {
+    if (!loanId) return
+    setDetailsLoanId(loanId)
+  }
+
+  const sectionTitle = activeSection === "desaparecido" ? "Desaparecido" : "Clientes"
+  const sectionDescription = "Clientes marcados como desaparecidos com resumo de empréstimos, juros e pendências."
+  const searchPlaceholder = "Buscar cliente desaparecido..."
+  const emptyTitle = "Nenhum cliente desaparecido encontrado"
+  const emptyDescription = "Marque um cliente com status desaparecido para ele aparecer nesta página."
+  const effectiveViewMode = activeSection === "clientes" ? "table" : viewMode
+
   return (
     <div className="space-y-6 pt-6">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">Desaparecido</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{sectionTitle}</h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-zinc-400">
-            Clientes marcados como desaparecidos com resumo de empréstimos, juros e pendências.
+            {sectionDescription}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            onClick={() => router.push("/clientes")}
-            variant="outline"
-            className="border-gray-200 dark:border-zinc-700"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Ir para Clientes
-          </Button>
-          <Button
-            onClick={() => {
-              resetCreateForm()
-              setCreateOpen(true)
-            }}
-            variant="outline"
-            className="border-gray-200 dark:border-zinc-700"
-          >
-            <Plus className="h-4 w-4" />
-            Cadastrar Desaparecido
-          </Button>
-          <div className="flex h-10 items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-950/20 dark:text-red-300">
-            <Users className="h-4 w-4" />
-            {filteredClients.length} clientes
+        <div className="flex flex-col items-stretch gap-3 xl:min-w-[640px] xl:items-end">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+            <Button
+              onClick={() => setActiveSection("desaparecido")}
+              variant="outline"
+              className={activeSection === "desaparecido" ? "border-red-300 bg-red-50 text-red-700 dark:border-red-900/40 dark:bg-red-950/20 dark:text-red-300" : "border-gray-200 dark:border-zinc-700"}
+            >
+              <AlertTriangle className="h-4 w-4" />
+              Desaparecido
+            </Button>
+            <Button
+              onClick={() => {
+                setActiveSection("clientes")
+                setViewMode("table")
+              }}
+              variant="outline"
+              className={activeSection === "clientes" ? "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-900/40 dark:bg-blue-950/20 dark:text-blue-300" : "border-gray-200 dark:border-zinc-700"}
+            >
+              <Users className="h-4 w-4" />
+              Cliente
+            </Button>
+            <Button
+              onClick={() => {
+                resetCreateForm()
+                setCreateOpen(true)
+              }}
+              variant="outline"
+              className="border-gray-200 dark:border-zinc-700"
+            >
+              <Plus className="h-4 w-4" />
+              Cadastrar Desaparecido
+            </Button>
+            <Button
+              onClick={() => setPickerOpen(true)}
+              className="bg-red-600 text-white hover:bg-red-700"
+            >
+              <Plus className="h-4 w-4" />
+              Adicionar Desaparecido
+            </Button>
           </div>
-          <Button
-            onClick={() => setPickerOpen(true)}
-            className="bg-red-600 text-white hover:bg-red-700"
-          >
-            <Plus className="h-4 w-4" />
-            Adicionar Desaparecido
-          </Button>
+
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+            <div className="flex h-10 items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-950/20 dark:text-red-300">
+              <Users className="h-4 w-4" />
+              {filteredClients.length} clientes
+            </div>
+          </div>
         </div>
       </div>
 
@@ -607,7 +666,7 @@ export default function ClientesDesaparecidosPage() {
         <Input
           value={search}
           onChange={(event) => setSearch(event.target.value)}
-          placeholder="Buscar cliente desaparecido..."
+          placeholder={searchPlaceholder}
           className="pl-10"
         />
       </div>
@@ -618,7 +677,7 @@ export default function ClientesDesaparecidosPage() {
             type="button"
             onClick={() => setViewMode("table")}
             className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors ${
-              viewMode === "table"
+              effectiveViewMode === "table"
                 ? "bg-gray-100 text-gray-900 dark:bg-zinc-800 dark:text-zinc-100"
                 : "text-gray-500 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-zinc-200"
             }`}
@@ -626,18 +685,20 @@ export default function ClientesDesaparecidosPage() {
             <Rows3 className="h-4 w-4" />
             Tabela
           </button>
-          <button
-            type="button"
-            onClick={() => setViewMode("cards")}
-            className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors ${
-              viewMode === "cards"
-                ? "bg-gray-100 text-gray-900 dark:bg-zinc-800 dark:text-zinc-100"
-                : "text-gray-500 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-zinc-200"
-            }`}
-          >
-            <LayoutGrid className="h-4 w-4" />
-            Cards
-          </button>
+          {activeSection === "desaparecido" ? (
+            <button
+              type="button"
+              onClick={() => setViewMode("cards")}
+              className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors ${
+                viewMode === "cards"
+                  ? "bg-gray-100 text-gray-900 dark:bg-zinc-800 dark:text-zinc-100"
+                  : "text-gray-500 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+              }`}
+            >
+              <LayoutGrid className="h-4 w-4" />
+              Cards
+            </button>
+          ) : null}
         </div>
       </div>
 
@@ -648,12 +709,12 @@ export default function ClientesDesaparecidosPage() {
       ) : filteredClients.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-gray-200 bg-white px-4 py-10 text-center dark:border-zinc-800 dark:bg-zinc-900">
           <AlertTriangle className="mx-auto h-10 w-10 text-red-400" />
-          <h2 className="mt-3 text-lg font-semibold text-gray-900 dark:text-zinc-100">Nenhum cliente desaparecido encontrado</h2>
+          <h2 className="mt-3 text-lg font-semibold text-gray-900 dark:text-zinc-100">{emptyTitle}</h2>
           <p className="mt-1 text-sm text-gray-500 dark:text-zinc-400">
-            Marque um cliente com status desaparecido para ele aparecer nesta página.
+            {emptyDescription}
           </p>
         </div>
-      ) : viewMode === "table" ? (
+      ) : effectiveViewMode === "table" ? (
         <div className="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
           <Table>
             <TableHeader>
@@ -661,11 +722,23 @@ export default function ClientesDesaparecidosPage() {
                 <TableHead>Cliente</TableHead>
                 <TableHead>Telefone</TableHead>
                 <TableHead>Cidade</TableHead>
-                <TableHead>Empréstimos ativos</TableHead>
-                <TableHead>Saldo em aberto</TableHead>
-                <TableHead>Próximo vencimento</TableHead>
-                <TableHead>Juros</TableHead>
-                <TableHead>Cadastrado em</TableHead>
+                {activeSection === "clientes" ? (
+                  <>
+                    <TableHead>CPF</TableHead>
+                    <TableHead>Instagram</TableHead>
+                  </>
+                ) : null}
+                {activeSection === "desaparecido" ? (
+                  <>
+                    <TableHead>Empréstimos ativos</TableHead>
+                    <TableHead>Saldo em aberto</TableHead>
+                    <TableHead>Próximo vencimento</TableHead>
+                    <TableHead>Juros</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Cadastrado em</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+                  </>
+                ) : null}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -679,17 +752,42 @@ export default function ClientesDesaparecidosPage() {
                         <Avatar name={client.name} src={client.photo} size="sm" />
                         <div className="min-w-0">
                           <p className="truncate font-medium">{client.name}</p>
-                          <p className="truncate text-xs text-gray-500 dark:text-zinc-400">Desaparecido</p>
+                          <p className="truncate text-xs text-gray-500 dark:text-zinc-400">
+                            {client.status === "DESAPARECIDO" ? "Desaparecido" : client.status === "ACTIVE" ? "Ativo" : "Inativo"}
+                          </p>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>{client.phone || "-"}</TableCell>
                     <TableCell>{client.city || "-"}</TableCell>
-                    <TableCell>{activeLoans.length}</TableCell>
-                    <TableCell>{formatCurrency(getOutstandingBalance(client))}</TableCell>
-                    <TableCell>{formatDate(getNextDueDate(client))}</TableCell>
-                    <TableCell className="max-w-[220px] truncate">{getInterestSummary(client)}</TableCell>
-                    <TableCell>{formatDate(client.createdAt)}</TableCell>
+                    {activeSection === "clientes" ? (
+                      <>
+                        <TableCell>{client.document || "-"}</TableCell>
+                        <TableCell>{client.instagram || "-"}</TableCell>
+                      </>
+                    ) : null}
+                    {activeSection === "desaparecido" ? (
+                      <>
+                        <TableCell>{activeLoans.length}</TableCell>
+                        <TableCell>{formatCurrency(getOutstandingBalance(client))}</TableCell>
+                        <TableCell>{formatDate(getNextDueDate(client))}</TableCell>
+                        <TableCell className="max-w-[220px] truncate">{getInterestSummary(client)}</TableCell>
+                        <TableCell>{client.status === "DESAPARECIDO" ? "Desaparecido" : client.status === "ACTIVE" ? "Ativo" : "Inativo"}</TableCell>
+                        <TableCell>{formatDate(client.createdAt)}</TableCell>
+                        <TableCell>
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => restoreClient(client.id)}
+                              disabled={actionId === client.id}
+                            >
+                              {actionId === client.id ? "Atualizando..." : "Reapareceu"}
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </>
+                    ) : null}
                   </TableRow>
                 )
               })}
@@ -701,235 +799,224 @@ export default function ClientesDesaparecidosPage() {
           {filteredClients.map((client) => {
             const activeLoans = getActiveLoans(client)
             const outstandingBalance = getOutstandingBalance(client)
+            const nextDueDate = getNextDueDate(client)
+            const primaryLoan = getPrimaryLoan(activeLoans)
+            const primaryLoanOverdue = primaryLoan ? getLoanOverdueDetails(primaryLoan) : null
+            const hasOverdueLoan = activeLoans.some((loan) => getLoanOverdueDetails(loan).daysOverdue > 0)
+            const cardBorder = hasOverdueLoan ? "border-red-400 dark:border-red-700" : "border-blue-400 dark:border-blue-700"
+            const cardBg = hasOverdueLoan ? "bg-red-100 dark:bg-red-950/30" : "bg-blue-100 dark:bg-blue-950/30"
+            const remainingBg = hasOverdueLoan ? "bg-red-100 dark:bg-red-900/40" : "bg-blue-100 dark:bg-blue-900/40"
+            const remainingColor = hasOverdueLoan ? "text-red-700 dark:text-red-400" : "text-blue-700 dark:text-blue-400"
+            const cellBg = hasOverdueLoan ? "bg-red-50 dark:bg-red-950/20" : "bg-blue-50 dark:bg-blue-950/20"
+            const paid = primaryLoan ? getPaidTotal(primaryLoan) : 0
+            const receivedProfit = primaryLoan ? getReceivedProfit(primaryLoan) : 0
+            const profitPct = primaryLoan && primaryLoan.profit > 0 ? Math.round((receivedProfit / primaryLoan.profit) * 100) : 0
+            const extraLoansCount = Math.max(0, activeLoans.length - (primaryLoan ? 1 : 0))
+            const statusLabel = client.status === "DESAPARECIDO" ? "Desaparecido" : client.status === "ACTIVE" ? "Ativo" : "Inativo"
+            const statusBadgeClass = client.status === "DESAPARECIDO"
+              ? "bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300"
+              : client.status === "ACTIVE"
+                ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400"
+                : "bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300"
 
             return (
-              <div key={client.id} className="rounded-2xl border border-gray-200 bg-white p-3.5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <Avatar name={client.name} src={client.photo} size="lg" className="h-11 w-11 border border-red-100 dark:border-red-900/40" />
-                    <div className="min-w-0">
-                      <h2 className="truncate text-base font-semibold text-gray-900 dark:text-zinc-100">{client.name}</h2>
-                      <p className="mt-0.5 text-xs text-gray-500 dark:text-zinc-400">Marcado como desaparecido</p>
-                    </div>
-                  </div>
-                  <span className="inline-flex items-center rounded-full bg-red-50 px-2.5 py-1 text-[11px] font-semibold text-red-700 dark:bg-red-950/30 dark:text-red-300">
-                    Desaparecido
-                  </span>
+              <div key={client.id} className={`rounded-xl border overflow-hidden shadow-sm hover:shadow-md transition-shadow ${cardBorder} ${cardBg}`}>
+                <div className="px-4 pt-4 pb-2 text-center border-b border-gray-100 dark:border-zinc-800">
+                  <h2 className="font-semibold text-base text-gray-900 dark:text-zinc-100 truncate">{client.name}</h2>
                 </div>
 
-                <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                  <div className="rounded-xl border border-gray-200 bg-gray-50 p-2 dark:border-zinc-800 dark:bg-zinc-800/80">
-                    <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-gray-500 dark:text-zinc-400">
-                      <Phone className="h-3.5 w-3.5" />
-                      Telefone
-                    </div>
-                    <p className="mt-2 text-sm font-semibold text-gray-900 dark:text-zinc-100">{client.phone || "-"}</p>
+                <div className="flex flex-col gap-2 px-4 pb-2 pt-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="flex min-w-0 flex-wrap items-center gap-2">
+                    <Avatar name={client.name} src={client.photo} size="sm" className="border border-red-100 dark:border-red-900/40" />
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${statusBadgeClass}`}>
+                      {statusLabel}
+                    </span>
+                    {primaryLoan && (
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400">
+                        {MODALITY_LABELS[primaryLoan.modality] || primaryLoan.modality}
+                      </span>
+                    )}
+                    {extraLoansCount > 0 && (
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300">
+                        +{extraLoansCount} empréstimo{extraLoansCount !== 1 ? "s" : ""}
+                      </span>
+                    )}
                   </div>
-                  <div className="rounded-xl border border-gray-200 bg-gray-50 p-2 dark:border-zinc-800 dark:bg-zinc-800/80">
-                    <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-gray-500 dark:text-zinc-400">
-                      <FileText className="h-3.5 w-3.5" />
-                      Documento
-                    </div>
-                    <p className="mt-2 text-sm font-semibold text-gray-900 dark:text-zinc-100">{client.document || "-"}</p>
-                  </div>
-                  <div className="rounded-xl border border-gray-200 bg-gray-50 p-2 dark:border-zinc-800 dark:bg-zinc-800/80">
-                    <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-gray-500 dark:text-zinc-400">
-                      <MapPin className="h-3.5 w-3.5" />
-                      Cidade
-                    </div>
-                    <p className="mt-2 text-sm font-semibold text-gray-900 dark:text-zinc-100">{client.city || "-"}</p>
-                  </div>
-                  <div className="rounded-xl border border-red-200 bg-red-50 p-2 dark:border-red-900/40 dark:bg-red-950/20">
-                    <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-red-600 dark:text-red-300">
-                      <Wallet className="h-3.5 w-3.5" />
-                      Saldo em aberto
-                    </div>
-                    <p className="mt-2 text-sm font-semibold text-red-700 dark:text-red-200">{formatCurrency(outstandingBalance)}</p>
+                  <div className="flex flex-wrap items-center gap-1 sm:justify-end">
+                    <button
+                      type="button"
+                      onClick={() => primaryLoan ? openLoanDetails(primaryLoan.id) : openClientDocuments(client)}
+                      className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+                      title="Detalhes"
+                    >
+                      <Eye className="h-3 w-3" /> Detalhes
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openClientDocuments(client)}
+                      className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+                      title="Documentos"
+                    >
+                      <FileText className="h-3 w-3" /> Documentos
+                    </button>
                   </div>
                 </div>
 
-                <div className="mt-3 rounded-xl border border-gray-200 p-2.5 dark:border-zinc-800">
-                  <div className="flex items-center justify-between gap-3">
-                    <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-700 dark:text-zinc-300">Observações</h3>
-                    <span className="text-xs text-gray-400 dark:text-zinc-500">Cadastrado em {formatDate(client.createdAt)}</span>
+                <div className="px-4 pb-3">
+                  <div className={`${remainingBg} rounded-lg px-4 py-3 text-center`}>
+                    <p className={`text-lg font-bold tabular-nums tracking-tight ${remainingColor}`}>{formatCurrency(outstandingBalance)}</p>
+                    <p className="text-[11px] text-gray-400 dark:text-zinc-500 mt-0.5">restante a receber</p>
                   </div>
-                  <p className="mt-2 line-clamp-3 text-sm leading-5 text-gray-600 dark:text-zinc-400">{client.notes || "Sem observações registradas."}</p>
                 </div>
 
-                <div className="mt-3 rounded-xl border border-gray-200 bg-gray-50/80 p-2.5 dark:border-zinc-800 dark:bg-zinc-800/50">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Documentos do cliente</p>
-                      <p className="mt-1 text-xs text-gray-500 dark:text-zinc-400">Abra os arquivos para conferir RG, CPF e comprovantes.</p>
+                <div className="mx-4 grid grid-cols-2 gap-px bg-gray-100 dark:bg-zinc-800 rounded-lg overflow-hidden border border-gray-100 dark:border-zinc-800">
+                  <div className={`${cellBg} px-3 py-2.5`}>
+                    <p className="text-[11px] text-gray-400 dark:text-zinc-500">Emprestado</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{formatCurrency(primaryLoan?.amount || 0)}</p>
+                  </div>
+                  <div className={`${cellBg} px-3 py-2.5 text-right`}>
+                    <p className="text-[11px] text-gray-400 dark:text-zinc-500">Total a Receber</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{formatCurrency(primaryLoan?.totalAmount || outstandingBalance)}</p>
+                  </div>
+                  <div className={`${cellBg} px-3 py-2.5`}>
+                    <p className="text-[11px] text-gray-400 dark:text-zinc-500 flex items-center gap-1"><Wallet className="h-3 w-3" /> Lucro Previsto</p>
+                    <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">{formatCurrency(primaryLoan?.profit || 0)}</p>
+                  </div>
+                  <div className={`${cellBg} px-3 py-2.5 text-right`}>
+                    <p className="text-[11px] text-gray-400 dark:text-zinc-500 flex items-center justify-end gap-1"><Percent className="h-3 w-3" /> Lucro Realizado</p>
+                    <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">{formatCurrency(receivedProfit)} <span className="text-gray-400 dark:text-zinc-500 text-xs">{profitPct}%</span></p>
+                  </div>
+                </div>
+
+                <div className="mx-4 mt-3 flex flex-col gap-2 text-xs text-gray-500 dark:text-zinc-400 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <CalendarDays className="h-3.5 w-3.5" />
+                    <span>Venc: {formatDate(nextDueDate)}</span>
+                    <MapPin className="h-3 w-3 text-gray-300 dark:text-zinc-600" />
+                    <span>{client.city || "Sem cidade"}</span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5 sm:justify-end">
+                    <Wallet className="h-3.5 w-3.5 text-emerald-500" />
+                    <span className="font-medium text-gray-700 dark:text-zinc-300">Pago: {formatCurrency(paid)}</span>
+                  </div>
+                </div>
+
+                {primaryLoan && (
+                  <div className="mx-4 mt-2 px-3 py-2 rounded-lg bg-gray-50 dark:bg-zinc-800/60 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-500 dark:text-zinc-400">Só Juros (por parcela):</span>
+                      <span className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{formatCurrency(primaryLoan.profit / Math.max(1, primaryLoan.installmentCount))}</span>
                     </div>
+                  </div>
+                )}
+
+                {primaryLoanOverdue && primaryLoanOverdue.daysOverdue > 0 && (
+                  <div className="mx-4 mt-2 px-3 py-2.5 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/50 space-y-2">
+                    {primaryLoanOverdue.overdueInstallments.map((installment, index) => (
+                      <div key={installment.id} className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-medium text-red-700 dark:text-red-400">Parcela {installment.number}/{primaryLoan.installmentCount} em atraso</span>
+                          <span className="text-xs font-bold text-red-700 dark:text-red-400">{installment.daysOverdue} dias</span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-gray-600 dark:text-zinc-400">Vencimento: {formatDate(installment.dueDate)}</span>
+                          <span className="text-gray-700 dark:text-zinc-300 font-medium">Valor: {formatCurrency(installment.amount)}</span>
+                        </div>
+                        {primaryLoanOverdue.dailyRate > 0 && installment.daysOverdue > 0 && (
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-red-600 dark:text-red-400">% Juros ({formatCurrency(primaryLoanOverdue.dailyRate)}/dia)</span>
+                            <span className="text-red-600 dark:text-red-400 font-bold">+{formatCurrency(primaryLoanOverdue.dailyRate * installment.daysOverdue)}</span>
+                          </div>
+                        )}
+                        {index < primaryLoanOverdue.overdueInstallments.length - 1 && (
+                          <div className="border-b border-red-200 dark:border-red-800/40 pt-1" />
+                        )}
+                      </div>
+                    ))}
+                    <div className="flex items-center justify-between text-xs pt-1 border-t border-red-200 dark:border-red-800/40">
+                      <span className="font-semibold text-red-700 dark:text-red-300">Total com Atraso:</span>
+                      <span className="font-bold text-red-700 dark:text-red-300">{formatCurrency(getLoanCurrentBalance(primaryLoan))}</span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="px-4 pt-3 pb-4 mt-2 border-t border-gray-100 dark:border-zinc-800 space-y-3">
+                  <Button
+                    type="button"
+                    onClick={() => activeSection === "desaparecido" ? openClientDocuments(client) : markAsDisappeared(client.id)}
+                    disabled={activeSection === "clientes" && savingId === client.id}
+                    className={`w-full h-9 text-sm text-white transition-colors ${activeSection === "desaparecido" ? "bg-green-600 hover:bg-green-700" : "bg-blue-600 hover:bg-blue-700"}`}
+                  >
+                    <>
+                      <FileText className="h-3.5 w-3.5 mr-1.5" /> Ver documentos
+                    </>
+                  </Button>
+                  <div className="grid w-full min-w-0 grid-cols-[minmax(0,2.2fr)_repeat(3,minmax(0,1fr))] gap-1.5">
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => openClientDocuments(client)}
-                      className="rounded-xl border-gray-200 dark:border-zinc-700"
+                      onClick={() => restoreClient(client.id)}
+                      disabled={actionId === client.id}
+                      className="min-w-0 h-10 px-2 text-xs border border-emerald-100 bg-emerald-50 font-medium text-emerald-700 shadow-none transition-colors hover:bg-emerald-100 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300 dark:hover:bg-emerald-900/30 sm:text-sm"
                     >
-                      <FileText className="h-4 w-4" />
-                      Ver documentos
+                      <RotateCcw className="mr-1 h-4 w-4 shrink-0" /> <span className="truncate">{actionId === client.id ? "Atualizando..." : "Reapareceu"}</span>
                     </Button>
+                    <button
+                      type="button"
+                      onClick={() => primaryLoan ? openLoanDetails(primaryLoan.id) : openClientDocuments(client)}
+                      className="flex min-w-0 w-full items-center justify-center rounded-xl bg-emerald-50 p-2 text-emerald-600 transition-colors hover:bg-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-400 dark:hover:bg-emerald-900/40"
+                      title="Histórico"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openClientDocuments(client)}
+                      className="flex min-w-0 w-full items-center justify-center rounded-xl bg-blue-50 p-2 text-blue-600 transition-colors hover:bg-blue-100 dark:bg-blue-950/30 dark:text-blue-400 dark:hover:bg-blue-900/40"
+                      title="Documentos"
+                    >
+                      <Download className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => deleteClient(client.id)}
+                      className="flex min-w-0 w-full items-center justify-center rounded-xl bg-red-50 p-2 text-red-500 transition-colors hover:bg-red-100 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-900/40 disabled:opacity-60"
+                      title="Excluir"
+                      disabled={actionId === client.id}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
                 </div>
 
-                <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => restoreClient(client.id)}
-                    disabled={actionId === client.id}
-                    className="justify-center rounded-xl border-emerald-200 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-900/40 dark:text-emerald-300 dark:hover:bg-emerald-950/20"
-                  >
-                    <RotateCcw className="h-4 w-4" />
-                    {actionId === client.id ? "Atualizando..." : "Cliente reapareceu"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => deleteClient(client.id)}
-                    disabled={actionId === client.id}
-                    className="justify-center rounded-xl border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900/40 dark:text-red-300 dark:hover:bg-red-950/20"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    Excluir
-                  </Button>
-                </div>
-
-                <div className="mt-3 space-y-2">
-                  {activeLoans.length === 0 ? (
+                <div className="px-4 pb-4 space-y-2">
+                  {!primaryLoan ? (
                     <div className="rounded-xl border border-dashed border-gray-200 px-4 py-5 text-center text-sm text-gray-500 dark:border-zinc-800 dark:text-zinc-400">
                       Nenhum empréstimo ativo vinculado a este cliente.
                     </div>
                   ) : (
-                    activeLoans.map((loan) => {
-                      const pendingInstallments = loan.installments.filter((installment) => installment.status !== "PAID")
-                      const overdueInstallments = pendingInstallments.filter((installment) => installment.status === "OVERDUE")
-                      const nextInstallment = pendingInstallments
-                        .slice()
-                        .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0]
-                      const overdueDetails = getLoanOverdueDetails(loan)
-                      const currentLoanBalance = getLoanCurrentBalance(loan)
-                      const totalLabel = overdueDetails.daysOverdue > 0 ? "Total atualizado" : "Total previsto"
-
-                      return (
-                        <div key={loan.id} className="rounded-xl border border-gray-200 bg-gray-50/70 p-2.5 dark:border-zinc-800 dark:bg-zinc-800/60">
-                          <div className="flex flex-wrap items-center justify-between gap-3">
-                            <div>
-                              <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Empréstimo ativo</h3>
-                            </div>
-                            <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${loan.status === "ACTIVE" ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300" : loan.status === "DEFAULTED" ? "bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-300" : "bg-gray-100 text-gray-700 dark:bg-zinc-700 dark:text-zinc-200"}`}>
-                              {loan.status}
-                            </span>
+                    <div className="space-y-2">
+                      <div className="rounded-lg border border-gray-200 dark:border-zinc-800 bg-gray-50/80 dark:bg-zinc-800/50 px-3 py-2.5">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Observações</p>
+                            <p className="mt-1 text-xs text-gray-500 dark:text-zinc-400 line-clamp-2">{client.notes || "Sem observações registradas."}</p>
                           </div>
-
-                          <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
-                            <div>
-                              <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-gray-500 dark:text-zinc-400">
-                                <Wallet className="h-3.5 w-3.5" />
-                                Valor emprestado
-                              </div>
-                              <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-zinc-100">{formatCurrency(loan.amount)}</p>
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-gray-500 dark:text-zinc-400">
-                                <Wallet className="h-3.5 w-3.5" />
-                                {totalLabel}
-                              </div>
-                              <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-zinc-100">{formatCurrency(overdueDetails.daysOverdue > 0 ? currentLoanBalance : loan.totalAmount)}</p>
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-gray-500 dark:text-zinc-400">
-                                <Percent className="h-3.5 w-3.5" />
-                                Juros
-                              </div>
-                              <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-zinc-100">
-                                {(() => {
-                                  const dailyAmount = getOverdueDailyAmountBRL({
-                                    dailyInterest: loan.dailyInterest,
-                                    dailyInterestAmount: loan.dailyInterestAmount || 0,
-                                    amount: loan.amount,
-                                    interestRate: loan.interestRate,
-                                    modality: loan.modality,
-                                  })
-
-                                  return `${loan.interestRate}%${dailyAmount > 0 ? ` • diário ${formatCurrency(dailyAmount)}` : ""}`
-                                })()}
-                              </p>
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-gray-500 dark:text-zinc-400">
-                                <CalendarDays className="h-3.5 w-3.5" />
-                                Próximo vencimento
-                              </div>
-                              <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-zinc-100">{nextInstallment ? formatDate(nextInstallment.dueDate) : "Sem pendência"}</p>
-                            </div>
-                          </div>
-
-                          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-                            <span className="rounded-full bg-white px-2.5 py-1 font-semibold text-gray-600 dark:bg-zinc-900 dark:text-zinc-300">
-                              Lucro previsto {formatCurrency(loan.profit)}
-                            </span>
-                            <span className="rounded-full bg-white px-2.5 py-1 font-semibold text-gray-600 dark:bg-zinc-900 dark:text-zinc-300">
-                              {pendingInstallments.length} parcelas pendentes
-                            </span>
-                            <span className={`rounded-full px-2.5 py-1 font-semibold ${overdueInstallments.length > 0 ? "bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-300" : "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300"}`}>
-                              {overdueInstallments.length} atrasadas
-                            </span>
-                          </div>
-
-                          {overdueDetails.daysOverdue > 0 && (
-                            <div className="mt-3 rounded-xl border border-red-200 bg-red-50 px-2.5 py-2.5 dark:border-red-900/40 dark:bg-red-950/20">
-                              <div className="flex flex-wrap items-center justify-between gap-2">
-                                <p className="text-sm font-semibold text-red-700 dark:text-red-300">Atraso detalhado</p>
-                                <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-red-700 dark:bg-zinc-900 dark:text-red-300">
-                                  {overdueDetails.daysOverdue} dias em atraso
-                                </span>
-                              </div>
-
-                              <div className="mt-3 grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
-                                <div>
-                                  <p className="text-[11px] uppercase tracking-wide text-red-500 dark:text-red-300">Juros por atraso</p>
-                                  <p className="mt-1 text-sm font-semibold text-red-700 dark:text-red-200">{formatCurrency(overdueDetails.overdueInterest)}</p>
-                                </div>
-                                <div>
-                                  <p className="text-[11px] uppercase tracking-wide text-red-500 dark:text-red-300">Multa diária</p>
-                                  <p className="mt-1 text-sm font-semibold text-red-700 dark:text-red-200">{formatCurrency(overdueDetails.dailyPenalty)}</p>
-                                  <p className="mt-1 text-[11px] text-red-500 dark:text-red-300">{overdueDetails.daysOverdue} x {formatCurrency(overdueDetails.dailyRate)}</p>
-                                </div>
-                                <div>
-                                  <p className="text-[11px] uppercase tracking-wide text-red-500 dark:text-red-300">Extra acumulado</p>
-                                  <p className="mt-1 text-sm font-semibold text-red-700 dark:text-red-200">{formatCurrency(overdueDetails.overdueExtra)}</p>
-                                  <p className="mt-1 text-[11px] text-red-500 dark:text-red-300">Acréscimos do atraso</p>
-                                </div>
-                                <div>
-                                  <p className="text-[11px] uppercase tracking-wide text-red-500 dark:text-red-300">Total atualizado</p>
-                                  <p className="mt-1 text-sm font-semibold text-red-700 dark:text-red-200">{formatCurrency(overdueDetails.totalWithLateFee)}</p>
-                                  <p className="mt-1 text-[11px] text-red-500 dark:text-red-300">Base {formatCurrency(overdueDetails.baseAmount)} + atraso {formatCurrency(overdueDetails.overdueExtra)}</p>
-                                </div>
-                              </div>
-
-                              <div className="mt-3 space-y-2 border-t border-red-200 pt-2.5 dark:border-red-900/30">
-                                {overdueDetails.overdueInstallments.map((installment) => (
-                                  <div key={installment.id} className="flex flex-wrap items-center justify-between gap-2 text-xs">
-                                    <div>
-                                      <p className="font-semibold text-red-700 dark:text-red-200">Parcela {installment.number}/{loan.installmentCount}</p>
-                                      <p className="mt-0.5 text-red-500 dark:text-red-300">Venceu em {formatDate(installment.dueDate)}</p>
-                                    </div>
-                                    <div className="text-right">
-                                      <p className="font-semibold text-red-700 dark:text-red-200">{installment.daysOverdue} dias</p>
-                                      <p className="mt-0.5 text-red-500 dark:text-red-300">Base {formatCurrency(installment.amount)}</p>
-                                      <p className="mt-0.5 text-red-500 dark:text-red-300">Com atraso {formatCurrency(installment.amount + installment.daysOverdue * overdueDetails.dailyRate)}</p>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
+                          <span className="text-[11px] text-gray-400 dark:text-zinc-500">{client.phone || "Sem telefone"}</span>
                         </div>
-                      )
-                    })
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 text-xs">
+                        <span className="rounded-full bg-white px-2.5 py-1 font-semibold text-gray-600 dark:bg-zinc-900 dark:text-zinc-300">
+                          Documento {client.document || "-"}
+                        </span>
+                        <span className="rounded-full bg-white px-2.5 py-1 font-semibold text-gray-600 dark:bg-zinc-900 dark:text-zinc-300">
+                          Juros {getInterestSummary(client)}
+                        </span>
+                        <span className="rounded-full bg-white px-2.5 py-1 font-semibold text-gray-600 dark:bg-zinc-900 dark:text-zinc-300">
+                          Cadastrado em {formatDate(client.createdAt)}
+                        </span>
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>
@@ -937,6 +1024,20 @@ export default function ClientesDesaparecidosPage() {
           })}
         </div>
       )}
+
+      <Dialog
+        open={Boolean(detailsLoanId)}
+        onClose={() => setDetailsLoanId(null)}
+        className="max-w-5xl border-none bg-transparent p-0 shadow-none"
+      >
+        {detailsLoanId ? (
+          <LoanDetailsContent
+            loanId={detailsLoanId}
+            presentation="modal"
+            onClose={() => setDetailsLoanId(null)}
+          />
+        ) : null}
+      </Dialog>
 
       <Dialog
         open={createOpen}

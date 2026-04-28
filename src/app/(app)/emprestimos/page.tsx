@@ -16,7 +16,7 @@ import {
 } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import { formatCurrency, formatDate, calculateLoan, generateInstallmentDates, resolveDailyInterestAmount } from "@/lib/utils"
-import { buildLoanData, calculateTotalAmountWithLateFee, calculateOverdueInterest, getDaysOverdue, getNextDueDate, getPaidExcludingInterest } from "@/lib/loan-logic"
+import { buildLoanData, calculateTotalAmountWithLateFee, calculateOverdueInterest, getDaysOverdue, getNextDueDate, getOverdueDailyAmountBRL, getPaidExcludingInterest } from "@/lib/loan-logic"
 
 interface Loan {
   id: string
@@ -448,7 +448,7 @@ export default function EmprestimosPage() {
     const pendingInst = loan.installments.find((i: any) => i.status !== "PAID")
     if (pendingInst) {
       setSelectedInstallmentIds([pendingInst.id])
-      setPayAmount(pendingInst.amount - pendingInst.paidAmount)
+      setPayAmount(getInstallmentPayableAmount(loan, pendingInst))
     }
     // Pre-fill next month due date
     const nextMonth = new Date()
@@ -572,6 +572,60 @@ export default function EmprestimosPage() {
       daysOver,
       loan.interestType === "compound" ? "compound" : "simple"
     )
+  }
+
+  const getCurrentOverdueDays = (loan: Loan) => getDaysOverdue(buildLoanData({
+    amount: loan.amount,
+    interestRate: loan.interestRate,
+    interestType: loan.interestType,
+    totalAmount: loan.totalAmount,
+    dailyInterestAmount: loan.dailyInterestAmount || 0,
+    dueDay: loan.dueDay,
+    modality: loan.modality,
+    firstInstallmentDate: loan.firstInstallmentDate,
+    installments: loan.installments,
+    payments: loan.payments,
+  }))
+
+  const getCurrentOverdueCharge = (loan: Loan) => {
+    const daysOver = getCurrentOverdueDays(loan)
+    if (daysOver <= 0) return 0
+
+    const overdueInterest = daysOver >= 30
+      ? calculateOverdueInterest(
+          loan.totalAmount,
+          loan.amount,
+          loan.interestRate,
+          daysOver,
+          loan.interestType === "compound" ? "compound" : "simple"
+        )
+      : 0
+
+    return overdueInterest + (getOverdueDailyAmountBRL(buildLoanData({
+      amount: loan.amount,
+      interestRate: loan.interestRate,
+      interestType: loan.interestType,
+      totalAmount: loan.totalAmount,
+      dailyInterestAmount: loan.dailyInterestAmount || 0,
+      dueDay: loan.dueDay,
+      modality: loan.modality,
+      firstInstallmentDate: loan.firstInstallmentDate,
+      installments: loan.installments,
+      payments: loan.payments,
+    })) * daysOver)
+  }
+
+  const getInstallmentPayableAmount = (loan: Loan, installment: Loan["installments"][number]) => {
+    const baseRemaining = Math.max(0, installment.amount - (installment.paidAmount || 0))
+    const firstPendingInstallment = loan.installments
+      .filter((i: any) => i.status !== "PAID")
+      .sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0]
+
+    if (!firstPendingInstallment || firstPendingInstallment.id !== installment.id) {
+      return baseRemaining
+    }
+
+    return baseRemaining + getCurrentOverdueCharge(loan)
   }
 
   const getNextDueInst = (loan: Loan) =>
@@ -1538,26 +1592,26 @@ export default function EmprestimosPage() {
                           </Button>
                       </div>
                     )}
-                    <div className="flex flex-wrap items-center justify-center gap-2 pb-1">
-                      <Button size="sm" onClick={() => openPaymentDialog(loan)} className="h-9 min-w-0 flex-1 rounded-xl border border-emerald-100 bg-emerald-50 px-4 text-sm font-medium text-emerald-700 shadow-none transition-colors hover:bg-emerald-100 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300 dark:hover:bg-emerald-900/30 sm:flex-none sm:min-w-[132px] sm:px-5">
-                        <Receipt className="mr-1.5 h-4 w-4" /> Pagar
+                    <div className="grid w-full min-w-0 grid-cols-[minmax(0,2.2fr)_minmax(0,2.8fr)_repeat(5,minmax(0,1fr))] gap-1.5 pb-1">
+                      <Button size="sm" onClick={() => openPaymentDialog(loan)} className="min-w-0 h-10 px-2 text-xs border border-emerald-100 bg-emerald-50 font-medium text-emerald-700 shadow-none transition-colors hover:bg-emerald-100 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300 dark:hover:bg-emerald-900/30 sm:text-sm">
+                        <Receipt className="mr-1 h-4 w-4 shrink-0" /> <span className="truncate">Pagar</span>
                       </Button>
-                      <Button size="sm" onClick={() => openInterestRenegotiateDialog(loan)} className="h-9 min-w-0 flex-1 rounded-xl border border-emerald-100 bg-emerald-50 px-4 text-sm font-medium text-emerald-700 shadow-none transition-colors hover:bg-emerald-100 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300 dark:hover:bg-emerald-900/30 sm:flex-none sm:min-w-[170px] sm:px-5">
-                        <DollarSign className="mr-1.5 h-4 w-4" /> Pagar Juros
+                      <Button size="sm" onClick={() => openInterestRenegotiateDialog(loan)} className="min-w-0 h-10 px-2 text-xs border border-emerald-100 bg-emerald-50 font-medium text-emerald-700 shadow-none transition-colors hover:bg-emerald-100 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300 dark:hover:bg-emerald-900/30 sm:text-sm">
+                        <DollarSign className="mr-1 h-4 w-4 shrink-0" /> <span className="truncate">Pagar Juros</span>
                       </Button>
-                      <button className="rounded-xl bg-emerald-50 p-2.5 text-emerald-600 transition-colors hover:bg-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-400 dark:hover:bg-emerald-900/40" onClick={() => router.push(`/emprestimos/${loan.id}`)} title="Histórico">
+                      <button className="flex min-w-0 w-full items-center justify-center rounded-xl bg-emerald-50 p-2 text-emerald-600 transition-colors hover:bg-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-400 dark:hover:bg-emerald-900/40" onClick={() => router.push(`/emprestimos/${loan.id}`)} title="Histórico">
                         <RotateCcw className="h-4 w-4" />
                       </button>
-                      <button className="rounded-xl bg-blue-50 p-2.5 text-blue-600 transition-colors hover:bg-blue-100 dark:bg-blue-950/30 dark:text-blue-400 dark:hover:bg-blue-900/40" onClick={() => router.push(`/emprestimos/${loan.id}/editar`)} title="Editar">
+                      <button className="flex min-w-0 w-full items-center justify-center rounded-xl bg-blue-50 p-2 text-blue-600 transition-colors hover:bg-blue-100 dark:bg-blue-950/30 dark:text-blue-400 dark:hover:bg-blue-900/40" onClick={() => router.push(`/emprestimos/${loan.id}/editar`)} title="Editar">
                         <Pencil className="h-4 w-4" />
                       </button>
-                      <button className="rounded-xl bg-orange-50 p-2.5 text-orange-500 transition-colors hover:bg-orange-100 dark:bg-orange-950/30 dark:text-orange-400 dark:hover:bg-orange-900/40" onClick={() => openPaymentDialog(loan)} title="Pagamento">
+                      <button className="flex min-w-0 w-full items-center justify-center rounded-xl bg-orange-50 p-2 text-orange-500 transition-colors hover:bg-orange-100 dark:bg-orange-950/30 dark:text-orange-400 dark:hover:bg-orange-900/40" onClick={() => openPaymentDialog(loan)} title="Pagamento">
                         <DollarSign className="h-4 w-4" />
                       </button>
-                      <button className="rounded-xl bg-amber-50 p-2.5 text-amber-500 transition-colors hover:bg-amber-100 dark:bg-amber-950/30 dark:text-amber-400 dark:hover:bg-amber-900/40" onClick={() => openInterestRenegotiateDialog(loan)} title="Pagar juros">
+                      <button className="flex min-w-0 w-full items-center justify-center rounded-xl bg-amber-50 p-2 text-amber-500 transition-colors hover:bg-amber-100 dark:bg-amber-950/30 dark:text-amber-400 dark:hover:bg-amber-900/40" onClick={() => openInterestRenegotiateDialog(loan)} title="Pagar juros">
                         <RotateCcw className="h-4 w-4" />
                       </button>
-                      <button className="rounded-xl bg-red-50 p-2.5 text-red-500 transition-colors hover:bg-red-100 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-900/40" onClick={() => handleDelete(loan.id)} title="Excluir">
+                      <button className="flex min-w-0 w-full items-center justify-center rounded-xl bg-red-50 p-2 text-red-500 transition-colors hover:bg-red-100 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-900/40" onClick={() => handleDelete(loan.id)} title="Excluir">
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
@@ -2225,9 +2279,12 @@ export default function EmprestimosPage() {
           const principalPerInst = paymentDialog.amount / paymentDialog.installmentCount
           const firstInst = pendingInstallments[0]
           const totalOfInst = firstInst ? firstInst.amount : 0
-          const selectedTotal = selectedInsts.reduce((s: number, i: any) => s + (i.amount - i.paidAmount), 0)
           const firstSelectedInst = selectedInsts[0]
-          const instRemaining = firstSelectedInst ? firstSelectedInst.amount - firstSelectedInst.paidAmount : 0
+          const firstInstPayable = firstInst ? getInstallmentPayableAmount(paymentDialog, firstInst) : 0
+          const firstSelectedInstPayable = firstSelectedInst ? getInstallmentPayableAmount(paymentDialog, firstSelectedInst) : 0
+          const firstSelectedInstCharge = firstSelectedInst ? Math.max(0, firstSelectedInstPayable - firstSelectedInst.amount) : 0
+          const overdueCharge = getCurrentOverdueCharge(paymentDialog)
+          const overdueDays = getCurrentOverdueDays(paymentDialog)
 
           // Quitação inteligente: calcula multa se atrasado
           const now = new Date()
@@ -2247,11 +2304,11 @@ export default function EmprestimosPage() {
                   </div>
                 </div>
                 <p className="text-xs text-gray-400 dark:text-zinc-500 mt-2">
-                  Parcela: {formatCurrency(totalOfInst)} ({formatCurrency(principalPerInst)} + {formatCurrency(interestPerInst)} juros)
+                  Parcela: {formatCurrency(firstInstPayable || totalOfInst)} ({formatCurrency(principalPerInst)} + {formatCurrency(interestPerInst)} juros)
                 </p>
-                {penalty > 0 && (
+                {overdueCharge > 0 && (
                   <p className="text-xs text-red-500 mt-1 font-medium">
-                    ⚠ Parcela em atraso — multa de {formatCurrency(penalty)} será aplicada na quitação
+                    ⚠ Parcela em atraso — juros de {formatCurrency(overdueCharge)} serão aplicados na parcela vencida
                   </p>
                 )}
               </div>
@@ -2274,7 +2331,7 @@ export default function EmprestimosPage() {
                           setPayAmount(totalWithPenalty)
                           setSelectedInstallmentIds([])
                         } else if (t.key === "installment") {
-                          const total = selectedInsts.reduce((s: number, i: any) => s + (i.amount - i.paidAmount), 0)
+                          const total = selectedInsts.reduce((sum: number, installment: any) => sum + getInstallmentPayableAmount(paymentDialog, installment), 0)
                           setPayAmount(total)
                         } else if (t.key === "partial") {
                           setPayAmount(0)
@@ -2313,7 +2370,8 @@ export default function EmprestimosPage() {
                     {pendingInstallments.map((inst: any) => {
                       const isSelected = selectedInstallmentIds.includes(inst.id)
                       const instOverdue = new Date(inst.dueDate) < now
-                      const instPenalty = instOverdue ? (paymentDialog.penaltyFee || 0) : 0
+                      const payableAmount = getInstallmentPayableAmount(paymentDialog, inst)
+                      const installmentCharge = Math.max(0, payableAmount - Math.max(0, inst.amount - (inst.paidAmount || 0)))
                       return (
                         <button
                           key={inst.id}
@@ -2328,11 +2386,7 @@ export default function EmprestimosPage() {
                             setSelectedInstallmentIds(newIds)
                             const total = paymentDialog.installments
                               .filter((i: any) => newIds.includes(i.id))
-                              .reduce((s: number, i: any) => {
-                                const ov = new Date(i.dueDate) < now
-                                const pen = ov ? (paymentDialog.penaltyFee || 0) : 0
-                                return s + (i.amount - i.paidAmount) + pen
-                              }, 0)
+                              .reduce((sum: number, installment: any) => sum + getInstallmentPayableAmount(paymentDialog, installment), 0)
                             setPayAmount(total)
                           }}
                           className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors text-left ${
@@ -2345,14 +2399,14 @@ export default function EmprestimosPage() {
                             <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">
                               Parcela {inst.number}/{paymentDialog.installmentCount}
                             </span>
-                            {instOverdue && instPenalty > 0 && (
-                              <p className="text-[10px] text-red-500 mt-0.5">+ multa {formatCurrency(instPenalty)}</p>
+                            {instOverdue && installmentCharge > 0 && (
+                              <p className="text-[10px] text-red-500 mt-0.5">+ juros {formatCurrency(installmentCharge)}</p>
                             )}
                           </div>
                           <div className="text-right">
                             <p className="text-xs text-gray-500 dark:text-zinc-400">{formatDate(inst.dueDate)}</p>
                             <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">
-                              {formatCurrency(inst.amount - inst.paidAmount + instPenalty)}
+                              {formatCurrency(payableAmount)}
                             </p>
                             {instOverdue && <p className="text-[10px] text-red-500">Atrasada</p>}
                           </div>
@@ -2392,9 +2446,15 @@ export default function EmprestimosPage() {
                         <span className="text-gray-500 dark:text-zinc-400">Valor base:</span>
                         <span className="text-gray-900 dark:text-zinc-100 font-medium">{formatCurrency(firstSelectedInst.amount)}</span>
                       </div>
+                      {firstSelectedInstCharge > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-red-500">Juros atraso ({overdueDays} dias):</span>
+                          <span className="text-red-500 font-medium">+{formatCurrency(firstSelectedInstCharge)}</span>
+                        </div>
+                      )}
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-500 dark:text-zinc-400">Total da parcela:</span>
-                        <span className="text-gray-900 dark:text-zinc-100 font-medium">{formatCurrency(firstSelectedInst.amount)}</span>
+                        <span className="text-gray-900 dark:text-zinc-100 font-medium">{formatCurrency(firstSelectedInstPayable || firstSelectedInst.amount)}</span>
                       </div>
                       {firstSelectedInst.paidAmount > 0 && (
                         <div className="flex justify-between text-sm">
@@ -2472,14 +2532,14 @@ export default function EmprestimosPage() {
                     type="number"
                     step="0.01"
                     min={0}
-                    max={instRemaining}
+                    max={firstSelectedInstPayable}
                     value={payAmount || ""}
                     onChange={(e) => setPayAmount(Number(e.target.value) || 0)}
                     className="mt-1"
-                    placeholder={`Máx: ${formatCurrency(instRemaining)}`}
+                    placeholder={`Máx: ${formatCurrency(firstSelectedInstPayable)}`}
                   />
                   <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">
-                    {`Digite qualquer valor até ${formatCurrency(instRemaining)}`}
+                    {`Digite qualquer valor até ${formatCurrency(firstSelectedInstPayable)}`}
                   </p>
                 </div>
               )}

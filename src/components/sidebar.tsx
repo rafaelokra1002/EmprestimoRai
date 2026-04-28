@@ -160,7 +160,10 @@ export function Sidebar() {
 
           {/* Regular menu items */}
           {menuItems.map((item) => {
-            const isActive = pathname === item.href || pathname?.startsWith(item.href + "/")
+            const isClientesRoot = item.href === "/clientes"
+            const isActive = isClientesRoot
+              ? pathname === "/clientes"
+              : pathname === item.href || pathname?.startsWith(item.href + "/")
             return (
               <Link
                 key={item.href}
