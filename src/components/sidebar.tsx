@@ -64,6 +64,8 @@ const menuItems = [
   { href: "/configuracoes", label: "Configurações", icon: Settings },
 ]
 
+const hardNavigationRoutes = new Set(["/emprestimos/tabela-price", "/emprestimos/recebimentos"])
+
 export function Sidebar() {
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
@@ -164,17 +166,33 @@ export function Sidebar() {
             const isActive = isClientesRoot
               ? pathname === "/clientes"
               : pathname === item.href || pathname?.startsWith(item.href + "/")
+            const className = cn(
+              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
+              isActive
+                ? "bg-white/20 text-white shadow-sm"
+                : "text-green-100 hover:text-white hover:bg-white/10"
+            )
+
+            if (hardNavigationRoutes.has(item.href)) {
+              return (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setIsOpen(false)}
+                  className={className}
+                >
+                  <item.icon className="h-4 w-4 shrink-0" />
+                  <span className="truncate">{item.label}</span>
+                </a>
+              )
+            }
+
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 onClick={() => setIsOpen(false)}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
-                  isActive
-                    ? "bg-white/20 text-white shadow-sm"
-                    : "text-green-100 hover:text-white hover:bg-white/10"
-                )}
+                className={className}
               >
                 <item.icon className="h-4 w-4 shrink-0" />
                 <span className="truncate">{item.label}</span>
