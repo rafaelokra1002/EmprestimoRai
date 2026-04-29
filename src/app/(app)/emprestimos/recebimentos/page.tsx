@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -218,24 +219,24 @@ export default function RecebimentosPage() {
       </div>
 
       <div className="flex items-center gap-1 bg-white dark:bg-zinc-900 rounded-xl p-1 border border-gray-200 dark:border-zinc-800 overflow-x-auto">
-        <button onClick={() => router.push("/emprestimos")} className="px-4 py-2 rounded-lg text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 whitespace-nowrap">Empréstimos ({allLoansCount})</button>
-        <button onClick={() => router.push("/emprestimos/tabela-price")} className="px-4 py-2 rounded-lg text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 whitespace-nowrap flex items-center gap-1.5"><Table2 className="h-3.5 w-3.5" />Tabela Price</button>
-        <button className="px-4 py-2 rounded-lg text-sm font-medium bg-emerald-600 text-white whitespace-nowrap">Recebimentos</button>
+        <Link href="/emprestimos" className="px-4 py-2 rounded-lg text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 whitespace-nowrap">Empréstimos ({allLoansCount})</Link>
+        <Link href="/emprestimos/tabela-price" className="px-4 py-2 rounded-lg text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 whitespace-nowrap flex items-center gap-1.5"><Table2 className="h-3.5 w-3.5" />Tabela Price</Link>
+        <button type="button" className="px-4 py-2 rounded-lg text-sm font-medium bg-emerald-600 text-white whitespace-nowrap">Recebimentos</button>
       </div>
 
       <div className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-zinc-900 p-3 flex items-center justify-between gap-3 overflow-x-auto">
         <div className="flex items-center gap-2">
           <span className="text-gray-700 dark:text-zinc-300 text-sm flex items-center gap-1"><Calendar className="h-4 w-4 text-emerald-600" /> Período:</span>
-          <button onClick={() => setPeriod("today")} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${period === "today" ? "bg-emerald-600 text-white" : "bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-700 dark:text-zinc-300"}`}>Hoje</button>
-          <button onClick={() => setPeriod("week")} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${period === "week" ? "bg-emerald-600 text-white" : "bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-700 dark:text-zinc-300"}`}>Semana</button>
-          <button onClick={() => setPeriod("month")} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${period === "month" ? "bg-emerald-600 text-white" : "bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-700 dark:text-zinc-300"}`}>Mês</button>
-          <button onClick={() => setPeriod("custom")} className={`px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1 ${period === "custom" ? "bg-emerald-600 text-white" : "bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-700 dark:text-zinc-300"}`}><Calendar className="h-3.5 w-3.5" /> Período</button>
+          <button type="button" onClick={() => setPeriod("today")} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${period === "today" ? "bg-emerald-600 text-white" : "bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-700 dark:text-zinc-300"}`}>Hoje</button>
+          <button type="button" onClick={() => setPeriod("week")} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${period === "week" ? "bg-emerald-600 text-white" : "bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-700 dark:text-zinc-300"}`}>Semana</button>
+          <button type="button" onClick={() => setPeriod("month")} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${period === "month" ? "bg-emerald-600 text-white" : "bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-700 dark:text-zinc-300"}`}>Mês</button>
+          <button type="button" onClick={() => setPeriod("custom")} className={`px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1 ${period === "custom" ? "bg-emerald-600 text-white" : "bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-700 dark:text-zinc-300"}`}><Calendar className="h-3.5 w-3.5" /> Período</button>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={exportCsv} className="p-2 rounded-md border border-gray-300 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 dark:bg-zinc-800" title="Exportar CSV">
+          <button type="button" onClick={exportCsv} className="p-2 rounded-md border border-gray-300 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 dark:bg-zinc-800" title="Exportar CSV">
             <Download className="h-4 w-4" />
           </button>
-          <button onClick={loadData} className="p-2 rounded-md border border-gray-300 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 dark:bg-zinc-800" title="Atualizar">
+          <button type="button" onClick={loadData} className="p-2 rounded-md border border-gray-300 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 dark:bg-zinc-800" title="Atualizar">
             <RefreshCw className="h-4 w-4" />
           </button>
         </div>
@@ -324,6 +325,7 @@ export default function RecebimentosPage() {
                     </td>
                     <td className="py-4 text-center">
                       <button
+                        type="button"
                         onClick={() => deletePayment(payment.id)}
                         className="p-1.5 rounded-md text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
                         title="Excluir pagamento"

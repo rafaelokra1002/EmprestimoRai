@@ -1,6 +1,7 @@
 ﻿"use client"
 
 import { useEffect, useState, useMemo } from "react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -1105,6 +1106,7 @@ export default function EmprestimosPage() {
       {/* Tabs */}
       <div className="flex items-center gap-1 bg-white dark:bg-zinc-900 rounded-xl p-1 border border-gray-200 dark:border-zinc-800 overflow-x-auto">
         <button
+          type="button"
           onClick={() => setActiveTab("all")}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
             activeTab === "all" ? "bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-zinc-100" : "text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 dark:text-zinc-200"
@@ -1112,22 +1114,22 @@ export default function EmprestimosPage() {
         >
           Empréstimos ({tabCounts.all})
         </button>
-        <button
-          onClick={() => router.push("/emprestimos/tabela-price")}
+        <Link
+          href="/emprestimos/tabela-price"
           className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
             activeTab === "price" ? "bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-zinc-100" : "text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 dark:text-zinc-200"
           }`}
         >
           <FileText className="h-3.5 w-3.5" /> Tabela Price
-        </button>
-        <button
-          onClick={() => router.push("/emprestimos/recebimentos")}
+        </Link>
+        <Link
+          href="/emprestimos/recebimentos"
           className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
             activeTab === "received" ? "bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-zinc-100" : "text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 dark:text-zinc-200"
           }`}
         >
           <DollarSign className="h-3.5 w-3.5" /> Recebimentos
-        </button>
+        </Link>
       </div>
 
       {/* Search + New Button */}

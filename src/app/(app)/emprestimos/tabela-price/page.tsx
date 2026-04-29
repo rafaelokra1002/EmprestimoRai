@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -160,9 +161,9 @@ export default function TabelaPricePage() {
       </div>
 
       <div className="flex items-center gap-1 bg-white dark:bg-zinc-900 rounded-xl p-1 border border-gray-200 dark:border-zinc-800 overflow-x-auto">
-        <button onClick={() => router.push("/emprestimos")} className="px-4 py-2 rounded-lg text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 dark:text-zinc-200 whitespace-nowrap">Empréstimos ({allLoansCount})</button>
-        <button className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white whitespace-nowrap flex items-center gap-1.5"><Table2 className="h-3.5 w-3.5" />Tabela Price</button>
-        <button onClick={() => router.push("/emprestimos/recebimentos")} className="px-4 py-2 rounded-lg text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 whitespace-nowrap">Recebimentos ({receivedCount})</button>
+        <Link href="/emprestimos" className="px-4 py-2 rounded-lg text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 dark:text-zinc-200 whitespace-nowrap">Empréstimos ({allLoansCount})</Link>
+        <button type="button" className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white whitespace-nowrap flex items-center gap-1.5"><Table2 className="h-3.5 w-3.5" />Tabela Price</button>
+        <Link href="/emprestimos/recebimentos" className="px-4 py-2 rounded-lg text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 whitespace-nowrap">Recebimentos ({receivedCount})</Link>
       </div>
 
       <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 space-y-4">
@@ -185,6 +186,7 @@ export default function TabelaPricePage() {
               ))}
             </select>
             <button
+              type="button"
               onClick={() => router.push("/clientes")}
               className="h-10 w-10 rounded-md border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 text-gray-800 dark:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-700"
               title="Cadastrar cliente"
