@@ -46,6 +46,8 @@ interface LoanDetails {
   payments: Payment[]
 }
 
+const loanIdPattern = /^c[a-z0-9]{24,}$/i
+
 export function LoanDetailsContent({
   presentation = "page",
   onClose,
@@ -57,15 +59,20 @@ export function LoanDetailsContent({
 }) {
   const params = useParams<{ id: string }>()
   const router = useRouter()
-  const loanId = loanIdProp ?? params?.id
+  const routeLoanId = loanIdProp ?? params?.id
+  const loanId = routeLoanId && loanIdPattern.test(routeLoanId) ? routeLoanId : null
 
   const [loan, setLoan] = useState<LoanDetails | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(Boolean(loanId))
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchLoan = async () => {
-      if (!loanId) return
+      if (!loanId) {
+        setLoading(false)
+        setError(routeLoanId ? "Empréstimo não encontrado" : null)
+        return
+      }
       setLoading(true)
       setError(null)
       try {
@@ -85,7 +92,7 @@ export function LoanDetailsContent({
     }
 
     fetchLoan()
-  }, [loanId])
+  }, [loanId, routeLoanId])
 
   const handleClose = () => {
     if (onClose) {
@@ -98,6 +105,10 @@ export function LoanDetailsContent({
 
   if (loading) {
     return <div className="text-gray-500 dark:text-zinc-400">Carregando detalhes...</div>
+  }
+
+  if (!loanId && presentation === "modal") {
+    return null
   }
 
   if (error || !loan) {

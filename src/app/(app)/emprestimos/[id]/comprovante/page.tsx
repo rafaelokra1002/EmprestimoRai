@@ -47,19 +47,26 @@ const interestModeLabel: Record<string, string> = {
   FIXED_AMOUNT: "Valor Fixo",
 }
 
+const loanIdPattern = /^c[a-z0-9]{24,}$/i
+
 export default function ComprovanteEmprestimoPage() {
   const params = useParams<{ id: string }>()
   const router = useRouter()
-  const loanId = params?.id
+  const routeLoanId = params?.id
+  const loanId = routeLoanId && loanIdPattern.test(routeLoanId) ? routeLoanId : null
 
   const [loan, setLoan] = useState<LoanDetails | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(Boolean(loanId))
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     const fetchLoan = async () => {
-      if (!loanId) return
+      if (!loanId) {
+        setLoading(false)
+        setError(routeLoanId ? "Empréstimo não encontrado" : null)
+        return
+      }
       setLoading(true)
       setError(null)
 
@@ -79,7 +86,7 @@ export default function ComprovanteEmprestimoPage() {
     }
 
     fetchLoan()
-  }, [loanId])
+  }, [loanId, routeLoanId])
 
   const receiptNumber = useMemo(() => {
     if (!loan?.id) return ""

@@ -49,10 +49,13 @@ interface LoanEditContentProps {
   onClose?: () => void
 }
 
+const loanIdPattern = /^c[a-z0-9]{24,}$/i
+
 export function LoanEditContent({ presentation = "page", onClose }: LoanEditContentProps) {
   const params = useParams<{ id: string }>()
   const router = useRouter()
-  const loanId = params?.id
+  const routeLoanId = params?.id
+  const loanId = routeLoanId && loanIdPattern.test(routeLoanId) ? routeLoanId : null
 
   const [loan, setLoan] = useState<LoanEdit | null>(null)
   const [clients, setClients] = useState<Client[]>([])
@@ -75,7 +78,7 @@ export function LoanEditContent({ presentation = "page", onClose }: LoanEditCont
   const [notes, setNotes] = useState("")
   const [loanTags, setLoanTags] = useState<string[]>([])
   const [tagInput, setTagInput] = useState("")
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(Boolean(loanId))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -87,7 +90,11 @@ export function LoanEditContent({ presentation = "page", onClose }: LoanEditCont
 
   useEffect(() => {
     const fetchLoan = async () => {
-      if (!loanId) return
+      if (!loanId) {
+        setLoading(false)
+        setError(routeLoanId ? "Empréstimo não encontrado" : null)
+        return
+      }
       setLoading(true)
       setError(null)
       try {
@@ -128,7 +135,7 @@ export function LoanEditContent({ presentation = "page", onClose }: LoanEditCont
     }
 
     fetchLoan()
-  }, [loanId])
+  }, [loanId, routeLoanId])
 
   useEffect(() => {
     const fetchClients = async () => {
