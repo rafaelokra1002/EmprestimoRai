@@ -12,7 +12,7 @@ import {
   CheckCircle2, CreditCard, Pencil, Undo2, Copy,
   Package, TrendingUp, ArrowDownCircle, Receipt, Landmark,
 } from "lucide-react"
-import { formatCurrency } from "@/lib/utils"
+import { formatCurrency, localDateStr } from "@/lib/utils"
 
 type StatusFilter = "todas" | "vence_hoje" | "pendentes" | "atrasadas" | "pagas"
 type TypeFilter = "todas" | "pessoal" | "empresa"
@@ -45,7 +45,7 @@ export default function ContasPage() {
   const [fSupplier, setFSupplier] = useState("")
   const [fPixKey, setFPixKey] = useState("")
   const [fAmount, setFAmount] = useState("0,00")
-  const [fDueDate, setFDueDate] = useState(() => new Date().toISOString().split("T")[0])
+  const [fDueDate, setFDueDate] = useState(() => localDateStr())
   const [fCategory, setFCategory] = useState("Outros")
   const [fRecurring, setFRecurring] = useState(false)
   const [fNotes, setFNotes] = useState("")
@@ -75,7 +75,7 @@ export default function ContasPage() {
 
   const resetForm = () => {
     setFAccountType("PESSOAL"); setFDescription(""); setFSupplier("")
-    setFPixKey(""); setFAmount("0,00"); setFDueDate(new Date().toISOString().split("T")[0])
+    setFPixKey(""); setFAmount("0,00"); setFDueDate(localDateStr())
     setFCategory("Outros"); setFRecurring(false); setFNotes(""); setEditingId(null)
   }
 
@@ -91,7 +91,7 @@ export default function ContasPage() {
     setFSupplier(expense.supplier || "")
     setFPixKey(expense.pixKey || "")
     setFAmount(expense.amount?.toFixed(2).replace(".", ",") || "0,00")
-    setFDueDate(expense.dueDate ? new Date(expense.dueDate).toISOString().split("T")[0] : "")
+    setFDueDate(expense.dueDate ? localDateStr(expense.dueDate) : "")
     setFCategory(expense.category || "Outros")
     setFRecurring(expense.recurring || false)
     setFNotes(expense.notes || "")

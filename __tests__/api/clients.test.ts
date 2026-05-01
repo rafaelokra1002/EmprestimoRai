@@ -79,6 +79,73 @@ describe("POST /api/clients", () => {
     expect(data.name).toBe("Carlos")
   })
 
+  it("creates a disappeared client with initial loan data", async () => {
+    getServerSessionMock.mockResolvedValue(mockSession)
+    const newClient = {
+      id: "new-c1",
+      name: "Carlos",
+      userId: "user-test-123",
+      requestedAmount: 1500,
+      status: "DESAPARECIDO",
+    }
+    const newLoan = {
+      id: "loan-1",
+      amount: 1500,
+      interestRate: 12,
+      totalAmount: 1680,
+      profit: 180,
+      installmentCount: 1,
+      payments: [],
+      installments: [
+        {
+          id: "inst-1",
+          number: 1,
+          amount: 1680,
+          paidAmount: 0,
+          status: "PENDING",
+          dueDate: new Date("2026-04-29T12:00:00.000Z"),
+        },
+      ],
+    }
+    mockPrisma.client.create.mockResolvedValue(newClient)
+    mockPrisma.loan.create.mockResolvedValue(newLoan)
+
+    const req = new Request("http://localhost:3000/api/clients", {
+      method: "POST",
+      body: JSON.stringify({
+        name: "Carlos",
+        status: "DESAPARECIDO",
+        requestedAmount: 1500,
+        disappearedInterestRate: 12,
+      }),
+      headers: { "Content-Type": "application/json" },
+    })
+    const res = await POST(req)
+    expect(res.status).toBe(201)
+
+    expect(mockPrisma.client.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          requestedAmount: 1500,
+          status: "DESAPARECIDO",
+        }),
+      })
+    )
+    expect(mockPrisma.loan.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          clientId: "new-c1",
+          amount: 1500,
+          interestRate: 12,
+        }),
+      })
+    )
+
+    const data = await res.json()
+    expect(data.loans).toHaveLength(1)
+    expect(data.loans[0].interestRate).toBe(12)
+  })
+
   it("returns 400 for invalid data (short name)", async () => {
     getServerSessionMock.mockResolvedValue(mockSession)
 

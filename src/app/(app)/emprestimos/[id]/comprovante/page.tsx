@@ -119,7 +119,7 @@ export default function ComprovanteEmprestimoPage() {
       "DATAS DE VENCIMENTO",
       dueDates,
       "",
-      "RaiEmprestimos - Sistema de Gestão de Cobranças",
+      "SP Cobrança Fácil - Sistema de Gestão de Cobranças",
     ].join("\n")
   }, [loan, receiptNumber])
 
@@ -170,7 +170,7 @@ export default function ComprovanteEmprestimoPage() {
 
       <div className="p-5 space-y-4">
         <div className="rounded-2xl bg-emerald-50 dark:bg-emerald-950/300 text-white p-4 text-center">
-          <p className="text-4xl font-bold">RaiEmprestimos</p>
+          <p className="text-4xl font-bold">SP Cobrança Fácil</p>
           <p className="text-2xl opacity-90">{loan.client.name}</p>
         </div>
 
@@ -241,7 +241,7 @@ export default function ComprovanteEmprestimoPage() {
         </div>
 
         <div className="rounded-xl bg-emerald-50 dark:bg-emerald-950/300 text-white text-center py-2.5 font-semibold text-xl">
-          RaiEmprestimos - Sistema de Gestão de Cobranças
+          SP Cobrança Fácil - Sistema de Gestão de Cobranças
         </div>
       </div>
 

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Download, HelpCircle, Calendar, RefreshCw, DollarSign, Percent, Hash, TrendingUp, Table2, Trash2 } from "lucide-react"
-import { formatCurrency, formatDate } from "@/lib/utils"
+import { formatCurrency, formatDate, localDateStr } from "@/lib/utils"
 
 interface Loan {
   id: string
@@ -20,7 +20,7 @@ interface Loan {
 
 type PeriodType = "today" | "week" | "month" | "custom"
 
-const todayISO = () => new Date().toISOString().split("T")[0]
+const todayISO = () => localDateStr()
 
 function getWeekRange() {
   const now = new Date()
@@ -78,10 +78,12 @@ export default function RecebimentosPage() {
       return { start, end, label: "Hoje" }
     }
     if (period === "week") {
-      const { start, end } = getWeekRange()
+      const { start } = getWeekRange()
       start.setHours(0, 0, 0, 0)
-      end.setHours(23, 59, 59, 999)
-      return { start, end, label: "Semana" }
+      const saturday = new Date(start)
+      saturday.setDate(start.getDate() + 5)
+      saturday.setHours(23, 59, 59, 999)
+      return { start, end: saturday, label: "Semana" }
     }
     if (period === "month") {
       const { start, end } = getMonthRange()
@@ -136,8 +138,11 @@ export default function RecebimentosPage() {
           principal = 0
           interest = payment.amount
         } else {
-          principal = Math.max(0, Math.round(payment.amount * principalRatio * 100) / 100)
-          interest = Math.max(0, Math.round(payment.amount * interestRatio * 100) / 100)
+          const lateFeeMatch = n.match(/\[lateFee:([\d.]+)\]/)
+          const lateFee = lateFeeMatch ? parseFloat(lateFeeMatch[1]) : 0
+          const baseAmount = payment.amount - lateFee
+          principal = Math.max(0, Math.round(baseAmount * principalRatio * 100) / 100)
+          interest = Math.max(0, Math.round(baseAmount * interestRatio * 100) / 100) + lateFee
         }
 
         rows.push({

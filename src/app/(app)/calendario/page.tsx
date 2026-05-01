@@ -8,7 +8,7 @@ import {
   ChevronLeft, ChevronRight, Calendar as CalIcon,
   Clock, AlertTriangle, Wallet, Car, ShoppingBag
 } from "lucide-react"
-import { formatCurrency, formatDate } from "@/lib/utils"
+import { formatCurrency, localDateStr } from "@/lib/utils"
 
 // Type for a unified due-date entry
 interface DueEntry {
@@ -28,14 +28,23 @@ interface DueEntry {
   totalReceivable: number
 }
 
+function getLocalToday() {
+  return new Date(`${localDateStr()}T12:00:00`)
+}
+
 export default function CalendarioPage() {
-  const [currentDate, setCurrentDate] = useState(new Date())
+  const [currentDate, setCurrentDate] = useState<Date | null>(null)
+  const [todayDate, setTodayDate] = useState<Date | null>(null)
   const [loans, setLoans] = useState<any[]>([])
   const [sales, setSales] = useState<any[]>([])
   const [selectedDay, setSelectedDay] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    const today = getLocalToday()
+    setCurrentDate(today)
+    setTodayDate(today)
+
     Promise.all([
       fetch("/api/loans").then(r => r.json()),
       fetch("/api/sales").then(r => r.json()).catch(() => []),
@@ -45,11 +54,11 @@ export default function CalendarioPage() {
     }).finally(() => setLoading(false))
   }, [])
 
-  const year = currentDate.getFullYear()
-  const month = currentDate.getMonth()
+  const resolvedCurrentDate = currentDate ?? getLocalToday()
+  const year = resolvedCurrentDate.getFullYear()
+  const month = resolvedCurrentDate.getMonth()
   const daysInMonth = new Date(year, month + 1, 0).getDate()
   const firstDayOfWeek = new Date(year, month, 1).getDay()
-  const todayDate = new Date()
 
   // Build unified entries
   const allEntries = useMemo<DueEntry[]>(() => {
@@ -134,9 +143,14 @@ export default function CalendarioPage() {
 
   const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1))
   const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1))
-  const goToday = () => { setCurrentDate(new Date()); setSelectedDay(new Date().getDate()) }
+  const goToday = () => {
+    const today = getLocalToday()
+    setCurrentDate(today)
+    setTodayDate(today)
+    setSelectedDay(today.getDate())
+  }
 
-  const monthName = currentDate.toLocaleString("pt-BR", { month: "long", year: "numeric" })
+  const monthName = resolvedCurrentDate.toLocaleString("pt-BR", { month: "long", year: "numeric" })
   const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
 
   // Color helpers
@@ -150,6 +164,17 @@ export default function CalendarioPage() {
     if (status === "PAID") return { label: "Pago", cls: "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 border-emerald-500/30" }
     if (status === "OVERDUE") return { label: "Vencido", cls: "bg-red-50 dark:bg-red-900/20 text-red-600 border-red-500/30" }
     return { label: "Pendente", cls: "bg-amber-50 dark:bg-amber-900/20 text-amber-600 border-amber-500/30" }
+  }
+
+  if (!currentDate || !todayDate) {
+    return (
+      <div className="space-y-8 pt-6 pb-12">
+        <div className="pt-3">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">Calendário de Vencimentos</h1>
+          <p className="text-sm text-gray-500 dark:text-zinc-400">Carregando data local...</p>
+        </div>
+      </div>
+    )
   }
 
   return (

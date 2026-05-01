@@ -222,6 +222,8 @@ export default function ClientesDesaparecidosPage() {
     document: "",
     rg: "",
     city: "",
+    requestedAmount: "",
+    disappearedInterestRate: "",
     notes: "",
     photo: "",
   })
@@ -343,6 +345,8 @@ export default function ClientesDesaparecidosPage() {
       document: "",
       rg: "",
       city: "",
+      requestedAmount: "",
+      disappearedInterestRate: "",
       notes: "",
       photo: "",
     })
@@ -399,6 +403,29 @@ export default function ClientesDesaparecidosPage() {
       return
     }
 
+    const hasRequestedAmount = createForm.requestedAmount.trim() !== ""
+    const hasInterestRate = createForm.disappearedInterestRate.trim() !== ""
+
+    if (hasRequestedAmount !== hasInterestRate) {
+      setCreateError("Informe valor e taxa de juros para cadastrar o empréstimo do desaparecido.")
+      return
+    }
+
+    if (hasRequestedAmount) {
+      const requestedAmount = Number(createForm.requestedAmount)
+      const disappearedInterestRate = Number(createForm.disappearedInterestRate)
+
+      if (!Number.isFinite(requestedAmount) || requestedAmount < 0) {
+        setCreateError("Informe um valor válido.")
+        return
+      }
+
+      if (!Number.isFinite(disappearedInterestRate) || disappearedInterestRate < 0) {
+        setCreateError("Informe uma taxa de juros válida.")
+        return
+      }
+    }
+
     setCreateSaving(true)
     setCreateError(null)
 
@@ -412,6 +439,8 @@ export default function ClientesDesaparecidosPage() {
           document: createForm.document.trim() || undefined,
           rg: createForm.rg.trim() || undefined,
           city: createForm.city.trim() || undefined,
+          requestedAmount: hasRequestedAmount ? Number(createForm.requestedAmount) : undefined,
+          disappearedInterestRate: hasInterestRate ? Number(createForm.disappearedInterestRate) : undefined,
           notes: createForm.notes.trim() || undefined,
           photo: createForm.photo || undefined,
           status: "DESAPARECIDO",
@@ -1119,6 +1148,30 @@ export default function ClientesDesaparecidosPage() {
                 value={createForm.city}
                 onChange={(event) => setCreateForm((current) => ({ ...current, city: event.target.value }))}
                 placeholder="Cidade"
+              />
+            </div>
+
+            <div>
+              <p className="mb-1.5 text-sm font-medium text-gray-900 dark:text-zinc-100">Valor</p>
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                value={createForm.requestedAmount}
+                onChange={(event) => setCreateForm((current) => ({ ...current, requestedAmount: event.target.value }))}
+                placeholder="Valor do empréstimo"
+              />
+            </div>
+
+            <div>
+              <p className="mb-1.5 text-sm font-medium text-gray-900 dark:text-zinc-100">Taxa de juros (%)</p>
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                value={createForm.disappearedInterestRate}
+                onChange={(event) => setCreateForm((current) => ({ ...current, disappearedInterestRate: event.target.value }))}
+                placeholder="Taxa de juros"
               />
             </div>
 

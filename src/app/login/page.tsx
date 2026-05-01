@@ -52,7 +52,7 @@ export default function LoginPage() {
           <div className="h-12 w-12 rounded-xl bg-emerald-600 flex items-center justify-center mx-auto mb-4">
             <Banknote className="h-7 w-7 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">EmprestimoRAI</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">SP Cobrança Fácil</h1>
           <p className="text-gray-500 dark:text-zinc-400 mt-2">Gestão Financeira e Crédito</p>
         </div>
 

@@ -3,6 +3,10 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 
+function parsePaymentDate(value: string) {
+  return new Date(value.includes("T") ? value : `${value}T12:00:00`)
+}
+
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions)
@@ -17,12 +21,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Dados incompletos" }, { status: 400 })
     }
 
+    const paymentDate = parsePaymentDate(date)
+
     // Register payment
     const payment = await prisma.payment.create({
       data: {
         loanId,
         amount: parseFloat(amount),
-        date: new Date(date.includes("T") ? date : date + "T12:00:00"),
+        date: paymentDate,
         notes,
       },
     })
@@ -59,7 +65,7 @@ export async function POST(request: Request) {
 
           const updateData: any = {
             paidAmount: newPaidAmount,
-            paidDate: newStatus === "PAID" ? new Date(date) : null,
+            paidDate: newStatus === "PAID" ? paymentDate : null,
             status: newStatus,
           }
 
@@ -81,7 +87,7 @@ export async function POST(request: Request) {
         })
 
         if (loan) {
-          const isOnTime = new Date(date) <= installment.dueDate
+          const isOnTime = paymentDate <= installment.dueDate
           const scoreChange = isOnTime ? 10 : -15
 
           await prisma.client.update({

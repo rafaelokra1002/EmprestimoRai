@@ -198,7 +198,7 @@ export default function DashboardPage() {
             <ArrowUpRight className="h-5 w-5 text-gray-500 dark:text-zinc-400" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Instale o EmprestimoRAI no seu celular</p>
+            <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Instale o SP Cobrança Fácil no seu celular</p>
             <p className="text-xs text-gray-500 dark:text-zinc-400">Tenha acesso rápido direto da tela inicial, funciona offline e como um app nativo!</p>
           </div>
           <button className="shrink-0 inline-flex items-center gap-1 rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-4 py-2 text-sm font-medium text-gray-700 dark:text-zinc-200 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors">

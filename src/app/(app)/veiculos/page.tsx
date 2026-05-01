@@ -12,7 +12,7 @@ import {
   DollarSign, CheckCircle2, TrendingUp, FileText, User, MessageCircle,
   Link as LinkIcon
 } from "lucide-react"
-import { formatCurrency, formatDate } from "@/lib/utils"
+import { formatCurrency, formatDate, localDateStr } from "@/lib/utils"
 
 type FilterType = "todos" | "em_dia" | "em_atraso" | "quitados"
 
@@ -219,13 +219,13 @@ export default function VeiculosPage() {
     setFBuyerAddress(vehicle.buyerAddress || vehicle.client?.address || "")
 
     setFOriginName(vehicle.originName || "")
-    setFSaleDate(vehicle.saleDate ? new Date(vehicle.saleDate).toISOString().split("T")[0] : "")
+    setFSaleDate(vehicle.saleDate ? localDateStr(vehicle.saleDate) : "")
     setFPurchasePrice(formatMoneyBR(Number(vehicle.purchasePrice || 0)))
     setFSalePrice(formatMoneyBR(Number(vehicle.salePrice || 0)))
     setFDownPayment(formatMoneyBR(Number(vehicle.downPayment || 0)))
     setFInstallments(String(vehicle.installmentCount || 1))
     setFFrequency(vehicle.modality || "MONTHLY")
-    setFFirstDueDate(vehicle.firstDueDate ? new Date(vehicle.firstDueDate).toISOString().split("T")[0] : "")
+    setFFirstDueDate(vehicle.firstDueDate ? localDateStr(vehicle.firstDueDate) : "")
     setFWhatsapp(Boolean(vehicle.whatsappNotify))
     setFNotes(stripInstallmentsMetaFromNotes(vehicle.notes || ""))
 
@@ -234,14 +234,14 @@ export default function VeiculosPage() {
       setFInstallmentRows(
         customInstallments.map((item: any, idx: number) => ({
           number: idx + 1,
-          dueDate: new Date(item.dueDate).toISOString().split("T")[0],
+          dueDate: localDateStr(item.dueDate),
           amount: formatMoneyBR(Number(item.amount || 0)),
         }))
       )
     } else {
       const baseRows = generateInstallments(vehicle).map((item: any) => ({
         number: item.number,
-        dueDate: new Date(item.dueDate).toISOString().split("T")[0],
+        dueDate: localDateStr(item.dueDate),
         amount: formatMoneyBR(Number(item.amount || 0)),
       }))
       setFInstallmentRows(baseRows)
@@ -328,7 +328,7 @@ export default function VeiculosPage() {
 
       const nextRows = [...previousRows]
       for (let index = previousRows.length; index < targetCount; index += 1) {
-        const baseDate = nextRows[index - 1]?.dueDate || fFirstDueDate || new Date().toISOString().split("T")[0]
+        const baseDate = nextRows[index - 1]?.dueDate || fFirstDueDate || localDateStr()
         const date = new Date(baseDate)
         if (index > 0) {
           if (fFrequency === "WEEKLY") date.setDate(date.getDate() + 7)
@@ -339,7 +339,7 @@ export default function VeiculosPage() {
 
         nextRows.push({
           number: index + 1,
-          dueDate: date.toISOString().split("T")[0],
+          dueDate: localDateStr(date),
           amount: formatMoneyBR(calcInstallmentValue || 0),
         })
       }
@@ -439,7 +439,7 @@ export default function VeiculosPage() {
       ? customInstallments.map((item: any, idx: number) => ({
           number: idx + 1,
           amount: Number(item.amount || 0),
-          dueDate: new Date(item.dueDate).toISOString(),
+          dueDate: localDateStr(item.dueDate),
         }))
       : Array.from({ length: count }, (_, i) => {
           const dueDate = new Date(firstDate)
@@ -451,7 +451,7 @@ export default function VeiculosPage() {
           return {
             number: i + 1,
             amount: instValue,
-            dueDate: dueDate.toISOString(),
+            dueDate: localDateStr(dueDate),
           }
         })
 
@@ -465,7 +465,7 @@ export default function VeiculosPage() {
       return {
         number: item.number,
         amount,
-        dueDate: dueDate.toISOString(),
+        dueDate: localDateStr(dueDate),
         status: isPaid ? "PAID" : isOverdue ? "OVERDUE" : "PENDING",
       }
     })

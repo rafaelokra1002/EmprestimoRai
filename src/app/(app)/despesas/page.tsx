@@ -14,7 +14,7 @@ import {
   Calendar, Package, Receipt,
   Filter,
 } from "lucide-react"
-import { formatCurrency } from "@/lib/utils"
+import { formatCurrency, localDateStr } from "@/lib/utils"
 
 type StatusFilter = "todas" | "vence_hoje" | "pendentes" | "atrasadas" | "pagas"
 
@@ -53,7 +53,7 @@ export default function DespesasPage() {
 
   const [fDescription, setFDescription] = useState("")
   const [fAmount, setFAmount] = useState("0,00")
-  const [fDueDate, setFDueDate] = useState(() => new Date().toISOString().split("T")[0])
+  const [fDueDate, setFDueDate] = useState(() => localDateStr())
   const [fCategory, setFCategory] = useState("Outros")
   const [fRecurring, setFRecurring] = useState(false)
   const [fNotes, setFNotes] = useState("")
@@ -72,7 +72,7 @@ export default function DespesasPage() {
 
   const resetForm = () => {
     setFDescription("")
-    setFAmount("0,00"); setFDueDate(new Date().toISOString().split("T")[0])
+    setFAmount("0,00"); setFDueDate(localDateStr())
     setFCategory("Outros"); setFRecurring(false); setFNotes(""); setEditingId(null)
   }
 
@@ -85,7 +85,7 @@ export default function DespesasPage() {
     setEditingId(exp.id)
     setFDescription(exp.description || "")
     setFAmount(exp.amount?.toFixed(2).replace(".", ",") || "0,00")
-    setFDueDate(exp.dueDate ? new Date(exp.dueDate).toISOString().split("T")[0] : "")
+    setFDueDate(exp.dueDate ? localDateStr(exp.dueDate) : "")
     setFCategory(exp.category || "Outros")
     setFRecurring(exp.recurring || false)
     setFNotes(exp.notes || "")

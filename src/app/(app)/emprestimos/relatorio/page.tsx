@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { FilterDropdown } from "@/components/ui/filter-dropdown"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { formatCurrency, formatDate } from "@/lib/utils"
+import { formatCurrency, formatDate, localDateStr } from "@/lib/utils"
 import { useTheme } from "@/lib/theme-provider"
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
@@ -18,7 +18,7 @@ import {
   Users, ToggleLeft, ToggleRight
 } from "lucide-react"
 
-const today = () => new Date().toISOString().split("T")[0]
+const today = () => localDateStr()
 const firstOfMonth = () => {
   const d = new Date()
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`

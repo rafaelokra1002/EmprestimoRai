@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Calculator, Calendar, Download, HelpCircle, Plus, Table2, User, Wallet, DollarSign, TrendingUp } from "lucide-react"
-import { formatCurrency, generateInstallmentDates } from "@/lib/utils"
+import { formatCurrency, generateInstallmentDates, localDateStr } from "@/lib/utils"
 
 interface Client {
   id: string
@@ -15,7 +15,7 @@ interface Client {
   document: string | null
 }
 
-const today = () => new Date().toISOString().split("T")[0]
+const today = () => localDateStr()
 
 function calcPrice(amount: number, monthlyRatePercent: number, installments: number) {
   if (!amount || !installments) {
@@ -66,7 +66,7 @@ export default function TabelaPricePage() {
   const installmentDates = useMemo(() => {
     if (!firstInstallmentDate || installments < 1) return []
     return generateInstallmentDates(new Date(firstInstallmentDate + "T12:00:00"), installments, modality)
-      .map((d) => d.toISOString().split("T")[0])
+      .map((d) => localDateStr(d))
   }, [firstInstallmentDate, installments, modality])
 
   const amortizationTable = useMemo(() => {

@@ -1,28 +1,70 @@
 "use client"
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Download, Clock, CheckCircle2, AlertCircle, FileSpreadsheet, FileText } from "lucide-react"
+import { localDateStr } from "@/lib/utils"
+import {
+  AlertCircle,
+  CheckCircle2,
+  Download,
+  FileText,
+  Receipt,
+  DollarSign,
+  Users,
+  FileSpreadsheet,
+  Landmark,
+  Lightbulb,
+} from "lucide-react"
+
+const backupSections = [
+  {
+    key: "clients",
+    title: "Clientes",
+    description: "Todos os seus clientes cadastrados",
+    icon: Users,
+    iconClassName: "text-blue-500",
+  },
+  {
+    key: "loans",
+    title: "Empréstimos",
+    description: "Somente empréstimos sem parcelamento",
+    icon: DollarSign,
+    iconClassName: "text-emerald-500",
+  },
+  {
+    key: "installment-loans",
+    title: "Empréstimos Parcelados",
+    description: "Somente empréstimos com duas ou mais parcelas",
+    icon: Landmark,
+    iconClassName: "text-emerald-500",
+  },
+  {
+    key: "contracts",
+    title: "Contratos",
+    description: "Todos os contratos de empréstimo cadastrados",
+    icon: Receipt,
+    iconClassName: "text-violet-500",
+  },
+] as const
 
 export default function BackupPage() {
   const [loadingXlsx, setLoadingXlsx] = useState(false)
   const [loadingPdf, setLoadingPdf] = useState(false)
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
 
-  const handleBackup = async () => {
+  const handleBackup = async (key: string, label: string) => {
     setLoadingXlsx(true)
     setMessage(null)
     try {
-      const res = await fetch("/api/backup", { method: "POST" })
+      const res = await fetch(`/api/backup?type=${encodeURIComponent(key)}`, { method: "POST" })
       if (!res.ok) throw new Error("Erro ao gerar backup")
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement("a")
       a.href = url
-      a.download = `backup-${new Date().toISOString().split("T")[0]}.xlsx`
+      a.download = `backup-${label.toLowerCase().replace(/\s+/g, "-")}-${localDateStr()}.xlsx`
       a.click()
       URL.revokeObjectURL(url)
-      setMessage({ type: "success", text: "Backup Excel gerado e baixado com sucesso!" })
+      setMessage({ type: "success", text: `Backup CSV de ${label} gerado e baixado com sucesso!` })
     } catch (err: any) {
       setMessage({ type: "error", text: err.message || "Erro ao gerar backup" })
     } finally {
@@ -30,20 +72,20 @@ export default function BackupPage() {
     }
   }
 
-  const handleBackupPdf = async () => {
+  const handleBackupPdf = async (key: string, label: string) => {
     setLoadingPdf(true)
     setMessage(null)
     try {
-      const res = await fetch("/api/backup/pdf", { method: "POST" })
+      const res = await fetch(`/api/backup/pdf?type=${encodeURIComponent(key)}`, { method: "POST" })
       if (!res.ok) throw new Error("Erro ao gerar PDF")
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement("a")
       a.href = url
-      a.download = `backup-${new Date().toISOString().split("T")[0]}.pdf`
+      a.download = `backup-${label.toLowerCase().replace(/\s+/g, "-")}-${localDateStr()}.pdf`
       a.click()
       URL.revokeObjectURL(url)
-      setMessage({ type: "success", text: "Backup PDF gerado e baixado com sucesso!" })
+      setMessage({ type: "success", text: `Backup PDF de ${label} gerado e baixado com sucesso!` })
     } catch (err: any) {
       setMessage({ type: "error", text: err.message || "Erro ao gerar PDF" })
     } finally {
@@ -52,10 +94,13 @@ export default function BackupPage() {
   }
 
   return (
-    <div className="space-y-6 pt-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">Backup</h1>
-        <p className="text-gray-500 dark:text-zinc-400 mt-1">Exporte seus dados em Excel ou PDF</p>
+    <div className="mx-auto max-w-6xl space-y-6 pt-10">
+      <div className="text-center">
+        <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 dark:bg-emerald-950/30">
+          <Download className="h-6 w-6 text-emerald-500" />
+        </div>
+        <h1 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-zinc-100">Backup de Dados</h1>
+        <p className="mt-2 text-lg text-gray-500 dark:text-zinc-400">Exporte seus dados em CSV ou PDF para manter um backup seguro.</p>
       </div>
 
       {message && (
@@ -69,63 +114,56 @@ export default function BackupPage() {
         </div>
       )}
 
-      <div className="grid md:grid-cols-2 gap-6">
-        {/* Excel */}
-        <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30">
-              <FileSpreadsheet className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">Backup Excel</h2>
-              <p className="text-sm text-gray-500 dark:text-zinc-400">Baixe seus dados em formato .xlsx</p>
-            </div>
-          </div>
-          <p className="text-sm text-gray-500 dark:text-zinc-400">
-            Planilha com colunas organizadas: Cliente, CPF, Telefone, Valores, Status, Datas.
-          </p>
-          <Button
-            onClick={handleBackup}
-            disabled={loadingXlsx}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
-          >
-            <Download className="h-4 w-4 mr-2" />
-            {loadingXlsx ? "Gerando..." : "Baixar Excel (.xlsx)"}
-          </Button>
-        </div>
+      <div className="grid gap-5 md:grid-cols-2">
+        {backupSections.map((section) => {
+          const Icon = section.icon
+          return (
+            <div
+              key={section.title}
+              className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition-colors dark:border-zinc-800 dark:bg-zinc-900"
+            >
+              <div className="flex items-start gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-100 dark:bg-zinc-800">
+                  <Icon className={`h-6 w-6 ${section.iconClassName}`} />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">{section.title}</h2>
+                  <p className="mt-1 text-sm text-gray-500 dark:text-zinc-400">{section.description}</p>
+                </div>
+              </div>
 
-        {/* PDF */}
-        <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/30">
-              <FileText className="h-6 w-6 text-red-600 dark:text-red-400" />
+              <div className="mt-5 flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => handleBackup(section.key, section.title)}
+                  disabled={loadingXlsx}
+                  className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  <FileSpreadsheet className="h-4 w-4" />
+                  {loadingXlsx ? "Gerando..." : "CSV"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleBackupPdf(section.key, section.title)}
+                  disabled={loadingPdf}
+                  className="inline-flex items-center gap-2 rounded-xl bg-red-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  <FileText className="h-4 w-4" />
+                  {loadingPdf ? "Gerando..." : "PDF"}
+                </button>
+              </div>
             </div>
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">Backup PDF</h2>
-              <p className="text-sm text-gray-500 dark:text-zinc-400">Baixe seus dados em formato .pdf</p>
-            </div>
-          </div>
-          <p className="text-sm text-gray-500 dark:text-zinc-400">
-            Relatório em PDF com tabela formatada, ideal para impressão e arquivo.
-          </p>
-          <Button
-            onClick={handleBackupPdf}
-            disabled={loadingPdf}
-            className="w-full bg-red-600 hover:bg-red-700 text-white"
-          >
-            <Download className="h-4 w-4 mr-2" />
-            {loadingPdf ? "Gerando..." : "Baixar PDF (.pdf)"}
-          </Button>
-        </div>
+          )
+        })}
       </div>
 
-      <div className="rounded-xl border border-yellow-200 dark:border-yellow-800/50 bg-yellow-50 dark:bg-yellow-950/20 p-4">
+      <div className="rounded-2xl border border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-800/50 dark:bg-yellow-950/20">
         <div className="flex items-start gap-3">
-          <Clock className="h-5 w-5 text-yellow-600 dark:text-yellow-500 mt-0.5" />
+          <Lightbulb className="mt-0.5 h-5 w-5 text-yellow-600 dark:text-yellow-500" />
           <div>
-            <p className="text-sm font-medium text-yellow-800 dark:text-yellow-400">Dica importante</p>
+            <p className="text-sm font-medium text-yellow-800 dark:text-yellow-400">Dica</p>
             <p className="text-sm text-yellow-700 dark:text-yellow-500 mt-1">
-              Recomendamos fazer backup regularmente para evitar perda de dados. Guarde os arquivos em local seguro.
+              Use o formato CSV para abrir no Excel ou Google Sheets. O PDF e para visualizacao e impressao.
             </p>
           </div>
         </div>

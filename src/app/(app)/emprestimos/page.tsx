@@ -15,7 +15,7 @@ import {
   MessageCircle, Send, Loader2
 } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
-import { formatCurrency, formatDate, calculateLoan, generateInstallmentDates, resolveDailyInterestAmount } from "@/lib/utils"
+import { formatCurrency, formatDate, calculateLoan, generateInstallmentDates, resolveDailyInterestAmount, localDateStr } from "@/lib/utils"
 import { buildLoanData, calculateTotalAmountWithLateFee, calculateOverdueInterest, getDaysOverdue, getNextDueDate, getOverdueDailyAmountBRL, getPaidExcludingInterest } from "@/lib/loan-logic"
 
 interface Loan {
@@ -42,7 +42,7 @@ interface Loan {
   notes: string | null
   tags: string[]
   createdAt: string
-  client: { id: string; name: string; photo: string | null }
+  client: { id: string; name: string; photo: string | null; status?: string }
   installments: any[]
   payments: any[]
 }
@@ -53,9 +53,10 @@ interface Client {
   phone: string | null
   document: string | null
   photo: string | null
+  status?: string
 }
 
-const today = () => new Date().toISOString().split("T")[0]
+const today = () => localDateStr()
 
 const getTagName = (tag: string) => (tag.includes("|") ? tag.split("|")[0] : tag).trim()
 
@@ -81,6 +82,7 @@ export default function EmprestimosPage() {
   const [tagColor, setTagColor] = useState("#10b981")
   const [editingTags, setEditingTags] = useState<string[]>([])
   const [showTagForm, setShowTagForm] = useState(false)
+  const [selectedTag, setSelectedTag] = useState<string | null>(null)
 
   // Profile PIX key & phone
   const [profilePixKey, setProfilePixKey] = useState("")
@@ -210,7 +212,7 @@ export default function EmprestimosPage() {
         skipSunday,
         skipHolidays
       )
-      setInstallmentDates(dates.map((d) => d.toISOString().split("T")[0]))
+      setInstallmentDates(dates.map((d) => localDateStr(d)))
     }
   }, [firstInstallmentDate, installmentCount, modality, skipSaturday, skipSunday, skipHolidays])
 
@@ -234,14 +236,20 @@ export default function EmprestimosPage() {
   const fetchLoans = async () => {
     const res = await fetch("/api/loans")
     const data = await res.json()
-    setLoans(Array.isArray(data) ? data : [])
+    const visibleLoans = Array.isArray(data)
+      ? data.filter((loan) => loan?.client?.status !== "DESAPARECIDO")
+      : []
+    setLoans(visibleLoans)
     setLoading(false)
   }
 
   const fetchClients = async () => {
     const res = await fetch("/api/clients")
     const data = await res.json()
-    setClients(Array.isArray(data) ? data : [])
+    const visibleClients = Array.isArray(data)
+      ? data.filter((client) => client?.status !== "DESAPARECIDO")
+      : []
+    setClients(visibleClients)
   }
 
   const fetchProfile = async () => {
@@ -402,7 +410,7 @@ export default function EmprestimosPage() {
         loanId,
         installmentId,
         amount: payAmt,
-        date: payDate || new Date().toISOString(),
+        date: payDate || today(),
         newDueDate: payNewDueDate || undefined,
         discount: paymentType === "discount" ? payDiscount : undefined,
         notes: notes || undefined,
@@ -422,7 +430,7 @@ export default function EmprestimosPage() {
           loanId,
           installmentId: inst.id,
           amount: inst.amount,
-          date: payDate || new Date().toISOString(),
+          date: payDate || today(),
           newDueDate: payNewDueDate || undefined,
           discount: paymentType === "discount" ? payDiscount : undefined,
           notes,
@@ -453,7 +461,7 @@ export default function EmprestimosPage() {
     // Pre-fill next month due date
     const nextMonth = new Date()
     nextMonth.setMonth(nextMonth.getMonth() + 1)
-    setPayNewDueDate(nextMonth.toISOString().split("T")[0])
+    setPayNewDueDate(localDateStr(nextMonth))
   }
 
   const handleNewClient = async () => {
@@ -490,6 +498,18 @@ export default function EmprestimosPage() {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
   }
   const todayStr = toDateStr(new Date())
+  const isSameMonthYear = (value: Date, reference: Date) => (
+    value.getFullYear() === reference.getFullYear() && value.getMonth() === reference.getMonth()
+  )
+  const hasCurrentMonthInstallmentPaid = (loan: Loan) => {
+    if (loan.installmentCount <= 1) return false
+
+    const now = new Date()
+
+    return loan.installments.some((installment: any) => (
+      installment.status === "PAID" && isSameMonthYear(new Date(installment.dueDate), now)
+    ))
+  }
 
   const getLoanStatusInfo = (loan: Loan) => {
     if (loan.status === "COMPLETED") return { label: "Quitado", color: "bg-blue-50 dark:bg-blue-950/300/20 text-blue-600" }
@@ -507,6 +527,7 @@ export default function EmprestimosPage() {
       return toDateStr(new Date(i.dueDate)) < todayStr
     })
     if (hasOverdue) return { label: "Atrasado", color: "bg-red-50 dark:bg-red-950/300/20 text-red-600" }
+    if (hasCurrentMonthInstallmentPaid(loan)) return { label: "Pago no Mês", color: "bg-purple-50 dark:bg-purple-950/20 text-purple-600" }
     return { label: "Pendente", color: "bg-orange-50 dark:bg-orange-950/300/20 text-orange-600" }
   }
 
@@ -836,7 +857,7 @@ export default function EmprestimosPage() {
       // Nova data = próximo vencimento mantendo dia fixo
       const dueDay = loan.dueDay || new Date(loan.firstInstallmentDate).getDate()
       const nextDue = getNextDueDate(dueDay, new Date())
-      setRenegotiateNewDueDate(nextDue.toISOString().split("T")[0])
+      setRenegotiateNewDueDate(localDateStr(nextDue))
     } else {
       setRenegotiateInstallmentId("")
       setRenegotiateNewDueDate("")
@@ -859,7 +880,7 @@ export default function EmprestimosPage() {
       setRenegotiateInstallmentId(nextInst.id)
       const dueDay = loan.dueDay || new Date(loan.firstInstallmentDate).getDate()
       const nextDue = getNextDueDate(dueDay, new Date())
-      setRenegotiateNewDueDate(nextDue.toISOString().split("T")[0])
+      setRenegotiateNewDueDate(localDateStr(nextDue))
     } else {
       setRenegotiateInstallmentId("")
       setRenegotiateNewDueDate("")
@@ -887,7 +908,7 @@ export default function EmprestimosPage() {
     const receiptLoan = renegotiateDialog
     const receiptMode = renegotiateMode
     const receiptAmount = amount
-    const receiptDate = renegotiateDate || new Date().toISOString().split("T")[0]
+    const receiptDate = renegotiateDate || today()
     const allInsts = receiptLoan.installments
     const instIdx = allInsts.findIndex((i: any) => i.id === targetInstId)
 
@@ -908,9 +929,9 @@ export default function EmprestimosPage() {
         const cicloJurosFaltante = intAmount > 0 ? intAmount - cicloJurosPago : intAmount
         if (amount >= cicloJurosFaltante) {
           // This payment completes the interest cycle - renew due date
-          const payDateObj = new Date((renegotiateDate || new Date().toISOString().split("T")[0]) + "T12:00:00")
+          const payDateObj = new Date((renegotiateDate || today()) + "T12:00:00")
           payDateObj.setDate(payDateObj.getDate() + modalityDays(renegotiateDialog.modality))
-          sendNewDueDate = payDateObj.toISOString().split("T")[0]
+          sendNewDueDate = localDateStr(payDateObj)
         }
       }
 
@@ -921,7 +942,7 @@ export default function EmprestimosPage() {
           loanId: renegotiateDialog.id,
           installmentId: targetInstId,
           amount,
-          date: renegotiateDate || new Date().toISOString(),
+          date: renegotiateDate || today(),
           newDueDate: sendNewDueDate,
           notes: (renegotiateNotes ? renegotiateNotes + " | " : "") + (renegotiateMode === "full" ? "Pagamento só juros" : "Pagamento parcial de juros"),
         }),
@@ -1004,6 +1025,10 @@ export default function EmprestimosPage() {
       result = result.filter(l => (l.tags || []).length > 0)
     }
 
+    if (selectedTag) {
+      result = result.filter(l => (l.tags || []).some(t => getTagName(t) === selectedTag))
+    }
+
     const getEarliestPendingDueAt = (loan: Loan) => {
       const pendingInstallments = loan.installments
         .filter((installment: any) => installment.status !== "PAID")
@@ -1046,7 +1071,7 @@ export default function EmprestimosPage() {
 
       return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime()
     })
-  }, [loans, activeTab, search, loanFilter])
+  }, [loans, activeTab, search, loanFilter, selectedTag])
 
   const groupedByClient = useMemo(() => {
     const groups: Record<string, { clientId: string; clientName: string; clientPhoto: string | null; loans: Loan[] }> = {}
@@ -1243,6 +1268,15 @@ export default function EmprestimosPage() {
         </div>
       </div>
 
+      {selectedTag && (
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-500 dark:text-zinc-400">Filtrando por etiqueta:</span>
+          <button onClick={() => setSelectedTag(null)} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium text-white" style={{ backgroundColor: (() => { const t = loans.flatMap(l => l.tags || []).find(t => getTagName(t) === selectedTag); return t?.includes("|") ? t.split("|")[1] : "#ef4444" })() }}>
+            {selectedTag} <X className="h-3 w-3" />
+          </button>
+        </div>
+      )}
+
       {/* Cards / List */}
       {loading ? (
         <div className="text-center py-8 text-gray-500 dark:text-zinc-400">Carregando...</div>
@@ -1312,8 +1346,9 @@ export default function EmprestimosPage() {
                       <div className="flex flex-wrap gap-1">
                         {(loan.tags || []).map((tag, i) => {
                           const [name, color] = tag.includes("|") ? tag.split("|") : [tag, "#ef4444"]
+                          const isActive = selectedTag === name
                           return (
-                            <span key={i} className="px-2 py-0.5 rounded-full text-xs font-medium text-white" style={{ backgroundColor: color }}>{name}</span>
+                            <button key={i} onClick={() => setSelectedTag(isActive ? null : name)} className={`px-2 py-0.5 rounded-full text-xs font-medium text-white transition-all cursor-pointer ${isActive ? "ring-2 ring-offset-1 ring-white/80 scale-105" : "hover:opacity-80"}`} style={{ backgroundColor: color }}>{name}</button>
                           )
                         })}
                       </div>
@@ -1375,16 +1410,16 @@ export default function EmprestimosPage() {
 
               const isAtrasado = status.label === "Atrasado" || status.label === "Inadimplente"
               const isSoJuros = status.label === "Só Juros"
+              const isPagoNoMes = status.label === "Pago no Mês"
               const isQuitado = status.label === "Quitado"
               const isDueToday = nextInst && toDateStr(new Date(nextInst.dueDate)) === todayStr
-              const isParcelado = loan.installmentCount > 1
 
-              // Cores: Vence hoje=laranja, Atrasado=vermelho, Só Juros=roxo, Quitado=azul, Parcelado=azul, resto=branco
-              const cardBorder = isAtrasado ? "border-red-400 dark:border-red-700" : isDueToday ? "border-orange-400 dark:border-orange-700" : isSoJuros ? "border-purple-400 dark:border-purple-700" : isQuitado ? "border-blue-400 dark:border-blue-700" : isParcelado ? "border-blue-400 dark:border-blue-700" : "border-gray-200 dark:border-zinc-700"
-              const cardBg = isAtrasado ? "bg-red-100 dark:bg-red-950/30" : isDueToday ? "bg-orange-100 dark:bg-orange-950/30" : isSoJuros ? "bg-purple-100 dark:bg-purple-950/30" : isQuitado ? "bg-blue-100 dark:bg-blue-950/30" : isParcelado ? "bg-blue-100 dark:bg-blue-950/30" : "bg-white dark:bg-zinc-900"
-              const remainingColor = isAtrasado ? "text-red-700 dark:text-red-400" : isDueToday ? "text-orange-700 dark:text-orange-400" : isSoJuros ? "text-purple-700 dark:text-purple-400" : isQuitado ? "text-blue-700 dark:text-blue-400" : isParcelado ? "text-blue-700 dark:text-blue-400" : "text-gray-900 dark:text-zinc-100"
-              const remainingBg = isAtrasado ? "bg-red-100 dark:bg-red-900/40" : isDueToday ? "bg-orange-100 dark:bg-orange-900/40" : isSoJuros ? "bg-purple-100 dark:bg-purple-900/40" : isQuitado ? "bg-blue-100 dark:bg-blue-900/40" : isParcelado ? "bg-blue-100 dark:bg-blue-900/40" : "bg-gray-100 dark:bg-zinc-800"
-              const cellBg = isAtrasado ? "bg-red-50 dark:bg-red-950/20" : isDueToday ? "bg-orange-50 dark:bg-orange-950/20" : isSoJuros ? "bg-purple-50 dark:bg-purple-950/20" : isQuitado ? "bg-blue-50 dark:bg-blue-950/20" : isParcelado ? "bg-blue-50 dark:bg-blue-950/20" : "bg-gray-50 dark:bg-zinc-800/50"
+              // Cores: Vence hoje=laranja, Atrasado=vermelho, Só Juros/Pago no mês=roxo, Quitado=azul, resto=branco
+              const cardBorder = isAtrasado ? "border-red-400 dark:border-red-700" : isDueToday ? "border-orange-400 dark:border-orange-700" : (isSoJuros || isPagoNoMes) ? "border-purple-400 dark:border-purple-700" : isQuitado ? "border-blue-400 dark:border-blue-700" : "border-gray-200 dark:border-zinc-700"
+              const cardBg = isAtrasado ? "bg-red-100 dark:bg-red-950/30" : isDueToday ? "bg-orange-100 dark:bg-orange-950/30" : (isSoJuros || isPagoNoMes) ? "bg-purple-100 dark:bg-purple-950/30" : isQuitado ? "bg-blue-100 dark:bg-blue-950/30" : "bg-white dark:bg-zinc-900"
+              const remainingColor = isAtrasado ? "text-red-700 dark:text-red-400" : isDueToday ? "text-orange-700 dark:text-orange-400" : (isSoJuros || isPagoNoMes) ? "text-purple-700 dark:text-purple-400" : isQuitado ? "text-blue-700 dark:text-blue-400" : "text-gray-900 dark:text-zinc-100"
+              const remainingBg = isAtrasado ? "bg-red-100 dark:bg-red-900/40" : isDueToday ? "bg-orange-100 dark:bg-orange-900/40" : (isSoJuros || isPagoNoMes) ? "bg-purple-100 dark:bg-purple-900/40" : isQuitado ? "bg-blue-100 dark:bg-blue-900/40" : "bg-gray-100 dark:bg-zinc-800"
+              const cellBg = isAtrasado ? "bg-red-50 dark:bg-red-950/20" : isDueToday ? "bg-orange-50 dark:bg-orange-950/20" : (isSoJuros || isPagoNoMes) ? "bg-purple-50 dark:bg-purple-950/20" : isQuitado ? "bg-blue-50 dark:bg-blue-950/20" : "bg-gray-50 dark:bg-zinc-800/50"
 
               return (
                 <div key={group.clientId} className={`rounded-xl border overflow-hidden shadow-sm hover:shadow-md transition-shadow ${cardBorder} ${cardBg}`}>
@@ -1393,10 +1428,11 @@ export default function EmprestimosPage() {
                     <h3 className="truncate font-semibold text-base text-gray-900 dark:text-zinc-100">{group.clientName}</h3>
                     {(loan.tags || []).length > 0 && (() => {
                       const [name, color] = loan.tags[0].includes("|") ? loan.tags[0].split("|") : [loan.tags[0], "#ef4444"]
+                      const isActive = selectedTag === name
                       return (
-                        <span className="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium text-white" style={{ backgroundColor: color }}>
+                        <button onClick={() => setSelectedTag(isActive ? null : name)} className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium text-white cursor-pointer transition-all ${isActive ? "ring-2 ring-offset-1 ring-white/80 scale-105" : "hover:opacity-80"}`} style={{ backgroundColor: color }}>
                           {name}
-                        </span>
+                        </button>
                       )
                     })()}
                   </div>
@@ -2573,7 +2609,7 @@ export default function EmprestimosPage() {
                       onClick={() => {
                         const d = new Date()
                         d.setDate(d.getDate() + 30)
-                        setPayNewDueDate(d.toISOString().split("T")[0])
+                        setPayNewDueDate(localDateStr(d))
                       }}
                       className="px-3 py-2 rounded-lg text-xs font-medium border border-emerald-500 text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 hover:bg-emerald-100 dark:hover:bg-emerald-950/30 transition whitespace-nowrap"
                     >
@@ -2584,7 +2620,7 @@ export default function EmprestimosPage() {
                       onClick={() => {
                         const d = new Date()
                         d.setDate(d.getDate() + 15)
-                        setPayNewDueDate(d.toISOString().split("T")[0])
+                        setPayNewDueDate(localDateStr(d))
                       }}
                       className="px-3 py-2 rounded-lg text-xs font-medium border border-blue-500 text-blue-600 bg-blue-50 dark:bg-blue-950/20 hover:bg-blue-100 dark:hover:bg-blue-950/30 transition whitespace-nowrap"
                     >
@@ -2643,7 +2679,7 @@ export default function EmprestimosPage() {
                               loanId: paymentDialog.id,
                               installmentId: pendingInsts[0].id,
                               amount: payAmount,
-                              date: payDate || new Date().toISOString(),
+                                date: payDate || today(),
                               discount: discount > 0 ? discount : undefined,
                             }),
                           })
@@ -2652,19 +2688,28 @@ export default function EmprestimosPage() {
                         }
                       } else if (paymentType === "installment" && selectedInstallmentIds.length > 0) {
                         const allInsts = paymentDialog.installments
-                        const installmentsToPay = selectedInsts.map((i: any) => {
+                        let allOk = true
+                        const paidInstIds: string[] = []
+                        let totalReceiptAmount = 0
+
+                        for (const i of selectedInsts) {
                           const idx = allInsts.findIndex((inst: any) => inst.id === i.id)
-                          return {
-                            id: i.id,
-                            amount: i.amount - i.paidAmount,
-                            index: idx + 1,
-                            total: paymentDialog.installmentCount,
-                          }
-                        })
-                        const result = await handleMultiPayment(paymentDialog.id, installmentsToPay)
-                        receiptInstIds = installmentsToPay.map(i => i.id)
-                        receiptAmount = installmentsToPay.reduce((s, i) => s + i.amount, 0)
-                        success = result.ok
+                          const payableAmount = getInstallmentPayableAmount(paymentDialog, i)
+                          const baseAmount = Math.max(0, i.amount - (i.paidAmount || 0))
+                          const lateFeeForInst = Math.round((payableAmount - baseAmount) * 100) / 100
+                          const baseNotes = `Parcela ${idx + 1} de ${paymentDialog.installmentCount}`
+                          const notes = lateFeeForInst > 0
+                            ? `${baseNotes} [lateFee:${lateFeeForInst.toFixed(2)}]`
+                            : baseNotes
+                          const result = await handlePayment(paymentDialog.id, i.id, payableAmount, notes)
+                          if (!result.ok) { allOk = false; break }
+                          paidInstIds.push(i.id)
+                          totalReceiptAmount += payableAmount
+                        }
+
+                        receiptInstIds = paidInstIds
+                        receiptAmount = totalReceiptAmount
+                        success = allOk
                       } else if (selectedInstallmentIds.length > 0) {
                         const allInsts = paymentDialog.installments
                         const idx = allInsts.findIndex((inst: any) => inst.id === selectedInstallmentIds[0])
@@ -2689,7 +2734,7 @@ export default function EmprestimosPage() {
                         const label = receiptInstIds.length === 1
                           ? `${firstIdx + 1}/${allInsts.length}`
                           : `${firstIdx + 1}-${firstIdx + receiptInstIds.length}/${allInsts.length}`
-                        const dateStr = payDate || new Date().toISOString().split("T")[0]
+                        const dateStr = payDate || today()
 
                         const alreadyPaid = receiptLoan.payments.reduce((s: number, p: any) => s + p.amount, 0)
                         const isTotal = paymentType === "total" || paymentType === "discount"
@@ -3002,7 +3047,7 @@ export default function EmprestimosPage() {
                           if (e.target.value && renegotiateDialog) {
                             const d = new Date(e.target.value + "T12:00:00")
                             d.setDate(d.getDate() + modalityDays(renegotiateDialog.modality))
-                            setRenegotiateNewDueDate(d.toISOString().split("T")[0])
+                            setRenegotiateNewDueDate(localDateStr(d))
                           }
                         }}
                         className="mt-1"

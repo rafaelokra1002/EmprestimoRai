@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Avatar } from "@/components/avatar"
 import { CalendarDays, ChevronDown, RefreshCw, Plus, X } from "lucide-react"
-import { calculateLoan, formatCurrency, generateInstallmentDates, resolveDailyInterestAmount } from "@/lib/utils"
+import { calculateLoan, formatCurrency, generateInstallmentDates, localDateStr, resolveDailyInterestAmount } from "@/lib/utils"
 
 interface Client {
   id: string
@@ -113,8 +113,8 @@ export function LoanEditContent({ presentation = "page", onClose }: LoanEditCont
         setModality(data.modality || "MONTHLY")
         setInstallmentCount(data.installmentCount || 1)
         setTotalInterestAmount(data.totalInterest || 0)
-        setContractDate(data.contractDate?.split("T")?.[0] || "")
-        setFirstInstallmentDate(data.firstInstallmentDate?.split("T")?.[0] || "")
+        setContractDate(data.contractDate ? localDateStr(data.contractDate) : "")
+        setFirstInstallmentDate(data.firstInstallmentDate ? localDateStr(data.firstInstallmentDate) : "")
         setSkipSaturday(Boolean(data.skipSaturday))
         setSkipSunday(Boolean(data.skipSunday))
         setSkipHolidays(Boolean(data.skipHolidays))
@@ -125,7 +125,7 @@ export function LoanEditContent({ presentation = "page", onClose }: LoanEditCont
         setDailyInterestAmount(data.dailyInterestAmount || 0)
         if (Array.isArray(data.installments)) {
           const sorted = [...data.installments].sort((a, b) => a.number - b.number)
-          setInstallmentDates(sorted.map((inst) => inst.dueDate.split("T")[0]))
+          setInstallmentDates(sorted.map((inst) => localDateStr(inst.dueDate)))
         }
       } catch (err: any) {
         setError(err?.message || "Erro de conexão")
@@ -161,7 +161,7 @@ export function LoanEditContent({ presentation = "page", onClose }: LoanEditCont
       skipSunday,
       skipHolidays
     )
-    setInstallmentDates(dates.map((d) => d.toISOString().split("T")[0]))
+    setInstallmentDates(dates.map((d) => localDateStr(d)))
   }, [firstInstallmentDate, installmentCount, modality, skipSaturday, skipSunday, skipHolidays])
 
   const selectedClient = clients.find((client) => client.id === clientId)
@@ -188,7 +188,7 @@ export function LoanEditContent({ presentation = "page", onClose }: LoanEditCont
       skipSunday,
       skipHolidays
     )
-    setInstallmentDates(dates.map((d) => d.toISOString().split("T")[0]))
+    setInstallmentDates(dates.map((d) => localDateStr(d)))
   }
 
   const handleClose = () => {
@@ -245,6 +245,7 @@ export function LoanEditContent({ presentation = "page", onClose }: LoanEditCont
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
         setError(data?.error || "Erro ao salvar alterações")
+        window.dispatchEvent(new Event("loans:updated"))
         return
       }
 

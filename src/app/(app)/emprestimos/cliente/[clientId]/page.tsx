@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ArrowLeft, Calendar, Check, CheckCircle2, Copy, DollarSign, Download, Eye, FileText, Lock, Loader2, MessageCircle, Pencil, Receipt, RotateCcw, Send, Tag, Trash2, X, Plus } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
-import { formatCurrency, formatDate } from "@/lib/utils"
+import { formatCurrency, formatDate, localDateStr } from "@/lib/utils"
 import { buildLoanData, calculateTotalAmountWithLateFee, calculateOverdueInterest, getDaysOverdue, getNextDueDate as getNextDueDateFn, getOverdueDailyAmountBRL } from "@/lib/loan-logic"
 
 interface Loan {
@@ -352,7 +352,7 @@ export default function ClienteEmprestimosPage() {
     fetchLoans()
   }
 
-  const today = () => new Date().toISOString().split("T")[0]
+  const today = () => localDateStr()
 
   const openRenegotiateDialog = (loan: Loan) => {
     setRenegotiateDialog(loan)
@@ -368,7 +368,7 @@ export default function ClienteEmprestimosPage() {
       setRenegotiateInstallmentId(nextInst.id)
       const dueDay = new Date(loan.installments[0]?.dueDate || loan.installments[0]?.dueDate).getDate()
       const nextDue = getNextDueDateFn(dueDay, new Date())
-      setRenegotiateNewDueDate(nextDue.toISOString().split("T")[0])
+      setRenegotiateNewDueDate(localDateStr(nextDue))
     } else {
       setRenegotiateInstallmentId("")
       setRenegotiateNewDueDate("")
@@ -389,7 +389,7 @@ export default function ClienteEmprestimosPage() {
     const receiptLoan = renegotiateDialog
     const receiptMode = renegotiateMode
     const receiptAmount = amount
-    const receiptDate = renegotiateDate || new Date().toISOString().split("T")[0]
+    const receiptDate = renegotiateDate || today()
     const allInsts = receiptLoan.installments
     const instIdx = allInsts.findIndex((i: any) => i.id === targetInstId)
 
@@ -408,9 +408,9 @@ export default function ClienteEmprestimosPage() {
         const cicloJurosPago = intAmount > 0 ? totalPartialPaid % intAmount : 0
         const cicloJurosFaltante = intAmount > 0 ? intAmount - cicloJurosPago : intAmount
         if (amount >= cicloJurosFaltante) {
-          const payDateObj = new Date((renegotiateDate || new Date().toISOString().split("T")[0]) + "T12:00:00")
+          const payDateObj = new Date((renegotiateDate || today()) + "T12:00:00")
           payDateObj.setDate(payDateObj.getDate() + modalityDays(renegotiateDialog.modality))
-          sendNewDueDate = payDateObj.toISOString().split("T")[0]
+          sendNewDueDate = localDateStr(payDateObj)
         }
       }
 
@@ -476,7 +476,7 @@ export default function ClienteEmprestimosPage() {
     }
     const nextMonth = new Date()
     nextMonth.setMonth(nextMonth.getMonth() + 1)
-    setPayNewDueDate(nextMonth.toISOString().split("T")[0])
+    setPayNewDueDate(localDateStr(nextMonth))
   }
 
   const handlePayment = async () => {
@@ -484,7 +484,7 @@ export default function ClienteEmprestimosPage() {
     if (paying) return alert("Pagamento já está sendo processado, aguarde...")
     const receiptLoan = paymentDialog
     const receiptAmount = payAmount
-    const receiptDate = payDate || new Date().toISOString().split("T")[0]
+    const receiptDate = payDate || today()
 
     setPaying(true)
     try {
@@ -1059,7 +1059,7 @@ export default function ClienteEmprestimosPage() {
                         if (e.target.value && renegotiateDialog) {
                           const d = new Date(e.target.value + "T12:00:00")
                           d.setDate(d.getDate() + modalityDays(renegotiateDialog.modality))
-                          setRenegotiateNewDueDate(d.toISOString().split("T")[0])
+                          setRenegotiateNewDueDate(localDateStr(d))
                         }
                       }} className="mt-1" />
                     </div>

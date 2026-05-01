@@ -4,7 +4,7 @@ import { useState, useMemo } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { formatCurrency } from "@/lib/utils"
+import { formatCurrency, localDateStr } from "@/lib/utils"
 import {
   Calculator, Calendar, ChevronDown, TrendingUp,
   FileDown, GitCompareArrows
@@ -24,13 +24,12 @@ export default function SimuladorPage() {
   const [interestMode, setInterestMode] = useState<InterestMode>("PER_INSTALLMENT")
   const [installmentCount, setInstallmentCount] = useState(6)
   const [startDate, setStartDate] = useState(() => {
-    const d = new Date()
-    return d.toISOString().split("T")[0]
+    return localDateStr()
   })
   const [firstDueDate, setFirstDueDate] = useState(() => {
     const d = new Date()
     d.setMonth(d.getMonth() + 1)
-    return d.toISOString().split("T")[0]
+    return localDateStr(d)
   })
   const [valor, setValor] = useState(1000)
   const [taxa, setTaxa] = useState(10)

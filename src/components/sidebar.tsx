@@ -101,7 +101,7 @@ export function Sidebar() {
             <Banknote className="h-5 w-5 text-white" />
           </div>
           <div>
-            <span className="text-lg font-bold text-white">EmprestimoRAI</span>
+            <span className="text-lg font-bold text-white">SP Cobrança Fácil</span>
             <p className="text-[11px] text-emerald-200">Gestão Financeira</p>
           </div>
         </div>

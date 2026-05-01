@@ -2,7 +2,123 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { localDateStr } from "@/lib/utils"
 import * as XLSX from "xlsx"
+
+type BackupType = "clients" | "loans" | "installment-loans" | "contracts"
+
+function parseBackupType(request: Request): BackupType {
+  const { searchParams } = new URL(request.url)
+  const value = searchParams.get("type")
+  if (value === "clients" || value === "loans" || value === "installment-loans" || value === "contracts") {
+    return value
+  }
+  return "clients"
+}
+
+function fmtDate(value: Date | string | null | undefined) {
+  return value ? new Date(value).toLocaleDateString("pt-BR") : ""
+}
+
+function fmtCurrency(value: number | null | undefined) {
+  return value != null ? `R$ ${Number(value).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : ""
+}
+
+function nextInstallment(installments: Array<{ dueDate: Date; status: string }>) {
+  return installments
+    .filter((item) => item.status !== "PAID")
+    .sort((left, right) => new Date(left.dueDate).getTime() - new Date(right.dueDate).getTime())[0]
+}
+
+function buildSheetName(type: BackupType) {
+  if (type === "clients") return "Clientes"
+  if (type === "loans") return "Emprestimos"
+  if (type === "installment-loans") return "Emprestimos Parcelados"
+  return "Contratos"
+}
+
+async function buildRows(userId: string, type: BackupType) {
+  if (type === "clients") {
+    const clients = await prisma.client.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+    })
+
+    return clients.map((client) => ({
+      Cliente: client.name,
+      CPF: client.document || "",
+      Telefone: client.phone || "",
+      Cidade: client.city || "",
+      Status: client.status,
+      "Criado Em": fmtDate(client.createdAt),
+    }))
+  }
+
+  const loans = await prisma.loan.findMany({
+    where: {
+      userId,
+      ...(type === "loans" ? { installmentCount: { lte: 1 } } : {}),
+      ...(type === "installment-loans" ? { installmentCount: { gt: 1 } } : {}),
+    },
+    include: {
+      client: true,
+      installments: true,
+      payments: true,
+    },
+    orderBy: { createdAt: "desc" },
+  })
+
+  if (type === "contracts") {
+    return loans.map((loan) => ({
+      Cliente: loan.client.name,
+      CPF: loan.client.document || "",
+      Modalidade: loan.modality,
+      Parcelas: loan.installmentCount,
+      "Valor Principal": fmtCurrency(loan.amount),
+      "Valor Total": fmtCurrency(loan.totalAmount),
+      "Data Contrato": fmtDate(loan.contractDate),
+      "Primeiro Vencimento": fmtDate(loan.firstInstallmentDate),
+      Status: loan.status,
+    }))
+  }
+
+  if (type === "installment-loans") {
+    return loans.map((loan) => {
+      const paid = loan.payments.reduce((sum, payment) => sum + (payment.amount || 0), 0)
+      const remaining = loan.totalAmount - paid
+      const nextDue = nextInstallment(loan.installments)
+      return {
+        Cliente: loan.client.name,
+        CPF: loan.client.document || "",
+        Telefone: loan.client.phone || "",
+        Parcelas: `${loan.installments.filter((item) => item.status === "PAID").length}/${loan.installmentCount}`,
+        "Valor Parcela": fmtCurrency(loan.installmentValue),
+        "Valor Total": fmtCurrency(loan.totalAmount),
+        Pago: fmtCurrency(paid),
+        Restante: fmtCurrency(remaining),
+        "Proximo Vencimento": nextDue ? fmtDate(nextDue.dueDate) : fmtDate(loan.firstInstallmentDate),
+        Status: loan.status,
+      }
+    })
+  }
+
+  return loans.map((loan) => {
+    const paid = loan.payments.reduce((sum, payment) => sum + (payment.amount || 0), 0)
+    const remaining = loan.totalAmount - paid
+    const nextDue = nextInstallment(loan.installments)
+    return {
+      Cliente: loan.client.name,
+      CPF: loan.client.document || "",
+      Telefone: loan.client.phone || "",
+      "Valor Principal": fmtCurrency(loan.amount),
+      "Valor Final": fmtCurrency(loan.totalAmount),
+      Restante: fmtCurrency(remaining),
+      Status: loan.status,
+      "Data Vencimento": nextDue ? fmtDate(nextDue.dueDate) : fmtDate(loan.firstInstallmentDate),
+      "Criado Em": fmtDate(loan.createdAt),
+    }
+  })
+}
 
 async function resolveSessionUserId(session: any) {
   const sessionUserId = (session?.user as any)?.id as string | undefined
@@ -16,7 +132,7 @@ async function resolveSessionUserId(session: any) {
   return user?.id ?? null
 }
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user) {
@@ -28,87 +144,21 @@ export async function POST() {
       return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 })
     }
 
-    const clients = await prisma.client.findMany({
-      where: { userId },
-      include: {
-        loans: {
-          include: {
-            installments: true,
-            payments: true,
-          },
-        },
-        sales: true,
-        vehicles: true,
-      },
-    })
-
-    const expenses = await prisma.expense.findMany({ where: { userId } })
-
-    const fmtDate = (d: any) => d ? new Date(d).toLocaleDateString("pt-BR") : ""
-    const fmtCurrency = (v: number) => v != null ? `R$ ${Number(v).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : ""
-
-    // Formato flat: cada empréstimo é uma linha com dados do cliente
-    const rows: any[] = []
-    clients.forEach((c: any) => {
-      if (c.loans && c.loans.length > 0) {
-        c.loans.forEach((l: any) => {
-          const paid = l.payments?.reduce((s: number, p: any) => s + (p.amount || 0), 0) || 0
-          const remaining = l.totalAmount - paid
-          const nextInst = l.installments
-            ?.filter((i: any) => i.status !== "PAID")
-            .sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0]
-          const status = l.status === "COMPLETED" ? "Pago" : l.status === "DEFAULTED" ? "Inadimplente" : "Ativo"
-
-          rows.push({
-            Cliente: c.name,
-            CPF: c.document || "",
-            Telefone: c.phone || "",
-            "Valor Principal": fmtCurrency(l.amount),
-            "Valor Final": fmtCurrency(l.totalAmount),
-            "Valor Restante": fmtCurrency(remaining),
-            Status: status,
-            "Data Vencimento": nextInst ? fmtDate(nextInst.dueDate) : fmtDate(l.firstInstallmentDate),
-            "Data Criação": fmtDate(l.createdAt),
-          })
-        })
-      } else {
-        rows.push({
-          Cliente: c.name,
-          CPF: c.document || "",
-          Telefone: c.phone || "",
-          "Valor Principal": "",
-          "Valor Final": "",
-          "Valor Restante": "",
-          Status: "",
-          "Data Vencimento": "",
-          "Data Criação": fmtDate(c.createdAt),
-        })
-      }
-    })
+    const type = parseBackupType(request)
+    const rows = await buildRows(userId, type)
 
     const wb = XLSX.utils.book_new()
     const ws = XLSX.utils.json_to_sheet(rows.length > 0 ? rows : [{}])
 
-    // Definir largura das colunas
-    ws["!cols"] = [
-      { wch: 30 }, // Cliente
-      { wch: 18 }, // CPF
-      { wch: 18 }, // Telefone
-      { wch: 18 }, // Valor Principal
-      { wch: 18 }, // Valor Final
-      { wch: 18 }, // Valor Restante
-      { wch: 14 }, // Status
-      { wch: 18 }, // Data Vencimento
-      { wch: 18 }, // Data Criação
-    ]
+    const headers = Object.keys(rows[0] || { Registro: "" })
+    ws["!cols"] = headers.map((header) => ({ wch: Math.max(16, header.length + 4) }))
+    const endColumn = XLSX.utils.encode_col(Math.max(0, headers.length - 1))
+    ws["!autofilter"] = { ref: `A1:${endColumn}${rows.length + 1}` }
 
-    // Habilitar filtro automático nas colunas
-    ws["!autofilter"] = { ref: `A1:I${rows.length + 1}` }
-
-    XLSX.utils.book_append_sheet(wb, ws, "Backup")
+    XLSX.utils.book_append_sheet(wb, ws, buildSheetName(type))
 
     const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" })
-    const filename = `backup-${new Date().toISOString().split("T")[0]}.xlsx`
+    const filename = `backup-${type}-${localDateStr()}.xlsx`
 
     return new NextResponse(buf, {
       headers: {

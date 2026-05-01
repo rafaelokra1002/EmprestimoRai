@@ -11,7 +11,7 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: "EmprestimoRAI - Gestão Financeira",
+  title: "SP Cobrança Fácil - Gestão Financeira",
   description: "Sistema SaaS de gestão financeira e crédito",
   icons: {
     icon: "/icon.svg",

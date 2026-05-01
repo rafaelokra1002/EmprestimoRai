@@ -13,7 +13,7 @@ import {
   ClipboardList, Pencil, Copy, ChevronDown, ChevronUp, MessageCircle,
   Receipt, Send, Download
 } from "lucide-react"
-import { formatCurrency, formatDate } from "@/lib/utils"
+import { formatCurrency, formatDate, localDateStr } from "@/lib/utils"
 
 type TabType = "produtos" | "contratos" | "assinaturas"
 type FilterType = "todos" | "em_dia" | "em_atraso" | "quitados"
@@ -56,7 +56,7 @@ export default function VendasPage() {
   const [formClientRg, setFormClientRg] = useState("")
   const [formClientEmail, setFormClientEmail] = useState("")
   const [formClientAddress, setFormClientAddress] = useState("")
-  const [formSaleDate, setFormSaleDate] = useState(new Date().toISOString().split("T")[0])
+  const [formSaleDate, setFormSaleDate] = useState(localDateStr())
   const [formCostPrice, setFormCostPrice] = useState("")
   const [formSalePrice, setFormSalePrice] = useState("")
   const [formDownPayment, setFormDownPayment] = useState("0")
@@ -119,7 +119,7 @@ export default function VendasPage() {
   const [payDialogOpen, setPayDialogOpen] = useState(false)
   const [payingSale, setPayingSale] = useState<any>(null)
   const [payAmount, setPayAmount] = useState("")
-  const [payDate, setPayDate] = useState(new Date().toISOString().split("T")[0])
+  const [payDate, setPayDate] = useState(localDateStr())
 
   // Payment receipt dialog
   const [paymentReceiptDialog, setPaymentReceiptDialog] = useState(false)
@@ -203,7 +203,7 @@ export default function VendasPage() {
     setFormClientRg("")
     setFormClientEmail("")
     setFormClientAddress("")
-    setFormSaleDate(new Date().toISOString().split("T")[0])
+    setFormSaleDate(localDateStr())
     setFormCostPrice("")
     setFormSalePrice("")
     setFormDownPayment("0")
@@ -226,13 +226,13 @@ export default function VendasPage() {
     setFormProductDescription("")
     setFormSelectedClientId(sale.clientId || "")
     handleSelectClient(sale.clientId || "")
-    setFormSaleDate(new Date(sale.startDate).toISOString().split("T")[0])
+    setFormSaleDate(localDateStr(sale.startDate))
     setFormCostPrice("")
     setFormSalePrice(formatMoneyBR(Number(sale.totalAmount || 0)))
     setFormDownPayment("0")
     setFormInstallments(String(sale.installmentCount))
     setFormFrequency("MONTHLY")
-    setFormFirstDueDate(new Date(sale.startDate).toISOString().split("T")[0])
+    setFormFirstDueDate(localDateStr(sale.startDate))
     setFormWhatsapp(false)
     setFormNotes(sale.notes || "")
     setDialogOpen(true)
@@ -242,7 +242,7 @@ export default function VendasPage() {
     setPayingSale(sale)
     const nextInst = sale.saleInstallments?.find((i: any) => i.status !== "PAID")
     setPayAmount(nextInst ? String(nextInst.amount) : "")
-    setPayDate(new Date().toISOString().split("T")[0])
+    setPayDate(localDateStr())
     setPayDialogOpen(true)
   }
 

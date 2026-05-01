@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { clientSchema } from "@/lib/validations"
+import { calculateLoan } from "@/lib/utils"
 import { ZodError } from "zod"
 
 async function resolveSessionUserId(session: any) {
@@ -97,6 +98,8 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
+    const rawRequestedAmount = body.requestedAmount
+    const rawDisappearedInterestRate = body.disappearedInterestRate
 
     // Strip empty strings to undefined before validation
     const sanitized = Object.fromEntries(
@@ -107,6 +110,30 @@ export async function POST(request: Request) {
     )
 
     const data = clientSchema.parse(sanitized)
+
+    const requestedAmount =
+      rawRequestedAmount === "" || rawRequestedAmount === undefined || rawRequestedAmount === null
+        ? undefined
+        : Number(rawRequestedAmount)
+    const disappearedInterestRate =
+      rawDisappearedInterestRate === "" || rawDisappearedInterestRate === undefined || rawDisappearedInterestRate === null
+        ? undefined
+        : Number(rawDisappearedInterestRate)
+
+    if (requestedAmount !== undefined && (!Number.isFinite(requestedAmount) || requestedAmount < 0)) {
+      return NextResponse.json({ error: "Valor inválido" }, { status: 400 })
+    }
+
+    if (disappearedInterestRate !== undefined && (!Number.isFinite(disappearedInterestRate) || disappearedInterestRate < 0)) {
+      return NextResponse.json({ error: "Taxa de juros inválida" }, { status: 400 })
+    }
+
+    if ((requestedAmount === undefined) !== (disappearedInterestRate === undefined)) {
+      return NextResponse.json(
+        { error: "Informe valor e taxa de juros para cadastrar o empréstimo do desaparecido." },
+        { status: 400 }
+      )
+    }
 
     const createData = {
       name: data.name,
@@ -120,7 +147,7 @@ export async function POST(request: Request) {
       workplace: data.workplace || null,
       category: data.category || null,
       income: data.income ?? null,
-      requestedAmount: data.requestedAmount ?? null,
+      requestedAmount: requestedAmount ?? data.requestedAmount ?? null,
       referral: data.referral ?? false,
       referralName: data.referral ? data.referralName || null : null,
       referralPhone: data.referral ? data.referralPhone || null : null,
@@ -163,7 +190,71 @@ export async function POST(request: Request) {
       })
     }
 
-    return NextResponse.json(client, { status: 201 })
+    let createdLoan = null
+    if (requestedAmount !== undefined && disappearedInterestRate !== undefined) {
+      const installmentCount = 1
+      const interestType = "PER_INSTALLMENT"
+      const modality = "MONTHLY"
+      const loanCalc = calculateLoan(requestedAmount, disappearedInterestRate, installmentCount, interestType)
+      const contractDate = new Date()
+      const firstInstallmentDate = new Date(contractDate)
+      const dueDay = firstInstallmentDate.getDate()
+
+      createdLoan = await prisma.loan.create({
+        data: {
+          clientId: client.id,
+          userId,
+          amount: requestedAmount,
+          interestRate: disappearedInterestRate,
+          interestType,
+          modality,
+          totalInterest: loanCalc.totalInterest,
+          installmentValue: loanCalc.installmentAmount,
+          totalAmount: loanCalc.totalAmount,
+          profit: loanCalc.profit,
+          installmentCount,
+          contractDate,
+          firstInstallmentDate,
+          startDate: contractDate,
+          dueDay,
+          installments: {
+            create: [
+              {
+                number: 1,
+                amount: loanCalc.installmentAmount,
+                dueDate: firstInstallmentDate,
+              },
+            ],
+          },
+        },
+        include: {
+          payments: {
+            select: {
+              amount: true,
+              notes: true,
+            },
+          },
+          installments: {
+            select: {
+              id: true,
+              number: true,
+              amount: true,
+              paidAmount: true,
+              status: true,
+              dueDate: true,
+            },
+          },
+        },
+      })
+    }
+
+    return NextResponse.json(
+      {
+        ...client,
+        loans: createdLoan ? [createdLoan] : [],
+      },
+      { status: 201 }
+    )
   } catch (error: any) {
     console.error("[POST /api/clients] Error:", error)
     if (error instanceof ZodError) {

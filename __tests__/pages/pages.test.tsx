@@ -75,7 +75,7 @@ describe("LoginPage", () => {
 
   it("shows app name and entry form", () => {
     render(<LoginPage />)
-    expect(screen.getByText("EmprestimoRAI")).toBeInTheDocument()
+    expect(screen.getByText("SP Cobrança Fácil")).toBeInTheDocument()
     expect(screen.getByPlaceholderText("seu@email.com")).toBeInTheDocument()
   })
 
@@ -106,7 +106,7 @@ describe("RegisterPage", () => {
 
   it("shows registration fields", () => {
     render(<RegisterPage />)
-    expect(screen.getByText("EmprestimoRAI")).toBeInTheDocument()
+    expect(screen.getByText("SP Cobrança Fácil")).toBeInTheDocument()
     expect(screen.getByPlaceholderText("seu@email.com")).toBeInTheDocument()
   })
 })
@@ -192,6 +192,229 @@ describe("EmprestimosPage", () => {
       expect(mockFetch).toHaveBeenCalled()
     })
     expect(container.firstChild).toBeTruthy()
+  })
+
+  it("does not list loans for disappeared clients", async () => {
+    mockFetch.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input)
+
+      if (url === "/api/loans") {
+        return {
+          ok: true,
+          json: async () => [
+            {
+              id: "l1",
+              amount: 1000,
+              interestRate: 10,
+              interestType: "PER_INSTALLMENT",
+              modality: "MONTHLY",
+              totalAmount: 1100,
+              totalInterest: 100,
+              installmentValue: 1100,
+              profit: 100,
+              installmentCount: 1,
+              contractDate: "2026-04-01T00:00:00.000Z",
+              firstInstallmentDate: "2026-05-01T00:00:00.000Z",
+              startDate: "2026-04-01T00:00:00.000Z",
+              status: "ACTIVE",
+              dailyInterest: false,
+              dailyInterestAmount: 0,
+              penaltyFee: 0,
+              lateCycles: 0,
+              dueDay: 1,
+              whatsappNotify: false,
+              notes: null,
+              tags: [],
+              createdAt: "2026-04-01T00:00:00.000Z",
+              client: { id: "c1", name: "Cliente Ativo", photo: null, status: "ACTIVE" },
+              installments: [{ id: "i1", number: 1, amount: 1100, paidAmount: 0, status: "PENDING", dueDate: "2099-05-01T00:00:00.000Z" }],
+              payments: [],
+            },
+            {
+              id: "l2",
+              amount: 900,
+              interestRate: 10,
+              interestType: "PER_INSTALLMENT",
+              modality: "MONTHLY",
+              totalAmount: 990,
+              totalInterest: 90,
+              installmentValue: 990,
+              profit: 90,
+              installmentCount: 1,
+              contractDate: "2026-04-01T00:00:00.000Z",
+              firstInstallmentDate: "2026-05-01T00:00:00.000Z",
+              startDate: "2026-04-01T00:00:00.000Z",
+              status: "ACTIVE",
+              dailyInterest: false,
+              dailyInterestAmount: 0,
+              penaltyFee: 0,
+              lateCycles: 0,
+              dueDay: 1,
+              whatsappNotify: false,
+              notes: null,
+              tags: [],
+              createdAt: "2026-04-01T00:00:00.000Z",
+              client: { id: "c2", name: "Cliente Desaparecido", photo: null, status: "DESAPARECIDO" },
+              installments: [{ id: "i2", number: 1, amount: 990, paidAmount: 0, status: "PENDING", dueDate: "2099-05-01T00:00:00.000Z" }],
+              payments: [],
+            },
+          ],
+        }
+      }
+
+      if (url === "/api/clients") {
+        return {
+          ok: true,
+          json: async () => [],
+        }
+      }
+
+      if (url === "/api/profile") {
+        return {
+          ok: true,
+          json: async () => ({ pixKey: "", phone: "" }),
+        }
+      }
+
+      return {
+        ok: true,
+        json: async () => [],
+      }
+    })
+
+    render(<EmprestimosPage />)
+
+    expect(await screen.findByText("Cliente Ativo")).toBeInTheDocument()
+    expect(screen.queryByText("Cliente Desaparecido")).not.toBeInTheDocument()
+  })
+
+  it("does not show disappeared clients in the picker", async () => {
+    mockFetch.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input)
+
+      if (url === "/api/loans") {
+        return {
+          ok: true,
+          json: async () => [],
+        }
+      }
+
+      if (url === "/api/clients") {
+        return {
+          ok: true,
+          json: async () => [
+            { id: "c1", name: "Cliente Ativo", phone: null, document: null, photo: null, status: "ACTIVE" },
+            { id: "c2", name: "Cliente Desaparecido", phone: null, document: null, photo: null, status: "DESAPARECIDO" },
+          ],
+        }
+      }
+
+      if (url === "/api/profile") {
+        return {
+          ok: true,
+          json: async () => ({ pixKey: "", phone: "" }),
+        }
+      }
+
+      return {
+        ok: true,
+        json: async () => [],
+      }
+    })
+
+    render(<EmprestimosPage />)
+
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledWith("/api/clients")
+    })
+
+    fireEvent.click(screen.getByRole("button", { name: /novo empréstimo/i }))
+    expect(await screen.findByRole("heading", { name: /novo empréstimo/i })).toBeInTheDocument()
+
+    expect(await screen.findByText("Cliente Ativo")).toBeInTheDocument()
+    expect(screen.queryByText("Cliente Desaparecido")).not.toBeInTheDocument()
+  })
+
+  it("shows installment loan as paid this month and resets next month", async () => {
+    jest.useFakeTimers()
+
+    mockFetch.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input)
+
+      if (url === "/api/loans") {
+        return {
+          ok: true,
+          json: async () => [
+            {
+              id: "l1",
+              amount: 1000,
+              interestRate: 10,
+              interestType: "PER_INSTALLMENT",
+              modality: "MONTHLY",
+              totalAmount: 1100,
+              totalInterest: 100,
+              installmentValue: 550,
+              profit: 100,
+              installmentCount: 2,
+              contractDate: "2026-04-01T00:00:00.000Z",
+              firstInstallmentDate: "2026-04-10T00:00:00.000Z",
+              startDate: "2026-04-01T00:00:00.000Z",
+              status: "ACTIVE",
+              dailyInterest: false,
+              dailyInterestAmount: 0,
+              penaltyFee: 0,
+              lateCycles: 0,
+              dueDay: 10,
+              whatsappNotify: false,
+              notes: null,
+              tags: [],
+              createdAt: "2026-04-01T00:00:00.000Z",
+              client: { id: "c1", name: "Cliente Parcelado", photo: null, status: "ACTIVE" },
+              installments: [
+                { id: "i1", number: 1, amount: 550, paidAmount: 550, status: "PAID", dueDate: "2026-04-10T00:00:00.000Z" },
+                { id: "i2", number: 2, amount: 550, paidAmount: 0, status: "PENDING", dueDate: "2026-05-30T00:00:00.000Z" },
+              ],
+              payments: [{ id: "p1", amount: 550, date: "2026-04-10T00:00:00.000Z", notes: null }],
+            },
+          ],
+        }
+      }
+
+      if (url === "/api/clients") {
+        return {
+          ok: true,
+          json: async () => [],
+        }
+      }
+
+      if (url === "/api/profile") {
+        return {
+          ok: true,
+          json: async () => ({ pixKey: "", phone: "" }),
+        }
+      }
+
+      return {
+        ok: true,
+        json: async () => [],
+      }
+    })
+
+    jest.setSystemTime(new Date("2026-04-15T12:00:00.000Z"))
+    const { unmount } = render(<EmprestimosPage />)
+
+    expect(await screen.findByText("Pago no Mês")).toBeInTheDocument()
+
+    unmount()
+    jest.clearAllMocks()
+    jest.setSystemTime(new Date("2026-05-15T12:00:00.000Z"))
+
+    render(<EmprestimosPage />)
+
+    expect(await screen.findByText("Pendente")).toBeInTheDocument()
+    expect(screen.queryByText("Pago no Mês")).not.toBeInTheDocument()
+
+    jest.useRealTimers()
   })
 })
 

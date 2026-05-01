@@ -95,6 +95,26 @@ export async function PUT(
 
       const hasPayments = existingLoan.payments.length > 0 || existingLoan.installments.some((i) => i.paidAmount > 0)
       if (hasPayments) {
+        // Metadata (tags, notes, etc.) can always be updated even when financial fields are blocked
+        const metadataUpdate: Record<string, any> = {}
+        if (Array.isArray(body.tags)) {
+          metadataUpdate.tags = body.tags.filter((t: unknown) => typeof t === "string" && (t as string).trim())
+        }
+        if (typeof body.notes === "string" || body.notes === null) {
+          metadataUpdate.notes = body.notes && (body.notes as string).trim() ? (body.notes as string).trim() : null
+        }
+        if (typeof body.whatsappNotify === "boolean") {
+          metadataUpdate.whatsappNotify = body.whatsappNotify
+        }
+        if (typeof body.dailyInterest === "boolean") {
+          metadataUpdate.dailyInterest = body.dailyInterest
+        }
+        if (typeof body.dailyInterestAmount === "number") {
+          metadataUpdate.dailyInterestAmount = body.dailyInterestAmount
+        }
+        if (Object.keys(metadataUpdate).length > 0) {
+          await prisma.loan.update({ where: { id: params.id }, data: metadataUpdate })
+        }
         return NextResponse.json(
           { error: "Não é possível alterar valores/datas de um empréstimo que já possui pagamentos." },
           { status: 400 }
