@@ -4,48 +4,48 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 9%;
+    --background: 270 38% 98%;
+    --foreground: 258 22% 18%;
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 9%;
+    --card-foreground: 258 22% 18%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 9%;
-    --primary: 142 76% 36%;
+    --popover-foreground: 258 22% 18%;
+    --primary: 270 66% 42%;
     --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 45%;
-    --accent: 0 0% 96%;
-    --accent-foreground: 0 0% 9%;
+    --secondary: 270 24% 95%;
+    --secondary-foreground: 258 22% 18%;
+    --muted: 270 24% 96%;
+    --muted-foreground: 255 12% 45%;
+    --accent: 276 44% 93%;
+    --accent-foreground: 258 22% 18%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 90%;
-    --input: 0 0% 90%;
-    --ring: 142 76% 36%;
+    --border: 268 24% 88%;
+    --input: 268 24% 88%;
+    --ring: 270 66% 42%;
     --radius: 0.75rem;
   }
 
   .dark {
-    --background: 240 10% 3.9%;
+    --background: 260 28% 10%;
     --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
+    --card: 260 24% 13%;
     --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
+    --popover: 260 24% 13%;
     --popover-foreground: 0 0% 98%;
-    --primary: 142 76% 36%;
+    --primary: 274 72% 67%;
     --primary-foreground: 0 0% 98%;
-    --secondary: 240 3.7% 15.9%;
+    --secondary: 260 16% 19%;
     --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
+    --muted: 260 16% 19%;
+    --muted-foreground: 258 10% 72%;
+    --accent: 260 16% 19%;
     --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 142 76% 36%;
+    --border: 260 14% 24%;
+    --input: 260 14% 24%;
+    --ring: 274 72% 67%;
   }
 }
 
@@ -54,8 +54,19 @@
     @apply border-border;
   }
   body {
-    @apply bg-gray-50 dark:bg-zinc-950 text-slate-700 dark:text-zinc-100 antialiased font-sans;
+    color: hsl(var(--foreground));
+    background:
+      radial-gradient(circle at top left, rgba(132, 61, 199, 0.12), transparent 34%),
+      radial-gradient(circle at top right, rgba(245, 158, 11, 0.08), transparent 26%),
+      linear-gradient(180deg, #fbf9ff 0%, #f5f2ff 100%);
+    @apply antialiased font-sans dark:text-zinc-100 dark:bg-zinc-950;
     font-feature-settings: "tnum" 1, "lnum" 1;
+  }
+
+  .dark body {
+    background:
+      radial-gradient(circle at top left, rgba(168, 85, 247, 0.12), transparent 30%),
+      linear-gradient(180deg, #160f24 0%, #0f0a18 100%);
   }
 }
 
@@ -82,7 +93,7 @@
 
 /* Selection color */
 ::selection {
-  background: rgba(16, 185, 129, 0.2);
+  background: rgba(132, 61, 199, 0.22);
 }
 
 html:not(.dark) .text-gray-900,
@@ -119,4 +130,53 @@ html:not(.dark) .hover\:text-slate-700:hover {
 html:not(.dark) .hover\:text-gray-800:hover,
 html:not(.dark) .hover\:text-gray-700:hover {
   color: rgb(100 116 139);
+}
+
+html:not(.dark) .text-emerald-500,
+html:not(.dark) .text-emerald-600,
+html:not(.dark) .text-green-600 {
+  color: rgb(124 58 237);
+}
+
+html:not(.dark) .text-emerald-700,
+html:not(.dark) .text-green-700 {
+  color: rgb(109 40 217);
+}
+
+html:not(.dark) .bg-emerald-50,
+html:not(.dark) .bg-green-50,
+html:not(.dark) .hover\:bg-emerald-50:hover {
+  background-color: rgb(245 243 255);
+}
+
+html:not(.dark) .bg-emerald-100,
+html:not(.dark) .bg-green-100 {
+  background-color: rgb(237 233 254);
+}
+
+html:not(.dark) .bg-emerald-500,
+html:not(.dark) .bg-emerald-600,
+html:not(.dark) .bg-green-600 {
+  background-color: rgb(124 58 237);
+}
+
+html:not(.dark) .hover\:bg-emerald-600:hover,
+html:not(.dark) .hover\:bg-emerald-700:hover,
+html:not(.dark) .hover\:bg-green-700:hover {
+  background-color: rgb(109 40 217);
+}
+
+html:not(.dark) .border-emerald-200,
+html:not(.dark) .border-green-300 {
+  border-color: rgb(221 214 254);
+}
+
+html:not(.dark) .border-emerald-500,
+html:not(.dark) .border-green-500 {
+  border-color: rgb(139 92 246);
+}
+
+html:not(.dark) .ring-emerald-500,
+html:not(.dark) .focus-visible\:ring-emerald-500:focus-visible {
+  --tw-ring-color: rgb(139 92 246);
 }

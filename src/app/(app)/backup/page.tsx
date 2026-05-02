@@ -64,7 +64,7 @@ export default function BackupPage() {
       a.download = `backup-${label.toLowerCase().replace(/\s+/g, "-")}-${localDateStr()}.xlsx`
       a.click()
       URL.revokeObjectURL(url)
-      setMessage({ type: "success", text: `Backup CSV de ${label} gerado e baixado com sucesso!` })
+      setMessage({ type: "success", text: `Backup Excel de ${label} gerado e baixado com sucesso!` })
     } catch (err: any) {
       setMessage({ type: "error", text: err.message || "Erro ao gerar backup" })
     } finally {
@@ -77,7 +77,10 @@ export default function BackupPage() {
     setMessage(null)
     try {
       const res = await fetch(`/api/backup/pdf?type=${encodeURIComponent(key)}`, { method: "POST" })
-      if (!res.ok) throw new Error("Erro ao gerar PDF")
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || "Erro ao gerar PDF")
+      }
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement("a")

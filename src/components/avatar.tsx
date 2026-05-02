@@ -1,5 +1,4 @@
-import { getInitials } from "@/lib/utils"
-import { cn } from "@/lib/utils"
+import { getInitials, cn } from "@/lib/utils"
 
 interface AvatarProps {
   name: string
@@ -33,7 +32,7 @@ export function Avatar({ name, src, className, size = "md" }: AvatarProps) {
   return (
     <div
       className={cn(
-        "rounded-full bg-emerald-600/20 text-emerald-500 flex items-center justify-center font-semibold",
+        "flex items-center justify-center rounded-full bg-violet-600/15 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300 font-semibold",
         sizes[size],
         className
       )}

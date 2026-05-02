@@ -14,21 +14,25 @@ type FilterDropdownProps<T extends string> = {
   options: readonly FilterOption<T>[]
   onChange: (value: T) => void
   icon: ReactNode
-  tone?: "emerald" | "orange" | "blue" | "gray"
+  tone?: "violet" | "emerald" | "orange" | "blue" | "gray"
   minWidthClassName?: string
 }
 
 const toneClasses = {
+  violet: {
+    button: "border-violet-500 text-violet-700 hover:bg-violet-50 dark:text-violet-300 dark:hover:bg-violet-950/30",
+    active: "bg-violet-50 text-violet-700 dark:bg-violet-950/30 dark:text-violet-300",
+  },
   emerald: {
-    button: "border-emerald-500 text-emerald-600 hover:bg-emerald-50",
-    active: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400",
+    button: "border-emerald-500 text-emerald-700 hover:bg-emerald-50 dark:text-emerald-300 dark:hover:bg-emerald-950/30",
+    active: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300",
   },
   orange: {
-    button: "border-orange-500 text-orange-500 hover:bg-orange-50",
+    button: "border-orange-500 text-orange-500 hover:bg-orange-50 dark:text-orange-400 dark:hover:bg-orange-950/30",
     active: "bg-orange-50 text-orange-500 dark:bg-orange-950/30 dark:text-orange-400",
   },
   blue: {
-    button: "border-blue-500 text-blue-600 hover:bg-blue-50",
+    button: "border-blue-500 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/30",
     active: "bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400",
   },
   gray: {
@@ -43,7 +47,7 @@ export function FilterDropdown<T extends string>({
   options,
   onChange,
   icon,
-  tone = "emerald",
+  tone = "violet",
   minWidthClassName = "min-w-[180px]",
 }: FilterDropdownProps<T>) {
   const [open, setOpen] = useState(false)

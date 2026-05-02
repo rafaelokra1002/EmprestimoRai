@@ -8,6 +8,8 @@ const nextConfig = {
       "ws",
       "bufferutil",
       "utf-8-validate",
+      "jspdf",
+      "jspdf-autotable",
     ],
   },
 }

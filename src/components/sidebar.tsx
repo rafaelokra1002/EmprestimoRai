@@ -76,7 +76,7 @@ export function Sidebar() {
       {/* Mobile toggle */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed top-4 left-4 z-50 lg:hidden bg-green-600 border border-green-500 rounded-md p-2 text-white"
+        className="fixed top-4 left-4 z-50 rounded-md border border-violet-500 bg-violet-700 p-2 text-white shadow-lg shadow-violet-900/30 lg:hidden"
       >
         {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </button>
@@ -92,17 +92,17 @@ export function Sidebar() {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed top-0 left-0 z-40 h-full w-64 bg-green-600 transition-transform duration-300 ease-in-out overflow-y-auto flex flex-col",
+          "fixed top-0 left-0 z-40 flex h-full w-64 flex-col overflow-y-auto bg-[linear-gradient(180deg,#5b1e91_0%,#6d28d9_46%,#4c1d95_100%)] transition-transform duration-300 ease-in-out",
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
-        <div className="flex items-center gap-2 p-6 border-b border-green-500">
-          <div className="h-8 w-8 rounded-lg bg-white/20 flex items-center justify-center">
+        <div className="flex items-center gap-2 border-b border-white/10 p-6">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/16 ring-1 ring-white/10">
             <Banknote className="h-5 w-5 text-white" />
           </div>
           <div>
             <span className="text-lg font-bold text-white">SP Cobrança Fácil</span>
-            <p className="text-[11px] text-emerald-200">Gestão Financeira</p>
+            <p className="text-[11px] text-violet-200">Gestão Financeira</p>
           </div>
         </div>
 
@@ -119,14 +119,14 @@ export function Sidebar() {
                   className={cn(
                     "flex items-center gap-3 rounded-xl px-3 py-3 text-sm transition-all",
                     isActive
-                      ? "bg-white/20 text-white shadow-sm"
-                      : "bg-green-500/50 text-white/90 hover:bg-green-500/70"
+                      ? "bg-white/20 text-white shadow-sm ring-1 ring-white/10"
+                      : "bg-white/8 text-white/90 hover:bg-white/12"
                   )}
                 >
                   <item.icon className="h-5 w-5 shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-sm leading-tight">{item.label}</p>
-                    <p className={cn("text-[11px] leading-tight", isActive ? "text-white/70" : "text-green-200")}>{item.subtitle}</p>
+                    <p className={cn("text-[11px] leading-tight", isActive ? "text-white/70" : "text-violet-200")}>{item.subtitle}</p>
                   </div>
                   <ChevronRight className="h-4 w-4 shrink-0 opacity-40" />
                 </Link>
@@ -150,7 +150,7 @@ export function Sidebar() {
                   <highlightItem.icon className={cn("h-5 w-5 shrink-0", isActive ? "text-white" : "text-amber-300")} />
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-sm leading-tight">{highlightItem.label}</p>
-                    <p className={cn("text-[11px] leading-tight", isActive ? "text-white/70" : "text-green-200")}>{highlightItem.subtitle}</p>
+                    <p className={cn("text-[11px] leading-tight", isActive ? "text-white/70" : "text-violet-200")}>{highlightItem.subtitle}</p>
                   </div>
                   <ChevronRight className="h-4 w-4 shrink-0 opacity-40" />
                 </Link>
@@ -158,7 +158,7 @@ export function Sidebar() {
             })()}
           </div>
 
-          <p className="px-3 pt-1 pb-2 text-[10px] font-semibold uppercase tracking-widest text-green-300">Menu</p>
+          <p className="px-3 pb-2 pt-1 text-[10px] font-semibold uppercase tracking-widest text-violet-200/80">Menu</p>
 
           {/* Regular menu items */}
           {menuItems.map((item) => {
@@ -169,8 +169,8 @@ export function Sidebar() {
             const className = cn(
               "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
               isActive
-                ? "bg-white/20 text-white shadow-sm"
-                : "text-green-100 hover:text-white hover:bg-white/10"
+                ? "bg-white/18 text-white shadow-sm ring-1 ring-white/10"
+                : "text-violet-50/90 hover:bg-white/10 hover:text-white"
             )
 
             if (hardNavigationRoutes.has(item.href)) {
@@ -202,10 +202,10 @@ export function Sidebar() {
         </nav>
 
         {/* Theme toggle + Sair */}
-        <div className="p-3 border-t border-green-500 mt-auto space-y-1">
+        <div className="mt-auto space-y-1 border-t border-white/10 p-3">
           <button
             onClick={toggleTheme}
-            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-green-100 hover:text-white hover:bg-white/10 transition-all w-full"
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-violet-50/90 transition-all hover:bg-white/10 hover:text-white"
           >
             {theme === "light" ? <Moon className="h-4 w-4 shrink-0" /> : <Sun className="h-4 w-4 shrink-0" />}
             <span>{theme === "light" ? "Modo Escuro" : "Modo Claro"}</span>

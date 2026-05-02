@@ -11,7 +11,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-zinc-950">
+    <div className="min-h-screen bg-transparent">
       <Sidebar />
       <main className="lg:pl-64">
         <div className="p-4 sm:p-6 lg:p-8">

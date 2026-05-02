@@ -40,12 +40,17 @@ async function buildPdfTable(userId: string, type: BackupType) {
 
     return {
       title: "Backup - Clientes",
-      head: [["Cliente", "CPF", "Telefone", "Cidade", "Status", "Criado Em"]],
+      head: [["Cliente", "CPF", "Telefone", "Cidade", "Renda", "Instagram", "Local de Trabalho", "Categoria", "Indicado por", "Status", "Criado Em"]],
       body: clients.map((client) => [
         client.name,
         client.document || "",
         client.phone || "",
         client.city || "",
+        client.income != null ? fmtCurrency(client.income) : "",
+        client.instagram || "",
+        client.workplace || "",
+        client.category || "",
+        client.referralName || "",
         client.status,
         fmtDate(client.createdAt),
       ]),
@@ -87,7 +92,7 @@ async function buildPdfTable(userId: string, type: BackupType) {
   if (type === "installment-loans") {
     return {
       title: "Backup - Empréstimos Parcelados",
-      head: [["Cliente", "CPF", "Telefone", "Parcelas", "Valor Parcela", "Valor Total", "Pago", "Restante", "Próx. Venc.", "Status"]],
+      head: [["Cliente", "CPF", "Telefone", "Data Inicial", "Taxa de Juros", "Parcelas", "Valor Parcela", "Valor Total", "Total Pago", "Restante", "Próx. Venc.", "Status", "Criado Em"]],
       body: loans.map((loan) => {
         const paid = loan.payments.reduce((sum, payment) => sum + (payment.amount || 0), 0)
         const remaining = loan.totalAmount - paid
@@ -96,6 +101,8 @@ async function buildPdfTable(userId: string, type: BackupType) {
           loan.client.name,
           loan.client.document || "",
           loan.client.phone || "",
+          fmtDate(loan.startDate),
+          `${loan.interestRate}%`,
           `${loan.installments.filter((item) => item.status === "PAID").length}/${loan.installmentCount}`,
           fmtCurrency(loan.installmentValue),
           fmtCurrency(loan.totalAmount),
@@ -103,6 +110,7 @@ async function buildPdfTable(userId: string, type: BackupType) {
           fmtCurrency(remaining),
           nextDue ? fmtDate(nextDue.dueDate) : fmtDate(loan.firstInstallmentDate),
           loan.status,
+          fmtDate(loan.createdAt),
         ]
       }),
     }
@@ -110,7 +118,7 @@ async function buildPdfTable(userId: string, type: BackupType) {
 
   return {
     title: "Backup - Empréstimos",
-    head: [["Cliente", "CPF", "Telefone", "Valor Principal", "Valor Final", "Restante", "Status", "Data Venc.", "Criado Em"]],
+    head: [["Cliente", "CPF", "Telefone", "Data Inicial", "Taxa de Juros", "Valor Principal", "Valor Final", "Total Pago", "Restante", "Status", "Data Venc.", "Criado Em"]],
     body: loans.map((loan) => {
       const paid = loan.payments.reduce((sum, payment) => sum + (payment.amount || 0), 0)
       const remaining = loan.totalAmount - paid
@@ -119,8 +127,11 @@ async function buildPdfTable(userId: string, type: BackupType) {
         loan.client.name,
         loan.client.document || "",
         loan.client.phone || "",
+        fmtDate(loan.startDate),
+        `${loan.interestRate}%`,
         fmtCurrency(loan.amount),
         fmtCurrency(loan.totalAmount),
+        fmtCurrency(paid),
         fmtCurrency(remaining),
         loan.status,
         nextDue ? fmtDate(nextDue.dueDate) : fmtDate(loan.firstInstallmentDate),
