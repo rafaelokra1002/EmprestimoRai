@@ -83,6 +83,9 @@ export default function EmprestimosPage() {
   const [editingTags, setEditingTags] = useState<string[]>([])
   const [showTagForm, setShowTagForm] = useState(false)
   const [selectedTag, setSelectedTag] = useState<string | null>(null)
+  const [batchOpen, setBatchOpen] = useState(false)
+  const [batchSending, setBatchSending] = useState(false)
+  const [batchResult, setBatchResult] = useState<{ sent: number; failed: number; noPhone: number } | null>(null)
 
   // Profile PIX key & phone
   const [profilePixKey, setProfilePixKey] = useState("")
@@ -636,6 +639,36 @@ export default function EmprestimosPage() {
     })) * daysOver)
   }
 
+  const getCurrentOverdueChargeDetails = (loan: Loan) => {
+    const daysOver = getCurrentOverdueDays(loan)
+    if (daysOver <= 0) return { overdueInterest: 0, dailyFee: 0 }
+
+    const overdueInterest = daysOver >= 30
+      ? calculateOverdueInterest(
+          loan.totalAmount,
+          loan.amount,
+          loan.interestRate,
+          daysOver,
+          loan.interestType === "compound" ? "compound" : "simple"
+        )
+      : 0
+
+    const dailyFee = getOverdueDailyAmountBRL(buildLoanData({
+      amount: loan.amount,
+      interestRate: loan.interestRate,
+      interestType: loan.interestType,
+      totalAmount: loan.totalAmount,
+      dailyInterestAmount: loan.dailyInterestAmount || 0,
+      dueDay: loan.dueDay,
+      modality: loan.modality,
+      firstInstallmentDate: loan.firstInstallmentDate,
+      installments: loan.installments,
+      payments: loan.payments,
+    })) * daysOver
+
+    return { overdueInterest, dailyFee }
+  }
+
   const getInstallmentPayableAmount = (loan: Loan, installment: Loan["installments"][number]) => {
     const baseRemaining = Math.max(0, installment.amount - (installment.paidAmount || 0))
     const firstPendingInstallment = loan.installments
@@ -657,6 +690,54 @@ export default function EmprestimosPage() {
   const getClientPhone = (loan: Loan) => {
     const client = clients.find(c => c.id === loan.client.id)
     return client?.phone || null
+  }
+
+  const twoDaysStr = (() => {
+    const d = new Date()
+    d.setDate(d.getDate() + 2)
+    return toDateStr(d)
+  })()
+
+  const loansDueIn2Days = useMemo(() => {
+    return loans.filter(loan => {
+      if (loan.status === "COMPLETED" || loan.status === "DEFAULTED") return false
+      const next = loan.installments
+        .filter((i: any) => i.status !== "PAID")
+        .sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0]
+      return next && toDateStr(new Date(next.dueDate)) === twoDaysStr
+    })
+  }, [loans, twoDaysStr])
+
+  const handleBatchCobranca = async () => {
+    setBatchSending(true)
+    setBatchResult(null)
+    let sent = 0, failed = 0, noPhone = 0
+
+    for (const loan of loansDueIn2Days) {
+      const phone = getClientPhone(loan)
+      if (!phone) { noPhone++; continue }
+
+      const next = loan.installments
+        .filter((i: any) => i.status !== "PAID")
+        .sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0]
+
+      const message = `Olá ${loan.client.name}, sua parcela de ${formatCurrency(next.amount)} vence em 2 dias (${formatDate(next.dueDate)}). Entre em contato para efetuar o pagamento.`
+
+      try {
+        const res = await fetch("/api/whatsapp/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ phone, message }),
+        })
+        if (res.ok) sent++
+        else failed++
+      } catch {
+        failed++
+      }
+    }
+
+    setBatchSending(false)
+    setBatchResult({ sent, failed, noPhone })
   }
 
   const getOverdueInstallments = (loan: Loan) => {
@@ -1124,6 +1205,15 @@ export default function EmprestimosPage() {
             {bulkSendingOverdue ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <MessageCircle className="h-4 w-4 mr-2" />}
             {bulkSendingOverdue ? "Enviando..." : "Atrasados"}
           </Button>
+          <Button onClick={() => { setBatchResult(null); setBatchOpen(true) }} className="bg-blue-600 hover:bg-blue-700 text-white relative">
+            <Send className="h-4 w-4 mr-2" />
+            Cobrança em Lote
+            {loansDueIn2Days.length > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] font-bold text-blue-600 ring-1 ring-blue-600">
+                {loansDueIn2Days.length}
+              </span>
+            )}
+          </Button>
         </div>
       </div>
 
@@ -1251,6 +1341,7 @@ export default function EmprestimosPage() {
               })}
             </div>
           )}
+
         </div>
         <div className="flex bg-gray-50 dark:bg-zinc-800 rounded-lg p-1 border border-gray-200 dark:border-zinc-800">
           <button
@@ -1348,7 +1439,7 @@ export default function EmprestimosPage() {
                           const [name, color] = tag.includes("|") ? tag.split("|") : [tag, "#ef4444"]
                           const isActive = selectedTag === name
                           return (
-                            <button key={i} onClick={() => setSelectedTag(isActive ? null : name)} className={`px-2 py-0.5 rounded-full text-xs font-medium text-white transition-all cursor-pointer ${isActive ? "ring-2 ring-offset-1 ring-white/80 scale-105" : "hover:opacity-80"}`} style={{ backgroundColor: color }}>{name}</button>
+                            <button key={i} onClick={() => setSelectedTag(isActive ? null : name)} className={`px-3 py-1 rounded-md text-sm font-semibold text-white transition-all cursor-pointer ${isActive ? "ring-2 ring-offset-1 ring-white/80 scale-105" : "hover:opacity-80"}`} style={{ backgroundColor: color }}>{name}</button>
                           )
                         })}
                       </div>
@@ -1423,18 +1514,22 @@ export default function EmprestimosPage() {
 
               return (
                 <div key={group.clientId} className={`rounded-xl border overflow-hidden shadow-sm hover:shadow-md transition-shadow ${cardBorder} ${cardBg}`}>
-                  {/* Header - nome + etiqueta */}
-                  <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-4 pb-2 pt-4 dark:border-zinc-800">
-                    <h3 className="truncate font-semibold text-base text-gray-900 dark:text-zinc-100">{group.clientName}</h3>
-                    {(loan.tags || []).length > 0 && (() => {
-                      const [name, color] = loan.tags[0].includes("|") ? loan.tags[0].split("|") : [loan.tags[0], "#ef4444"]
-                      const isActive = selectedTag === name
-                      return (
-                        <button onClick={() => setSelectedTag(isActive ? null : name)} className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium text-white cursor-pointer transition-all ${isActive ? "ring-2 ring-offset-1 ring-white/80 scale-105" : "hover:opacity-80"}`} style={{ backgroundColor: color }}>
-                          {name}
-                        </button>
-                      )
-                    })()}
+                  {/* Header - etiqueta em cima, nome embaixo */}
+                  <div className="flex flex-col border-b border-gray-100 dark:border-zinc-800 px-3 pt-3 pb-3">
+                    <div className="flex justify-end min-h-[26px]">
+                      {(loan.tags || []).length > 0 && (() => {
+                        const [name, color] = loan.tags[0].includes("|") ? loan.tags[0].split("|") : [loan.tags[0], "#ef4444"]
+                        const isActive = selectedTag === name
+                        return (
+                          <button onClick={() => setSelectedTag(isActive ? null : name)} className={`shrink-0 rounded-md px-3 py-1 text-sm font-semibold text-white cursor-pointer transition-all ${isActive ? "ring-2 ring-offset-1 ring-white/80 scale-105" : "hover:opacity-80"}`} style={{ backgroundColor: color }}>
+                            {name}
+                          </button>
+                        )
+                      })()}
+                    </div>
+                    <div className="mt-2 rounded-lg bg-black/5 dark:bg-black/20 px-4 py-2 text-center">
+                      <h3 className="truncate font-semibold text-base text-gray-900 dark:text-zinc-100">{group.clientName}</h3>
+                    </div>
                   </div>
 
                   {/* Avatar + badges + ações */}
@@ -2698,9 +2793,13 @@ export default function EmprestimosPage() {
                           const baseAmount = Math.max(0, i.amount - (i.paidAmount || 0))
                           const lateFeeForInst = Math.round((payableAmount - baseAmount) * 100) / 100
                           const baseNotes = `Parcela ${idx + 1} de ${paymentDialog.installmentCount}`
-                          const notes = lateFeeForInst > 0
-                            ? `${baseNotes} [lateFee:${lateFeeForInst.toFixed(2)}]`
-                            : baseNotes
+                          let notes = baseNotes
+                          if (lateFeeForInst > 0) {
+                            const { overdueInterest, dailyFee } = getCurrentOverdueChargeDetails(paymentDialog)
+                            notes = `${baseNotes} [lateFee:${lateFeeForInst.toFixed(2)}]`
+                            if (dailyFee > 0) notes += `[dailyFee:${dailyFee.toFixed(2)}]`
+                            if (overdueInterest > 0) notes += `[overdueInterest:${overdueInterest.toFixed(2)}]`
+                          }
                           const result = await handlePayment(paymentDialog.id, i.id, payableAmount, notes)
                           if (!result.ok) { allOk = false; break }
                           paidInstIds.push(i.id)
@@ -3477,6 +3576,79 @@ export default function EmprestimosPage() {
                   </Button>
                 </div>
               )}
+            </>
+          )}
+        </div>
+      </Dialog>
+
+      {/* Modal Cobrança em Lote */}
+      <Dialog
+        open={batchOpen}
+        onClose={() => { if (!batchSending) setBatchOpen(false) }}
+        title="Cobrança em Lote"
+        className="max-w-md"
+      >
+        <div className="space-y-4">
+          {!batchResult ? (
+            <>
+              <p className="text-sm text-gray-500 dark:text-zinc-400">
+                Serão enviadas mensagens de cobrança via WhatsApp para todos os clientes com parcela vencendo em <span className="font-semibold text-blue-600">2 dias</span>.
+              </p>
+              <div className="rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/20 p-4">
+                <p className="text-sm font-semibold text-blue-700 dark:text-blue-300">
+                  {loansDueIn2Days.length} empréstimo{loansDueIn2Days.length !== 1 ? "s" : ""} encontrado{loansDueIn2Days.length !== 1 ? "s" : ""}
+                </p>
+                {loansDueIn2Days.length > 0 && (
+                  <ul className="mt-2 space-y-1 max-h-40 overflow-y-auto">
+                    {loansDueIn2Days.map(loan => (
+                      <li key={loan.id} className="flex items-center justify-between text-xs text-blue-600 dark:text-blue-400">
+                        <span>{loan.client.name}</span>
+                        <span className={getClientPhone(loan) ? "text-emerald-600" : "text-red-500"}>
+                          {getClientPhone(loan) ? "✓ com telefone" : "✗ sem telefone"}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              {loansDueIn2Days.length === 0 && (
+                <p className="text-sm text-center text-gray-400 dark:text-zinc-500">Nenhum empréstimo vence em 2 dias.</p>
+              )}
+              <div className="flex gap-2 justify-end">
+                <Button variant="outline" onClick={() => setBatchOpen(false)} disabled={batchSending}>Cancelar</Button>
+                <Button
+                  className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+                  onClick={handleBatchCobranca}
+                  disabled={batchSending || loansDueIn2Days.length === 0}
+                >
+                  {batchSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  {batchSending ? "Enviando..." : "Enviar para todos"}
+                </Button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/20 p-4">
+                  <CheckCircle2 className="h-6 w-6 text-emerald-500 shrink-0" />
+                  <div>
+                    <p className="font-semibold text-emerald-700 dark:text-emerald-300">{batchResult.sent} mensagem{batchResult.sent !== 1 ? "s" : ""} enviada{batchResult.sent !== 1 ? "s" : ""}</p>
+                  </div>
+                </div>
+                {batchResult.noPhone > 0 && (
+                  <div className="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/20 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
+                    {batchResult.noPhone} cliente{batchResult.noPhone !== 1 ? "s" : ""} sem telefone cadastrado
+                  </div>
+                )}
+                {batchResult.failed > 0 && (
+                  <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/20 px-4 py-3 text-sm text-red-700 dark:text-red-300">
+                    {batchResult.failed} falha{batchResult.failed !== 1 ? "s" : ""} no envio
+                  </div>
+                )}
+              </div>
+              <div className="flex justify-end">
+                <Button onClick={() => setBatchOpen(false)}>Fechar</Button>
+              </div>
             </>
           )}
         </div>

@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Loader2, User, Building2, Phone, ExternalLink, Info, MessageCircle, Settings2, Mic, MicOff, Lock, Eye, Shield, Cog, Users, RotateCcw, Save, ChevronDown } from "lucide-react"
+import { Loader2, User, Building2, Phone, ExternalLink, Info, MessageCircle, Settings2, Lock, Eye, Shield, Cog, Users, RotateCcw, Save, ChevronDown, Palette, Check } from "lucide-react"
+import { useTheme } from "@/lib/theme-provider"
+import { ACCENT_PRESETS } from "@/lib/accent-color"
 
 /* ─── Default template contents ─── */
 const DEFAULT_TEMPLATES: Record<string, string> = {
@@ -194,6 +196,7 @@ function PresetDropdown({ presets, onSelect }: { presets: { icon: string; label:
 
 export default function ConfiguracoesPage() {
   const router = useRouter()
+  const { accentColor, setAccentColor } = useTheme()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [savingTemplates, setSavingTemplates] = useState(false)
@@ -218,9 +221,6 @@ export default function ConfiguracoesPage() {
     VENCE_HOJE: null,
     ANTECIPADA: null,
   })
-
-  // Voice assistant toggle
-  const [voiceActive, setVoiceActive] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -374,6 +374,45 @@ export default function ConfiguracoesPage() {
           {message}
         </div>
       )}
+
+      {/* ═══════════════════════════ APARÊNCIA ═══════════════════════════ */}
+      <div className="bg-gray-50 dark:bg-zinc-800/60 border border-gray-200 dark:border-zinc-800 rounded-2xl p-6 space-y-5">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+            <Palette className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-zinc-100">Aparência</h2>
+            <p className="text-xs text-gray-400 dark:text-zinc-500">Cor do menu lateral e botões do sistema</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-13 gap-3">
+          {ACCENT_PRESETS.map((preset) => {
+            const active = accentColor === preset.id
+            return (
+              <button
+                key={preset.id}
+                type="button"
+                onClick={() => setAccentColor(preset.id)}
+                className="flex flex-col items-center gap-1.5 group"
+                title={preset.name}
+              >
+                <div
+                  className={`relative w-10 h-10 rounded-full transition-all duration-150 group-hover:scale-110 ${active ? "ring-2 ring-offset-2 ring-gray-400 dark:ring-zinc-500 scale-110" : ""}`}
+                  style={{ background: `linear-gradient(135deg, ${preset.gradient[0]}, ${preset.gradient[2]})` }}
+                >
+                  {active && (
+                    <span className="absolute inset-0 flex items-center justify-center">
+                      <Check className="h-4 w-4 text-white drop-shadow" />
+                    </span>
+                  )}
+                </div>
+                <span className={`text-[11px] font-medium ${active ? "text-gray-900 dark:text-zinc-100" : "text-gray-400 dark:text-zinc-500"}`}>{preset.name}</span>
+              </button>
+            )
+          })}
+        </div>
+      </div>
 
       {/* ═══════════════════════════ PERFIL ═══════════════════════════ */}
       <div className="bg-gray-50 dark:bg-zinc-800/60 border border-gray-200 dark:border-zinc-800 rounded-2xl p-6 space-y-5">
@@ -594,38 +633,6 @@ export default function ConfiguracoesPage() {
           >
             {savingTemplates ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Salvar Templates
-          </button>
-        </div>
-      </div>
-
-      {/* ═══════════════════════════ ASSISTENTE DE VOZ ═══════════════════════════ */}
-      <div className="bg-gray-50 dark:bg-zinc-800/60 border border-gray-200 dark:border-zinc-800 rounded-2xl p-6 space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-950/300/10 flex items-center justify-center">
-              <Mic className="h-5 w-5 text-emerald-600" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-gray-900 dark:text-zinc-100">Assistente de Voz</h2>
-              <p className="text-xs text-gray-400 dark:text-zinc-500">Faça consultas por áudio no WhatsApp do CobraFácil</p>
-            </div>
-          </div>
-          <span className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1 rounded-full ${voiceActive ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/300/10 border border-emerald-200 dark:border-emerald-800" : "text-gray-500 dark:text-zinc-400 bg-gray-100 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700"}`}>
-            {voiceActive ? <Mic className="h-3 w-3" /> : <MicOff className="h-3 w-3" />}
-            {voiceActive ? "Ativo" : "Inativo"}
-          </span>
-        </div>
-
-        <div className="flex items-center justify-between bg-gray-100 dark:bg-zinc-800/40 border border-gray-300 dark:border-zinc-700/30 rounded-xl px-4 py-3">
-          <div>
-            <p className="text-sm font-semibold text-gray-800 dark:text-zinc-200">Ativar Assistente de Voz</p>
-            <p className="text-xs text-gray-400 dark:text-zinc-500">Responde a comandos de voz no WhatsApp</p>
-          </div>
-          <button
-            onClick={() => setVoiceActive(!voiceActive)}
-            className={`relative w-12 h-7 rounded-full transition-colors ${voiceActive ? "bg-emerald-600" : "bg-gray-200 dark:bg-zinc-700"}`}
-          >
-            <span className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white dark:bg-zinc-900 rounded-full transition-transform ${voiceActive ? "translate-x-5" : "translate-x-0"}`} />
           </button>
         </div>
       </div>

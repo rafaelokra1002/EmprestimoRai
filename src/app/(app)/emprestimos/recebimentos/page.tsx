@@ -12,6 +12,7 @@ interface Loan {
   amount: number
   totalAmount: number
   profit: number
+  installmentCount: number
   status: string
   modality: string
   client: { id: string; name: string }
@@ -106,15 +107,16 @@ export default function RecebimentosPage() {
       date: string
       principal: number
       interest: number
+      pureInterest: number
+      lateFee: number
+      dailyFee: number
+      overdueInterest: number
       notes: string | null
       type: "Pagamento" | "Parcela" | "Só Juros"
       installmentInfo: string | null
     }> = []
 
     loans.forEach((loan) => {
-      const principalRatio = loan.totalAmount > 0 ? loan.amount / loan.totalAmount : 0
-      const interestRatio = loan.totalAmount > 0 ? loan.profit / loan.totalAmount : 0
-
       loan.payments.forEach((payment) => {
         const d = new Date(payment.date)
         if (d < range.start || d > range.end) return
@@ -134,15 +136,16 @@ export default function RecebimentosPage() {
         // For "Só Juros" payments, entire amount is interest, no principal reduction
         let principal: number
         let interest: number
+        let pureInterest: number
         if (type === "Só Juros") {
           principal = 0
           interest = payment.amount
+          pureInterest = payment.amount
         } else {
-          const lateFeeMatch = n.match(/\[lateFee:([\d.]+)\]/)
-          const lateFee = lateFeeMatch ? parseFloat(lateFeeMatch[1]) : 0
-          const baseAmount = payment.amount - lateFee
-          principal = Math.max(0, Math.round(baseAmount * principalRatio * 100) / 100)
-          interest = Math.max(0, Math.round(baseAmount * interestRatio * 100) / 100) + lateFee
+          const numInstallments = Math.max(1, loan.installmentCount || 1)
+          principal = Math.round((loan.amount / numInstallments) * 100) / 100
+          pureInterest = Math.round((loan.profit / numInstallments) * 100) / 100
+          interest = Math.max(0, Math.round((payment.amount - principal) * 100) / 100)
         }
 
         rows.push({
@@ -153,6 +156,10 @@ export default function RecebimentosPage() {
           date: payment.date,
           principal,
           interest,
+          pureInterest,
+          lateFee: type === "Só Juros" ? 0 : (n.match(/\[lateFee:([\d.]+)\]/) ? parseFloat(n.match(/\[lateFee:([\d.]+)\]/)![1]) : 0),
+          dailyFee: type === "Só Juros" ? 0 : (n.match(/\[dailyFee:([\d.]+)\]/) ? parseFloat(n.match(/\[dailyFee:([\d.]+)\]/)![1]) : 0),
+          overdueInterest: type === "Só Juros" ? 0 : (n.match(/\[overdueInterest:([\d.]+)\]/) ? parseFloat(n.match(/\[overdueInterest:([\d.]+)\]/)![1]) : 0),
           notes: payment.notes || null,
           type,
           installmentInfo,
@@ -317,10 +324,60 @@ export default function RecebimentosPage() {
                       )}
                     </td>
                     <td className="py-4 text-right pr-8">
-                      <span className="inline-flex items-center gap-1 font-semibold text-gray-900 dark:text-zinc-100">
-                        <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
-                        {formatCurrency(payment.amount)}
-                      </span>
+                      <div className="relative inline-block group">
+                        <span className="inline-flex items-center gap-1 font-semibold text-gray-900 dark:text-zinc-100 cursor-help">
+                          <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
+                          {formatCurrency(payment.amount)}
+                        </span>
+                        <div className="absolute right-0 bottom-full mb-2 z-20 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-opacity duration-150 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg shadow-xl p-3 min-w-[190px] text-xs pointer-events-none">
+                          <p className="font-semibold text-gray-700 dark:text-zinc-200 mb-2 text-center text-[11px] uppercase tracking-wide">Composição</p>
+                          {(() => {
+                            const combinedLateFee = Math.max(0, Math.round((payment.amount - payment.principal - payment.pureInterest) * 100) / 100)
+                            const hasSplitFees = payment.dailyFee > 0 || payment.overdueInterest > 0
+                            return (
+                              <div className="space-y-1.5">
+                                {payment.principal > 0 && (
+                                  <div className="flex justify-between gap-6">
+                                    <span className="text-gray-500 dark:text-zinc-400">Capital</span>
+                                    <span className="font-medium text-gray-900 dark:text-zinc-100">{formatCurrency(payment.principal)}</span>
+                                  </div>
+                                )}
+                                {payment.pureInterest > 0.001 && (
+                                  <div className="flex justify-between gap-6">
+                                    <span className="text-gray-500 dark:text-zinc-400">Juros</span>
+                                    <span className="font-medium text-gray-900 dark:text-zinc-100">{formatCurrency(payment.pureInterest)}</span>
+                                  </div>
+                                )}
+                                {hasSplitFees ? (
+                                  <>
+                                    {payment.dailyFee > 0 && (
+                                      <div className="flex justify-between gap-6">
+                                        <span className="text-gray-500 dark:text-zinc-400">Multa diária</span>
+                                        <span className="font-medium text-red-500 dark:text-red-400">{formatCurrency(payment.dailyFee)}</span>
+                                      </div>
+                                    )}
+                                    {payment.overdueInterest > 0 && (
+                                      <div className="flex justify-between gap-6">
+                                        <span className="text-gray-500 dark:text-zinc-400">Juros de atraso</span>
+                                        <span className="font-medium text-red-500 dark:text-red-400">{formatCurrency(payment.overdueInterest)}</span>
+                                      </div>
+                                    )}
+                                  </>
+                                ) : combinedLateFee > 0.01 && (
+                                  <div className="flex justify-between gap-6">
+                                    <span className="text-gray-500 dark:text-zinc-400">Multa/Atraso</span>
+                                    <span className="font-medium text-red-500 dark:text-red-400">{formatCurrency(combinedLateFee)}</span>
+                                  </div>
+                                )}
+                                <div className="pt-1.5 border-t border-gray-100 dark:border-zinc-700 flex justify-between gap-6">
+                                  <span className="font-semibold text-gray-700 dark:text-zinc-300">Total</span>
+                                  <span className="font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(payment.amount)}</span>
+                                </div>
+                              </div>
+                            )
+                          })()}
+                        </div>
+                      </div>
                     </td>
                     <td className="py-4 pl-8">
                       <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${typeBadge}`}>

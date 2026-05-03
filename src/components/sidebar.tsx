@@ -92,9 +92,10 @@ export function Sidebar() {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed top-0 left-0 z-40 flex h-full w-64 flex-col overflow-y-auto bg-[linear-gradient(180deg,#5b1e91_0%,#6d28d9_46%,#4c1d95_100%)] transition-transform duration-300 ease-in-out",
+          "fixed top-0 left-0 z-40 flex h-full w-64 flex-col overflow-y-auto transition-transform duration-300 ease-in-out",
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
+        style={{ background: "linear-gradient(180deg, var(--sidebar-from) 0%, var(--sidebar-via) 46%, var(--sidebar-to) 100%)" }}
       >
         <div className="flex items-center gap-2 border-b border-white/10 p-6">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/16 ring-1 ring-white/10">

@@ -166,9 +166,10 @@ export function LoanEditContent({ presentation = "page", onClose }: LoanEditCont
 
   const selectedClient = clients.find((client) => client.id === clientId)
 
-  const inputClass = "mt-2 h-12 rounded-2xl border-gray-200 bg-white px-4 text-[15px] text-slate-700 shadow-none"
-  const selectClass = "mt-2 h-12 w-full appearance-none rounded-2xl border border-gray-200 bg-white px-4 pr-10 text-[15px] text-slate-700 outline-none transition focus-visible:ring-2 focus-visible:ring-emerald-500"
-  const helperClass = "mt-2 text-xs text-slate-400"
+  const inputClass = "mt-1.5 h-9 rounded-xl border-gray-200 bg-white px-3 text-sm text-slate-700 shadow-none"
+  const selectClass = "mt-1.5 h-9 w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 pr-9 text-sm text-slate-700 outline-none transition focus-visible:ring-2 focus-visible:ring-emerald-500"
+  const helperClass = "mt-1 text-xs text-slate-400"
+  const labelClass = "text-sm font-medium text-slate-700 dark:text-zinc-300"
 
   const preview = calculateLoan(
     amount || 0,
@@ -273,8 +274,8 @@ export function LoanEditContent({ presentation = "page", onClose }: LoanEditCont
 
   const card = (
     <div className="mx-auto max-w-3xl rounded-[28px] border border-gray-200 bg-white shadow-[0_24px_60px_-32px_rgba(15,23,42,0.18)] dark:border-zinc-800 dark:bg-zinc-900">
-      <div className="flex items-center justify-between px-6 pb-3 pt-6 sm:px-8">
-        <h1 className="text-[2rem] font-semibold tracking-[-0.03em] text-slate-800 dark:text-zinc-100">Editar Empréstimo</h1>
+      <div className="flex items-center justify-between px-5 pb-2 pt-4 sm:px-6">
+        <h1 className="text-xl font-semibold text-slate-800 dark:text-zinc-100">Editar Empréstimo</h1>
         <button
           type="button"
           onClick={handleClose}
@@ -449,11 +450,6 @@ export function LoanEditContent({ presentation = "page", onClose }: LoanEditCont
           <Button type="button" variant="outline" onClick={handleRecalculateDates} className="gap-2 rounded-xl">
             <RefreshCw className="h-4 w-4" /> Recalcular Datas
           </Button>
-        </div>
-
-        <div>
-          <Label className="text-base font-medium text-slate-800 dark:text-zinc-100">Observações</Label>
-          <Textarea className="mt-2 min-h-[110px] rounded-2xl border-gray-200 bg-white px-4 py-3 text-[15px] text-slate-700" rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} />
         </div>
 
         <div>

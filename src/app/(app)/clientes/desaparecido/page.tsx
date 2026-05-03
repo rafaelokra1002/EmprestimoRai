@@ -662,17 +662,6 @@ export default function ClientesDesaparecidosPage() {
               Cliente
             </Button>
             <Button
-              onClick={() => {
-                resetCreateForm()
-                setCreateOpen(true)
-              }}
-              variant="outline"
-              className="border-gray-200 dark:border-zinc-700"
-            >
-              <Plus className="h-4 w-4" />
-              Cadastrar Desaparecido
-            </Button>
-            <Button
               onClick={() => setPickerOpen(true)}
               className="bg-red-600 text-white hover:bg-red-700"
             >
