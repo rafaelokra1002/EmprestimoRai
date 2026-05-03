@@ -110,7 +110,6 @@ export default function RecebimentosPage() {
       pureInterest: number
       lateFee: number
       dailyFee: number
-      overdueInterest: number
       notes: string | null
       type: "Pagamento" | "Parcela" | "Só Juros"
       installmentInfo: string | null
@@ -159,7 +158,6 @@ export default function RecebimentosPage() {
           pureInterest,
           lateFee: type === "Só Juros" ? 0 : (n.match(/\[lateFee:([\d.]+)\]/) ? parseFloat(n.match(/\[lateFee:([\d.]+)\]/)![1]) : 0),
           dailyFee: type === "Só Juros" ? 0 : (n.match(/\[dailyFee:([\d.]+)\]/) ? parseFloat(n.match(/\[dailyFee:([\d.]+)\]/)![1]) : 0),
-          overdueInterest: type === "Só Juros" ? 0 : (n.match(/\[overdueInterest:([\d.]+)\]/) ? parseFloat(n.match(/\[overdueInterest:([\d.]+)\]/)![1]) : 0),
           notes: payment.notes || null,
           type,
           installmentInfo,
@@ -333,7 +331,7 @@ export default function RecebimentosPage() {
                           <p className="font-semibold text-gray-700 dark:text-zinc-200 mb-2 text-center text-[11px] uppercase tracking-wide">Composição</p>
                           {(() => {
                             const combinedLateFee = Math.max(0, Math.round((payment.amount - payment.principal - payment.pureInterest) * 100) / 100)
-                            const hasSplitFees = payment.dailyFee > 0 || payment.overdueInterest > 0
+                            const hasSplitFees = payment.dailyFee > 0
                             return (
                               <div className="space-y-1.5">
                                 {payment.principal > 0 && (
@@ -354,12 +352,6 @@ export default function RecebimentosPage() {
                                       <div className="flex justify-between gap-6">
                                         <span className="text-gray-500 dark:text-zinc-400">Multa diária</span>
                                         <span className="font-medium text-red-500 dark:text-red-400">{formatCurrency(payment.dailyFee)}</span>
-                                      </div>
-                                    )}
-                                    {payment.overdueInterest > 0 && (
-                                      <div className="flex justify-between gap-6">
-                                        <span className="text-gray-500 dark:text-zinc-400">Juros de atraso</span>
-                                        <span className="font-medium text-red-500 dark:text-red-400">{formatCurrency(payment.overdueInterest)}</span>
                                       </div>
                                     )}
                                   </>

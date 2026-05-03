@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Search, Users, Phone, MapPin, FileText, CalendarDays, Percent, Wallet, AlertTriangle, Plus, Banknote, LayoutGrid, Rows3, Camera, Upload, RotateCcw, Trash2, Eye, Download, X } from "lucide-react"
-import { buildLoanData, calculateOverdueInterest, calculateTotalAmountWithLateFee, getDaysOverdue, getOverdueDailyAmountBRL } from "@/lib/loan-logic"
+import { buildLoanData, calculateTotalAmountWithLateFee, getDaysOverdue, getOverdueDailyAmountBRL } from "@/lib/loan-logic"
 
 const MODALITY_LABELS: Record<string, string> = {
   MONTHLY: "MENSAL",
@@ -179,15 +179,6 @@ function getLoanOverdueDetails(loan: DisappearedClient["loans"][number]) {
   const totalPaid = (loan.payments || []).reduce((sum, payment) => sum + Number(payment.amount || 0), 0)
   const baseAmount = Math.max(0, loan.totalAmount - totalPaid)
   const overdueExtra = Math.max(0, totalWithLateFee - loan.totalAmount + totalPaid)
-  const overdueInterest = daysOverdue >= 30
-    ? calculateOverdueInterest(
-        loan.totalAmount,
-        loan.amount,
-        loan.interestRate,
-        daysOverdue,
-        (loan.interestType || "SIMPLE").toLowerCase() === "compound" ? "compound" : "simple"
-      )
-    : 0
   const dailyRate = getOverdueDailyAmountBRL(loanData)
   const dailyPenalty = daysOverdue > 0 ? dailyRate * daysOverdue : 0
 
@@ -204,7 +195,6 @@ function getLoanOverdueDetails(loan: DisappearedClient["loans"][number]) {
     daysOverdue,
     dailyRate,
     overdueExtra,
-    overdueInterest,
     dailyPenalty,
     totalWithLateFee,
     overdueInstallments,

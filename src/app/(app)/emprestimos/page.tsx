@@ -16,7 +16,7 @@ import {
 } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import { formatCurrency, formatDate, calculateLoan, generateInstallmentDates, resolveDailyInterestAmount, localDateStr } from "@/lib/utils"
-import { buildLoanData, calculateTotalAmountWithLateFee, calculateOverdueInterest, getDaysOverdue, getNextDueDate, getOverdueDailyAmountBRL, getPaidExcludingInterest } from "@/lib/loan-logic"
+import { buildLoanData, calculateTotalAmountWithLateFee, getDaysOverdue, getNextDueDate, getOverdueDailyAmountBRL, getPaidExcludingInterest } from "@/lib/loan-logic"
 
 interface Loan {
   id: string
@@ -221,9 +221,10 @@ export default function EmprestimosPage() {
 
   // Clientes filtrados na busca
   const filteredClients = useMemo(() => {
-    if (!clientSearch.trim()) return clients
+    const active = clients.filter(c => c.status !== "DESAPARECIDO")
+    if (!clientSearch.trim()) return active
     const q = clientSearch.toLowerCase()
-    return clients.filter(
+    return active.filter(
       (c) =>
         c.name.toLowerCase().includes(q) ||
         (c.phone && c.phone.includes(q)) ||
@@ -574,29 +575,6 @@ export default function EmprestimosPage() {
     }
   }
 
-  // Juros acumulados por atraso usando as 4 camadas
-  const getOverdueExtraInterest = (loan: Loan) => {
-    const daysOver = getDaysOverdue(buildLoanData({
-      amount: loan.amount,
-      interestRate: loan.interestRate,
-      interestType: loan.interestType,
-      totalAmount: loan.totalAmount,
-      dailyInterestAmount: loan.dailyInterestAmount || 0,
-      dueDay: loan.dueDay,
-      modality: loan.modality,
-      firstInstallmentDate: loan.firstInstallmentDate,
-      installments: loan.installments,
-      payments: loan.payments,
-    }))
-    if (daysOver < 30) return 0
-    return calculateOverdueInterest(
-      loan.totalAmount,
-      loan.amount,
-      loan.interestRate,
-      daysOver,
-      loan.interestType === "compound" ? "compound" : "simple"
-    )
-  }
 
   const getCurrentOverdueDays = (loan: Loan) => getDaysOverdue(buildLoanData({
     amount: loan.amount,
@@ -614,18 +592,7 @@ export default function EmprestimosPage() {
   const getCurrentOverdueCharge = (loan: Loan) => {
     const daysOver = getCurrentOverdueDays(loan)
     if (daysOver <= 0) return 0
-
-    const overdueInterest = daysOver >= 30
-      ? calculateOverdueInterest(
-          loan.totalAmount,
-          loan.amount,
-          loan.interestRate,
-          daysOver,
-          loan.interestType === "compound" ? "compound" : "simple"
-        )
-      : 0
-
-    return overdueInterest + (getOverdueDailyAmountBRL(buildLoanData({
+    return getOverdueDailyAmountBRL(buildLoanData({
       amount: loan.amount,
       interestRate: loan.interestRate,
       interestType: loan.interestType,
@@ -636,23 +603,12 @@ export default function EmprestimosPage() {
       firstInstallmentDate: loan.firstInstallmentDate,
       installments: loan.installments,
       payments: loan.payments,
-    })) * daysOver)
+    })) * daysOver
   }
 
   const getCurrentOverdueChargeDetails = (loan: Loan) => {
     const daysOver = getCurrentOverdueDays(loan)
-    if (daysOver <= 0) return { overdueInterest: 0, dailyFee: 0 }
-
-    const overdueInterest = daysOver >= 30
-      ? calculateOverdueInterest(
-          loan.totalAmount,
-          loan.amount,
-          loan.interestRate,
-          daysOver,
-          loan.interestType === "compound" ? "compound" : "simple"
-        )
-      : 0
-
+    if (daysOver <= 0) return { dailyFee: 0 }
     const dailyFee = getOverdueDailyAmountBRL(buildLoanData({
       amount: loan.amount,
       interestRate: loan.interestRate,
@@ -665,8 +621,7 @@ export default function EmprestimosPage() {
       installments: loan.installments,
       payments: loan.payments,
     })) * daysOver
-
-    return { overdueInterest, dailyFee }
+    return { dailyFee }
   }
 
   const getInstallmentPayableAmount = (loan: Loan, installment: Loan["installments"][number]) => {
@@ -1064,7 +1019,7 @@ export default function EmprestimosPage() {
   // --- COMPUTED ---
 
   const filteredLoans = useMemo(() => {
-    let result = loans
+    let result = loans.filter(l => l.client.status !== "DESAPARECIDO")
     if (activeTab === "daily") result = result.filter(l => l.modality === "DAILY")
     if (activeTab === "price") result = result.filter(l => l.interestType === "TOTAL")
     if (activeTab === "received") result = result.filter(l => l.status === "COMPLETED")
@@ -2795,10 +2750,9 @@ export default function EmprestimosPage() {
                           const baseNotes = `Parcela ${idx + 1} de ${paymentDialog.installmentCount}`
                           let notes = baseNotes
                           if (lateFeeForInst > 0) {
-                            const { overdueInterest, dailyFee } = getCurrentOverdueChargeDetails(paymentDialog)
+                            const { dailyFee } = getCurrentOverdueChargeDetails(paymentDialog)
                             notes = `${baseNotes} [lateFee:${lateFeeForInst.toFixed(2)}]`
                             if (dailyFee > 0) notes += `[dailyFee:${dailyFee.toFixed(2)}]`
-                            if (overdueInterest > 0) notes += `[overdueInterest:${overdueInterest.toFixed(2)}]`
                           }
                           const result = await handlePayment(paymentDialog.id, i.id, payableAmount, notes)
                           if (!result.ok) { allOk = false; break }
@@ -2997,27 +2951,14 @@ export default function EmprestimosPage() {
           const intPerInst = interestPerInst(renegotiateDialog)
           const nextInst = getNextDueInst(renegotiateDialog)
 
-          // Juros acumulados: juros da parcela + juros por atraso (>= 30 dias) + multa diária
+          // Juros acumulados: juros da parcela + multa diária
           const nextInstOverdue = (() => {
             if (!nextInst) return 0
             const now = new Date()
             const due = new Date(nextInst.dueDate)
             const diffDays = Math.max(0, Math.floor((now.getTime() - due.getTime()) / (1000 * 60 * 60 * 24)))
             if (diffDays <= 0) return 0
-            let extra = 0
-            // Juros por atraso (>= 30 dias)
-            if (diffDays >= 30) {
-              extra += calculateOverdueInterest(
-                renegotiateDialog.totalAmount,
-                renegotiateDialog.amount,
-                renegotiateDialog.interestRate,
-                diffDays,
-                renegotiateDialog.interestType === "compound" ? "compound" : "simple"
-              )
-            }
-            // Multa diária
-            extra += (renegotiateDialog.dailyInterestAmount || 0) * diffDays
-            return extra
+            return (renegotiateDialog.dailyInterestAmount || 0) * diffDays
           })()
           const totalJuros = intPerInst + nextInstOverdue
           const totalAfterJuros = remaining - renegotiateAmount

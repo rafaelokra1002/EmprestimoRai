@@ -128,17 +128,6 @@ export function calculateTotalAmountWithLateFee(loan: LoanData): number {
     const diffMs = now.getTime() - due.getTime()
     const daysOverdue = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)))
 
-    // Juros por atraso (>= 30 dias)
-    if (daysOverdue >= 30) {
-      total += calculateOverdueInterest(
-        loan.finalAmount,
-        loan.amount,
-        loan.interestRate,
-        daysOverdue,
-        loan.interestType === "compound" ? "compound" : "simple"
-      )
-    }
-
     // Multa diária (> 0 dias)
     if (daysOverdue > 0) {
       total += getOverdueDailyAmountBRL(loan) * daysOverdue

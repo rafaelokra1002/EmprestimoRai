@@ -15,7 +15,7 @@ export async function GET() {
     const loans = await prisma.loan.findMany({
       where: { userId: (session.user as any).id },
       include: {
-        client: { select: { id: true, name: true, photo: true, city: true } },
+        client: { select: { id: true, name: true, photo: true, city: true, status: true } },
         installments: { orderBy: { number: "asc" } },
         payments: { orderBy: { date: "desc" } },
       },
