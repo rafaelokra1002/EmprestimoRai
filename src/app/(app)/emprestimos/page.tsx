@@ -590,37 +590,23 @@ export default function EmprestimosPage() {
   }))
 
   const getCurrentOverdueCharge = (loan: Loan) => {
-    const daysOver = getCurrentOverdueDays(loan)
-    if (daysOver <= 0) return 0
-    return getOverdueDailyAmountBRL(buildLoanData({
-      amount: loan.amount,
-      interestRate: loan.interestRate,
-      interestType: loan.interestType,
-      totalAmount: loan.totalAmount,
-      dailyInterestAmount: loan.dailyInterestAmount || 0,
-      dueDay: loan.dueDay,
-      modality: loan.modality,
-      firstInstallmentDate: loan.firstInstallmentDate,
-      installments: loan.installments,
-      payments: loan.payments,
-    })) * daysOver
+    const now = new Date()
+    const dailyRate = getOverdueDailyAmountBRL(buildLoanData({
+      amount: loan.amount, interestRate: loan.interestRate, interestType: loan.interestType,
+      totalAmount: loan.totalAmount, dailyInterestAmount: loan.dailyInterestAmount || 0,
+      dueDay: loan.dueDay, modality: loan.modality, firstInstallmentDate: loan.firstInstallmentDate,
+      installments: loan.installments, payments: loan.payments,
+    }))
+    return loan.installments
+      .filter((i: any) => i.status !== "PAID")
+      .reduce((sum: number, i: any) => {
+        const daysOver = Math.max(0, Math.floor((now.getTime() - new Date(i.dueDate).getTime()) / 86400000))
+        return sum + dailyRate * daysOver
+      }, 0)
   }
 
   const getCurrentOverdueChargeDetails = (loan: Loan) => {
-    const daysOver = getCurrentOverdueDays(loan)
-    if (daysOver <= 0) return { dailyFee: 0 }
-    const dailyFee = getOverdueDailyAmountBRL(buildLoanData({
-      amount: loan.amount,
-      interestRate: loan.interestRate,
-      interestType: loan.interestType,
-      totalAmount: loan.totalAmount,
-      dailyInterestAmount: loan.dailyInterestAmount || 0,
-      dueDay: loan.dueDay,
-      modality: loan.modality,
-      firstInstallmentDate: loan.firstInstallmentDate,
-      installments: loan.installments,
-      payments: loan.payments,
-    })) * daysOver
+    const dailyFee = getCurrentOverdueCharge(loan)
     return { dailyFee }
   }
 

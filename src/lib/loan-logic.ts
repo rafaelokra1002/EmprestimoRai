@@ -116,22 +116,16 @@ export function getOverdueDailyAmountBRL(loan: Pick<LoanData, "dailyInterest" | 
  * 5. Resultado = max(0, valor_calculado - total_pago)
  */
 export function calculateTotalAmountWithLateFee(loan: LoanData): number {
-  const nextDueInst = loan.installments
-    .filter(i => i.status !== "PAID")
-    .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0]
+  const now = new Date()
+  const dailyRate = getOverdueDailyAmountBRL(loan)
 
-  let total = loan.finalAmount
-
-  if (nextDueInst) {
-    const now = new Date()
-    const due = new Date(nextDueInst.dueDate)
-    const diffMs = now.getTime() - due.getTime()
-    const daysOverdue = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)))
-
-    // Multa diária (> 0 dias)
-    if (daysOverdue > 0) {
-      total += getOverdueDailyAmountBRL(loan) * daysOverdue
-    }
+  // Per-installment: base value + daily late fee for each unpaid installment
+  let total = 0
+  for (const inst of loan.installments) {
+    if (inst.status === "PAID") continue
+    const due = new Date(inst.dueDate)
+    const daysOverdue = Math.max(0, Math.floor((now.getTime() - due.getTime()) / (1000 * 60 * 60 * 24)))
+    total += inst.amount + (daysOverdue > 0 ? dailyRate * daysOverdue : 0)
   }
 
   // Subtrair pagamentos (exceto pagamentos só de juros)
