@@ -66,18 +66,9 @@
   }
   body {
     color: hsl(var(--foreground));
-    background:
-      radial-gradient(circle at top left, rgba(132, 61, 199, 0.12), transparent 34%),
-      radial-gradient(circle at top right, rgba(245, 158, 11, 0.08), transparent 26%),
-      linear-gradient(180deg, #fbf9ff 0%, #f5f2ff 100%);
+    background: hsl(var(--background));
     @apply antialiased font-sans dark:text-zinc-100 dark:bg-zinc-950;
     font-feature-settings: "tnum" 1, "lnum" 1;
-  }
-
-  .dark body {
-    background:
-      radial-gradient(circle at top left, rgba(168, 85, 247, 0.12), transparent 30%),
-      linear-gradient(180deg, #160f24 0%, #0f0a18 100%);
   }
 }
 
