@@ -157,11 +157,11 @@ export default function CalendarioPage() {
   const dotColor = (type: DueEntry["type"]) => {
     if (type === "loan") return "bg-amber-100 dark:bg-amber-900/40"
     if (type === "vehicle") return "bg-blue-100 dark:bg-blue-900/40"
-    return "bg-emerald-100 dark:bg-emerald-900/40"
+    return "bg-primary/10 dark:bg-primary/20"
   }
 
   const statusInfo = (status: DueEntry["status"]) => {
-    if (status === "PAID") return { label: "Pago", cls: "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 border-emerald-500/30" }
+    if (status === "PAID") return { label: "Pago", cls: "bg-primary/10 dark:bg-primary/20 text-primary border-primary/30" }
     if (status === "OVERDUE") return { label: "Vencido", cls: "bg-red-50 dark:bg-red-900/20 text-red-600 border-red-500/30" }
     return { label: "Pendente", cls: "bg-amber-50 dark:bg-amber-900/20 text-amber-600 border-amber-500/30" }
   }
@@ -205,9 +205,9 @@ export default function CalendarioPage() {
             </div>
           </CardContent>
         </Card>
-        <Card className="border-emerald-200 dark:border-emerald-800">
+        <Card className="border-primary/30 dark:border-primary/30">
           <CardContent className="p-5 flex items-start gap-3">
-            <CalIcon className="h-5 w-5 text-emerald-600 mt-0.5" />
+            <CalIcon className="h-5 w-5 text-primary mt-0.5" />
             <div>
               <p className="text-xs text-gray-500 dark:text-zinc-400">Total no Mês</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{formatCurrency(totalNoMes)}</p>
@@ -273,13 +273,13 @@ export default function CalendarioPage() {
                   key={day}
                   onClick={() => setSelectedDay(day)}
                   className={`relative min-h-[80px] p-2 text-left transition-all border-b border-r border-gray-200 dark:border-zinc-800/50 hover:bg-gray-100 dark:hover:bg-zinc-800 ${
-                    isToday ? "bg-emerald-50 dark:bg-emerald-950/20 ring-2 ring-emerald-500 ring-inset rounded-lg z-10"
+                    isToday ? "bg-primary/5 dark:bg-primary/10 ring-2 ring-primary ring-inset rounded-lg z-10"
                     : isSelected ? "bg-gray-100 dark:bg-zinc-800/40"
                     : "dark:bg-zinc-800/30"
                   }`}
                 >
                   <span className={`text-sm ${
-                    isToday ? "text-emerald-600 font-bold" : "text-gray-700 dark:text-zinc-300"
+                    isToday ? "text-primary font-bold" : "text-gray-700 dark:text-zinc-300"
                   }`}>
                     {day}
                   </span>
@@ -324,8 +324,8 @@ export default function CalendarioPage() {
 
         {/* ===== SIDE PANEL - DAY DETAILS ===== */}
         <div className="w-full shrink-0 lg:w-[380px] lg:self-stretch">
-          <Card className="h-full border-gray-200 dark:border-zinc-800">
-            <CardContent className="flex h-full flex-col p-5">
+          <Card className="h-full border-gray-200 dark:border-zinc-800 overflow-hidden">
+            <CardContent className="flex h-full min-h-0 flex-col p-5 overflow-hidden">
               {(() => {
                 const dateText = selectedDay
                   ? new Date(year, month, selectedDay).toLocaleDateString("pt-BR", { day: "numeric", month: "long" })
@@ -363,38 +363,38 @@ export default function CalendarioPage() {
                 }
 
                 return (
-                  <div className="flex h-full flex-col space-y-4">
+                  <div className="flex h-full min-h-0 flex-col space-y-4">
                     {/* Header */}
                     <div className="flex items-center justify-between">
                       <h3 className="text-lg font-bold text-gray-900 dark:text-zinc-100 capitalize">{dateText}</h3>
-                      <Badge className="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 border-emerald-500/30 text-xs">
+                      <Badge className="bg-primary/10 dark:bg-primary/20 text-primary border-primary/30 text-xs">
                         {unpaidEntries.length} cobrança{unpaidEntries.length !== 1 ? "s" : ""}
                       </Badge>
                     </div>
 
                     {/* Total a cobrar */}
-                    <div className="rounded-xl border border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/10 p-4">
+                    <div className="rounded-xl border border-primary/30 bg-primary/5 dark:bg-primary/10 p-4">
                       <div className="flex items-center justify-between">
                         <div>
                           <span className="text-sm text-gray-700 dark:text-zinc-300">Total a cobrar no dia</span>
                           {countLabel.length > 0 && (
-                            <p className="text-xs text-emerald-600/70 mt-0.5">
+                            <p className="text-xs text-primary/70 mt-0.5">
                               {unpaidEntries.length} parcela{unpaidEntries.length !== 1 ? "s" : ""} • {countLabel.join(" • ")}
                             </p>
                           )}
                         </div>
-                        <span className="text-xl font-bold text-emerald-600">{formatCurrency(totalCobrar)}</span>
+                        <span className="text-xl font-bold text-primary">{formatCurrency(totalCobrar)}</span>
                       </div>
                     </div>
 
                     {/* Entry cards */}
-                    <div className="flex-1 space-y-3 overflow-y-auto pr-1">
+                    <div className="flex-1 space-y-3 overflow-y-auto pr-1 min-h-0 max-h-[420px] lg:max-h-none">
                       {unpaidEntries.map((entry) => {
                         const typeIcon = entry.type === "loan"
                           ? <Wallet className="h-4 w-4 text-amber-600" />
                           : entry.type === "vehicle"
                           ? <Car className="h-4 w-4 text-blue-600" />
-                          : <ShoppingBag className="h-4 w-4 text-emerald-600" />
+                          : <ShoppingBag className="h-4 w-4 text-primary" />
 
                         return (
                           <div key={entry.id} className="rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800/60 p-4 space-y-2.5">
@@ -406,7 +406,7 @@ export default function CalendarioPage() {
                                 </div>
                                 <span className="font-bold text-gray-900 dark:text-zinc-100 text-sm uppercase tracking-wide">{entry.clientName}</span>
                               </div>
-                              <span className="text-sm font-semibold text-emerald-600">
+                              <span className="text-sm font-semibold text-primary">
                                 {entry.installmentNumber}/{entry.totalInstallments}
                               </span>
                             </div>
@@ -420,7 +420,7 @@ export default function CalendarioPage() {
                               {entry.interestAmount > 0 && (
                                 <div className="flex items-center justify-between">
                                   <span className="text-gray-500 dark:text-zinc-400">Só Juros:</span>
-                                  <span className="font-medium text-emerald-600">{formatCurrency(entry.interestAmount)}</span>
+                                  <span className="font-medium text-primary">{formatCurrency(entry.interestAmount)}</span>
                                 </div>
                               )}
                               <div className="flex items-center justify-between">
@@ -429,7 +429,7 @@ export default function CalendarioPage() {
                               </div>
                               <div className="flex items-center justify-between">
                                 <span className="text-gray-500 dark:text-zinc-400">Total a Receber:</span>
-                                <span className="font-bold text-emerald-600">{formatCurrency(entry.totalReceivable)}</span>
+                                <span className="font-bold text-primary">{formatCurrency(entry.totalReceivable)}</span>
                               </div>
                             </div>
                           </div>

@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -255,7 +255,7 @@ export default function PerfilPage() {
     event.target.value = ""
   }
 
-  const cardClass = "border-emerald-200/80 dark:border-emerald-800 bg-white dark:bg-zinc-900"
+  const cardClass = "border-primary/30/80 dark:border-primary/30 bg-white dark:bg-zinc-900"
 
   const memberSince = useMemo(() => {
     if (!profile?.createdAt) return "-"
@@ -278,7 +278,7 @@ export default function PerfilPage() {
   if (loading) {
     return (
       <div className="flex min-h-[420px] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -303,12 +303,12 @@ export default function PerfilPage() {
       </div>
 
       {message && (
-        <div className={`rounded-lg border px-4 py-3 text-sm ${message.toLowerCase().includes("erro") ? "border-red-500/30 bg-red-50 dark:bg-red-950/300/10 text-red-300" : "border-emerald-500/30 bg-emerald-50 dark:bg-emerald-950/300/10 text-emerald-300"}`}>
+        <div className={`rounded-lg border px-4 py-3 text-sm ${message.toLowerCase().includes("erro") ? "border-red-500/30 bg-red-50 dark:bg-red-950/300/10 text-red-300" : "border-primary/30 bg-primary/5 dark:bg-primary/150/10 text-primary"}`}>
           {message}
         </div>
       )}
 
-      <Card className="overflow-hidden rounded-[22px] border border-emerald-100 bg-white shadow-[0_18px_40px_-28px_rgba(16,185,129,0.45)] dark:border-emerald-900/60 dark:bg-zinc-900">
+      <Card className="overflow-hidden rounded-[22px] border border-primary/20 bg-white shadow-[0_18px_40px_-28px_rgba(16,185,129,0.45)] dark:border-primary/20 dark:bg-zinc-900">
         <div className="h-20 bg-gradient-to-r from-emerald-600 via-emerald-600 to-green-600 sm:h-24" />
         <CardContent className="relative -mt-8 px-5 pb-5 sm:px-7 sm:pb-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -317,12 +317,12 @@ export default function PerfilPage() {
             name={profile?.name || "Usuário"}
             src={profile?.logoUrl || undefined}
             size="lg"
-                className="h-20 w-20 border-4 border-white bg-emerald-600 text-2xl text-white shadow-lg dark:border-zinc-900 sm:h-24 sm:w-24"
+                className="h-20 w-20 border-4 border-white bg-primary text-2xl text-white shadow-lg dark:border-zinc-900 sm:h-24 sm:w-24"
           />
               <div className="space-y-1.5">
                 <h2 className="text-[1.05rem] font-semibold tracking-[-0.02em] text-slate-600 dark:text-zinc-100 sm:text-[1.2rem]">{profile?.name || "Usuário"}</h2>
-                <span className="inline-flex w-fit items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-medium text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                <span className="inline-flex w-fit items-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-2.5 py-0.5 text-[11px] font-medium text-primary dark:border-primary/30 dark:bg-primary/15 dark:text-primary">
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary/50" />
                   Ativo
                 </span>
               </div>
@@ -332,10 +332,10 @@ export default function PerfilPage() {
       </Card>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card className="rounded-[18px] border border-emerald-100 bg-white shadow-sm dark:border-emerald-900/50 dark:bg-zinc-900">
+        <Card className="rounded-[18px] border border-primary/20 bg-white shadow-sm dark:border-primary/20 dark:bg-zinc-900">
           <CardHeader className="pb-5">
             <CardTitle className="flex items-center gap-2 text-[1.05rem] font-semibold tracking-[-0.02em] text-slate-600 dark:text-zinc-100">
-              <User className="h-4 w-4 text-emerald-600" />
+              <User className="h-4 w-4 text-primary" />
               Informações Pessoais
             </CardTitle>
           </CardHeader>
@@ -371,10 +371,10 @@ export default function PerfilPage() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-[18px] border border-emerald-100 bg-white shadow-sm dark:border-emerald-900/50 dark:bg-zinc-900">
+        <Card className="rounded-[18px] border border-primary/20 bg-white shadow-sm dark:border-primary/20 dark:bg-zinc-900">
           <CardHeader className="pb-5">
             <CardTitle className="flex items-center gap-2 text-[1.05rem] font-semibold tracking-[-0.02em] text-slate-600 dark:text-zinc-100">
-              <TrendingUp className="h-4 w-4 text-emerald-600" />
+              <TrendingUp className="h-4 w-4 text-primary" />
               Estatísticas da Conta
             </CardTitle>
           </CardHeader>
@@ -398,7 +398,7 @@ export default function PerfilPage() {
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-300">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/5 text-primary dark:bg-primary/15 dark:text-primary">
                 <TrendingUp className="h-4 w-4" />
               </div>
               <div>
@@ -417,7 +417,7 @@ export default function PerfilPage() {
         </CardHeader>
         <CardContent>
           <p className="mb-4 text-sm text-gray-500 dark:text-zinc-400">Configure sua chave PIX. Ela será incluída automaticamente nas mensagens de cobrança com o valor exato da parcela.</p>
-          <div className="flex items-center gap-3 text-gray-800 dark:text-zinc-200"><QrCode className="h-4 w-4 text-emerald-600" /><div><p className="text-[11px] text-gray-400 dark:text-zinc-500">Chave Cadastrada</p><p className="text-sm font-semibold">{profile?.pixKey || "Nenhuma chave cadastrada"}</p></div></div>
+          <div className="flex items-center gap-3 text-gray-800 dark:text-zinc-200"><QrCode className="h-4 w-4 text-primary" /><div><p className="text-[11px] text-gray-400 dark:text-zinc-500">Chave Cadastrada</p><p className="text-sm font-semibold">{profile?.pixKey || "Nenhuma chave cadastrada"}</p></div></div>
         </CardContent>
       </Card>
 
@@ -428,7 +428,7 @@ export default function PerfilPage() {
         </CardHeader>
         <CardContent>
           <p className="mb-4 text-sm text-gray-500 dark:text-zinc-400">Este nome será exibido no final das mensagens de cobrança enviadas aos seus clientes via WhatsApp.</p>
-          <div className="flex items-center gap-3 text-gray-800 dark:text-zinc-200"><User className="h-4 w-4 text-emerald-600" /><div><p className="text-[11px] text-gray-400 dark:text-zinc-500">Nome Configurado</p><p className="text-sm font-semibold">{profile?.chargeName || "Nenhum nome cadastrado"}</p></div></div>
+          <div className="flex items-center gap-3 text-gray-800 dark:text-zinc-200"><User className="h-4 w-4 text-primary" /><div><p className="text-[11px] text-gray-400 dark:text-zinc-500">Nome Configurado</p><p className="text-sm font-semibold">{profile?.chargeName || "Nenhum nome cadastrado"}</p></div></div>
         </CardContent>
       </Card>
 
@@ -439,7 +439,7 @@ export default function PerfilPage() {
         </CardHeader>
         <CardContent>
           <p className="mb-4 text-sm text-gray-500 dark:text-zinc-400">Configure um link de pagamento adicional (PagSeguro, Mercado Pago, etc). Será incluído nas mensagens junto com a chave PIX.</p>
-          <div className="flex items-center gap-3 text-gray-800 dark:text-zinc-200"><LinkIcon className="h-4 w-4 text-emerald-600" /><div><p className="text-[11px] text-gray-400 dark:text-zinc-500">Link Cadastrado</p><p className="text-sm font-semibold break-all">{profile?.paymentLink || "Nenhum link cadastrado"}</p></div></div>
+          <div className="flex items-center gap-3 text-gray-800 dark:text-zinc-200"><LinkIcon className="h-4 w-4 text-primary" /><div><p className="text-[11px] text-gray-400 dark:text-zinc-500">Link Cadastrado</p><p className="text-sm font-semibold break-all">{profile?.paymentLink || "Nenhum link cadastrado"}</p></div></div>
         </CardContent>
       </Card>
 
@@ -464,8 +464,8 @@ export default function PerfilPage() {
 
       <Card className={cardClass}>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-zinc-100"><MessageCircle className="h-4 w-4 text-emerald-600" /> WhatsApp para Clientes</CardTitle>
-          <span className={`rounded-full px-3 py-1 text-xs font-medium ${profile?.whatsappConnected ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600" : "bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400"}`}>{profile?.whatsappConnected ? "✓ Conectado" : "✗ Não Conectado"}</span>
+          <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-zinc-100"><MessageCircle className="h-4 w-4 text-primary" /> WhatsApp para Clientes</CardTitle>
+          <span className={`rounded-full px-3 py-1 text-xs font-medium ${profile?.whatsappConnected ? "bg-primary/5 dark:bg-primary/15 text-primary" : "bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400"}`}>{profile?.whatsappConnected ? "✓ Conectado" : "✗ Não Conectado"}</span>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-800/40 p-6 text-center">
@@ -474,7 +474,7 @@ export default function PerfilPage() {
 
             {profile?.whatsappConnected ? (
               <div className="mt-4 space-y-3">
-                <p className="text-sm text-emerald-300">Sessão conectada com sucesso</p>
+                <p className="text-sm text-primary">Sessão conectada com sucesso</p>
                 <Button
                   className="gap-2"
                   variant="outline"
@@ -509,7 +509,7 @@ export default function PerfilPage() {
           <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5">
             {whatsappQrLoading ? (
               <div className="flex h-[260px] flex-col items-center justify-center gap-3">
-                <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 <p className="text-gray-700 dark:text-zinc-300">Gerando QR Code...</p>
               </div>
             ) : whatsappError ? (
@@ -523,18 +523,18 @@ export default function PerfilPage() {
               </div>
             ) : whatsappQrImage ? (
               <div className="space-y-3">
-                <div className="mx-auto h-[220px] w-[220px] overflow-hidden rounded-lg border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-zinc-900 p-2">
+                <div className="mx-auto h-[220px] w-[220px] overflow-hidden rounded-lg border border-primary/30 dark:border-primary/30 bg-white dark:bg-zinc-900 p-2">
                   <img
                     src={whatsappQrImage}
                     alt="QR Code de conexão WhatsApp"
                     className="h-full w-full rounded bg-white dark:bg-zinc-900 object-contain"
                   />
                 </div>
-                <p className="text-center text-xs text-gray-500 dark:text-zinc-400">Estado atual: <span className="font-semibold text-emerald-300">{whatsappState}</span></p>
+                <p className="text-center text-xs text-gray-500 dark:text-zinc-400">Estado atual: <span className="font-semibold text-primary">{whatsappState}</span></p>
               </div>
             ) : (
               <div className="flex h-[260px] flex-col items-center justify-center gap-3">
-                <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 <p className="text-gray-700 dark:text-zinc-300">Aguardando...</p>
               </div>
             )}

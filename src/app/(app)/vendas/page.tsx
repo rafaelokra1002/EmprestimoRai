@@ -351,7 +351,7 @@ export default function VendasPage() {
   ]
 
   const statusBadge = (status: string) => {
-    if (status === "quitado") return { label: "Quitado", cls: "bg-emerald-50 dark:bg-emerald-950/300/20 text-emerald-600 border-emerald-500/30" }
+    if (status === "quitado") return { label: "Quitado", cls: "bg-primary/5 dark:bg-primary/150/20 text-primary border-primary/30" }
     if (status === "atraso") return { label: "Em Atraso", cls: "bg-red-50 dark:bg-red-950/300/20 text-red-600 border-red-500/30" }
     return { label: "Pendente", cls: "bg-amber-50 dark:bg-amber-950/300/20 text-amber-600 border-amber-500/30" }
   }
@@ -388,39 +388,39 @@ export default function VendasPage() {
 
       {/* ===== STAT CARDS ===== */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-xl border border-emerald-500/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
-          <div className="h-9 w-9 rounded-lg bg-emerald-50 dark:bg-emerald-950/300/10 flex items-center justify-center">
-            <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+        <div className="rounded-xl border border-primary/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
+          <div className="h-9 w-9 rounded-lg bg-primary/5 dark:bg-primary/150/10 flex items-center justify-center">
+            <CheckCircle2 className="h-5 w-5 text-primary" />
           </div>
           <div>
             <p className="text-2xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{totalVendas}</p>
             <p className="text-xs text-gray-500 dark:text-zinc-400">Vendas</p>
           </div>
         </div>
-        <div className="rounded-xl border border-emerald-500/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
-          <div className="h-9 w-9 rounded-lg bg-emerald-50 dark:bg-emerald-950/300/10 flex items-center justify-center">
-            <DollarSign className="h-5 w-5 text-emerald-600" />
+        <div className="rounded-xl border border-primary/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
+          <div className="h-9 w-9 rounded-lg bg-primary/5 dark:bg-primary/150/10 flex items-center justify-center">
+            <DollarSign className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <p className="text-2xl font-bold tabular-nums tracking-tight text-emerald-600">{formatCurrency(totalValue)}</p>
+            <p className="text-2xl font-bold tabular-nums tracking-tight text-primary">{formatCurrency(totalValue)}</p>
             <p className="text-xs text-gray-500 dark:text-zinc-400">Total</p>
           </div>
         </div>
-        <div className="rounded-xl border border-emerald-500/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
-          <div className="h-9 w-9 rounded-lg bg-emerald-50 dark:bg-emerald-950/300/10 flex items-center justify-center">
-            <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+        <div className="rounded-xl border border-primary/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
+          <div className="h-9 w-9 rounded-lg bg-primary/5 dark:bg-primary/150/10 flex items-center justify-center">
+            <CheckCircle2 className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <p className="text-2xl font-bold tabular-nums tracking-tight text-emerald-600">{formatCurrency(totalRecebido)}</p>
+            <p className="text-2xl font-bold tabular-nums tracking-tight text-primary">{formatCurrency(totalRecebido)}</p>
             <p className="text-xs text-gray-500 dark:text-zinc-400">Recebido</p>
           </div>
         </div>
-        <div className="rounded-xl border border-emerald-500/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
-          <div className="h-9 w-9 rounded-lg bg-emerald-50 dark:bg-emerald-950/300/10 flex items-center justify-center">
-            <CalendarDays className="h-5 w-5 text-emerald-600" />
+        <div className="rounded-xl border border-primary/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
+          <div className="h-9 w-9 rounded-lg bg-primary/5 dark:bg-primary/150/10 flex items-center justify-center">
+            <CalendarDays className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <p className="text-2xl font-bold tabular-nums tracking-tight text-emerald-600">{formatCurrency(totalAReceber)}</p>
+            <p className="text-2xl font-bold tabular-nums tracking-tight text-primary">{formatCurrency(totalAReceber)}</p>
             <p className="text-xs text-gray-500 dark:text-zinc-400">A Receber</p>
           </div>
         </div>
@@ -440,7 +440,7 @@ export default function VendasPage() {
         <Button variant="outline" className="gap-2">
           <Calendar className="h-4 w-4" /> Calendário
         </Button>
-        <Button onClick={openNewSale} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+        <Button onClick={openNewSale} className="gap-2 bg-primary hover:bg-primary/90">
           <Plus className="h-4 w-4" /> Nova Venda
         </Button>
       </div>
@@ -455,7 +455,7 @@ export default function VendasPage() {
               onClick={() => setActiveFilter(f.key)}
               className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all border ${
                 active
-                  ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/300/10 text-emerald-600"
+                  ? "border-primary bg-primary/5 dark:bg-primary/150/10 text-primary"
                   : "border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800/60 text-gray-500 dark:text-zinc-400 hover:border-gray-300 dark:border-zinc-700"
               }`}
             >
@@ -485,7 +485,7 @@ export default function VendasPage() {
             const badge = statusBadge(status)
 
             return (
-              <div key={sale.id} className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-gray-50 dark:bg-zinc-800/80 overflow-hidden">
+              <div key={sale.id} className="rounded-xl border border-primary/30 dark:border-primary/30 bg-gray-50 dark:bg-zinc-800/80 overflow-hidden">
                 {/* ---- Header ---- */}
                 <div className="p-4 pb-3">
                   <div className="flex items-start justify-between">
@@ -512,8 +512,8 @@ export default function VendasPage() {
                     <p className="text-sm font-bold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(sale.totalAmount)}</p>
                   </div>
                   <div className="bg-gray-100 dark:bg-zinc-800/60 rounded-tr-lg p-3">
-                    <p className="text-[10px] uppercase tracking-wider text-emerald-500 mb-1">Recebido</p>
-                    <p className="text-sm font-bold tabular-nums text-emerald-600">{formatCurrency(paid)}</p>
+                    <p className="text-[10px] uppercase tracking-wider text-primary mb-1">Recebido</p>
+                    <p className="text-sm font-bold tabular-nums text-primary">{formatCurrency(paid)}</p>
                   </div>
                   <div className="bg-gray-100 dark:bg-zinc-800/60 rounded-bl-lg p-3">
                     <p className="text-[10px] uppercase tracking-wider text-amber-500 mb-1">Falta</p>
@@ -544,7 +544,7 @@ export default function VendasPage() {
                   <Button
                     onClick={() => openPay(sale)}
                     disabled={status === "quitado"}
-                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 gap-2 text-sm h-9"
+                    className="flex-1 bg-primary hover:bg-primary/90 gap-2 text-sm h-9"
                   >
                     <DollarSign className="h-4 w-4" /> Pagar
                   </Button>
@@ -812,11 +812,11 @@ export default function VendasPage() {
               type="checkbox"
               checked={formWhatsapp}
               onChange={(e) => setFormWhatsapp(e.target.checked)}
-              className="mt-0.5 h-4 w-4 rounded border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 text-emerald-500 focus:ring-emerald-500"
+              className="mt-0.5 h-4 w-4 rounded border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 text-primary focus:ring-primary"
             />
             <div>
               <div className="flex items-center gap-2">
-                <MessageCircle className="h-4 w-4 text-emerald-600" />
+                <MessageCircle className="h-4 w-4 text-primary" />
                 <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">Receber notificação WhatsApp deste contrato</span>
               </div>
               <p className="text-xs text-gray-400 dark:text-zinc-500 mt-0.5">Alertas de atraso e relatórios serão enviados normalmente mesmo que você não marque essa opção</p>
@@ -834,7 +834,7 @@ export default function VendasPage() {
           <Button
             onClick={handleNewSaleSubmit}
             disabled={!isFormValid}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 h-11 text-sm font-semibold disabled:opacity-40"
+            className="w-full bg-primary hover:bg-primary/90 h-11 text-sm font-semibold disabled:opacity-40"
           >
             {editSale ? "Salvar Alterações" : "Cadastrar Venda"}
           </Button>
@@ -848,12 +848,12 @@ export default function VendasPage() {
           if (!nextInst) return <p className="text-gray-500 dark:text-zinc-400 text-sm">Todas as parcelas já foram pagas.</p>
           return (
             <div className="space-y-4">
-              <div className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-gray-100 dark:bg-zinc-800/40 p-4">
+              <div className="rounded-xl border border-primary/30 dark:border-primary/30 bg-gray-100 dark:bg-zinc-800/40 p-4">
                 <p className="text-sm text-gray-500 dark:text-zinc-400 mb-1">{payingSale.description}</p>
                 <p className="text-xs text-gray-400 dark:text-zinc-500">{payingSale.client?.name}</p>
                 <div className="mt-3 flex items-center justify-between">
                   <span className="text-xs text-gray-400 dark:text-zinc-500">{nextInst.number}ª parcela</span>
-                  <span className="text-sm font-bold tabular-nums text-emerald-600">{formatCurrency(nextInst.amount)}</span>
+                  <span className="text-sm font-bold tabular-nums text-primary">{formatCurrency(nextInst.amount)}</span>
                 </div>
                 <div className="flex items-center justify-between mt-1">
                   <span className="text-xs text-gray-400 dark:text-zinc-500">Vencimento</span>
@@ -883,7 +883,7 @@ export default function VendasPage() {
               </div>
               <div className="flex justify-end gap-2 pt-2">
                 <Button variant="outline" onClick={() => setPayDialogOpen(false)}>Cancelar</Button>
-                <Button onClick={handlePay} className="bg-emerald-600 hover:bg-emerald-700">
+                <Button onClick={handlePay} className="bg-primary hover:bg-primary/90">
                   Confirmar Pagamento
                 </Button>
               </div>
@@ -897,10 +897,10 @@ export default function VendasPage() {
         {paymentReceiptInfo && (
           <div className="space-y-5">
             <div className="text-center">
-              <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-950/30">
-                <Receipt className="h-6 w-6 text-emerald-600" />
+              <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-primary/5 dark:bg-primary/15">
+                <Receipt className="h-6 w-6 text-primary" />
               </div>
-              <h2 className="text-lg font-bold text-emerald-600">Pagamento Registrado!</h2>
+              <h2 className="text-lg font-bold text-primary">Pagamento Registrado!</h2>
               <p className="text-sm text-gray-500 dark:text-zinc-400">Deseja baixar ou enviar o comprovante?</p>
             </div>
 
@@ -919,7 +919,7 @@ export default function VendasPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500 dark:text-zinc-400">Valor Pago:</span>
-                <span className="font-bold text-emerald-600">{formatCurrency(paymentReceiptInfo.amount)}</span>
+                <span className="font-bold text-primary">{formatCurrency(paymentReceiptInfo.amount)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500 dark:text-zinc-400">Data:</span>
@@ -932,15 +932,15 @@ export default function VendasPage() {
             </div>
 
             {paymentReceiptInfo.isCompleted && (
-              <div className="flex items-center justify-center gap-2 rounded-lg bg-emerald-100 dark:bg-emerald-950/40 py-2.5 px-4">
-                <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                <span className="font-bold text-emerald-700 dark:text-emerald-400">Contrato Quitado!</span>
+              <div className="flex items-center justify-center gap-2 rounded-lg bg-primary/10 dark:bg-primary/10/40 py-2.5 px-4">
+                <CheckCircle2 className="h-5 w-5 text-primary" />
+                <span className="font-bold text-primary dark:text-primary">Contrato Quitado!</span>
               </div>
             )}
 
             <div className="grid grid-cols-3 gap-2">
               <Button
-                className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="gap-1.5 bg-primary hover:bg-primary/90 text-white"
                 onClick={() => {
                   const text = `📋 *Comprovante de Pagamento*\n\n📌 Tipo: ${paymentReceiptInfo.type}\n👤 Cliente: ${paymentReceiptInfo.clientName}\n📄 Parcela: ${paymentReceiptInfo.installmentLabel}\n💰 Valor Pago: ${formatCurrency(paymentReceiptInfo.amount)}\n📅 Data: ${paymentReceiptInfo.date}\n💵 Saldo Restante: ${formatCurrency(paymentReceiptInfo.remainingBalance)}${paymentReceiptInfo.isCompleted ? "\n\n✅ *Contrato Quitado!*" : ""}`
                   navigator.clipboard.writeText(text)
@@ -950,7 +950,7 @@ export default function VendasPage() {
                 <Copy className="h-4 w-4" /> Copiar
               </Button>
               <Button
-                className="gap-1.5 bg-green-600 hover:bg-green-700 text-white"
+                className="gap-1.5 bg-primary hover:bg-primary/90 text-white"
                 onClick={() => {
                   const text = `📋 *Comprovante de Pagamento*\n\n📌 Tipo: ${paymentReceiptInfo.type}\n👤 Cliente: ${paymentReceiptInfo.clientName}\n📄 Parcela: ${paymentReceiptInfo.installmentLabel}\n💰 Valor Pago: ${formatCurrency(paymentReceiptInfo.amount)}\n📅 Data: ${paymentReceiptInfo.date}\n💵 Saldo Restante: ${formatCurrency(paymentReceiptInfo.remainingBalance)}${paymentReceiptInfo.isCompleted ? "\n\n✅ *Contrato Quitado!*" : ""}`
                   window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank")
@@ -959,7 +959,7 @@ export default function VendasPage() {
                 <Send className="h-4 w-4" /> Para Mim
               </Button>
               <Button
-                className="gap-1.5 bg-emerald-800 hover:bg-emerald-900 text-white"
+                className="gap-1.5 bg-primary hover:bg-primary/90 text-white"
                 onClick={() => {
                   const printContent = `
                     <html><head><title>Comprovante</title>
@@ -1009,7 +1009,7 @@ export default function VendasPage() {
                   key={inst.id}
                   className={`rounded-lg border p-3 flex items-center justify-between ${
                     isPaid
-                      ? "border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/300/5"
+                      ? "border-primary/30 dark:border-primary/30 bg-primary/5 dark:bg-primary/150/5"
                       : isOverdue
                       ? "border-red-500/20 bg-red-50 dark:bg-red-950/300/5"
                       : "border-gray-200 dark:border-zinc-800 bg-gray-100 dark:bg-zinc-800/30"
@@ -1017,7 +1017,7 @@ export default function VendasPage() {
                 >
                   <div className="flex items-center gap-3">
                     <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                      isPaid ? "bg-emerald-50 dark:bg-emerald-950/300/20 text-emerald-600" : isOverdue ? "bg-red-50 dark:bg-red-950/300/20 text-red-600" : "bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400"
+                      isPaid ? "bg-primary/5 dark:bg-primary/150/20 text-primary" : isOverdue ? "bg-red-50 dark:bg-red-950/300/20 text-red-600" : "bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400"
                     }`}>
                       {inst.number}
                     </div>
@@ -1028,7 +1028,7 @@ export default function VendasPage() {
                   </div>
                   <Badge className={`text-xs ${
                     isPaid
-                      ? "bg-emerald-50 dark:bg-emerald-950/300/20 text-emerald-600 border-emerald-500/30"
+                      ? "bg-primary/5 dark:bg-primary/150/20 text-primary border-primary/30"
                       : isOverdue
                       ? "bg-red-50 dark:bg-red-950/300/20 text-red-600 border-red-500/30"
                       : "bg-amber-50 dark:bg-amber-950/300/20 text-amber-600 border-amber-500/30"
@@ -1047,7 +1047,7 @@ export default function VendasPage() {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500 dark:text-zinc-400">Recebido</span>
-                <span className="text-emerald-600">{formatCurrency(getSalePaid(parcelasSale))}</span>
+                <span className="text-primary">{formatCurrency(getSalePaid(parcelasSale))}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500 dark:text-zinc-400">Restante</span>

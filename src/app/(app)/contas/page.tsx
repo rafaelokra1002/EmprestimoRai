@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -261,8 +261,8 @@ export default function ContasPage() {
       title: "Total Recebido",
       value: formatCurrency(dashboardData?.totalReceived || 0),
       icon: DollarSign,
-      iconClassName: "text-emerald-200",
-      iconBgClassName: "bg-emerald-400/15",
+      iconClassName: "text-primary/40",
+      iconBgClassName: "bg-primary/15",
     },
     {
       title: "Saídas do Mês",
@@ -281,24 +281,22 @@ export default function ContasPage() {
   ]
 
   return (
-    <div className="space-y-8 pt-6 pb-12">
-      <div className="flex min-h-[calc(100vh-12rem)] items-center justify-center">
+    <div className="space-y-6 pt-6 pb-12">
+      <div className="w-full max-w-6xl mx-auto">
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-zinc-100">Controle de Caixa</h1>
+        <p className="mt-1 text-sm text-gray-500 dark:text-zinc-400">Acompanhe o saldo disponível e o fluxo de capital</p>
+      </div>
+      <div className="flex min-h-[calc(100vh-14rem)] items-start justify-center">
         <section className="relative w-full max-w-6xl overflow-hidden rounded-[32px] border border-gray-200 bg-white px-6 py-7 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 md:px-8">
 
           <div className="relative space-y-5">
-            <div className="flex items-start justify-between">
-              <div>
-                <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-zinc-100">Controle de Caixa</h1>
-                <p className="mt-1 text-sm font-medium text-gray-500 dark:text-zinc-400">Acompanhe o saldo disponível e o fluxo de capital</p>
-              </div>
-            </div>
 
             <div className="grid gap-4 lg:grid-cols-[1fr_1.05fr]">
               <div className="rounded-[24px] border border-gray-200 bg-white/90 p-5 shadow-sm backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-900/80">
                 <div className="mb-5 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 dark:border-emerald-900/40 dark:bg-emerald-950/30">
-                      <Receipt className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-primary/30 bg-primary/5 dark:border-primary/20 dark:bg-primary/15">
+                      <Receipt className="h-5 w-5 text-primary dark:text-primary" />
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Caixa Inicial</p>
@@ -328,7 +326,7 @@ export default function ContasPage() {
                     <p className="text-sm text-gray-500 dark:text-zinc-400">Não configurado</p>
                     <button
                       onClick={() => setCaixaDialogOpen(true)}
-                      className="mt-4 inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300 dark:hover:bg-emerald-950/40"
+                      className="mt-4 inline-flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2 text-sm font-semibold text-primary transition hover:bg-primary/15 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/15"
                     >
                       <Plus className="h-4 w-4" /> Configurar agora
                     </button>
@@ -475,7 +473,7 @@ export default function ContasPage() {
             <div
               onClick={() => setFRecurring(!fRecurring)}
               className={`relative h-5 w-10 cursor-pointer rounded-full transition-colors ${
-                fRecurring ? "bg-emerald-50 dark:bg-emerald-950/300" : "bg-gray-200 dark:bg-zinc-700"
+                fRecurring ? "bg-primary/5 dark:bg-primary/150" : "bg-gray-200 dark:bg-zinc-700"
               }`}
             >
               <div className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform dark:bg-zinc-900 ${
@@ -499,7 +497,7 @@ export default function ContasPage() {
           <Button
             onClick={handleSubmit}
             disabled={!isFormValid}
-            className="h-11 w-full bg-emerald-600 text-sm font-semibold hover:bg-emerald-700 disabled:opacity-40"
+            className="h-11 w-full bg-primary text-sm font-semibold hover:bg-primary/90 disabled:opacity-40"
           >
             {editingId ? "Salvar Alterações" : "Cadastrar Conta"}
           </Button>
@@ -520,7 +518,7 @@ export default function ContasPage() {
               placeholder="0,00"
             />
           </div>
-          <Button onClick={saveCaixaInicial} className="w-full bg-emerald-600 hover:bg-emerald-700">
+          <Button onClick={saveCaixaInicial} className="w-full bg-primary hover:bg-primary/90">
             Salvar
           </Button>
         </div>

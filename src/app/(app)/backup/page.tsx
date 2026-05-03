@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState } from "react"
 import { localDateStr } from "@/lib/utils"
@@ -28,14 +28,14 @@ const backupSections = [
     title: "Empréstimos",
     description: "Somente empréstimos sem parcelamento",
     icon: DollarSign,
-    iconClassName: "text-emerald-500",
+    iconClassName: "text-primary",
   },
   {
     key: "installment-loans",
     title: "Empréstimos Parcelados",
     description: "Somente empréstimos com duas ou mais parcelas",
     icon: Landmark,
-    iconClassName: "text-emerald-500",
+    iconClassName: "text-primary",
   },
   {
     key: "contracts",
@@ -99,8 +99,8 @@ export default function BackupPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-6 pt-10">
       <div className="text-center">
-        <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 dark:bg-emerald-950/30">
-          <Download className="h-6 w-6 text-emerald-500" />
+        <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/5 dark:bg-primary/15">
+          <Download className="h-6 w-6 text-primary" />
         </div>
         <h1 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-zinc-100">Backup de Dados</h1>
         <p className="mt-2 text-lg text-gray-500 dark:text-zinc-400">Exporte seus dados em CSV ou PDF para manter um backup seguro.</p>
@@ -109,7 +109,7 @@ export default function BackupPage() {
       {message && (
         <div className={`flex items-center gap-3 px-4 py-3 rounded-lg border ${
           message.type === "success"
-            ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400"
+            ? "bg-primary/5 dark:bg-primary/15 border-primary/30 dark:border-primary/30 text-primary dark:text-primary"
             : "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400"
         }`}>
           {message.type === "success" ? <CheckCircle2 className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
@@ -140,7 +140,7 @@ export default function BackupPage() {
                   type="button"
                   onClick={() => handleBackup(section.key, section.title)}
                   disabled={loadingXlsx}
-                  className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-70"
+                  className="inline-flex items-center gap-2 rounded-xl bg-primary/50 px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   <FileSpreadsheet className="h-4 w-4" />
                   {loadingXlsx ? "Gerando..." : "CSV"}

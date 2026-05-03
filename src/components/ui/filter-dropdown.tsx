@@ -24,8 +24,8 @@ const toneClasses = {
     active: "bg-violet-50 text-violet-700 dark:bg-violet-950/30 dark:text-violet-300",
   },
   emerald: {
-    button: "border-emerald-500 text-emerald-700 hover:bg-emerald-50 dark:text-emerald-300 dark:hover:bg-emerald-950/30",
-    active: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300",
+    button: "border-primary/50 text-primary hover:bg-primary/10 dark:text-primary dark:hover:bg-primary/20",
+    active: "bg-primary/10 text-primary dark:bg-primary/20",
   },
   orange: {
     button: "border-orange-500 text-orange-500 hover:bg-orange-50 dark:text-orange-400 dark:hover:bg-orange-950/30",

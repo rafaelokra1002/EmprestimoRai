@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
@@ -149,7 +149,7 @@ type TabKey = "ATRASO" | "VENCE_HOJE" | "ANTECIPADA"
 const TAB_CONFIG: { key: TabKey; label: string; color: string }[] = [
   { key: "ATRASO", label: "Atraso", color: "bg-red-50 dark:bg-red-950/300" },
   { key: "VENCE_HOJE", label: "Vence Hoje", color: "bg-yellow-50 dark:bg-yellow-950/300" },
-  { key: "ANTECIPADA", label: "Antecipada", color: "bg-emerald-50 dark:bg-emerald-950/300" },
+  { key: "ANTECIPADA", label: "Antecipada", color: "bg-primary/5 dark:bg-primary/150" },
 ]
 
 /* ─── Custom Preset Dropdown with icons + descriptions ─── */
@@ -163,7 +163,7 @@ function PresetDropdown({ presets, onSelect }: { presets: { icon: string; label:
         <button
           type="button"
           onClick={() => setOpen(!open)}
-          className="w-full bg-gray-100 dark:bg-zinc-800/60 border border-gray-300 dark:border-zinc-700 rounded-xl px-4 py-3 text-gray-500 dark:text-zinc-400 text-sm text-left focus:outline-none focus:ring-2 focus:ring-emerald-500/40 flex items-center justify-between"
+          className="w-full bg-gray-100 dark:bg-zinc-800/60 border border-gray-300 dark:border-zinc-700 rounded-xl px-4 py-3 text-gray-500 dark:text-zinc-400 text-sm text-left focus:outline-none focus:ring-2 focus:ring-primary/40 flex items-center justify-between"
         >
           <span>Selecione um template pronto...</span>
           <ChevronDown className={`h-4 w-4 text-gray-400 dark:text-zinc-500 transition-transform ${open ? "rotate-180" : ""}`} />
@@ -346,7 +346,7 @@ export default function ConfiguracoesPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -361,7 +361,7 @@ export default function ConfiguracoesPage() {
         </div>
         <button
           onClick={() => router.push("/perfil")}
-          className="flex items-center gap-2 text-sm text-emerald-600 border border-emerald-500/40 rounded-full px-4 py-2 hover:bg-emerald-50 dark:bg-emerald-950/300/10 transition"
+          className="flex items-center gap-2 text-sm text-primary border border-primary/40 rounded-full px-4 py-2 hover:bg-primary/5 dark:bg-primary/150/10 transition"
         >
           <ExternalLink className="h-4 w-4" />
           Perfil Completo
@@ -370,7 +370,7 @@ export default function ConfiguracoesPage() {
 
       {/* ─── Message feedback ─── */}
       {message && (
-        <div className={`p-3 rounded-lg text-sm ${message.includes("sucesso") ? "bg-emerald-50 dark:bg-emerald-950/300/10 text-emerald-600 border border-emerald-200 dark:border-emerald-800" : "bg-red-50 dark:bg-red-950/300/10 text-red-600 border border-red-500/20"}`}>
+        <div className={`p-3 rounded-lg text-sm ${message.includes("sucesso") ? "bg-primary/5 dark:bg-primary/150/10 text-primary border border-primary/30 dark:border-primary/30" : "bg-red-50 dark:bg-red-950/300/10 text-red-600 border border-red-500/20"}`}>
           {message}
         </div>
       )}
@@ -417,8 +417,8 @@ export default function ConfiguracoesPage() {
       {/* ═══════════════════════════ PERFIL ═══════════════════════════ */}
       <div className="bg-gray-50 dark:bg-zinc-800/60 border border-gray-200 dark:border-zinc-800 rounded-2xl p-6 space-y-5">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-950/300/10 flex items-center justify-center">
-            <User className="h-5 w-5 text-emerald-600" />
+          <div className="w-10 h-10 rounded-full bg-primary/5 dark:bg-primary/150/10 flex items-center justify-center">
+            <User className="h-5 w-5 text-primary" />
           </div>
           <div>
             <h2 className="text-lg font-bold text-gray-900 dark:text-zinc-100">Perfil</h2>
@@ -435,7 +435,7 @@ export default function ConfiguracoesPage() {
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="mt-1 w-full bg-gray-100 dark:bg-zinc-800/60 border border-gray-300 dark:border-zinc-700 rounded-xl px-4 py-3 text-gray-800 dark:text-zinc-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+            className="mt-1 w-full bg-gray-100 dark:bg-zinc-800/60 border border-gray-300 dark:border-zinc-700 rounded-xl px-4 py-3 text-gray-800 dark:text-zinc-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
           />
         </div>
 
@@ -453,7 +453,7 @@ export default function ConfiguracoesPage() {
         {/* WhatsApp */}
         <div>
           <label className="text-sm font-semibold text-gray-700 dark:text-zinc-300 flex items-center gap-1.5">
-            <Phone className="h-3.5 w-3.5 text-emerald-600" />
+            <Phone className="h-3.5 w-3.5 text-primary" />
             WhatsApp <span className="text-red-600">*</span>
           </label>
           <input
@@ -461,7 +461,7 @@ export default function ConfiguracoesPage() {
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             placeholder="(55) 99999-0000"
-            className="mt-1 w-full bg-gray-100 dark:bg-zinc-800/60 border border-gray-300 dark:border-zinc-700 rounded-xl px-4 py-3 text-gray-800 dark:text-zinc-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+            className="mt-1 w-full bg-gray-100 dark:bg-zinc-800/60 border border-gray-300 dark:border-zinc-700 rounded-xl px-4 py-3 text-gray-800 dark:text-zinc-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
           />
           <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">
             Você receberá notificações para te auxiliar na gestão com seus clientes
@@ -472,8 +472,8 @@ export default function ConfiguracoesPage() {
       {/* ═══════════════════════════ EMPRESA ═══════════════════════════ */}
       <div className="bg-gray-50 dark:bg-zinc-800/60 border border-gray-200 dark:border-zinc-800 rounded-2xl p-6 space-y-5">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-950/300/10 flex items-center justify-center">
-            <Building2 className="h-5 w-5 text-emerald-600" />
+          <div className="w-10 h-10 rounded-full bg-primary/5 dark:bg-primary/150/10 flex items-center justify-center">
+            <Building2 className="h-5 w-5 text-primary" />
           </div>
           <div>
             <h2 className="text-lg font-bold text-gray-900 dark:text-zinc-100">Empresa</h2>
@@ -488,7 +488,7 @@ export default function ConfiguracoesPage() {
             value={companyName}
             onChange={(e) => setCompanyName(e.target.value)}
             placeholder="Minha Empresa Ltda"
-            className="mt-1 w-full bg-gray-100 dark:bg-zinc-800/60 border border-gray-300 dark:border-zinc-700 rounded-xl px-4 py-3 text-gray-800 dark:text-zinc-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+            className="mt-1 w-full bg-gray-100 dark:bg-zinc-800/60 border border-gray-300 dark:border-zinc-700 rounded-xl px-4 py-3 text-gray-800 dark:text-zinc-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
           />
         </div>
       </div>
@@ -497,7 +497,7 @@ export default function ConfiguracoesPage() {
       <button
         onClick={handleSaveProfile}
         disabled={saving}
-        className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm px-6 py-2.5 rounded-xl transition disabled:opacity-50"
+        className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white font-semibold text-sm px-6 py-2.5 rounded-xl transition disabled:opacity-50"
       >
         {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
         Salvar Alterações
@@ -506,8 +506,8 @@ export default function ConfiguracoesPage() {
       {/* ═══════════════════════════ WHATSAPP PARA CLIENTES ═══════════════════════════ */}
       <div className="bg-gray-50 dark:bg-zinc-800/60 border border-gray-200 dark:border-zinc-800 rounded-2xl p-6 space-y-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-950/300/10 flex items-center justify-center">
-            <MessageCircle className="h-5 w-5 text-emerald-600" />
+          <div className="w-10 h-10 rounded-full bg-primary/5 dark:bg-primary/150/10 flex items-center justify-center">
+            <MessageCircle className="h-5 w-5 text-primary" />
           </div>
           <div>
             <h2 className="text-lg font-bold text-gray-900 dark:text-zinc-100">WhatsApp para Clientes</h2>
@@ -516,15 +516,15 @@ export default function ConfiguracoesPage() {
         </div>
 
         <div className="bg-gray-100 dark:bg-zinc-800/60 border border-gray-300 dark:border-zinc-700/40 rounded-xl p-4 flex items-start gap-3">
-          <Info className="h-5 w-5 text-emerald-600 mt-0.5 flex-shrink-0" />
+          <Info className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
           <div>
-            <p className="text-sm font-semibold text-emerald-300">Esta funcionalidade foi movida</p>
+            <p className="text-sm font-semibold text-primary">Esta funcionalidade foi movida</p>
             <p className="text-xs text-gray-500 dark:text-zinc-400 mt-1">
               A conexão e configuração do WhatsApp para enviar mensagens aos seus clientes agora está disponível na página <span className="font-bold text-gray-700 dark:text-zinc-300">Meu Perfil</span>.
             </p>
             <button
               onClick={() => router.push("/perfil")}
-              className="mt-3 flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition"
+              className="mt-3 flex items-center gap-2 bg-primary hover:bg-primary/90 text-white text-sm font-semibold px-4 py-2 rounded-lg transition"
             >
               <ExternalLink className="h-4 w-4" />
               Ir para Meu Perfil
@@ -536,8 +536,8 @@ export default function ConfiguracoesPage() {
       {/* ═══════════════════════════ MENSAGEM DE COBRANÇA ═══════════════════════════ */}
       <div className="bg-gray-50 dark:bg-zinc-800/60 border border-gray-200 dark:border-zinc-800 rounded-2xl p-6 space-y-5">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-950/300/10 flex items-center justify-center">
-            <Settings2 className="h-5 w-5 text-emerald-600" />
+          <div className="w-10 h-10 rounded-full bg-primary/5 dark:bg-primary/150/10 flex items-center justify-center">
+            <Settings2 className="h-5 w-5 text-primary" />
           </div>
           <div>
             <h2 className="text-lg font-bold text-gray-900 dark:text-zinc-100">Mensagem de Cobrança</h2>
@@ -547,7 +547,7 @@ export default function ConfiguracoesPage() {
 
         {/* Template feedback */}
         {templateMsg && (
-          <div className={`p-3 rounded-lg text-sm ${templateMsg.includes("sucesso") ? "bg-emerald-50 dark:bg-emerald-950/300/10 text-emerald-600 border border-emerald-200 dark:border-emerald-800" : "bg-red-50 dark:bg-red-950/300/10 text-red-600 border border-red-500/20"}`}>
+          <div className={`p-3 rounded-lg text-sm ${templateMsg.includes("sucesso") ? "bg-primary/5 dark:bg-primary/150/10 text-primary border border-primary/30 dark:border-primary/30" : "bg-red-50 dark:bg-red-950/300/10 text-red-600 border border-red-500/20"}`}>
             {templateMsg}
           </div>
         )}
@@ -582,7 +582,7 @@ export default function ConfiguracoesPage() {
             value={templates[activeTab]}
             onChange={(e) => setTemplates((prev) => ({ ...prev, [activeTab]: e.target.value }))}
             rows={14}
-            className="w-full bg-gray-100 dark:bg-zinc-800/40 border border-gray-300 dark:border-zinc-700/40 rounded-xl px-4 py-4 text-gray-800 dark:text-zinc-200 text-sm font-mono leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+            className="w-full bg-gray-100 dark:bg-zinc-800/40 border border-gray-300 dark:border-zinc-700/40 rounded-xl px-4 py-4 text-gray-800 dark:text-zinc-200 text-sm font-mono leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-primary/40"
           />
           <button
             onClick={handleResetCurrent}
@@ -609,7 +609,7 @@ export default function ConfiguracoesPage() {
                     [activeTab]: prev[activeTab] + v,
                   }))
                 }}
-                className="text-xs bg-gray-200 dark:bg-zinc-700/50 border border-gray-300 dark:border-zinc-700/40 text-emerald-600 font-mono px-2.5 py-1 rounded-lg hover:bg-gray-200 dark:hover:bg-zinc-700 dark:bg-zinc-700/50 transition cursor-pointer"
+                className="text-xs bg-gray-200 dark:bg-zinc-700/50 border border-gray-300 dark:border-zinc-700/40 text-primary font-mono px-2.5 py-1 rounded-lg hover:bg-gray-200 dark:hover:bg-zinc-700 dark:bg-zinc-700/50 transition cursor-pointer"
               >
                 {v}
               </button>
@@ -629,7 +629,7 @@ export default function ConfiguracoesPage() {
           <button
             onClick={handleSaveTemplates}
             disabled={savingTemplates}
-            className="flex-[2] flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm py-3 rounded-xl transition disabled:opacity-50"
+            className="flex-[2] flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white font-semibold text-sm py-3 rounded-xl transition disabled:opacity-50"
           >
             {savingTemplates ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Salvar Templates
@@ -641,8 +641,8 @@ export default function ConfiguracoesPage() {
       <div className="bg-gray-50 dark:bg-zinc-800/60 border border-gray-200 dark:border-zinc-800 rounded-2xl p-6 space-y-6">
         {/* Icon + Title centered */}
         <div className="flex flex-col items-center text-center space-y-3 pt-2">
-          <div className="w-20 h-20 rounded-full bg-emerald-50 dark:bg-emerald-950/300/10 border-2 border-emerald-200 dark:border-emerald-800 flex items-center justify-center">
-            <Users className="h-10 w-10 text-emerald-600" />
+          <div className="w-20 h-20 rounded-full bg-primary/5 dark:bg-primary/150/10 border-2 border-primary/30 dark:border-primary/30 flex items-center justify-center">
+            <Users className="h-10 w-10 text-primary" />
           </div>
           <div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-zinc-100">Expanda seu Negócio com Funcionários</h2>
@@ -660,7 +660,7 @@ export default function ConfiguracoesPage() {
           ].map((feat) => (
             <div key={feat.title} className="bg-gray-100 dark:bg-zinc-800/40 border border-gray-300 dark:border-zinc-700/30 rounded-xl p-4 space-y-2">
               <div className="flex items-center gap-2">
-                <feat.icon className="h-4 w-4 text-emerald-600" />
+                <feat.icon className="h-4 w-4 text-primary" />
                 <span className="text-sm font-semibold text-gray-800 dark:text-zinc-200">{feat.title}</span>
               </div>
               <p className="text-xs text-gray-400 dark:text-zinc-500">{feat.desc}</p>
@@ -670,7 +670,7 @@ export default function ConfiguracoesPage() {
 
         {/* Info box */}
         <div className="bg-gray-100 dark:bg-zinc-800/40 border border-gray-300 dark:border-zinc-700/30 rounded-xl p-4 flex items-start gap-3">
-          <Info className="h-5 w-5 text-emerald-600 mt-0.5 flex-shrink-0" />
+          <Info className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
           <div>
             <p className="text-sm font-semibold text-gray-800 dark:text-zinc-200">Você controla o que cada funcionário pode ver!</p>
             <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">

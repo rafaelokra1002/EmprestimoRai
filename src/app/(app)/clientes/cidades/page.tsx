@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useEffect, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
@@ -49,7 +49,7 @@ export default function ClientesCidadesPage() {
   if (loading) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
       </div>
     )
   }
@@ -92,12 +92,12 @@ export default function ClientesCidadesPage() {
                   <TableRow key={city.city}>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-emerald-500" />
+                        <MapPin className="h-4 w-4 text-primary" />
                         {city.city}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <span className="inline-flex items-center rounded-full bg-emerald-100 dark:bg-emerald-900/30 px-2.5 py-0.5 text-sm font-medium text-emerald-700 dark:text-emerald-400">
+                      <span className="inline-flex items-center rounded-full bg-primary/10 dark:bg-primary/15 px-2.5 py-0.5 text-sm font-medium text-primary dark:text-primary">
                         {city.count}
                       </span>
                     </TableCell>

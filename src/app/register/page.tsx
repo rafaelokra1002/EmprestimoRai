@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
@@ -49,7 +49,7 @@ export default function RegisterPage() {
     <div className="min-h-screen bg-white dark:bg-zinc-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="h-12 w-12 rounded-xl bg-emerald-600 flex items-center justify-center mx-auto mb-4">
+          <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center mx-auto mb-4">
             <Banknote className="h-7 w-7 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">SP Cobrança Fácil</h1>
@@ -92,7 +92,7 @@ export default function RegisterPage() {
 
           <p className="text-sm text-gray-500 dark:text-zinc-400 text-center mt-4">
             Já tem conta?{" "}
-            <Link href="/login" className="text-emerald-500 hover:underline">
+            <Link href="/login" className="text-primary hover:underline">
               Entrar
             </Link>
           </p>

@@ -546,7 +546,7 @@ export default function EmprestimosPage() {
       l.status !== "COMPLETED" && l.installments.some((i: any) => i.status !== "PAID" && toDateStr(new Date(i.dueDate)) === todayStr)
     )
     if (anyDueToday) return { label: "Pendente", color: "bg-orange-50 dark:bg-orange-950/20 text-orange-600" }
-    return { label: "Em Dia", color: "bg-green-500/20 text-green-400" }
+    return { label: "Em Dia", color: "bg-primary/50/20 text-green-400" }
   }
 
   const getPaidTotal = (loan: Loan) => loan.payments.reduce((s: number, p: any) => s + p.amount, 0)
@@ -638,6 +638,37 @@ export default function EmprestimosPage() {
     d.setDate(d.getDate() + 2)
     return toDateStr(d)
   })()
+
+  const dueTodayClients = useMemo(() => {
+    const now = new Date()
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`
+    const seen = new Set<string>()
+    const result: { id: string; name: string; photo: string | null }[] = []
+    for (const l of loans) {
+      if (l.status === "COMPLETED") continue
+      const due = l.installments.some((i: any) => {
+        if (i.status === "PAID") return false
+        const d = new Date(i.dueDate)
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}` === todayStr
+      })
+      if (due && !seen.has(l.client.id)) { seen.add(l.client.id); result.push({ id: l.client.id, name: l.client.name, photo: l.client.photo ?? null }) }
+    }
+    return result
+  }, [loans])
+
+  const overdueClients = useMemo(() => {
+    const seen = new Set<string>()
+    const result: { id: string; name: string; photo: string | null }[] = []
+    for (const l of loans) {
+      if (l.status === "COMPLETED") continue
+      const st = getLoanStatusInfo(l)
+      if ((st.label === "Atrasado" || st.label === "Inadimplente") && !seen.has(l.client.id)) {
+        seen.add(l.client.id)
+        result.push({ id: l.client.id, name: l.client.name, photo: l.client.photo ?? null })
+      }
+    }
+    return result
+  }, [loans])
 
   const loansDueIn2Days = useMemo(() => {
     return loans.filter(loan => {
@@ -1138,23 +1169,68 @@ export default function EmprestimosPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">Empréstimos</h1>
         <div className="flex items-center gap-2">
-          <Button onClick={sendBulkDueToday} disabled={bulkSendingDueToday} className="bg-amber-500 hover:bg-amber-600 text-white">
-            {bulkSendingDueToday ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <MessageCircle className="h-4 w-4 mr-2" />}
-            {bulkSendingDueToday ? "Enviando..." : "Vence Hoje"}
-          </Button>
-          <Button onClick={sendBulkOverdue} disabled={bulkSendingOverdue} className="bg-red-600 hover:bg-red-700 text-white">
-            {bulkSendingOverdue ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <MessageCircle className="h-4 w-4 mr-2" />}
-            {bulkSendingOverdue ? "Enviando..." : "Atrasados"}
-          </Button>
-          <Button onClick={() => { setBatchResult(null); setBatchOpen(true) }} className="bg-blue-600 hover:bg-blue-700 text-white relative">
-            <Send className="h-4 w-4 mr-2" />
+          {/* Vence Hoje */}
+          <div className="relative group">
+            <Button onClick={sendBulkDueToday} disabled={bulkSendingDueToday} className="bg-amber-500 hover:bg-amber-600 text-white">
+              {bulkSendingDueToday ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <MessageCircle className="h-4 w-4 mr-2" />}
+              {bulkSendingDueToday ? "Enviando..." : `Vence Hoje${dueTodayClients.length > 0 ? ` (${dueTodayClients.length})` : ""}`}
+            </Button>
+            {dueTodayClients.length > 0 && (
+              <div className="pointer-events-none absolute right-0 top-full z-50 mt-2 hidden w-56 rounded-xl border border-amber-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-900 group-hover:block">
+                <div className="px-3 py-2 border-b border-amber-100 dark:border-zinc-800">
+                  <p className="text-xs font-semibold text-amber-600 dark:text-amber-400">Vence hoje ({dueTodayClients.length})</p>
+                </div>
+                <ul className="max-h-48 overflow-y-auto py-1">
+                  {dueTodayClients.map(c => (
+                    <li key={c.id} className="flex items-center gap-2 px-3 py-1.5">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30 text-[10px] font-bold text-amber-700 dark:text-amber-400">
+                        {c.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()}
+                      </span>
+                      <span className="truncate text-sm text-gray-700 dark:text-zinc-300">{c.name}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+
+          {/* Atrasados */}
+          <div className="relative group">
+            <Button onClick={sendBulkOverdue} disabled={bulkSendingOverdue} className="bg-red-600 hover:bg-red-700 text-white">
+              {bulkSendingOverdue ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <MessageCircle className="h-4 w-4 mr-2" />}
+              {bulkSendingOverdue ? "Enviando..." : `Atrasados${overdueClients.length > 0 ? ` (${overdueClients.length})` : ""}`}
+            </Button>
+            {overdueClients.length > 0 && (
+              <div className="pointer-events-none absolute right-0 top-full z-50 mt-2 hidden w-56 rounded-xl border border-red-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-900 group-hover:block">
+                <div className="px-3 py-2 border-b border-red-100 dark:border-zinc-800">
+                  <p className="text-xs font-semibold text-red-600 dark:text-red-400">Atrasados ({overdueClients.length})</p>
+                </div>
+                <ul className="max-h-48 overflow-y-auto py-1">
+                  {overdueClients.map(c => (
+                    <li key={c.id} className="flex items-center gap-2 px-3 py-1.5">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30 text-[10px] font-bold text-red-700 dark:text-red-400">
+                        {c.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()}
+                      </span>
+                      <span className="truncate text-sm text-gray-700 dark:text-zinc-300">{c.name}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => { setBatchResult(null); setBatchOpen(true) }}
+            className="relative inline-flex items-center gap-2 rounded-full border border-blue-400 bg-white px-4 py-2 text-sm font-semibold text-blue-600 transition hover:bg-blue-50 dark:bg-zinc-900 dark:border-blue-500 dark:text-blue-400 dark:hover:bg-zinc-800"
+          >
+            <MessageCircle className="h-4 w-4" />
             Cobrança em Lote
             {loansDueIn2Days.length > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] font-bold text-blue-600 ring-1 ring-blue-600">
+              <span className="absolute -top-1.5 -right-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[10px] font-bold text-white">
                 {loansDueIn2Days.length}
               </span>
             )}
-          </Button>
+          </button>
         </div>
       </div>
 
@@ -1194,110 +1270,121 @@ export default function EmprestimosPage() {
           <Input placeholder="Buscar cliente ou etiqueta..." className="pl-10" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center lg:flex-none">
-          <Button onClick={() => { resetForm(); setDialogOpen(true) }} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+          <Button onClick={() => { resetForm(); setDialogOpen(true) }} className="bg-primary hover:bg-primary/90 text-white">
             <Plus className="h-4 w-4 mr-2" /> Novo Empréstimo
           </Button>
         </div>
       </div>
 
       {/* Filters + View Toggle */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 flex-wrap">
-          <button
-            onClick={() => {
-              setFilterOpen((current) => !current)
-              setTagFilterOpen(false)
-            }}
-            className="inline-flex items-center gap-2 rounded-2xl border border-emerald-500 bg-white px-4 py-2 text-sm font-semibold text-emerald-600 transition hover:bg-emerald-50 dark:bg-zinc-900 dark:hover:bg-zinc-800"
-          >
-            <Filter className="h-4 w-4" />
-            Filtros
-            <ChevronDown className={`h-4 w-4 transition-transform ${filterOpen ? "rotate-180" : ""}`} />
-          </button>
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                setFilterOpen((current) => !current)
+                setTagFilterOpen(false)
+              }}
+              className="inline-flex items-center gap-2 rounded-2xl border border-primary/50 bg-white px-4 py-2 text-sm font-semibold text-primary transition hover:bg-primary/10 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+            >
+              <Filter className="h-4 w-4" />
+              Filtros
+              <ChevronDown className={`h-4 w-4 transition-transform ${filterOpen ? "rotate-180" : ""}`} />
+            </button>
 
-          {filterOpen && (
-            <div className="flex items-center gap-2 flex-wrap">
-              {filterOptions.map((opt) => {
-                const isActive = loanFilter === opt.value
-                const toneClass =
-                  opt.value === "overdue"
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setTagFilterOpen((current) => !current)
+                  setFilterOpen(false)
+                }}
+                className="inline-flex items-center gap-2 rounded-2xl border border-orange-500 bg-white px-4 py-2 text-sm font-semibold text-orange-500 transition hover:bg-orange-50 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+              >
+                <Tag className="h-4 w-4" />
+                {selectedTag ?? "Etiqueta"}
+                <ChevronDown className={`h-4 w-4 transition-transform ${tagFilterOpen ? "rotate-180" : ""}`} />
+              </button>
+              {tagFilterOpen && (
+                <div className="absolute left-0 top-full mt-1.5 z-20 min-w-[180px] rounded-xl border border-gray-200 bg-white py-1.5 shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
+                  <button
+                    onClick={() => { setSelectedTag(null); setLoanFilter("all"); setTagFilterOpen(false) }}
+                    className={`flex w-full items-center gap-2.5 px-3.5 py-2 text-sm transition hover:bg-gray-50 dark:hover:bg-zinc-700 ${!selectedTag ? "font-semibold text-gray-900 dark:text-zinc-100" : "text-gray-600 dark:text-zinc-400"}`}
+                  >
+                    Todas
+                  </button>
+                  {Array.from(new Map(loans.flatMap(l => l.tags || []).map(t => [getTagName(t), t])).values()).map((tag) => {
+                    const name = getTagName(tag)
+                    const color = tag.includes("|") ? tag.split("|")[1] : "#ef4444"
+                    const isActive = selectedTag === name
+                    return (
+                      <button
+                        key={name}
+                        onClick={() => { setSelectedTag(name); setLoanFilter("tagged"); setTagFilterOpen(false) }}
+                        className={`flex w-full items-center gap-2.5 px-3.5 py-2 text-sm transition hover:bg-gray-50 dark:hover:bg-zinc-700 ${isActive ? "font-semibold text-gray-900 dark:text-zinc-100" : "text-gray-600 dark:text-zinc-400"}`}
+                      >
+                        <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: color }} />
+                        {name}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex bg-gray-50 dark:bg-zinc-800 rounded-lg p-1 border border-gray-200 dark:border-zinc-800">
+            <button
+              onClick={() => setViewMode("grid")}
+              className={`p-1.5 rounded-md transition-colors ${viewMode === "grid" ? "bg-gray-200 dark:bg-zinc-700 text-gray-900 dark:text-zinc-100" : "text-gray-400 dark:text-zinc-500 hover:text-gray-700 dark:text-zinc-300"}`}
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setViewMode("list")}
+              className={`p-1.5 rounded-md transition-colors ${viewMode === "list" ? "bg-gray-200 dark:bg-zinc-700 text-gray-900 dark:text-zinc-100" : "text-gray-400 dark:text-zinc-500 hover:text-gray-700 dark:text-zinc-300"}`}
+            >
+              <List className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
+        {filterOpen && (
+          <div className="flex items-center gap-2 flex-wrap">
+            {filterOptions.map((opt) => {
+              const isActive = loanFilter === opt.value
+              const toneClass =
+                opt.value === "overdue"
+                  ? isActive
+                    ? "border-red-500 bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-300"
+                    : "border-red-300 text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950/20"
+                  : opt.value === "due_today"
                     ? isActive
-                      ? "border-red-500 bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-300"
-                      : "border-red-300 text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950/20"
-                    : opt.value === "due_today"
+                      ? "border-orange-500 bg-orange-50 text-orange-600 dark:bg-orange-950/30 dark:text-orange-300"
+                      : "border-orange-300 text-orange-600 hover:bg-orange-50 dark:border-orange-800 dark:text-orange-300 dark:hover:bg-orange-950/20"
+                    : opt.value === "interest_only"
                       ? isActive
-                        ? "border-orange-500 bg-orange-50 text-orange-600 dark:bg-orange-950/30 dark:text-orange-300"
-                        : "border-orange-300 text-orange-600 hover:bg-orange-50 dark:border-orange-800 dark:text-orange-300 dark:hover:bg-orange-950/20"
-                      : opt.value === "interest_only"
+                        ? "border-purple-500 bg-purple-50 text-purple-600 dark:bg-purple-950/30 dark:text-purple-300"
+                        : "border-purple-300 text-purple-600 hover:bg-purple-50 dark:border-purple-800 dark:text-purple-300 dark:hover:bg-purple-950/20"
+                      : opt.value === "monthly" || opt.value === "installments"
                         ? isActive
-                          ? "border-purple-500 bg-purple-50 text-purple-600 dark:bg-purple-950/30 dark:text-purple-300"
-                          : "border-purple-300 text-purple-600 hover:bg-purple-50 dark:border-purple-800 dark:text-purple-300 dark:hover:bg-purple-950/20"
-                        : opt.value === "monthly" || opt.value === "installments"
-                          ? isActive
-                            ? "border-blue-500 bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-300"
-                            : "border-blue-300 text-blue-600 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-300 dark:hover:bg-blue-950/20"
-                          : isActive
-                            ? "border-emerald-500 bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-300"
-                            : "border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                          ? "border-blue-500 bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-300"
+                          : "border-blue-300 text-blue-600 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-300 dark:hover:bg-blue-950/20"
+                        : isActive
+                          ? "border-primary/50 bg-primary/10 text-primary dark:bg-primary/20"
+                          : "border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
 
-                return (
-                  <button
-                    key={opt.value}
-                    onClick={() => setLoanFilter(opt.value)}
-                    className={`inline-flex items-center gap-2 rounded-2xl border px-4 py-2 text-sm font-semibold transition ${toneClass}`}
-                  >
-                    {opt.label}
-                  </button>
-                )
-              })}
-            </div>
-          )}
-
-          <button
-            onClick={() => {
-              setTagFilterOpen((current) => !current)
-              setFilterOpen(false)
-            }}
-            className="inline-flex items-center gap-2 rounded-2xl border border-orange-500 bg-white px-4 py-2 text-sm font-semibold text-orange-500 transition hover:bg-orange-50 dark:bg-zinc-900 dark:hover:bg-zinc-800"
-          >
-            <Tag className="h-4 w-4" />
-            Etiqueta
-            <ChevronDown className={`h-4 w-4 transition-transform ${tagFilterOpen ? "rotate-180" : ""}`} />
-          </button>
-
-          {tagFilterOpen && (
-            <div className="flex items-center gap-2 flex-wrap">
-              {tagOptions.map((opt) => {
-                const isActive = loanFilter === opt.value
-
-                return (
-                  <button
-                    key={opt.value}
-                    onClick={() => setLoanFilter(opt.value)}
-                    className={`inline-flex items-center gap-2 rounded-2xl border px-4 py-2 text-sm font-semibold transition ${isActive ? "border-orange-500 bg-orange-50 text-orange-500 dark:bg-orange-950/30 dark:text-orange-300" : "border-orange-300 text-orange-500 hover:bg-orange-50 dark:border-orange-800 dark:text-orange-300 dark:hover:bg-orange-950/20"}`}
-                  >
-                    {opt.label}
-                  </button>
-                )
-              })}
-            </div>
-          )}
-
-        </div>
-        <div className="flex bg-gray-50 dark:bg-zinc-800 rounded-lg p-1 border border-gray-200 dark:border-zinc-800">
-          <button
-            onClick={() => setViewMode("grid")}
-            className={`p-1.5 rounded-md transition-colors ${viewMode === "grid" ? "bg-gray-200 dark:bg-zinc-700 text-gray-900 dark:text-zinc-100" : "text-gray-400 dark:text-zinc-500 hover:text-gray-700 dark:text-zinc-300"}`}
-          >
-            <LayoutGrid className="h-4 w-4" />
-          </button>
-          <button
-            onClick={() => setViewMode("list")}
-            className={`p-1.5 rounded-md transition-colors ${viewMode === "list" ? "bg-gray-200 dark:bg-zinc-700 text-gray-900 dark:text-zinc-100" : "text-gray-400 dark:text-zinc-500 hover:text-gray-700 dark:text-zinc-300"}`}
-          >
-            <List className="h-4 w-4" />
-          </button>
-        </div>
+              return (
+                <button
+                  key={opt.value}
+                  onClick={() => setLoanFilter(opt.value)}
+                  className={`inline-flex items-center gap-2 rounded-2xl border px-4 py-2 text-sm font-semibold transition ${toneClass}`}
+                >
+                  {opt.label}
+                </button>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       {selectedTag && (
@@ -1323,11 +1410,11 @@ export default function EmprestimosPage() {
           </div>
           <div className="flex-1 rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-5 py-4">
             <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Total a Receber</p>
-            <p className="text-xl font-bold tabular-nums text-emerald-600 dark:text-emerald-400 mt-1">{formatCurrency(filteredLoans.reduce((s, l) => s + l.totalAmount, 0))}</p>
+            <p className="text-xl font-bold tabular-nums text-primary mt-1">{formatCurrency(filteredLoans.reduce((s, l) => s + l.totalAmount, 0))}</p>
           </div>
           <div className="flex-1 rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-5 py-4">
             <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Lucro a Receber</p>
-            <p className="text-xl font-bold tabular-nums text-violet-600 dark:text-violet-400 mt-1">{formatCurrency(filteredLoans.reduce((s, l) => s + l.profit, 0))}</p>
+            <p className="text-xl font-bold tabular-nums text-primary mt-1">{formatCurrency(filteredLoans.reduce((s, l) => s + l.profit, 0))}</p>
           </div>
         </div>
         <p className="text-sm text-gray-500 dark:text-zinc-400 mb-2">{filteredLoans.length} empréstimo{filteredLoans.length !== 1 ? "s" : ""}</p>
@@ -1366,7 +1453,7 @@ export default function EmprestimosPage() {
                     <td className="px-4 py-3 tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(loan.totalAmount)}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1.5">
-                        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                        <CheckCircle2 className="h-4 w-4 text-primary" />
                         <span className="tabular-nums text-gray-700 dark:text-zinc-300">{loan.installments.filter(i => i.status === "PAID").length}/{loan.installmentCount}</span>
                       </div>
                     </td>
@@ -1480,14 +1567,14 @@ export default function EmprestimosPage() {
                       <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${status.color}`}>
                         {status.label}
                       </span>
-                      <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400">
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/15 dark:bg-primary/20 text-primary">
                         {MODALITY_LABELS[loan.modality] || loan.modality}
                       </span>
                     </div>
                     <div className="flex flex-wrap items-center gap-1 sm:justify-end">
                       <button
                         onClick={() => { setEditingTags(loan.tags || []); setTagInput(""); setShowTagForm(false); setTagDialog(loan) }}
-                        className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors"
+                        className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-primary border border-primary/20 dark:border-primary/30 hover:bg-primary/10 dark:hover:bg-primary/20 transition-colors"
                         title="Etiqueta"
                       >
                         <Tag className="h-3 w-3" /> Etiqueta
@@ -1529,11 +1616,11 @@ export default function EmprestimosPage() {
                     </div>
                     <div className={`${cellBg} px-3 py-2.5`}>
                       <p className="text-[11px] text-gray-400 dark:text-zinc-500 flex items-center gap-1"><Lock className="h-3 w-3" /> Lucro Previsto</p>
-                      <p className="text-sm font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">{formatCurrency(loan.profit)}</p>
+                      <p className="text-sm font-semibold tabular-nums text-primary">{formatCurrency(loan.profit)}</p>
                     </div>
                     <div className={`${cellBg} px-3 py-2.5 text-right`}>
                       <p className="text-[11px] text-gray-400 dark:text-zinc-500 flex items-center gap-1 justify-end"><Check className="h-3 w-3" /> Lucro Realizado</p>
-                      <p className="text-sm font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">{formatCurrency(receivedProfit)} <span className="text-gray-400 dark:text-zinc-500 text-xs">{profitPct}%</span></p>
+                      <p className="text-sm font-semibold tabular-nums text-primary">{formatCurrency(receivedProfit)} <span className="text-gray-400 dark:text-zinc-500 text-xs">{profitPct}%</span></p>
                     </div>
                   </div>
 
@@ -1563,7 +1650,7 @@ export default function EmprestimosPage() {
                         <Pencil className="h-3 w-3 text-gray-300 dark:text-zinc-600" />
                       </div>
                       <div className="flex flex-wrap items-center gap-1.5 sm:justify-end">
-                        <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
+                        <DollarSign className="h-3.5 w-3.5 text-primary" />
                         <span className="font-medium text-gray-700 dark:text-zinc-300">Pago: {formatCurrency(paid)}</span>
                       </div>
                     </div>
@@ -1660,19 +1747,19 @@ export default function EmprestimosPage() {
                   <div className="px-4 pt-3 pb-4 mt-2 border-t border-gray-100 dark:border-zinc-800 space-y-3">
                     {(status.label === "Atrasado" || status.label === "Inadimplente") && (
                       <div>
-                          <Button size="sm" onClick={() => openWhatsappDialog(loan)} className="w-full h-9 text-sm bg-green-600 hover:bg-green-700 text-white transition-colors">
+                          <Button size="sm" onClick={() => openWhatsappDialog(loan)} className="w-full h-9 text-sm bg-red-600 hover:bg-red-700 text-white transition-colors">
                             <MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Cobrar via WhatsApp
                           </Button>
                       </div>
                     )}
                     <div className="grid w-full min-w-0 grid-cols-[minmax(0,2.2fr)_minmax(0,2.8fr)_repeat(5,minmax(0,1fr))] gap-1.5 pb-1">
-                      <Button size="sm" onClick={() => openPaymentDialog(loan)} className="min-w-0 h-10 px-2 text-xs border border-emerald-100 bg-emerald-50 font-medium text-emerald-700 shadow-none transition-colors hover:bg-emerald-100 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300 dark:hover:bg-emerald-900/30 sm:text-sm">
+                      <Button size="sm" onClick={() => openPaymentDialog(loan)} className="min-w-0 h-10 px-2 text-xs border border-primary/15 bg-primary/10 font-medium text-primary shadow-none transition-colors hover:bg-primary/15 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20 sm:text-sm">
                         <Receipt className="mr-1 h-4 w-4 shrink-0" /> <span className="truncate">Pagar</span>
                       </Button>
-                      <Button size="sm" onClick={() => openInterestRenegotiateDialog(loan)} className="min-w-0 h-10 px-2 text-xs border border-emerald-100 bg-emerald-50 font-medium text-emerald-700 shadow-none transition-colors hover:bg-emerald-100 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300 dark:hover:bg-emerald-900/30 sm:text-sm">
+                      <Button size="sm" onClick={() => openInterestRenegotiateDialog(loan)} className="min-w-0 h-10 px-2 text-xs border border-primary/15 bg-primary/10 font-medium text-primary shadow-none transition-colors hover:bg-primary/15 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20 sm:text-sm">
                         <DollarSign className="mr-1 h-4 w-4 shrink-0" /> <span className="truncate">Pagar Juros</span>
                       </Button>
-                      <button className="flex min-w-0 w-full items-center justify-center rounded-xl bg-emerald-50 p-2 text-emerald-600 transition-colors hover:bg-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-400 dark:hover:bg-emerald-900/40" onClick={() => router.push(`/emprestimos/${loan.id}`)} title="Histórico">
+                      <button className="flex min-w-0 w-full items-center justify-center rounded-xl bg-primary/10 p-2 text-primary transition-colors hover:bg-primary/15 dark:bg-primary/20 dark:text-primary dark:hover:bg-primary/20" onClick={() => router.push(`/emprestimos/${loan.id}`)} title="Histórico">
                         <RotateCcw className="h-4 w-4" />
                       </button>
                       <button className="flex min-w-0 w-full items-center justify-center rounded-xl bg-blue-50 p-2 text-blue-600 transition-colors hover:bg-blue-100 dark:bg-blue-950/30 dark:text-blue-400 dark:hover:bg-blue-900/40" onClick={() => router.push(`/emprestimos/${loan.id}/editar`)} title="Editar">
@@ -1706,7 +1793,7 @@ export default function EmprestimosPage() {
                           <span className="text-xs font-semibold text-gray-700 dark:text-zinc-300">{Math.round((loan.installments.filter((i: any) => i.status === "PAID").length / loan.installmentCount) * 100)}%</span>
                         </div>
                         <div className="w-full bg-gray-200 dark:bg-zinc-700 rounded-full h-2">
-                          <div className="bg-emerald-500 h-2 rounded-full transition-all" style={{ width: `${(loan.installments.filter((i: any) => i.status === "PAID").length / loan.installmentCount) * 100}%` }} />
+                          <div className="bg-primary/100 h-2 rounded-full transition-all" style={{ width: `${(loan.installments.filter((i: any) => i.status === "PAID").length / loan.installmentCount) * 100}%` }} />
                         </div>
                         <p className="text-[10px] text-gray-400 dark:text-zinc-500 mt-1">{loan.installments.filter((i: any) => i.status === "PAID").length} de {loan.installmentCount} parcela(s) paga(s) • {loan.installments.filter((i: any) => i.status !== "PAID").length} restante(s)</p>
                       </div>
@@ -1722,7 +1809,7 @@ export default function EmprestimosPage() {
                               <span className="text-gray-600 dark:text-zinc-400">Parcela {idx + 1}/{loan.installmentCount}</span>
                               <span className="font-medium text-gray-900 dark:text-zinc-100">{formatCurrency(inst.amount)}</span>
                               <span className="text-gray-500 dark:text-zinc-400">{formatDate(inst.dueDate)}</span>
-                              <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${inst.status === "PAID" ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400" : "bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-400"}`}>
+                              <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${inst.status === "PAID" ? "bg-primary/15 dark:bg-primary/20 text-primary" : "bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-400"}`}>
                                 {inst.status === "PAID" ? "Pago" : "Pendente"}
                               </span>
                             </div>
@@ -1752,7 +1839,7 @@ export default function EmprestimosPage() {
                           </div>
                           <div>
                             <p className="text-gray-400 dark:text-zinc-500">Total de Juros</p>
-                            <p className="font-medium text-emerald-600 dark:text-emerald-400">{formatCurrency(loan.totalInterest || loan.profit)}</p>
+                            <p className="font-medium text-primary">{formatCurrency(loan.totalInterest || loan.profit)}</p>
                           </div>
                         </div>
                       </div>
@@ -1780,10 +1867,10 @@ export default function EmprestimosPage() {
               const isGroupOrange = groupStatus.label === "Pendente"
               const isGroupRed = groupStatus.label === "Atrasado" || groupStatus.label === "Inadimplente"
 
-              const fCardBorder = isGroupOrange ? "border-orange-300 dark:border-orange-800" : isGroupRed ? "border-red-300 dark:border-red-800" : "border-emerald-300 dark:border-emerald-800"
+              const fCardBorder = isGroupOrange ? "border-orange-300 dark:border-orange-800" : isGroupRed ? "border-red-300 dark:border-red-800" : "border-primary/30 dark:border-primary/30"
               const fCardBg = isGroupOrange ? "bg-orange-50 dark:bg-orange-950/20" : isGroupRed ? "bg-red-50 dark:bg-red-950/20" : "bg-white dark:bg-zinc-900"
-              const fRemainingColor = isGroupRed ? "text-red-600 dark:text-red-400" : isGroupOrange ? "text-orange-600 dark:text-orange-400" : groupStatus.label === "Quitado" ? "text-blue-600 dark:text-blue-400" : "text-emerald-600 dark:text-emerald-400"
-              const fRemainingBg = isGroupOrange ? "bg-orange-50 dark:bg-orange-950/30" : isGroupRed ? "bg-red-50 dark:bg-red-950/30" : "bg-emerald-50 dark:bg-emerald-950/30"
+              const fRemainingColor = isGroupRed ? "text-red-600 dark:text-red-400" : isGroupOrange ? "text-orange-600 dark:text-orange-400" : groupStatus.label === "Quitado" ? "text-blue-600 dark:text-blue-400" : "text-primary"
+              const fRemainingBg = isGroupOrange ? "bg-orange-50 dark:bg-orange-950/30" : isGroupRed ? "bg-red-50 dark:bg-red-950/30" : "bg-primary/10 dark:bg-primary/20"
 
               return (
                 <div key={group.clientId} className={`rounded-xl border overflow-hidden shadow-sm hover:shadow-md transition-shadow ${fCardBorder} ${fCardBg}`}>
@@ -1827,47 +1914,31 @@ export default function EmprestimosPage() {
                     </div>
                     <div className="bg-white dark:bg-zinc-900 px-3 py-2.5">
                       <p className="text-[11px] text-gray-400 dark:text-zinc-500 flex items-center gap-1"><Lock className="h-3 w-3" /> Lucro Previsto</p>
-                      <p className="text-sm font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">{formatCurrency(totalProfit)}</p>
+                      <p className="text-sm font-semibold tabular-nums text-primary">{formatCurrency(totalProfit)}</p>
                     </div>
                     <div className="bg-white dark:bg-zinc-900 px-3 py-2.5 text-right">
                       <p className="text-[11px] text-gray-400 dark:text-zinc-500 flex items-center gap-1 justify-end"><Check className="h-3 w-3" /> Recebido</p>
-                      <p className="text-sm font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">{formatCurrency(totalReceivedProfit)}</p>
+                      <p className="text-sm font-semibold tabular-nums text-primary">{formatCurrency(totalReceivedProfit)}</p>
                     </div>
                   </div>
 
                   {/* Lista de empréstimos */}
                   <div className="px-4 py-3 mt-2">
-                    <p className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-zinc-500">Empréstimos na Pasta</p>
-                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 2xl:grid-cols-3">
+                    <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-zinc-500">Empréstimos na Pasta</p>
+                    <div className="flex flex-col">
                       {group.loans.map((loan) => {
                         const nextI = getNextDueInst(loan)
                         const loanStatus = getLoanStatusInfo(loan)
                         return (
-                          <div key={loan.id} className="rounded-xl border border-gray-200 bg-white/90 p-3 shadow-sm dark:border-zinc-700 dark:bg-zinc-900/80">
-                            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                              <div className="min-w-0">
-                                <p className="text-[11px] uppercase tracking-[0.08em] text-gray-400 dark:text-zinc-500">Emprestado</p>
-                                <p className="mt-1 text-base font-semibold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(loan.amount)}</p>
-                              </div>
-                              <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${loanStatus.color}`}>
-                                {loanStatus.label}
-                              </span>
+                          <div key={loan.id} className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-zinc-800 last:border-0">
+                            <div className="flex items-center gap-1.5 text-sm min-w-0">
+                              <DollarSign className="h-3.5 w-3.5 shrink-0 text-gray-400 dark:text-zinc-500" />
+                              <span className="font-medium tabular-nums text-gray-800 dark:text-zinc-200">{formatCurrency(loan.amount)}</span>
+                              <span className="text-gray-300 dark:text-zinc-600">•</span>
+                              <span className="text-xs text-gray-400 dark:text-zinc-500">Venc: {nextI ? formatDate(nextI.dueDate) : "—"}</span>
+                              <span className={`ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${loanStatus.color}`}>{loanStatus.label}</span>
                             </div>
-
-                            <div className="mt-3 grid grid-cols-1 gap-3 text-xs sm:grid-cols-2">
-                              <div className="rounded-lg bg-gray-50 px-2.5 py-2 dark:bg-zinc-800/70">
-                                <p className="text-[10px] uppercase tracking-[0.08em] text-gray-400 dark:text-zinc-500">Vencimento</p>
-                                <p className="mt-1 font-medium text-gray-700 dark:text-zinc-300">{nextI ? formatDate(nextI.dueDate) : "—"}</p>
-                              </div>
-                              <div className="rounded-lg bg-gray-50 px-2.5 py-2 dark:bg-zinc-800/70">
-                                <p className="text-[10px] uppercase tracking-[0.08em] text-gray-400 dark:text-zinc-500">Total</p>
-                                <p className="mt-1 font-semibold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(loan.totalAmount)}</p>
-                              </div>
-                            </div>
-
-                            <Button size="sm" onClick={() => openRenegotiateDialog(loan)} className="mt-3 h-8 w-full rounded-xl border border-emerald-100 bg-emerald-50 text-xs font-medium text-emerald-700 shadow-none hover:bg-emerald-100 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300 dark:hover:bg-emerald-900/30">
-                              <Receipt className="mr-1.5 h-3.5 w-3.5" /> Pagar
-                            </Button>
+                            <span className="ml-2 shrink-0 text-sm font-semibold tabular-nums text-gray-700 dark:text-zinc-300">{formatCurrency(loan.totalAmount)}</span>
                           </div>
                         )
                       })}
@@ -1882,14 +1953,14 @@ export default function EmprestimosPage() {
                         return st.label === "Atrasado" || st.label === "Inadimplente"
                       })
                       return overdueLoan ? (
-                        <Button size="sm" onClick={() => openWhatsappDialog(overdueLoan)} className="w-full h-9 text-sm bg-green-600 hover:bg-green-700 text-white transition-colors">
+                        <Button size="sm" onClick={() => openWhatsappDialog(overdueLoan)} className="w-full h-9 text-sm bg-red-600 hover:bg-red-700 text-white transition-colors">
                           <MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Cobrar via WhatsApp
                         </Button>
                       ) : null
                     })()}
                     <button
                       onClick={() => router.push(`/emprestimos/cliente/${group.clientId}`)}
-                      className="w-full py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                      className="w-full py-2.5 rounded-lg bg-primary hover:bg-primary/90 text-white text-sm font-medium transition-colors flex items-center justify-center gap-2"
                     >
                       <FolderOpen className="h-4 w-4" />
                       Abrir Pasta
@@ -1912,7 +1983,7 @@ export default function EmprestimosPage() {
             <button
               type="button"
               onClick={() => setNewClientDialog(true)}
-              className="w-full flex items-center justify-center gap-2 h-10 rounded-md border-2 border-dashed border-emerald-600 text-emerald-600 text-sm font-medium hover:bg-emerald-100 dark:bg-emerald-900/30 transition"
+              className="w-full flex items-center justify-center gap-2 h-10 rounded-md border-2 border-dashed border-primary/50 text-primary text-sm font-medium hover:bg-primary/15 dark:bg-primary/20 transition"
             >
               <Plus className="h-4 w-4" /> Cadastrar novo cliente
             </button>
@@ -1920,7 +1991,7 @@ export default function EmprestimosPage() {
               <button
                 type="button"
                 onClick={() => setClientPickerOpen((open) => !open)}
-                className="flex h-10 w-full items-center justify-between rounded-md border border-gray-300 bg-white px-3 text-left text-sm text-gray-900 transition hover:border-emerald-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                className="flex h-10 w-full items-center justify-between rounded-md border border-gray-300 bg-white px-3 text-left text-sm text-gray-900 transition hover:border-primary/50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
               >
                 <span className={`${selectedLoanClient ? "text-gray-900 dark:text-zinc-100" : "text-gray-500 dark:text-zinc-400"}`}>
                   {selectedLoanClient
@@ -1962,7 +2033,7 @@ export default function EmprestimosPage() {
                                 setClientSearch(client.name)
                                 setClientPickerOpen(false)
                               }}
-                              className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left transition-colors ${isSelected ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300" : "hover:bg-gray-50 dark:hover:bg-zinc-800/70"}`}
+                              className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left transition-colors ${isSelected ? "bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary" : "hover:bg-gray-50 dark:hover:bg-zinc-800/70"}`}
                             >
                               <div className="flex min-w-0 items-center gap-3">
                                 <Avatar name={client.name} src={client.photo} size="sm" />
@@ -1973,7 +2044,7 @@ export default function EmprestimosPage() {
                                   </p>
                                 </div>
                               </div>
-                              {isSelected && <Check className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-300" />}
+                              {isSelected && <Check className="h-4 w-4 shrink-0 text-primary dark:text-primary" />}
                             </button>
                           )
                         })}
@@ -2098,7 +2169,7 @@ export default function EmprestimosPage() {
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-500 dark:text-zinc-400">Lucro (juros):</span>
-                  <span className={`font-bold tabular-nums ${preview.totalInterest >= 0 ? "text-emerald-600" : "text-red-500"}`}>{formatCurrency(preview.totalInterest)}</span>
+                  <span className={`font-bold tabular-nums ${preview.totalInterest >= 0 ? "text-primary" : "text-red-500"}`}>{formatCurrency(preview.totalInterest)}</span>
                 </div>
               </div>
             </div>
@@ -2118,7 +2189,7 @@ export default function EmprestimosPage() {
             </div>
             <div>
               <Label>Total a Receber</Label>
-              <div className="mt-1 flex h-10 w-full items-center rounded-md bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 px-3 text-sm font-bold tabular-nums text-emerald-600">
+              <div className="mt-1 flex h-10 w-full items-center rounded-md bg-primary/10 dark:bg-primary/20 border border-primary/20 dark:border-primary/30 px-3 text-sm font-bold tabular-nums text-primary">
                 {formatCurrency(preview.totalAmount)}
               </div>
             </div>
@@ -2154,15 +2225,15 @@ export default function EmprestimosPage() {
             <p className="text-sm text-gray-500 dark:text-zinc-400 mb-2">Não cobra nos seguintes dias:</p>
             <div className="flex gap-6">
               <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-zinc-300 cursor-pointer">
-                <input type="checkbox" checked={skipSaturday} onChange={(e) => setSkipSaturday(e.target.checked)} className="rounded border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 text-emerald-500 focus:ring-emerald-500" />
+                <input type="checkbox" checked={skipSaturday} onChange={(e) => setSkipSaturday(e.target.checked)} className="rounded border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 text-primary focus:ring-ring" />
                 Sábado
               </label>
               <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-zinc-300 cursor-pointer">
-                <input type="checkbox" checked={skipSunday} onChange={(e) => setSkipSunday(e.target.checked)} className="rounded border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 text-emerald-500 focus:ring-emerald-500" />
+                <input type="checkbox" checked={skipSunday} onChange={(e) => setSkipSunday(e.target.checked)} className="rounded border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 text-primary focus:ring-ring" />
                 Domingo
               </label>
               <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-zinc-300 cursor-pointer">
-                <input type="checkbox" checked={skipHolidays} onChange={(e) => setSkipHolidays(e.target.checked)} className="rounded border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 text-emerald-500 focus:ring-emerald-500" />
+                <input type="checkbox" checked={skipHolidays} onChange={(e) => setSkipHolidays(e.target.checked)} className="rounded border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 text-primary focus:ring-ring" />
                 Feriados
               </label>
             </div>
@@ -2189,7 +2260,7 @@ export default function EmprestimosPage() {
                       className="flex-1"
                     />
                     {interestType === "SAC" && sacAmounts && sacAmounts[i] !== undefined && (
-                      <span className="text-sm font-semibold tabular-nums text-emerald-600 w-24 text-right shrink-0">{formatCurrency(sacAmounts[i])}</span>
+                      <span className="text-sm font-semibold tabular-nums text-primary w-24 text-right shrink-0">{formatCurrency(sacAmounts[i])}</span>
                     )}
                   </div>
                 )
@@ -2203,7 +2274,7 @@ export default function EmprestimosPage() {
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="mt-1 flex w-full rounded-md border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 px-3 py-2 text-sm text-gray-900 dark:text-zinc-100 min-h-[80px] resize-y focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="mt-1 flex w-full rounded-md border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 px-3 py-2 text-sm text-gray-900 dark:text-zinc-100 min-h-[80px] resize-y focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="Observações sobre o empréstimo..."
             />
           </div>
@@ -2247,7 +2318,7 @@ export default function EmprestimosPage() {
                   }
                   setFormTagInput("")
                 }}
-                className="px-3 py-2 rounded-lg bg-emerald-600 text-white text-sm hover:bg-emerald-700 transition-colors"
+                className="px-3 py-2 rounded-lg bg-primary text-white text-sm hover:bg-primary/90 transition-colors"
               >
                 <Plus className="h-4 w-4" />
               </button>
@@ -2257,16 +2328,16 @@ export default function EmprestimosPage() {
           {/* Juros diários */}
           <div
             className={`flex items-start gap-3 p-4 rounded-lg border cursor-pointer transition ${
-              dailyInterest ? "border-emerald-600 bg-emerald-50 dark:bg-emerald-950/30" : "border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900"
+              dailyInterest ? "border-primary/50 bg-primary/10 dark:bg-primary/20" : "border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900"
             }`}
             onClick={() => setDailyInterest(!dailyInterest)}
           >
-            <div className={`mt-0.5 h-4 w-4 rounded-full border-2 flex items-center justify-center shrink-0 ${dailyInterest ? "border-emerald-500" : "border-gray-300 dark:border-zinc-700"}`}>
-              {dailyInterest && <div className="h-2 w-2 rounded-full bg-emerald-50 dark:bg-emerald-950/300" />}
+            <div className={`mt-0.5 h-4 w-4 rounded-full border-2 flex items-center justify-center shrink-0 ${dailyInterest ? "border-primary/50" : "border-gray-300 dark:border-zinc-700"}`}>
+              {dailyInterest && <div className="h-2 w-2 rounded-full bg-primary/10 dark:bg-primary/200" />}
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <input type="checkbox" checked={dailyInterest} readOnly className="rounded border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 text-emerald-500" />
+                <input type="checkbox" checked={dailyInterest} readOnly className="rounded border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 text-primary" />
                 <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">Aplicar juros diários em caso de atraso</span>
               </div>
               <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">Se marcado, juros serão aplicados automaticamente por dia de atraso</p>
@@ -2293,12 +2364,12 @@ export default function EmprestimosPage() {
           {/* WhatsApp */}
           <div
             className={`flex items-start gap-3 p-4 rounded-lg border cursor-pointer transition ${
-              whatsappNotify ? "border-emerald-600 bg-emerald-50 dark:bg-emerald-950/30" : "border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900"
+              whatsappNotify ? "border-primary/50 bg-primary/10 dark:bg-primary/20" : "border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900"
             }`}
             onClick={() => setWhatsappNotify(!whatsappNotify)}
           >
-            <div className={`mt-0.5 h-4 w-4 rounded-full border-2 flex items-center justify-center shrink-0 ${whatsappNotify ? "border-emerald-500" : "border-gray-300 dark:border-zinc-700"}`}>
-              {whatsappNotify && <div className="h-2 w-2 rounded-full bg-emerald-50 dark:bg-emerald-950/300" />}
+            <div className={`mt-0.5 h-4 w-4 rounded-full border-2 flex items-center justify-center shrink-0 ${whatsappNotify ? "border-primary/50" : "border-gray-300 dark:border-zinc-700"}`}>
+              {whatsappNotify && <div className="h-2 w-2 rounded-full bg-primary/10 dark:bg-primary/200" />}
             </div>
             <div>
               <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">Receber notificação WhatsApp deste contrato</span>
@@ -2420,8 +2491,8 @@ export default function EmprestimosPage() {
                       className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
                         paymentType === t.key
                           ? t.key === "discount"
-                            ? "bg-white dark:bg-zinc-900 border-emerald-500 text-emerald-600 dark:text-emerald-400"
-                            : "bg-emerald-600 border-emerald-600 text-white"
+                            ? "bg-white dark:bg-zinc-900 border-primary/50 text-primary"
+                            : "bg-primary border-primary/50 text-white"
                           : "border-gray-300 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:border-gray-400 dark:hover:border-zinc-600"
                       }`}
                     >
@@ -2464,7 +2535,7 @@ export default function EmprestimosPage() {
                           }}
                           className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors text-left ${
                             isSelected
-                              ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30"
+                              ? "border-primary/50 bg-primary/10 dark:bg-primary/20"
                               : "border-gray-200 dark:border-zinc-700 hover:border-gray-300 dark:hover:border-zinc-600"
                           }`}
                         >
@@ -2532,7 +2603,7 @@ export default function EmprestimosPage() {
                       {firstSelectedInst.paidAmount > 0 && (
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-500 dark:text-zinc-400">Já pago:</span>
-                          <span className="text-emerald-600 font-medium">{formatCurrency(firstSelectedInst.paidAmount)}</span>
+                          <span className="text-primary font-medium">{formatCurrency(firstSelectedInst.paidAmount)}</span>
                         </div>
                       )}
                     </div>
@@ -2542,8 +2613,8 @@ export default function EmprestimosPage() {
 
               {/* Quitação com Desconto */}
               {paymentType === "discount" && (
-                <div className="rounded-xl border-2 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 p-4 space-y-3">
-                  <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
+                <div className="rounded-xl border-2 border-primary/50 bg-primary/10 dark:bg-primary/15 p-4 space-y-3">
+                  <p className="text-sm font-semibold text-primary flex items-center gap-1.5">
                     <span>%</span> Quitação com Desconto
                   </p>
                   <div className="flex items-center justify-between">
@@ -2557,7 +2628,7 @@ export default function EmprestimosPage() {
                     </div>
                   )}
                   {penalty > 0 && (
-                    <div className="flex items-center justify-between border-t border-emerald-200 dark:border-emerald-800 pt-2">
+                    <div className="flex items-center justify-between border-t border-primary/20 dark:border-primary/30 pt-2">
                       <span className="text-sm font-medium text-gray-700 dark:text-zinc-300">Total com Multa:</span>
                       <span className="text-lg font-bold text-gray-900 dark:text-zinc-100">{formatCurrency(totalWithPenalty)}</span>
                     </div>
@@ -2647,7 +2718,7 @@ export default function EmprestimosPage() {
                         d.setDate(d.getDate() + 30)
                         setPayNewDueDate(localDateStr(d))
                       }}
-                      className="px-3 py-2 rounded-lg text-xs font-medium border border-emerald-500 text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 hover:bg-emerald-100 dark:hover:bg-emerald-950/30 transition whitespace-nowrap"
+                      className="px-3 py-2 rounded-lg text-xs font-medium border border-primary/50 text-primary bg-primary/10 dark:bg-primary/15 hover:bg-primary/15 dark:hover:bg-primary/20 transition whitespace-nowrap"
                     >
                       +30 dias
                     </button>
@@ -2799,7 +2870,7 @@ export default function EmprestimosPage() {
                     }
                   }}
                   disabled={!payAmount || payAmount <= 0 || paying}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  className="bg-primary hover:bg-primary/90 text-white"
                 >
                   {paying ? "Processando..." : paymentType === "discount" ? "Quitar com Desconto" : "Registrar Pagamento"}
                 </Button>
@@ -2967,13 +3038,13 @@ export default function EmprestimosPage() {
                   {renegotiateEntry === "all" && (
                     <button
                       onClick={() => { setRenegotiateMode("total"); setRenegotiateDialog(null); setRenegotiateEntry("all"); openPaymentDialog(renegotiateDialog) }}
-                      className="w-full text-left rounded-xl border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:border-emerald-500 p-4 transition-colors flex items-center gap-4"
+                      className="w-full text-left rounded-xl border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:border-primary/50 p-4 transition-colors flex items-center gap-4"
                     >
-                      <div className="h-10 w-10 rounded-full bg-emerald-50 dark:bg-emerald-950/20 flex items-center justify-center shrink-0">
-                        <Receipt className="h-5 w-5 text-emerald-600" />
+                      <div className="h-10 w-10 rounded-full bg-primary/10 dark:bg-primary/15 flex items-center justify-center shrink-0">
+                        <Receipt className="h-5 w-5 text-primary" />
                       </div>
                       <div>
-                        <p className="font-semibold text-emerald-600">Pagamento Total</p>
+                        <p className="font-semibold text-primary">Pagamento Total</p>
                         <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">Registrar pagamento completo da parcela</p>
                       </div>
                     </button>
@@ -2981,13 +3052,13 @@ export default function EmprestimosPage() {
 
                   <button
                     onClick={() => { setRenegotiateMode("full"); setRenegotiateAmount(totalJuros) }}
-                    className="w-full text-left rounded-2xl border-2 border-emerald-600 bg-emerald-50/70 p-4 transition-colors flex items-center gap-4 shadow-sm dark:border-emerald-500 dark:bg-emerald-950/20"
+                    className="w-full text-left rounded-2xl border-2 border-primary/50 bg-primary/10/70 p-4 transition-colors flex items-center gap-4 shadow-sm dark:border-primary/50 dark:bg-primary/15"
                   >
-                    <div className="h-12 w-12 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center shrink-0">
-                      <DollarSign className="h-5 w-5 text-emerald-600" />
+                    <div className="h-12 w-12 rounded-full bg-primary/15 dark:bg-primary/20 flex items-center justify-center shrink-0">
+                      <DollarSign className="h-5 w-5 text-primary" />
                     </div>
                     <div>
-                      <p className="font-semibold text-emerald-600">Cliente pagou só os juros</p>
+                      <p className="font-semibold text-primary">Cliente pagou só os juros</p>
                       <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">Registrar pagamento apenas dos juros da parcela</p>
                     </div>
                   </button>
@@ -3009,12 +3080,12 @@ export default function EmprestimosPage() {
 
               {/* ===== FULL JUROS MODE ===== */}
               {renegotiateMode === "full" && (
-                <div className="rounded-xl border border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 p-5 space-y-5">
+                <div className="rounded-xl border border-primary/50 bg-primary/10 dark:bg-primary/20 p-5 space-y-5">
                   {/* Header with back */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <DollarSign className="h-5 w-5 text-emerald-600" />
-                      <span className="font-semibold text-emerald-600">Cliente pagou só os juros</span>
+                      <DollarSign className="h-5 w-5 text-primary" />
+                      <span className="font-semibold text-primary">Cliente pagou só os juros</span>
                     </div>
                     <button
                       onClick={() => setRenegotiateMode(null)}
@@ -3025,9 +3096,9 @@ export default function EmprestimosPage() {
                   </div>
 
                   {/* Summary box */}
-                  <div className="rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 p-3">
+                  <div className="rounded-lg bg-primary/10 dark:bg-primary/20 border border-primary/20 dark:border-primary/30 p-3">
                     <p className="text-sm text-gray-800 dark:text-zinc-200">
-                      <strong>Resumo:</strong> Cliente paga <span className="text-emerald-600 font-bold">{formatCurrency(renegotiateAmount)}</span> de juros agora.
+                      <strong>Resumo:</strong> Cliente paga <span className="text-primary font-bold">{formatCurrency(renegotiateAmount)}</span> de juros agora.
                     </p>
                     <p className="text-sm text-gray-800 dark:text-zinc-200">
                       No próximo mês, o valor a cobrar será: <strong>{formatCurrency(totalAfterJuros)}</strong>
@@ -3191,7 +3262,7 @@ export default function EmprestimosPage() {
                         <span className="font-bold text-cyan-600 text-base">{formatCurrency(jurosPendente)}</span>
                       </div>
                       {jurosPendente === 0 && renegotiateAmount > 0 && (
-                        <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1">✅ Juros completo! A dívida renovará para o próximo mês.</p>
+                        <p className="text-xs text-primary font-medium mt-1">✅ Juros completo! A dívida renovará para o próximo mês.</p>
                       )}
                     </div>
 
@@ -3211,7 +3282,7 @@ export default function EmprestimosPage() {
                     <textarea
                       value={renegotiateNotes}
                       onChange={(e) => setRenegotiateNotes(e.target.value)}
-                      className="mt-1 flex w-full rounded-md border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 px-3 py-2 text-sm text-gray-900 dark:text-zinc-100 min-h-[60px] resize-y focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      className="mt-1 flex w-full rounded-md border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 px-3 py-2 text-sm text-gray-900 dark:text-zinc-100 min-h-[60px] resize-y focus:outline-none focus:ring-2 focus:ring-ring"
                       placeholder="Observações sobre o pagamento..."
                     />
                   </div>
@@ -3224,7 +3295,7 @@ export default function EmprestimosPage() {
                     <Button
                       onClick={handleRenegotiatePayment}
                       disabled={!renegotiateAmount || renegotiateAmount <= 0 || paying}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                      className="bg-primary hover:bg-primary/90 text-white"
                     >
                       {paying ? "Processando..." : renegotiateMode === "partial" ? "Registrar Pagamento Parcial" : "Registrar Pagamento de Juros"}
                     </Button>
@@ -3240,10 +3311,10 @@ export default function EmprestimosPage() {
       <Dialog open={successDialog} onClose={() => setSuccessDialog(false)} className="max-w-md">
         <div className="space-y-5">
           <div className="text-center">
-            <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-950/30">
-              <CheckCircle2 className="h-6 w-6 text-emerald-600" />
+            <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 dark:bg-primary/20">
+              <CheckCircle2 className="h-6 w-6 text-primary" />
             </div>
-            <h2 className="text-lg font-bold text-emerald-600">Empréstimo Criado!</h2>
+            <h2 className="text-lg font-bold text-primary">Empréstimo Criado!</h2>
             <p className="text-sm text-gray-500 dark:text-zinc-400">Deseja enviar comprovante ao cliente?</p>
           </div>
 
@@ -3261,7 +3332,7 @@ export default function EmprestimosPage() {
               </div>
               <div className="flex items-center justify-between border-t border-gray-200 dark:border-zinc-700 pt-3">
                 <span className="text-sm text-gray-500 dark:text-zinc-400">Total a Receber:</span>
-                <span className="text-lg font-bold tabular-nums text-emerald-600">{formatCurrency(createdLoanInfo.totalAmount)}</span>
+                <span className="text-lg font-bold tabular-nums text-primary">{formatCurrency(createdLoanInfo.totalAmount)}</span>
               </div>
             </div>
           )}
@@ -3307,10 +3378,10 @@ export default function EmprestimosPage() {
         {paymentReceiptInfo && (
           <div className="space-y-5">
             <div className="text-center">
-              <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-950/30">
-                <Receipt className="h-6 w-6 text-emerald-600" />
+              <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 dark:bg-primary/20">
+                <Receipt className="h-6 w-6 text-primary" />
               </div>
-              <h2 className="text-lg font-bold text-emerald-600">Pagamento Registrado!</h2>
+              <h2 className="text-lg font-bold text-primary">Pagamento Registrado!</h2>
               <p className="text-sm text-gray-500 dark:text-zinc-400">Deseja baixar ou enviar o comprovante?</p>
             </div>
 
@@ -3329,7 +3400,7 @@ export default function EmprestimosPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500 dark:text-zinc-400">Valor Pago:</span>
-                <span className="font-bold text-emerald-600">{formatCurrency(paymentReceiptInfo.amount)}</span>
+                <span className="font-bold text-primary">{formatCurrency(paymentReceiptInfo.amount)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500 dark:text-zinc-400">Data:</span>
@@ -3342,15 +3413,15 @@ export default function EmprestimosPage() {
             </div>
 
             {paymentReceiptInfo.isCompleted && (
-              <div className="flex items-center justify-center gap-2 rounded-lg bg-emerald-100 dark:bg-emerald-950/40 py-2.5 px-4">
-                <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                <span className="font-bold text-emerald-700 dark:text-emerald-400">Contrato Quitado!</span>
+              <div className="flex items-center justify-center gap-2 rounded-lg bg-primary/15 dark:bg-primary/20 py-2.5 px-4">
+                <CheckCircle2 className="h-5 w-5 text-primary" />
+                <span className="font-bold text-primary">Contrato Quitado!</span>
               </div>
             )}
 
             <div className="grid grid-cols-3 gap-2">
               <Button
-                className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="gap-1.5 bg-primary hover:bg-primary/90 text-white"
                 onClick={() => {
                   const text = `📋 *Comprovante de Pagamento*\n\n📌 Tipo: ${paymentReceiptInfo.type}\n👤 Cliente: ${paymentReceiptInfo.clientName}\n📄 Parcela: ${paymentReceiptInfo.installmentLabel}\n💰 Valor Pago: ${formatCurrency(paymentReceiptInfo.amount)}\n📅 Data: ${paymentReceiptInfo.date}\n💵 Saldo Restante: ${formatCurrency(paymentReceiptInfo.remainingBalance)}${paymentReceiptInfo.isCompleted ? "\n\n✅ *Contrato Quitado!*" : ""}`
                   navigator.clipboard.writeText(text)
@@ -3360,7 +3431,7 @@ export default function EmprestimosPage() {
                 <Copy className="h-4 w-4" /> Copiar
               </Button>
               <Button
-                className="gap-1.5 bg-green-600 hover:bg-green-700 text-white"
+                className="gap-1.5 bg-primary hover:bg-primary/90 text-white"
                 onClick={() => {
                   const text = `📋 *Comprovante de Pagamento*\n\n📌 Tipo: ${paymentReceiptInfo.type}\n👤 Cliente: ${paymentReceiptInfo.clientName}\n📄 Parcela: ${paymentReceiptInfo.installmentLabel}\n💰 Valor Pago: ${formatCurrency(paymentReceiptInfo.amount)}\n📅 Data: ${paymentReceiptInfo.date}\n💵 Saldo Restante: ${formatCurrency(paymentReceiptInfo.remainingBalance)}${paymentReceiptInfo.isCompleted ? "\n\n✅ *Contrato Quitado!*" : ""}`
                   const phone = profilePhone?.replace(/\D/g, "") || ""
@@ -3370,7 +3441,7 @@ export default function EmprestimosPage() {
                 <Send className="h-4 w-4" /> Para Mim
               </Button>
               <Button
-                className="gap-1.5 bg-emerald-800 hover:bg-emerald-900 text-white"
+                className="gap-1.5 bg-primary/80 hover:bg-primary/70 text-white"
                 onClick={() => {
                   const printContent = `
                     <html><head><title>Comprovante</title>
@@ -3407,7 +3478,7 @@ export default function EmprestimosPage() {
       >
         {bulkResultDialog && (
           <div className="space-y-4 text-center">
-            <CheckCircle2 className="h-12 w-12 text-emerald-600 mx-auto" />
+            <CheckCircle2 className="h-12 w-12 text-primary mx-auto" />
             <p className="text-lg font-semibold text-gray-900 dark:text-zinc-100">
               Envio para clientes {bulkResultDialog.type} concluído
             </p>
@@ -3416,8 +3487,8 @@ export default function EmprestimosPage() {
                 <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{bulkResultDialog.total}</p>
                 <p className="text-xs text-gray-500 dark:text-zinc-400">Total</p>
               </div>
-              <div className="rounded-lg bg-emerald-50 dark:bg-emerald-950/30 p-3">
-                <p className="text-2xl font-bold text-emerald-600">{bulkResultDialog.sent}</p>
+              <div className="rounded-lg bg-primary/10 dark:bg-primary/20 p-3">
+                <p className="text-2xl font-bold text-primary">{bulkResultDialog.sent}</p>
                 <p className="text-xs text-gray-500 dark:text-zinc-400">Enviados</p>
               </div>
               <div className="rounded-lg bg-red-50 dark:bg-red-950/30 p-3">
@@ -3425,7 +3496,7 @@ export default function EmprestimosPage() {
                 <p className="text-xs text-gray-500 dark:text-zinc-400">Falhas</p>
               </div>
             </div>
-            <Button onClick={() => setBulkResultDialog(null)} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white">
+            <Button onClick={() => setBulkResultDialog(null)} className="w-full bg-primary hover:bg-primary/90 text-white">
               Fechar
             </Button>
           </div>
@@ -3469,16 +3540,16 @@ export default function EmprestimosPage() {
                 <button
                   type="button"
                   onClick={() => setWhatsappMessage(buildDefaultWhatsappMessage(whatsappLoan))}
-                  className="text-emerald-600 hover:underline"
+                  className="text-primary hover:underline"
                 >
                   Restaurar mensagem padrão
                 </button>
               </div>
 
               {whatsappSent ? (
-                <div className="rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 p-4 text-center">
-                  <CheckCircle2 className="h-8 w-8 text-emerald-600 mx-auto mb-2" />
-                  <p className="font-semibold text-emerald-700 dark:text-emerald-400">Mensagem enviada com sucesso!</p>
+                <div className="rounded-lg border border-primary/20 dark:border-primary/30 bg-primary/10 dark:bg-primary/20 p-4 text-center">
+                  <CheckCircle2 className="h-8 w-8 text-primary mx-auto mb-2" />
+                  <p className="font-semibold text-primary">Mensagem enviada com sucesso!</p>
                   <p className="text-xs text-gray-500 dark:text-zinc-400 mt-1">A cobrança foi enviada para {whatsappLoan.client.name}</p>
                 </div>
               ) : !getClientPhone(whatsappLoan) ? (
@@ -3494,7 +3565,7 @@ export default function EmprestimosPage() {
                     Cancelar
                   </Button>
                   <Button
-                    className="flex-1 gap-2 bg-green-600 hover:bg-green-700 text-white"
+                    className="flex-1 gap-2 bg-primary hover:bg-primary/90 text-white"
                     onClick={sendWhatsappMessage}
                     disabled={whatsappSending || !whatsappMessage.trim()}
                   >
@@ -3530,7 +3601,7 @@ export default function EmprestimosPage() {
                     {loansDueIn2Days.map(loan => (
                       <li key={loan.id} className="flex items-center justify-between text-xs text-blue-600 dark:text-blue-400">
                         <span>{loan.client.name}</span>
-                        <span className={getClientPhone(loan) ? "text-emerald-600" : "text-red-500"}>
+                        <span className={getClientPhone(loan) ? "text-primary" : "text-red-500"}>
                           {getClientPhone(loan) ? "✓ com telefone" : "✗ sem telefone"}
                         </span>
                       </li>
@@ -3556,10 +3627,10 @@ export default function EmprestimosPage() {
           ) : (
             <>
               <div className="space-y-3">
-                <div className="flex items-center gap-3 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/20 p-4">
-                  <CheckCircle2 className="h-6 w-6 text-emerald-500 shrink-0" />
+                <div className="flex items-center gap-3 rounded-xl border border-primary/20 dark:border-primary/30 bg-primary/10 dark:bg-primary/15 p-4">
+                  <CheckCircle2 className="h-6 w-6 text-primary shrink-0" />
                   <div>
-                    <p className="font-semibold text-emerald-700 dark:text-emerald-300">{batchResult.sent} mensagem{batchResult.sent !== 1 ? "s" : ""} enviada{batchResult.sent !== 1 ? "s" : ""}</p>
+                    <p className="font-semibold text-primary dark:text-primary">{batchResult.sent} mensagem{batchResult.sent !== 1 ? "s" : ""} enviada{batchResult.sent !== 1 ? "s" : ""}</p>
                   </div>
                 </div>
                 {batchResult.noPhone > 0 && (

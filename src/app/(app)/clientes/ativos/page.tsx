@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -43,7 +43,7 @@ export default function ClientesAtivosPage() {
   if (loading) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
       </div>
     )
   }
@@ -92,7 +92,7 @@ export default function ClientesAtivosPage() {
                     <TableCell>{client.phone || "—"}</TableCell>
                     <TableCell>{client.address || "—"}</TableCell>
                     <TableCell>
-                      <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                      <Badge className="bg-primary/10 text-primary dark:bg-primary/15 dark:text-primary">
                         <CheckCircle className="h-3 w-3 mr-1" />
                         Ativo
                       </Badge>

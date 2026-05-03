@@ -143,6 +143,51 @@ async function resolveSessionUserId(session: any) {
   return user?.id ?? null
 }
 
+export async function GET() {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user) {
+      return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
+    }
+
+    const userId = await resolveSessionUserId(session)
+    if (!userId) {
+      return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 })
+    }
+
+    const [clients, expenses] = await Promise.all([
+      prisma.client.findMany({
+        where: { userId },
+        include: {
+          loans: { include: { installments: true, payments: true } },
+          sales: { include: { saleInstallments: true } },
+          vehicles: true,
+        },
+      }),
+      prisma.expense.findMany({ where: { userId } }),
+    ])
+
+    const payload = {
+      version: "1.0",
+      exportedAt: new Date().toISOString(),
+      clients,
+      expenses,
+    }
+
+    const json = JSON.stringify(payload, null, 2)
+    const filename = `backup-completo-${localDateStr()}.json`
+
+    return new NextResponse(json, {
+      headers: {
+        "Content-Type": "application/json",
+        "Content-Disposition": `attachment; filename="${filename}"`,
+      },
+    })
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message || "Erro ao gerar backup" }, { status: 500 })
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions)

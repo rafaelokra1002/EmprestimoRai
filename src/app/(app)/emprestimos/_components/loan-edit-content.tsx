@@ -167,7 +167,7 @@ export function LoanEditContent({ presentation = "page", onClose }: LoanEditCont
   const selectedClient = clients.find((client) => client.id === clientId)
 
   const inputClass = "mt-1.5 h-9 rounded-xl border-gray-200 bg-white px-3 text-sm text-slate-700 shadow-none"
-  const selectClass = "mt-1.5 h-9 w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 pr-9 text-sm text-slate-700 outline-none transition focus-visible:ring-2 focus-visible:ring-emerald-500"
+  const selectClass = "mt-1.5 h-9 w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 pr-9 text-sm text-slate-700 outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
   const helperClass = "mt-1 text-xs text-slate-400"
   const labelClass = "text-sm font-medium text-slate-700 dark:text-zinc-300"
 
@@ -295,7 +295,7 @@ export function LoanEditContent({ presentation = "page", onClose }: LoanEditCont
 
         <div>
           <Label className="text-base font-medium text-slate-800 dark:text-zinc-100">Cliente *</Label>
-          <div className="relative mt-2 overflow-hidden rounded-2xl border border-emerald-100 bg-emerald-50/70 dark:border-emerald-900/40 dark:bg-emerald-950/20">
+          <div className="relative mt-2 overflow-hidden rounded-2xl border border-primary/20 bg-primary/10 dark:border-primary/30 dark:bg-primary/15">
             <select
               value={clientId}
               onChange={(e) => setClientId(e.target.value)}
@@ -312,8 +312,8 @@ export function LoanEditContent({ presentation = "page", onClose }: LoanEditCont
               <div className="flex min-w-0 items-center gap-3">
                 {selectedClient ? (
                   <>
-                    <Avatar name={selectedClient.name} src={selectedClient.photo} size="sm" className="bg-emerald-200 text-emerald-700" />
-                    <span className="truncate text-base font-medium text-emerald-900 dark:text-emerald-100">{selectedClient.name}</span>
+                    <Avatar name={selectedClient.name} src={selectedClient.photo} size="sm" className="bg-primary/20 text-primary" />
+                    <span className="truncate text-base font-medium text-gray-900 dark:text-zinc-100">{selectedClient.name}</span>
                     <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-600 dark:bg-amber-950/30 dark:text-amber-300">
                       💰 {selectedClient.score}
                     </span>
@@ -322,7 +322,7 @@ export function LoanEditContent({ presentation = "page", onClose }: LoanEditCont
                   <span className="text-sm text-slate-500 dark:text-zinc-400">Selecione o cliente</span>
                 )}
               </div>
-              <ChevronDown className="h-4 w-4 text-emerald-500 dark:text-emerald-300" />
+              <ChevronDown className="h-4 w-4 text-primary" />
             </div>
           </div>
         </div>
@@ -386,7 +386,7 @@ export function LoanEditContent({ presentation = "page", onClose }: LoanEditCont
 
         <div>
           <Label className="text-base font-medium text-slate-800 dark:text-zinc-100">Total a Receber</Label>
-          <div className="mt-2 flex h-12 w-full items-center rounded-2xl border border-emerald-100 bg-emerald-50/60 px-4 text-[1.35rem] font-semibold tracking-[-0.02em] text-emerald-600 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300">
+          <div className="mt-2 flex h-12 w-full items-center rounded-2xl border border-primary/20 bg-primary/10 px-4 text-[1.35rem] font-semibold tracking-[-0.02em] text-primary dark:border-primary/30 dark:bg-primary/15">
             {formatCurrency(preview.totalAmount)}
           </div>
         </div>
@@ -396,7 +396,7 @@ export function LoanEditContent({ presentation = "page", onClose }: LoanEditCont
             <Label className="text-base font-medium text-slate-800 dark:text-zinc-100">Data do Contrato</Label>
             <div className="relative">
               <Input type="date" value={contractDate} onChange={(e) => setContractDate(e.target.value)} className={`${inputClass} pr-11`} />
-              <CalendarDays className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-emerald-500" />
+              <CalendarDays className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-primary" />
             </div>
             <p className={helperClass}>Quando foi fechado</p>
           </div>
@@ -404,7 +404,7 @@ export function LoanEditContent({ presentation = "page", onClose }: LoanEditCont
             <Label className="text-base font-medium text-slate-800 dark:text-zinc-100">1ª Parcela *</Label>
             <div className="relative">
               <Input type="date" value={firstInstallmentDate} onChange={(e) => setFirstInstallmentDate(e.target.value)} className={`${inputClass} pr-11`} />
-              <CalendarDays className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-emerald-500" />
+              <CalendarDays className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-primary" />
             </div>
             <p className={helperClass}>Quando começa a pagar</p>
           </div>
@@ -427,7 +427,7 @@ export function LoanEditContent({ presentation = "page", onClose }: LoanEditCont
                     }}
                     className={`${inputClass} mt-0 pr-11`}
                   />
-                  <CalendarDays className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-emerald-500" />
+                  <CalendarDays className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-primary" />
                 </div>
               </div>
             ))}
@@ -490,7 +490,7 @@ export function LoanEditContent({ presentation = "page", onClose }: LoanEditCont
                 }
                 setTagInput("")
               }}
-              className="rounded-2xl bg-emerald-600 px-4 py-3 text-white transition-colors hover:bg-emerald-700"
+              className="rounded-2xl bg-primary px-4 py-3 text-white transition-colors hover:bg-primary/90"
             >
               <Plus className="h-4 w-4" />
             </button>
@@ -517,7 +517,7 @@ export function LoanEditContent({ presentation = "page", onClose }: LoanEditCont
 
         <div className="flex justify-end gap-3 border-t border-gray-100 pt-2 dark:border-zinc-800">
           <Button variant="outline" className="rounded-2xl px-5" onClick={handleClose}>Cancelar</Button>
-          <Button className="rounded-2xl bg-emerald-600 px-5 text-white hover:bg-emerald-700" onClick={handleSave} disabled={saving}>{saving ? "Salvando..." : "Salvar Alterações"}</Button>
+          <Button className="rounded-2xl bg-primary px-5 text-white hover:bg-primary/90" onClick={handleSave} disabled={saving}>{saving ? "Salvando..." : "Salvar Alterações"}</Button>
         </div>
       </div>
     </div>

@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Avatar } from "@/components/avatar"
@@ -824,7 +824,7 @@ export default function ClientesDesaparecidosPage() {
             const statusBadgeClass = client.status === "DESAPARECIDO"
               ? "bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300"
               : client.status === "ACTIVE"
-                ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400"
+                ? "bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary"
                 : "bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300"
 
             return (
@@ -840,7 +840,7 @@ export default function ClientesDesaparecidosPage() {
                       {statusLabel}
                     </span>
                     {primaryLoan && (
-                      <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400">
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary">
                         {MODALITY_LABELS[primaryLoan.modality] || primaryLoan.modality}
                       </span>
                     )}
@@ -888,11 +888,11 @@ export default function ClientesDesaparecidosPage() {
                   </div>
                   <div className={`${cellBg} px-3 py-2.5`}>
                     <p className="text-[11px] text-gray-400 dark:text-zinc-500 flex items-center gap-1"><Wallet className="h-3 w-3" /> Lucro Previsto</p>
-                    <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">{formatCurrency(primaryLoan?.profit || 0)}</p>
+                    <p className="text-sm font-semibold text-primary dark:text-primary">{formatCurrency(primaryLoan?.profit || 0)}</p>
                   </div>
                   <div className={`${cellBg} px-3 py-2.5 text-right`}>
                     <p className="text-[11px] text-gray-400 dark:text-zinc-500 flex items-center justify-end gap-1"><Percent className="h-3 w-3" /> Lucro Realizado</p>
-                    <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">{formatCurrency(receivedProfit)} <span className="text-gray-400 dark:text-zinc-500 text-xs">{profitPct}%</span></p>
+                    <p className="text-sm font-semibold text-primary dark:text-primary">{formatCurrency(receivedProfit)} <span className="text-gray-400 dark:text-zinc-500 text-xs">{profitPct}%</span></p>
                   </div>
                 </div>
 
@@ -904,7 +904,7 @@ export default function ClientesDesaparecidosPage() {
                     <span>{client.city || "Sem cidade"}</span>
                   </div>
                   <div className="flex flex-wrap items-center gap-1.5 sm:justify-end">
-                    <Wallet className="h-3.5 w-3.5 text-emerald-500" />
+                    <Wallet className="h-3.5 w-3.5 text-primary" />
                     <span className="font-medium text-gray-700 dark:text-zinc-300">Pago: {formatCurrency(paid)}</span>
                   </div>
                 </div>
@@ -953,7 +953,7 @@ export default function ClientesDesaparecidosPage() {
                     type="button"
                     onClick={() => activeSection === "desaparecido" ? openClientDocuments(client) : markAsDisappeared(client.id)}
                     disabled={activeSection === "clientes" && savingId === client.id}
-                    className={`w-full h-9 text-sm text-white transition-colors ${activeSection === "desaparecido" ? "bg-green-600 hover:bg-green-700" : "bg-blue-600 hover:bg-blue-700"}`}
+                    className={`w-full h-9 text-sm text-white transition-colors ${activeSection === "desaparecido" ? "bg-primary hover:bg-primary/90" : "bg-blue-600 hover:bg-blue-700"}`}
                   >
                     <>
                       <FileText className="h-3.5 w-3.5 mr-1.5" /> Ver documentos
@@ -965,14 +965,14 @@ export default function ClientesDesaparecidosPage() {
                       variant="outline"
                       onClick={() => restoreClient(client.id)}
                       disabled={actionId === client.id}
-                      className="min-w-0 h-10 px-2 text-xs border border-emerald-100 bg-emerald-50 font-medium text-emerald-700 shadow-none transition-colors hover:bg-emerald-100 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300 dark:hover:bg-emerald-900/30 sm:text-sm"
+                      className="min-w-0 h-10 px-2 text-xs border border-primary/20 bg-primary/5 font-medium text-primary shadow-none transition-colors hover:bg-primary/15 dark:border-primary/20 dark:bg-primary/10 dark:text-primary dark:hover:bg-primary/15 sm:text-sm"
                     >
                       <RotateCcw className="mr-1 h-4 w-4 shrink-0" /> <span className="truncate">{actionId === client.id ? "Atualizando..." : "Reapareceu"}</span>
                     </Button>
                     <button
                       type="button"
                       onClick={() => primaryLoan ? openLoanDetails(primaryLoan.id) : openClientDocuments(client)}
-                      className="flex min-w-0 w-full items-center justify-center rounded-xl bg-emerald-50 p-2 text-emerald-600 transition-colors hover:bg-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-400 dark:hover:bg-emerald-900/40"
+                      className="flex min-w-0 w-full items-center justify-center rounded-xl bg-primary/5 p-2 text-primary transition-colors hover:bg-primary/15 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20"
                       title="Histórico"
                     >
                       <Eye className="h-4 w-4" />
@@ -1283,7 +1283,7 @@ export default function ClientesDesaparecidosPage() {
                           {client.phone || client.document || client.city || "Sem contato"}
                         </p>
                         <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
-                          <span className={`rounded-full px-2 py-0.5 font-medium ${hasActiveLoan ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300" : "bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-zinc-300"}`}>
+                          <span className={`rounded-full px-2 py-0.5 font-medium ${hasActiveLoan ? "bg-primary/5 text-primary dark:bg-primary/15 dark:text-primary" : "bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-zinc-300"}`}>
                             {hasActiveLoan ? "Com empréstimo ativo" : "Sem empréstimo ativo"}
                           </span>
                           <span className="rounded-full bg-gray-100 px-2 py-0.5 font-medium text-gray-600 dark:bg-zinc-800 dark:text-zinc-300">

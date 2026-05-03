@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -100,8 +100,8 @@ function KpiCard({
   return (
     <Card className="h-full">
       <CardContent className="p-5">
-        <div className={`rounded-lg ${iconBgClassName || "bg-emerald-50 dark:bg-emerald-950/30"} p-2 w-fit mb-3`}>
-          <Icon className={`h-5 w-5 ${iconClassName || "text-emerald-600"}`} />
+        <div className={`rounded-lg ${iconBgClassName || "bg-primary/5 dark:bg-primary/15"} p-2 w-fit mb-3`}>
+          <Icon className={`h-5 w-5 ${iconClassName || "text-primary"}`} />
         </div>
         <p className="text-xs text-gray-500 dark:text-zinc-400">{title}</p>
         <p className="mt-1 text-2xl leading-none font-medium tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{value}</p>
@@ -114,7 +114,7 @@ function KpiCard({
 function DeltaBadge({ value }: { value: number }) {
   const isPositive = value >= 0
   return (
-    <span className="rounded-md border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 text-[10px] font-medium tabular-nums text-emerald-700">
+    <span className="rounded-md border border-primary/30 dark:border-primary/30 bg-primary/5 dark:bg-primary/15 px-2 py-0.5 text-[10px] font-medium tabular-nums text-primary">
       {isPositive ? "+" : ""}
       {value.toFixed(1)}%
     </span>
@@ -125,6 +125,8 @@ export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [showInstallBanner, setShowInstallBanner] = useState(true)
+  const [showBackupAlert, setShowBackupAlert] = useState(false)
+  const [backupLoading, setBackupLoading] = useState(false)
   const { theme } = useTheme()
   const isDark = theme === "dark"
 
@@ -150,10 +152,38 @@ export default function DashboardPage() {
       .finally(() => setLoading(false))
   }, [])
 
+  useEffect(() => {
+    const last = localStorage.getItem("backup-alert-dismissed")
+    if (!last || (Date.now() - Number(last)) >= 2 * 24 * 60 * 60 * 1000) {
+      setShowBackupAlert(true)
+    }
+  }, [])
+
+  const handleBackup = async () => {
+    setBackupLoading(true)
+    try {
+      const res = await fetch("/api/backup")
+      if (!res.ok) throw new Error("Erro ao gerar backup")
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `backup-${new Date().toLocaleDateString("pt-BR").replace(/\//g, "-")}.json`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      localStorage.setItem("backup-alert-dismissed", String(Date.now()))
+      setShowBackupAlert(false)
+    } finally {
+      setBackupLoading(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
       </div>
     )
   }
@@ -182,7 +212,7 @@ export default function DashboardPage() {
           <h2 className="text-lg font-bold text-gray-900 dark:text-zinc-100">Bem-vindo de volta!</h2>
           <p className="text-sm text-gray-500 dark:text-zinc-400">Gerencie seus empréstimos</p>
         </div>
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 px-3 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 dark:bg-primary/20 px-3 py-1 text-xs font-semibold text-primary dark:text-primary">
           <Shield className="h-3.5 w-3.5" />
           Dono (acesso total)
         </span>
@@ -192,6 +222,26 @@ export default function DashboardPage() {
         <h1 className="text-xl font-bold text-gray-900 dark:text-zinc-100">Dashboard</h1>
         <p className="text-sm text-gray-500 dark:text-zinc-400">Visão geral do seu sistema financeiro</p>
       </div>
+
+      {/* Backup Alert */}
+      {showBackupAlert && (
+        <div className="flex items-center gap-4 rounded-xl border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/20 p-4">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/40">
+            <ShieldAlert className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">Lembrete de backup</p>
+            <p className="text-xs text-amber-700 dark:text-amber-400">Faça backup dos seus dados a cada 2 dias para evitar perdas. Clique em "Fazer Backup" para baixar o arquivo.</p>
+          </div>
+          <button
+            onClick={handleBackup}
+            disabled={backupLoading}
+            className="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 disabled:opacity-60 px-4 py-1.5 text-sm font-medium text-white transition-colors"
+          >
+            {backupLoading ? "Baixando..." : "Fazer Backup"}
+          </button>
+        </div>
+      )}
 
       {/* Install Banner */}
       {showInstallBanner && (
@@ -215,25 +265,25 @@ export default function DashboardPage() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-zinc-100">
-            <Calendar className="h-5 w-5 text-emerald-500" />
+            <Calendar className="h-5 w-5 text-primary" />
             Resumo da Semana
           </CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-3">
           <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/60 p-4">
             <div className="flex items-center gap-1.5 mb-1">
-              <FileText className="h-3.5 w-3.5 text-emerald-500" />
+              <FileText className="h-3.5 w-3.5 text-primary" />
               <p className="text-xs text-gray-500 dark:text-zinc-400">Contratos</p>
             </div>
-            <p className="text-2xl leading-none font-semibold tabular-nums tracking-tight text-emerald-600">{data?.weeklySummary?.contractsThisWeek || 0}</p>
+            <p className="text-2xl leading-none font-semibold tabular-nums tracking-tight text-primary">{data?.weeklySummary?.contractsThisWeek || 0}</p>
             <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">esta semana</p>
           </div>
           <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/60 p-4">
             <div className="flex items-center gap-1.5 mb-1">
-              <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
+              <DollarSign className="h-3.5 w-3.5 text-primary" />
               <p className="text-xs text-gray-500 dark:text-zinc-400">Recebido</p>
             </div>
-            <p className="text-2xl leading-none font-semibold tabular-nums tracking-tight text-emerald-600">{formatCurrency(data?.weeklySummary?.receivedThisWeek || 0)}</p>
+            <p className="text-2xl leading-none font-semibold tabular-nums tracking-tight text-primary">{formatCurrency(data?.weeklySummary?.receivedThisWeek || 0)}</p>
             <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">esta semana</p>
           </div>
           <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/60 p-4">
@@ -253,8 +303,8 @@ export default function DashboardPage() {
           value={formatCurrency(data?.totalReceived || 0)}
           subtitle="total histórico"
           icon={Receipt}
-          iconClassName="text-emerald-600"
-          iconBgClassName="bg-emerald-50 dark:bg-emerald-950/30"
+          iconClassName="text-primary"
+          iconBgClassName="bg-primary/5 dark:bg-primary/15"
         />
         <KpiCard
           title="Capital na Rua"
@@ -280,8 +330,8 @@ export default function DashboardPage() {
           value={`${data?.counters?.activeLoans || 0}`}
           subtitle={`${weekContractsDelta >= 0 ? "+" : ""}${weekContractsDelta.toFixed(0)} esta semana`}
           icon={DollarSign}
-          iconClassName="text-emerald-600"
-          iconBgClassName="bg-emerald-50 dark:bg-emerald-950/30"
+          iconClassName="text-primary"
+          iconBgClassName="bg-primary/5 dark:bg-primary/15"
         />
         <KpiCard
           title="Contratos"
@@ -307,8 +357,8 @@ export default function DashboardPage() {
           value={`${data?.counters?.totalClients || 0}`}
           subtitle="cadastrados"
           icon={Users}
-          iconClassName="text-emerald-600"
-          iconBgClassName="bg-emerald-50 dark:bg-emerald-950/30"
+          iconClassName="text-primary"
+          iconBgClassName="bg-primary/5 dark:bg-primary/15"
         />
         <KpiCard
           title="Gasto Mensal"
@@ -323,8 +373,8 @@ export default function DashboardPage() {
           value={formatCurrency(data?.financials?.monthlyReceivedInterest || 0)}
           subtitle="juros recebidos este mês"
           icon={TrendingUp}
-          iconClassName="text-emerald-600"
-          iconBgClassName="bg-emerald-50 dark:bg-emerald-950/30"
+          iconClassName="text-primary"
+          iconBgClassName="bg-primary/5 dark:bg-primary/15"
         />
       </div>
 
@@ -408,7 +458,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="h-3 overflow-hidden rounded-full bg-gray-200 dark:bg-zinc-700">
-              <div className="h-full bg-emerald-600" style={{ width: `${Math.min(100, healthScore)}%` }} />
+              <div className="h-full bg-primary" style={{ width: `${Math.min(100, healthScore)}%` }} />
             </div>
             <p className="text-sm text-gray-500 dark:text-zinc-400">Baseado em taxa de recebimento, inadimplência e margem de lucro</p>
 
@@ -417,30 +467,30 @@ export default function DashboardPage() {
                 <p className="text-xs text-gray-500 dark:text-zinc-400">Taxa de Recebimento</p>
                 <p className="mt-1 text-xl leading-none font-bold tabular-nums tracking-tight text-red-500">{collectionRate.toFixed(1)}%</p>
               </div>
-              <div className="rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 p-3">
+              <div className="rounded-lg border border-primary/30 dark:border-primary/30 bg-primary/5 dark:bg-primary/15 p-3">
                 <p className="text-xs text-gray-500 dark:text-zinc-400">Inadimplência</p>
-                <p className="mt-1 text-xl leading-none font-bold tabular-nums tracking-tight text-emerald-600">{defaultRate.toFixed(1)}%</p>
+                <p className="mt-1 text-xl leading-none font-bold tabular-nums tracking-tight text-primary">{defaultRate.toFixed(1)}%</p>
               </div>
-              <div className="rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 p-3">
+              <div className="rounded-lg border border-primary/30 dark:border-primary/30 bg-primary/5 dark:bg-primary/15 p-3">
                 <p className="text-xs text-gray-500 dark:text-zinc-400">Recebido</p>
-                <p className="mt-1 text-xl leading-none font-bold tabular-nums tracking-tight text-emerald-600">{formatCurrency(data?.totalReceived || 0)}</p>
+                <p className="mt-1 text-xl leading-none font-bold tabular-nums tracking-tight text-primary">{formatCurrency(data?.totalReceived || 0)}</p>
               </div>
-              <div className="rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 p-3">
+              <div className="rounded-lg border border-primary/30 dark:border-primary/30 bg-primary/5 dark:bg-primary/15 p-3">
                 <p className="text-xs text-gray-500 dark:text-zinc-400">Em Atraso</p>
-                <p className="mt-1 text-xl leading-none font-bold tabular-nums tracking-tight text-emerald-600">{data?.overdueCount || 0}</p>
+                <p className="mt-1 text-xl leading-none font-bold tabular-nums tracking-tight text-primary">{data?.overdueCount || 0}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="h-full border-emerald-200/80 dark:border-emerald-900/40 bg-emerald-50/40 dark:bg-emerald-950/10 shadow-[0_10px_22px_-16px_rgba(16,185,129,0.5)]">
+        <Card className="h-full border-primary/30/80 dark:border-primary/20 bg-primary/5/40 dark:bg-primary/5 shadow-[0_10px_22px_-16px_rgba(16,185,129,0.5)]">
           <CardHeader>
             <CardTitle>Alertas e acompanhamento</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {(data?.alerts || []).length === 0 ? (
-              <div className="rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 p-4">
-                <p className="flex items-center gap-2 text-2xl font-semibold text-emerald-600">
+              <div className="rounded-lg border border-primary/30 dark:border-primary/30 bg-primary/5 dark:bg-primary/15 p-4">
+                <p className="flex items-center gap-2 text-2xl font-semibold text-primary">
                   <Shield className="h-6 w-6" />
                   Tudo em ordem!
                 </p>

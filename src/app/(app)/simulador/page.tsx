@@ -129,113 +129,73 @@ export default function SimuladorPage() {
     { value: "SIMPLE", label: "Juros Simples" },
   ]
 
-  const frequencyHint: Record<PaymentType, string> = {
-    MONTHLY: "Próximas parcelas calculadas a partir desta data",
-    BIWEEKLY: "Parcelas a cada 15 dias a partir desta data",
-    WEEKLY: "Parcelas semanais a partir desta data",
-    DAILY: "Parcelas diárias a partir desta data",
-  }
 
   const formatDateBR = (d: Date) =>
     d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })
 
   return (
-    <div className="space-y-6 pt-6 pb-12">
+    <div className="space-y-4 pt-4 pb-8 max-w-2xl">
       {/* ===== HEADER ===== */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">Simulador de Empréstimo</h1>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-zinc-100 flex items-center gap-2">
+          <Calculator className="h-5 w-5 text-primary" /> Simulador de Empréstimo
+        </h1>
         <p className="text-sm text-gray-500 dark:text-zinc-400">Simule empréstimos antes de criar</p>
       </div>
 
       {/* ===== MAIN CARD ===== */}
-      <div className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-gray-50 dark:bg-zinc-800/80 p-5 space-y-6">
-        {/* Inner Header */}
-        <div className="flex items-center gap-2.5">
-          <Calculator className="h-5 w-5 text-emerald-600" />
-          <h2 className="text-lg font-bold text-gray-900 dark:text-zinc-100">Simulador de Empréstimo</h2>
-        </div>
+      <div className="rounded-xl border border-primary/30 bg-white dark:bg-zinc-900 p-4 space-y-3">
 
-        {/* Tipo de Pagamento + Modo de Juros */}
-        <div className="grid grid-cols-2 gap-4">
+        {/* Row 1: Tipo de Pagamento + Modo de Juros + Nº Parcelas */}
+        <div className="grid grid-cols-3 gap-3">
           <div>
-            <Label className="text-sm font-semibold text-gray-800 dark:text-zinc-200">Tipo de Pagamento</Label>
-            <div className="relative mt-1.5">
+            <Label className="text-xs font-semibold text-gray-600 dark:text-zinc-400">Tipo de Pagamento</Label>
+            <div className="relative mt-1">
               <select
                 value={paymentType}
                 onChange={(e) => setPaymentType(e.target.value as PaymentType)}
-                className="flex h-11 w-full rounded-lg border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-3 py-2 text-sm text-gray-900 dark:text-zinc-100 appearance-none pr-10"
+                className="flex h-9 w-full rounded-lg border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 px-3 py-1.5 text-sm text-gray-900 dark:text-zinc-100 appearance-none pr-8"
               >
                 {paymentOptions.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
               </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-zinc-500 pointer-events-none" />
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
             </div>
           </div>
           <div>
-            <Label className="text-sm font-semibold text-gray-800 dark:text-zinc-200">Modo de Juros</Label>
-            <div className="relative mt-1.5">
+            <Label className="text-xs font-semibold text-gray-600 dark:text-zinc-400">Modo de Juros</Label>
+            <div className="relative mt-1">
               <select
                 value={interestMode}
                 onChange={(e) => setInterestMode(e.target.value as InterestMode)}
-                className="flex h-11 w-full rounded-lg border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-3 py-2 text-sm text-gray-900 dark:text-zinc-100 appearance-none pr-10"
+                className="flex h-9 w-full rounded-lg border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 px-3 py-1.5 text-sm text-gray-900 dark:text-zinc-100 appearance-none pr-8"
               >
                 {interestOptions.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
               </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-zinc-500 pointer-events-none" />
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
             </div>
           </div>
-        </div>
-
-        {/* Nº de Parcelas + Data de Início */}
-        <div className="grid grid-cols-2 gap-4">
           <div>
-            <Label className="text-sm font-semibold text-gray-800 dark:text-zinc-200">Nº de Parcelas</Label>
+            <Label className="text-xs font-semibold text-gray-600 dark:text-zinc-400">Nº de Parcelas</Label>
             <Input
               type="number"
               min={1}
               max={360}
               value={installmentCount}
               onChange={(e) => setInstallmentCount(parseInt(e.target.value) || 1)}
-              className="mt-1.5 h-11 bg-gray-100 dark:bg-zinc-800 border-gray-300 dark:border-zinc-700"
+              className="mt-1 h-9 bg-gray-50 dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 text-sm"
             />
-          </div>
-          <div>
-            <Label className="text-sm font-semibold text-gray-800 dark:text-zinc-200">Data de Início</Label>
-            <div className="relative mt-1.5">
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-zinc-500" />
-              <Input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="h-11 bg-gray-100 dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 pl-10"
-              />
-            </div>
           </div>
         </div>
 
-        {/* Primeiro Vencimento */}
-        <div>
-          <Label className="text-sm font-semibold text-gray-800 dark:text-zinc-200">Primeiro Vencimento</Label>
-          <div className="relative mt-1.5">
-            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-zinc-500" />
-            <Input
-              type="date"
-              value={firstDueDate}
-              onChange={(e) => setFirstDueDate(e.target.value)}
-              className="h-11 bg-gray-100 dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 pl-10"
-            />
-          </div>
-          <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1.5">{frequencyHint[paymentType]}</p>
-        </div>
-
-        {/* Valor do Empréstimo + Taxa de Juros with SLIDERS */}
-        <div className="grid grid-cols-2 gap-4">
+        {/* Row 2: Valor + Taxa + Data Início + Primeiro Vencimento */}
+        <div className="grid grid-cols-4 gap-3">
           <div>
-            <Label className="text-sm font-semibold text-gray-800 dark:text-zinc-200 flex items-center gap-2">
-              <span className="text-emerald-600">$</span> Valor do Empréstimo
+            <Label className="text-xs font-semibold text-gray-600 dark:text-zinc-400 flex items-center gap-1">
+              <span className="text-primary text-xs">$</span> Valor
             </Label>
             <Input
               type="number"
@@ -244,7 +204,7 @@ export default function SimuladorPage() {
               max={100000}
               value={valor}
               onChange={(e) => setValor(parseFloat(e.target.value) || 0)}
-              className="mt-1.5 h-11 bg-gray-100 dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 text-lg font-medium"
+              className="mt-1 h-9 bg-gray-50 dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 text-sm font-medium"
             />
             <input
               type="range"
@@ -253,13 +213,12 @@ export default function SimuladorPage() {
               step={100}
               value={valor}
               onChange={(e) => setValor(parseFloat(e.target.value))}
-              className="w-full mt-2 h-1.5 rounded-full appearance-none cursor-pointer bg-gray-200 dark:bg-zinc-700 accent-emerald-500"
+              className="w-full mt-1.5 h-1 rounded-full appearance-none cursor-pointer bg-gray-200 dark:bg-zinc-700 accent-green-500"
             />
-            <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">R$ 100 - R$ 100.000</p>
           </div>
           <div>
-            <Label className="text-sm font-semibold text-gray-800 dark:text-zinc-200 flex items-center gap-2">
-              <span className="text-emerald-600">%</span> Taxa de Juros (%)
+            <Label className="text-xs font-semibold text-gray-600 dark:text-zinc-400 flex items-center gap-1">
+              <span className="text-primary text-xs">%</span> Taxa de Juros
             </Label>
             <Input
               type="number"
@@ -268,7 +227,7 @@ export default function SimuladorPage() {
               max={100}
               value={taxa}
               onChange={(e) => setTaxa(parseFloat(e.target.value) || 0)}
-              className="mt-1.5 h-11 bg-gray-100 dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 text-lg font-medium"
+              className="mt-1 h-9 bg-gray-50 dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 text-sm font-medium"
             />
             <input
               type="range"
@@ -277,38 +236,61 @@ export default function SimuladorPage() {
               step={0.5}
               value={taxa}
               onChange={(e) => setTaxa(parseFloat(e.target.value))}
-              className="w-full mt-2 h-1.5 rounded-full appearance-none cursor-pointer bg-gray-200 dark:bg-zinc-700 accent-emerald-500"
+              className="w-full mt-1.5 h-1 rounded-full appearance-none cursor-pointer bg-gray-200 dark:bg-zinc-700 accent-green-500"
             />
-            <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">Sem limite máximo</p>
+          </div>
+          <div>
+            <Label className="text-xs font-semibold text-gray-600 dark:text-zinc-400">Data de Início</Label>
+            <div className="relative mt-1">
+              <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
+              <Input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="h-9 bg-gray-50 dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 pl-8 text-sm"
+              />
+            </div>
+          </div>
+          <div>
+            <Label className="text-xs font-semibold text-gray-600 dark:text-zinc-400">1º Vencimento</Label>
+            <div className="relative mt-1">
+              <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
+              <Input
+                type="date"
+                value={firstDueDate}
+                onChange={(e) => setFirstDueDate(e.target.value)}
+                className="h-9 bg-gray-50 dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 pl-8 text-sm"
+              />
+            </div>
           </div>
         </div>
 
         {/* ===== RESULT CARDS ===== */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-xl border border-emerald-500/30 bg-emerald-50 dark:bg-emerald-950/300/5 p-4">
-            <p className="text-xs text-amber-600 font-medium">Valor da Parcela</p>
-            <p className="text-2xl font-bold tabular-nums tracking-tight text-emerald-600 mt-1">{formatCurrency(result.installmentValue)}</p>
+        <div className="grid grid-cols-4 gap-2 pt-1">
+          <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
+            <p className="text-[11px] text-amber-600 font-medium">Valor da Parcela</p>
+            <p className="text-lg font-bold tabular-nums tracking-tight text-primary mt-0.5">{formatCurrency(result.installmentValue)}</p>
           </div>
-          <div className="rounded-xl border border-emerald-500/30 bg-emerald-50 dark:bg-emerald-950/300/5 p-4">
-            <p className="text-xs text-amber-600 font-medium">Total de Juros</p>
-            <p className="text-2xl font-bold tabular-nums tracking-tight text-emerald-600 mt-1">{formatCurrency(result.totalInterest)}</p>
+          <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
+            <p className="text-[11px] text-amber-600 font-medium">Total de Juros</p>
+            <p className="text-lg font-bold tabular-nums tracking-tight text-primary mt-0.5">{formatCurrency(result.totalInterest)}</p>
           </div>
-          <div className="rounded-xl border border-emerald-500/30 bg-emerald-50 dark:bg-emerald-950/300/5 p-4">
-            <p className="text-xs text-amber-600 font-medium">Total a Receber</p>
-            <p className="text-2xl font-bold tabular-nums tracking-tight text-emerald-600 mt-1">{formatCurrency(result.totalAmount)}</p>
+          <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
+            <p className="text-[11px] text-amber-600 font-medium">Total a Receber</p>
+            <p className="text-lg font-bold tabular-nums tracking-tight text-primary mt-0.5">{formatCurrency(result.totalAmount)}</p>
           </div>
-          <div className="rounded-xl border border-emerald-500/30 bg-emerald-50 dark:bg-emerald-950/300/5 p-4">
-            <p className="text-xs text-amber-600 font-medium">Taxa Efetiva Total</p>
-            <p className="text-2xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100 mt-1">{result.effectiveRate.toFixed(1)}%</p>
+          <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
+            <p className="text-[11px] text-amber-600 font-medium">Taxa Efetiva Total</p>
+            <p className="text-lg font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100 mt-0.5">{result.effectiveRate.toFixed(1)}%</p>
           </div>
         </div>
 
         {/* ===== COMPARE BUTTON ===== */}
         <button
           onClick={() => setShowCompare(!showCompare)}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800/80 hover:bg-gray-100 dark:hover:bg-zinc-800 dark:bg-zinc-800 text-sm font-medium text-gray-700 dark:text-zinc-300 transition-all"
+          className="w-full flex items-center justify-center gap-2 py-2 rounded-lg border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700 text-xs font-medium text-gray-600 dark:text-zinc-400 transition-all"
         >
-          <GitCompareArrows className="h-4 w-4 text-gray-500 dark:text-zinc-400" />
+          <GitCompareArrows className="h-3.5 w-3.5" />
           Comparar Modos de Juros
         </button>
 
@@ -322,7 +304,7 @@ export default function SimuladorPage() {
                   cr.label ===
                     (interestMode === "PER_INSTALLMENT" ? "Por Parcela" :
                      interestMode === "COMPOUND" ? "Juros Compostos" : "Juros Simples")
-                    ? "border-emerald-500/40 bg-emerald-50 dark:bg-emerald-950/300/5"
+                    ? "border-primary/40 bg-primary/5 dark:bg-primary/150/5"
                     : "border-gray-200 dark:border-zinc-800 bg-gray-100 dark:bg-zinc-800/30"
                 }`}
               >
@@ -331,7 +313,7 @@ export default function SimuladorPage() {
                   {cr.label ===
                     (interestMode === "PER_INSTALLMENT" ? "Por Parcela" :
                      interestMode === "COMPOUND" ? "Juros Compostos" : "Juros Simples") && (
-                    <Badge className="bg-emerald-50 dark:bg-emerald-950/300/20 text-emerald-600 border-emerald-500/30 text-[10px]">
+                    <Badge className="bg-primary/5 dark:bg-primary/150/20 text-primary border-primary/30 text-[10px]">
                       Selecionado
                     </Badge>
                   )}
@@ -347,7 +329,7 @@ export default function SimuladorPage() {
                   </div>
                   <div>
                     <p className="text-gray-400 dark:text-zinc-500">Total</p>
-                    <p className="text-emerald-600 font-medium">{formatCurrency(Math.round(cr.total * 100) / 100)}</p>
+                    <p className="text-primary font-medium">{formatCurrency(Math.round(cr.total * 100) / 100)}</p>
                   </div>
                 </div>
               </div>
@@ -357,45 +339,40 @@ export default function SimuladorPage() {
       </div>
 
       {/* ===== CRONOGRAMA DE PARCELAS ===== */}
-      <div className="space-y-4">
+      <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-emerald-600" />
-            <h2 className="text-lg font-bold text-gray-900 dark:text-zinc-100">Cronograma de Parcelas</h2>
-          </div>
-          <div className="flex items-center gap-2">
-            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 text-sm text-gray-700 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-700 dark:bg-zinc-700 transition">
-              <FileDown className="h-3.5 w-3.5" />
-              Exportar PDF
-            </button>
-            <Badge className="bg-emerald-50 dark:bg-emerald-950/300/20 text-emerald-600 border-emerald-500/30 text-xs px-2.5 py-1">
+          <div className="flex items-center gap-1.5">
+            <TrendingUp className="h-4 w-4 text-primary" />
+            <h2 className="text-sm font-bold text-gray-900 dark:text-zinc-100">Cronograma de Parcelas</h2>
+            <Badge className="bg-primary/5 text-primary border-primary/30 text-[10px] px-2 py-0.5 ml-1">
               {installmentCount}x de {formatCurrency(result.installmentValue)}
             </Badge>
           </div>
+          <button className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs text-gray-600 dark:text-zinc-400 hover:bg-gray-50 transition">
+            <FileDown className="h-3 w-3" /> Exportar PDF
+          </button>
         </div>
 
-        {/* Schedule Table */}
-        <div className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-gray-50 dark:bg-zinc-800/80 overflow-hidden">
-          {/* Table Header */}
-          <div className="grid grid-cols-3 px-5 py-3 border-b border-gray-200 dark:border-zinc-800 text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
+        <div className="rounded-xl border border-primary/30 bg-white dark:bg-zinc-900 overflow-hidden">
+          <div className="grid grid-cols-3 px-4 py-2 border-b border-gray-100 dark:border-zinc-800 text-[10px] font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wider">
             <span>Parcela</span>
             <span>Vencimento</span>
-            <span className="text-right">Valor da Parcela</span>
+            <span className="text-right">Valor</span>
           </div>
-          {/* Table body with scroll */}
-          <div className="max-h-[400px] overflow-y-auto">
+          <div className="max-h-[320px] overflow-y-auto">
             {schedule.map((inst) => (
               <div
                 key={inst.number}
-                className="grid grid-cols-3 px-5 py-3 border-b border-gray-200 dark:border-zinc-800/60 last:border-0 items-center hover:bg-gray-100 dark:hover:bg-zinc-800 dark:bg-zinc-800/30 transition"
+                className="grid grid-cols-3 px-4 py-2 border-b border-gray-100 dark:border-zinc-800/60 last:border-0 items-center hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition"
               >
-                <div className="flex items-center gap-2.5">
-                  <span className="h-7 w-7 rounded-full bg-emerald-50 dark:bg-emerald-950/300/10 border border-emerald-500/30 flex items-center justify-center text-xs font-bold text-emerald-600">
-                    {inst.number}/{installmentCount}
+                <div className="flex items-center gap-2">
+                  <span className="h-6 w-6 rounded-full bg-primary/5 border border-primary/30 flex items-center justify-center text-[10px] font-bold text-primary shrink-0">
+                    {inst.number}
                   </span>
+                  <span className="text-xs text-gray-400 dark:text-zinc-500">/{installmentCount}</span>
                 </div>
-                <span className="text-sm text-gray-700 dark:text-zinc-300">{formatDateBR(inst.dueDate)}</span>
-                <span className="text-sm font-semibold text-emerald-600 text-right">
+                <span className="text-xs text-gray-700 dark:text-zinc-300">{formatDateBR(inst.dueDate)}</span>
+                <span className="text-xs font-semibold text-primary text-right">
                   {formatCurrency(inst.amount)}
                 </span>
               </div>

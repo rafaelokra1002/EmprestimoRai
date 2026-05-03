@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -372,12 +372,12 @@ export default function DespesasPage() {
             </div>
             <div className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950/40">
               <p className="text-xs uppercase tracking-[0.18em] text-gray-400 dark:text-zinc-500">Pagas</p>
-              <p className="mt-1 text-xl font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(stats.pagasTotal)}</p>
+              <p className="mt-1 text-xl font-bold text-primary dark:text-primary">{formatCurrency(stats.pagasTotal)}</p>
               <p className="text-xs text-gray-500 dark:text-zinc-400">{stats.pagasCount} lançamento(s) concluídos</p>
             </div>
           </div>
 
-          <Button onClick={openNewDialog} className="mt-5 w-full bg-emerald-600 text-white hover:bg-emerald-700">
+          <Button onClick={openNewDialog} className="mt-5 w-full bg-primary text-white hover:bg-primary/90">
             <Plus className="h-4 w-4" />
             Nova Despesa
           </Button>
@@ -506,7 +506,7 @@ export default function DespesasPage() {
                       <td className="px-4 py-4">
                         <Badge className={`border-0 ${
                           isPaid
-                            ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300"
+                            ? "bg-primary/5 text-primary dark:bg-primary/15 dark:text-primary"
                             : isOverdue
                               ? "bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-300"
                               : "bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300"
@@ -527,7 +527,7 @@ export default function DespesasPage() {
                           ) : (
                             <button
                               onClick={() => handlePay(exp.id)}
-                              className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-xs font-semibold text-white transition hover:bg-emerald-700"
+                              className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3 text-xs font-semibold text-white transition hover:bg-primary/90"
                             >
                               <CheckCircle2 className="h-3.5 w-3.5" />
                               Pagar
@@ -615,7 +615,7 @@ export default function DespesasPage() {
             <div
               onClick={() => setFRecurring(!fRecurring)}
               className={`relative h-5 w-10 cursor-pointer rounded-full transition-colors ${
-                fRecurring ? "bg-emerald-50 dark:bg-emerald-950/300" : "bg-gray-200 dark:bg-zinc-700"
+                fRecurring ? "bg-primary/5 dark:bg-primary/150" : "bg-gray-200 dark:bg-zinc-700"
               }`}
             >
               <div className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform dark:bg-zinc-900 ${
@@ -639,7 +639,7 @@ export default function DespesasPage() {
           <Button
             onClick={handleSubmit}
             disabled={!isFormValid}
-            className="h-11 w-full bg-emerald-600 text-sm font-semibold hover:bg-emerald-700 disabled:opacity-40"
+            className="h-11 w-full bg-primary text-sm font-semibold hover:bg-primary/90 disabled:opacity-40"
           >
             {editingId ? "Salvar Alterações" : "Cadastrar Conta"}
           </Button>

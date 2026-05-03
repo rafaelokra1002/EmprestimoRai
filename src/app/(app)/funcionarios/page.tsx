@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
@@ -55,7 +55,7 @@ export default function FuncionariosPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100 flex items-center gap-2">
-            <UserCog className="h-6 w-6 text-emerald-500" />
+            <UserCog className="h-6 w-6 text-primary" />
             Funcionários
           </h1>
           <p className="text-gray-500 dark:text-zinc-400">Gerencie sua equipe</p>

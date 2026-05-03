@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState } from "react"
 import { signIn } from "next-auth/react"
@@ -49,7 +49,7 @@ export default function LoginPage() {
 
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8">
-          <div className="h-12 w-12 rounded-xl bg-emerald-600 flex items-center justify-center mx-auto mb-4">
+          <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center mx-auto mb-4">
             <Banknote className="h-7 w-7 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">SP Cobrança Fácil</h1>
@@ -86,7 +86,7 @@ export default function LoginPage() {
 
           <p className="text-sm text-gray-500 dark:text-zinc-400 text-center mt-4">
             Não tem conta?{" "}
-            <Link href="/register" className="text-emerald-500 hover:underline">
+            <Link href="/register" className="text-primary hover:underline">
               Criar conta
             </Link>
           </p>

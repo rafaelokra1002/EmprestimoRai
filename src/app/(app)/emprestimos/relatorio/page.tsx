@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useEffect, useState, useMemo, useCallback } from "react"
 import { Card, CardContent } from "@/components/ui/card"
@@ -323,9 +323,9 @@ export default function RelatorioEmprestimosPage() {
       <Card className="border-gray-200 dark:border-zinc-800">
         <CardContent className="p-6 space-y-4">
           <div className="flex items-center gap-3">
-            <Wallet className="h-5 w-5 text-emerald-600" />
+            <Wallet className="h-5 w-5 text-primary" />
             <h2 className="text-lg font-bold text-gray-900 dark:text-zinc-100">Fluxo de Caixa</h2>
-            <Badge className="bg-emerald-50 dark:bg-emerald-950/300/20 text-emerald-600 border-0 text-xs">Novidade</Badge>
+            <Badge className="bg-primary/5 dark:bg-primary/150/20 text-primary border-0 text-xs">Novidade</Badge>
           </div>
 
           <div className="rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800/40 p-4 flex items-center justify-between">
@@ -353,12 +353,12 @@ export default function RelatorioEmprestimosPage() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 overflow-hidden">
-            <div className="w-full flex items-center justify-between px-4 py-3 hover:bg-emerald-50 dark:bg-emerald-950/30 transition-colors">
+          <div className="rounded-xl border border-primary/30 dark:border-primary/30 bg-primary/5 dark:bg-primary/15 overflow-hidden">
+            <div className="w-full flex items-center justify-between px-4 py-3 hover:bg-primary/5 dark:bg-primary/15 transition-colors">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-emerald-600 uppercase tracking-wide">Entradas</span>
+                <span className="text-sm font-bold text-primary uppercase tracking-wide">Entradas</span>
               </div>
-              <span className="text-sm font-bold text-emerald-600">+{formatCurrency(entradas)}</span>
+              <span className="text-sm font-bold text-primary">+{formatCurrency(entradas)}</span>
             </div>
           </div>
         </CardContent>
@@ -431,7 +431,7 @@ export default function RelatorioEmprestimosPage() {
             ]}
             minWidthClassName="min-w-[220px]"
           />
-          <span className="text-sm text-emerald-600 ml-2">Na Rua: {formatCurrency(capitalNaRua)}</span>
+          <span className="text-sm text-primary ml-2">Na Rua: {formatCurrency(capitalNaRua)}</span>
         </div>
       </div>
 
@@ -440,14 +440,14 @@ export default function RelatorioEmprestimosPage() {
       {/* ===== RESULTADO DO PERÍODO ===== */}
       <div className={`rounded-xl border p-6 text-center ${
         resultadoPeriodo >= 0
-          ? "border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30"
+          ? "border-primary/30 dark:border-primary/30 bg-primary/5 dark:bg-primary/15"
           : "border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30"
       }`}>
         <div className="flex items-center justify-center gap-2 mb-2">
           <Wallet className="h-5 w-5 text-gray-500 dark:text-zinc-400" />
           <span className="text-sm text-gray-500 dark:text-zinc-400">Resultado do Período</span>
         </div>
-        <p className={`text-3xl font-bold tabular-nums tracking-tight ${resultadoPeriodo >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+        <p className={`text-3xl font-bold tabular-nums tracking-tight ${resultadoPeriodo >= 0 ? "text-primary" : "text-red-600"}`}>
           {resultadoPeriodo < 0 ? "-" : ""}{formatCurrency(Math.abs(resultadoPeriodo))}
         </p>
         <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">
@@ -462,19 +462,19 @@ export default function RelatorioEmprestimosPage() {
           <p className="text-xs text-gray-500 dark:text-zinc-400">Na Rua</p>
           <p className="text-lg font-bold tabular-nums tracking-tight text-red-600">{formatCurrency(capitalNaRua)}</p>
         </div>
-        <div className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 p-4 text-center">
-          <TrendingUp className="h-5 w-5 text-emerald-600 mx-auto mb-1" />
+        <div className="rounded-xl border border-primary/30 dark:border-primary/30 bg-primary/5 dark:bg-primary/15 p-4 text-center">
+          <TrendingUp className="h-5 w-5 text-primary mx-auto mb-1" />
           <p className="text-xs text-gray-500 dark:text-zinc-400">Lucro</p>
-          <p className="text-lg font-bold tabular-nums tracking-tight text-emerald-600">{formatCurrency(lucroRealizado)}</p>
+          <p className="text-lg font-bold tabular-nums tracking-tight text-primary">{formatCurrency(lucroRealizado)}</p>
         </div>
         <div className={`rounded-xl border p-4 text-center ${
           resultadoPeriodo >= 0
-            ? "border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30"
+            ? "border-primary/30 dark:border-primary/30 bg-primary/5 dark:bg-primary/15"
             : "border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30"
         }`}>
           <Wallet className="h-5 w-5 text-red-600 mx-auto mb-1" />
           <p className="text-xs text-gray-500 dark:text-zinc-400">Resultado</p>
-          <p className={`text-lg font-bold tabular-nums tracking-tight ${resultadoPeriodo >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+          <p className={`text-lg font-bold tabular-nums tracking-tight ${resultadoPeriodo >= 0 ? "text-primary" : "text-red-600"}`}>
             {resultadoPeriodo < 0 ? "-" : ""}{formatCurrency(Math.abs(resultadoPeriodo))}
           </p>
         </div>
@@ -485,7 +485,7 @@ export default function RelatorioEmprestimosPage() {
         <Card className="border-gray-200 dark:border-zinc-800">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Wallet className="h-4 w-4 text-emerald-600" />
+              <Wallet className="h-4 w-4 text-primary" />
               <span className="text-xs text-gray-500 dark:text-zinc-400">Capital na Rua</span>
             </div>
             <p className="text-2xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(capitalNaRua)}</p>
@@ -507,10 +507,10 @@ export default function RelatorioEmprestimosPage() {
         <Card className="border-gray-200 dark:border-zinc-800">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
-              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+              <CheckCircle2 className="h-4 w-4 text-primary" />
               <span className="text-xs text-gray-500 dark:text-zinc-400">Total Recebido</span>
             </div>
-            <p className="text-2xl font-bold tabular-nums tracking-tight text-emerald-600">{formatCurrency(totalRecebidoHistorico)}</p>
+            <p className="text-2xl font-bold tabular-nums tracking-tight text-primary">{formatCurrency(totalRecebidoHistorico)}</p>
             <p className="text-xs text-gray-400 dark:text-zinc-500">Histórico</p>
           </CardContent>
         </Card>
@@ -555,7 +555,7 @@ export default function RelatorioEmprestimosPage() {
         <Card className="border-gray-200 dark:border-zinc-800">
           <CardContent className="p-6">
             <div className="flex items-center gap-2 mb-4">
-              <TrendingUp className="h-5 w-5 text-emerald-600" />
+              <TrendingUp className="h-5 w-5 text-primary" />
               <h3 className="font-bold text-gray-900 dark:text-zinc-100">Evolução Mensal</h3>
             </div>
             <div className="h-[280px]">
@@ -582,7 +582,7 @@ export default function RelatorioEmprestimosPage() {
         <Card className="border-gray-200 dark:border-zinc-800">
           <CardContent className="p-6">
             <div className="flex items-center gap-2 mb-4">
-              <Wallet className="h-5 w-5 text-emerald-600" />
+              <Wallet className="h-5 w-5 text-primary" />
               <h3 className="font-bold text-gray-900 dark:text-zinc-100">Distribuição</h3>
             </div>
             <div className="h-[280px]">
@@ -642,13 +642,13 @@ export default function RelatorioEmprestimosPage() {
                     <TableRow key={c.id} className="border-gray-200 dark:border-zinc-800/50">
                       <TableCell className="font-medium text-gray-900 dark:text-zinc-100">{c.clientName}</TableCell>
                       <TableCell className="text-center text-gray-700 dark:text-zinc-300">{formatCurrency(c.emprestado)}</TableCell>
-                      <TableCell className="text-center text-emerald-600">{formatCurrency(c.pago)}</TableCell>
+                      <TableCell className="text-center text-primary">{formatCurrency(c.pago)}</TableCell>
                       <TableCell className="text-center text-gray-900 dark:text-zinc-100">{formatCurrency(c.falta)}</TableCell>
                       <TableCell className="text-center">
                         <Badge
                           className={`text-xs px-3 ${
                             c.status === "ON_TIME"
-                              ? "bg-emerald-50 dark:bg-emerald-950/300/20 text-emerald-600 border-emerald-500/30"
+                              ? "bg-primary/5 dark:bg-primary/150/20 text-primary border-primary/30"
                               : "bg-red-50 dark:bg-red-950/300/20 text-red-600 border-red-500/30"
                           }`}
                         >

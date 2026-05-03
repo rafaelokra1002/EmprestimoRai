@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -31,7 +31,7 @@ export default function ChequePage() {
     <div className="space-y-6 pt-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100 flex items-center gap-2">
-          <Receipt className="h-6 w-6 text-emerald-500" />
+          <Receipt className="h-6 w-6 text-primary" />
           Desconto de Cheque
         </h1>
         <p className="text-gray-500 dark:text-zinc-400">Simule a antecipação de cheques</p>
@@ -97,9 +97,9 @@ export default function ChequePage() {
                   <p className="text-2xl font-bold text-red-600">- {formatCurrency(resultado.desconto)}</p>
                   <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">Taxa efetiva: {resultado.taxaEfetiva}%</p>
                 </div>
-                <div className="p-4 rounded-lg bg-emerald-50 dark:bg-emerald-950/300/5 border border-emerald-200 dark:border-emerald-800">
+                <div className="p-4 rounded-lg bg-primary/5 dark:bg-primary/150/5 border border-primary/30 dark:border-primary/30">
                   <p className="text-sm text-gray-500 dark:text-zinc-400">Valor Líquido (a pagar)</p>
-                  <p className="text-2xl font-bold text-emerald-600">{formatCurrency(resultado.valorLiquido)}</p>
+                  <p className="text-2xl font-bold text-primary">{formatCurrency(resultado.valorLiquido)}</p>
                 </div>
                 <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-950/300/5 border border-blue-500/20">
                   <p className="text-sm text-gray-500 dark:text-zinc-400">Seu Lucro</p>

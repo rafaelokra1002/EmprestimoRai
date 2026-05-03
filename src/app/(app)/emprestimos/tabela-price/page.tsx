@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
@@ -239,7 +239,7 @@ export default function TabelaPricePage() {
             </h3>
             <div className="flex items-center gap-3">
               <span className="text-sm font-medium text-gray-700 dark:text-zinc-300 flex items-center gap-1">
-                <DollarSign className="h-4 w-4 text-emerald-600" /> Parcela: {formatCurrency(preview.installmentValue)}
+                <DollarSign className="h-4 w-4 text-primary" /> Parcela: {formatCurrency(preview.installmentValue)}
               </span>
               <Button variant="outline" size="sm" className="gap-1.5" onClick={() => {
                 const printContent = `
@@ -296,9 +296,9 @@ export default function TabelaPricePage() {
               <span className="text-orange-500">{formatCurrency(amortizationTable.reduce((s, r) => s + r.payment, 0))}</span>
             </p>
             <p className="text-sm font-semibold flex items-center gap-1">
-              <TrendingUp className="h-4 w-4 text-emerald-500" />
+              <TrendingUp className="h-4 w-4 text-primary" />
               <span className="text-gray-600 dark:text-zinc-400">Juros Total:</span>
-              <span className="text-emerald-500">{formatCurrency(amortizationTable.reduce((s, r) => s + r.interest, 0))}</span>
+              <span className="text-primary">{formatCurrency(amortizationTable.reduce((s, r) => s + r.interest, 0))}</span>
             </p>
           </div>
 

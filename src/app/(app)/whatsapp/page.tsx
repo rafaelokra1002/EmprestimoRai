@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
@@ -106,7 +106,7 @@ export default function WhatsAppPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100 flex items-center gap-2">
-            <MessageSquare className="h-6 w-6 text-emerald-500" />
+            <MessageSquare className="h-6 w-6 text-primary" />
             Relatórios Automáticos (WhatsApp)
           </h1>
           <p className="text-gray-500 dark:text-zinc-400">Templates de mensagem para cobranças</p>
@@ -127,7 +127,7 @@ export default function WhatsAppPage() {
                 className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-xs text-gray-700 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-700 dark:bg-zinc-700 transition-colors"
                 title={v.desc}
               >
-                <span className="text-emerald-600 font-mono">{v.name}</span>
+                <span className="text-primary font-mono">{v.name}</span>
                 <span className="text-gray-400 dark:text-zinc-500 ml-2">{v.desc}</span>
               </button>
             ))}
@@ -205,7 +205,7 @@ export default function WhatsAppPage() {
           {preview && (
             <div>
               <Label>Preview</Label>
-              <div className="mt-1 p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-sm text-gray-700 dark:text-zinc-300 whitespace-pre-wrap">
+              <div className="mt-1 p-3 rounded-lg bg-primary/5 dark:bg-primary/15 border border-primary/30 dark:border-primary/30 text-sm text-gray-700 dark:text-zinc-300 whitespace-pre-wrap">
                 {preview}
               </div>
             </div>

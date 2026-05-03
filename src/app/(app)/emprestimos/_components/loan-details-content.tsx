@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
@@ -196,16 +196,16 @@ export function LoanDetailsContent({
         </div>
       </div>
 
-      <div className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 p-4">
+      <div className="rounded-xl border border-primary/30 dark:border-primary/30 bg-primary/5 dark:bg-primary/15 p-4">
         <div className="grid md:grid-cols-2 gap-4">
           <div>
             <p className="text-gray-700 dark:text-zinc-300 text-sm">🔒 Lucro Previsto</p>
-            <p className="text-2xl font-bold tabular-nums tracking-tight text-emerald-600">{formatCurrency(loan.profit)}</p>
+            <p className="text-2xl font-bold tabular-nums tracking-tight text-primary">{formatCurrency(loan.profit)}</p>
           </div>
           <div>
             <p className="text-gray-700 dark:text-zinc-300 text-sm">✅ Lucro Realizado</p>
             <div className="flex items-baseline gap-2">
-              <p className="text-2xl font-bold tabular-nums tracking-tight text-emerald-600">{formatCurrency(realizedProfit)}</p>
+              <p className="text-2xl font-bold tabular-nums tracking-tight text-primary">{formatCurrency(realizedProfit)}</p>
               <span className="text-gray-500 dark:text-zinc-400 text-sm">{realizedProfitPct}%</span>
             </div>
           </div>
@@ -220,7 +220,7 @@ export function LoanDetailsContent({
       <Card className="p-4 bg-white dark:bg-zinc-900 border-gray-200 dark:border-zinc-800 space-y-3">
         <h2 className="font-semibold text-gray-900 dark:text-zinc-100">📊 Progresso</h2>
         <div className="h-2 w-full rounded-full bg-gray-100 dark:bg-zinc-800 overflow-hidden">
-          <div className="h-full bg-emerald-50 dark:bg-emerald-950/300" style={{ width: `${progressPct}%` }} />
+          <div className="h-full bg-primary/5 dark:bg-primary/150" style={{ width: `${progressPct}%` }} />
         </div>
         <div className="flex items-center justify-between text-sm">
           <p className="text-gray-500 dark:text-zinc-400">
@@ -272,7 +272,7 @@ export function LoanDetailsContent({
               <p className="text-gray-700 dark:text-zinc-300">Parcela {inst.number}/{totalInstallments}</p>
               <p className="text-gray-900 dark:text-zinc-100 font-semibold">{formatCurrency(inst.amount)}</p>
               <p className="text-gray-700 dark:text-zinc-300">{formatDate(inst.dueDate)}</p>
-              <p className={`text-right font-medium ${inst.status === "PAID" ? "text-emerald-600" : inst.status === "OVERDUE" ? "text-red-600" : "text-gray-700 dark:text-zinc-300"}`}>
+              <p className={`text-right font-medium ${inst.status === "PAID" ? "text-primary" : inst.status === "OVERDUE" ? "text-red-600" : "text-gray-700 dark:text-zinc-300"}`}>
                 {statusLabel[inst.status]}
               </p>
             </div>

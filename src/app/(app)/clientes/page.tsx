@@ -14,7 +14,8 @@ import { FilterDropdown } from "@/components/ui/filter-dropdown"
 import { Textarea } from "@/components/ui/textarea"
 import { Avatar } from "@/components/avatar"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Search, Pencil, Trash2, User, MapPin, FileText, Mail, Phone, Instagram, Globe, Briefcase, Users, Camera, Upload, X, Eye, Download, Image, DollarSign, LayoutGrid, Rows3, CalendarDays, Flame, Filter, CheckCircle2 } from "lucide-react"
+import { Plus, Search, Pencil, Trash2, User, MapPin, FileText, Users, Camera, Upload, Eye, Image, DollarSign, LayoutGrid, Rows3, Filter, CheckCircle2, MoreVertical, Link2 } from "lucide-react"
+import { useSession } from "next-auth/react"
 
 interface Client {
   id: string
@@ -104,15 +105,6 @@ function cpfMask(value: string) {
     .replace(/(\d{3})(\d{1,2})$/, "$1-$2")
 }
 
-function rgMask(value: string) {
-  return value
-    .replace(/\D/g, "")
-    .slice(0, 9)
-    .replace(/(\d{2})(\d)/, "$1.$2")
-    .replace(/(\d{3})(\d)/, "$1.$2")
-    .replace(/(\d{3})(\d{1})$/, "$1-$2")
-}
-
 function phoneMask(value: string) {
   return value
     .replace(/\D/g, "")
@@ -131,6 +123,8 @@ function cepMask(value: string) {
 export default function ClientesPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { data: session } = useSession()
+  const [linkCopied, setLinkCopied] = useState(false)
   const [clients, setClients] = useState<Client[]>([])
   const [filtered, setFiltered] = useState<Client[]>([])
   const [loanAmountsByClient, setLoanAmountsByClient] = useState<Record<string, number>>({})
@@ -147,10 +141,10 @@ export default function ClientesPage() {
   const [docsLoading, setDocsLoading] = useState(false)
   const [uploadingDoc, setUploadingDoc] = useState(false)
   const [selectedDocType, setSelectedDocType] = useState("OUTRO")
-  const [previewDoc, setPreviewDoc] = useState<{ name: string; data: string; fileType: string } | null>(null)
   const [profileImagePreview, setProfileImagePreview] = useState<{ name: string; src: string } | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const docFileInputRef = useRef<HTMLInputElement>(null)
 
@@ -366,25 +360,12 @@ export default function ClientesPage() {
     fetchClientDocs(editing.id)
   }
 
-  const handleDocPreview = async (doc: ClientDoc) => {
-    if (!editing) return
-    try {
-      // Fetch full document with fileData for preview
-      const res = await fetch(`/api/clients/${editing.id}/documents`)
-      // We need a separate endpoint or inline data. For now use a direct fetch.
-      // Since we store base64, we re-fetch when needed
-      setPreviewDoc({ name: doc.name, data: "", fileType: doc.fileType })
-    } catch {
-      // silently fail
-    }
-  }
-
   const getDocTypeLabel = (type: string) => {
     return DOC_TYPES.find(d => d.value === type)?.label || type
   }
 
   const getDocIcon = (fileType: string) => {
-    if (fileType.startsWith("image/")) return <Image className="h-5 w-5 text-emerald-600" />
+    if (fileType.startsWith("image/")) return <Image className="h-5 w-5 text-primary" />
     return <FileText className="h-5 w-5 text-blue-600" />
   }
 
@@ -467,10 +448,6 @@ export default function ClientesPage() {
     return `R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
   }
 
-  const isInactiveClient = (client: Client) => {
-    return !client.loans?.some((loan) => loan.status === "ACTIVE")
-  }
-
   const getDisplayedClientStatus = (client: Client): "ACTIVE" | "INACTIVE" => {
     if (client.loans?.some((loan) => loan.status === "ACTIVE")) return "ACTIVE"
     return "INACTIVE"
@@ -506,11 +483,28 @@ export default function ClientesPage() {
         <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">Clientes</h1>
         <div className="flex flex-col items-end gap-2">
           <div className="flex items-center gap-2">
-            <Button onClick={() => router.push("/emprestimos?novo=true")} className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 whitespace-nowrap text-xs px-3 py-1.5 h-8">
+            <Button onClick={() => router.push("/emprestimos?novo=true")} className="bg-primary hover:bg-primary/90 text-white gap-1.5 whitespace-nowrap text-xs px-3 py-1.5 h-8">
               <DollarSign className="h-4 w-4" />
               Criar Empréstimo
             </Button>
-            <Button onClick={() => openNewClient()} className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 whitespace-nowrap">
+            <button
+              type="button"
+              onClick={() => {
+                const userId = (session?.user as any)?.id
+                if (!userId) return
+                const token = btoa(userId)
+                const link = `${window.location.origin}/registro/${token}`
+                navigator.clipboard.writeText(link).then(() => {
+                  setLinkCopied(true)
+                  setTimeout(() => setLinkCopied(false), 2500)
+                })
+              }}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-blue-300 bg-white px-3 py-1.5 text-xs font-semibold text-blue-600 transition hover:bg-blue-50 dark:bg-zinc-900 dark:border-blue-700 dark:text-blue-400 dark:hover:bg-zinc-800 h-8 whitespace-nowrap"
+            >
+              <Link2 className="h-3.5 w-3.5" />
+              {linkCopied ? "Link copiado!" : "Compartilhar Cadastro"}
+            </button>
+            <Button onClick={() => openNewClient()} className="bg-primary hover:bg-primary/90 text-white gap-2 whitespace-nowrap">
               <Plus className="h-4 w-4" />
               Novo Cliente
             </Button>
@@ -664,143 +658,145 @@ export default function ClientesPage() {
             const displayStatus = getDisplayedClientStatus(client)
             const displayedRequestedAmount = getDisplayedRequestedAmount(client)
 
-            const infoCards = [
-              {
-                label: "Telefone",
-                value: client.phone || "-",
-                icon: Phone,
-                iconClassName: "text-blue-600",
-                toneClassName: "bg-blue-50 dark:bg-blue-950/30",
-              },
-              {
-                label: "Cadastrado em",
-                value: formatDate(client.createdAt),
-                icon: CalendarDays,
-                iconClassName: "text-blue-600",
-                toneClassName: "bg-blue-50 dark:bg-blue-950/30",
-              },
-              {
-                label: "Renda",
-                value: formatCurrency(client.income),
-                icon: DollarSign,
-                iconClassName: "text-emerald-600",
-                toneClassName: "bg-emerald-50 dark:bg-emerald-950/30",
-              },
-              {
-                label: "Valor solicitado",
-                value: formatCurrency(displayedRequestedAmount),
-                icon: FileText,
-                iconClassName: "text-blue-600",
-                toneClassName: "bg-blue-50 dark:bg-blue-950/30",
-              },
-              {
-                label: "Cidade",
-                value: client.city || "-",
-                icon: MapPin,
-                iconClassName: "text-zinc-500 dark:text-zinc-300",
-                toneClassName: "bg-zinc-100 dark:bg-zinc-800",
-              },
-            ]
+            const scoreR = 22
+            const scoreCircum = 2 * Math.PI * scoreR
+            const scorePct = Math.min(1, Math.max(0, client.score / 200))
+            const scoreOffset = scoreCircum * (1 - scorePct)
+            const scoreStroke = client.score >= 150 ? "#eab308" : client.score >= 100 ? "#f97316" : client.score >= 50 ? "#3b82f6" : "#ef4444"
 
             return (
-              <div key={client.id} className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
+              <div key={client.id} className="relative rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-sm transition-shadow hover:shadow-md">
+                {/* Header */}
                 <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex items-center gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
                     <button
                       type="button"
                       onClick={() => client.photo && setProfileImagePreview({ name: client.name, src: client.photo })}
                       className={`${client.photo ? "cursor-zoom-in" : "cursor-default"} shrink-0`}
                       title={client.photo ? "Ampliar foto" : undefined}
                     >
-                      <Avatar name={client.name} src={client.photo} size="lg" className="h-14 w-14 border border-emerald-100 dark:border-emerald-900/40" />
+                      <Avatar name={client.name} src={client.photo} size="xl" className="h-16 w-16 text-xl" />
                     </button>
                     <div className="min-w-0">
-                      <h3 className="truncate text-xl font-semibold tracking-tight text-gray-900 dark:text-zinc-100">{client.name}</h3>
+                      <h3 className="truncate text-base font-semibold text-gray-900 dark:text-zinc-100">{client.name}</h3>
+                      <span className={`mt-0.5 inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                        displayStatus === "ACTIVE"
+                          ? "bg-primary/10 text-primary dark:bg-primary/20"
+                          : "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400"
+                      }`}>
+                        <span className={`h-1.5 w-1.5 rounded-full ${displayStatus === "ACTIVE" ? "bg-primary" : "bg-zinc-400"}`} />
+                        {displayStatus === "ACTIVE" ? "Ativo" : "Inativo"}
+                      </span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${displayStatus === "ACTIVE" ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400" : "bg-yellow-50 text-yellow-700 dark:bg-yellow-950/30 dark:text-yellow-400"}`}>
-                      {displayStatus === "ACTIVE" ? "Ativo" : "Inativo"}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="mt-4 rounded-2xl border border-gray-200 bg-white p-3.5 dark:border-zinc-800 dark:bg-zinc-900">
-                  <div className="grid gap-3 md:grid-cols-2">
-                    {infoCards.slice(0, 2).map((item, index) => (
-                      <div
-                        key={item.label}
-                        className={`flex items-center gap-3 ${index === 0 ? "md:border-r md:border-gray-200 md:pr-3 dark:md:border-zinc-800" : "md:pl-1"}`}
-                      >
-                        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${item.toneClassName}`}>
-                          <item.icon className={`h-5 w-5 ${item.iconClassName}`} />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-sm text-gray-500 dark:text-zinc-400">{item.label}</p>
-                          <p className="truncate text-lg font-semibold text-gray-900 dark:text-zinc-100">{item.value}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="mt-3.5 grid gap-3 md:grid-cols-2">
-                  {infoCards.slice(2).map((item) => (
-                    <div key={item.label} className="rounded-2xl border border-gray-200 bg-white p-3.5 dark:border-zinc-800 dark:bg-zinc-900">
-                      <div className="flex items-center gap-3">
-                        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${item.toneClassName}`}>
-                          <item.icon className={`h-5 w-5 ${item.iconClassName}`} />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-sm text-gray-500 dark:text-zinc-400">{item.label}</p>
-                          <p className="truncate text-lg font-semibold text-gray-900 dark:text-zinc-100">{item.value}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-
-                  <div className="rounded-2xl border border-gray-200 bg-white p-3.5 dark:border-zinc-800 dark:bg-zinc-900">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-orange-50 dark:bg-orange-950/30">
-                        <Flame className="h-5 w-5 text-orange-500" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm text-gray-500 dark:text-zinc-400">Score de Crédito</p>
-                        <div className="mt-1 flex items-center gap-3">
-                          <span className="text-3xl font-semibold leading-none text-orange-600">{client.score}</span>
-                          <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${getScoreColor(client.score)}`}>
-                            {getScoreLabel(client.score)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-4 flex items-center justify-between gap-4 border-t border-gray-100 pt-3.5 dark:border-zinc-800">
-                  <div className={`flex items-center gap-2 text-sm font-medium ${hasActiveLoan ? "text-emerald-600 dark:text-emerald-400" : "text-gray-500 dark:text-zinc-400"}`}>
-                    <span className="text-base">{getScoreIcon(client.score)}</span>
-                    <span>{hasActiveLoan ? "Com empréstimo ativo" : "Sem empréstimo ativo"}</span>
-                  </div>
-
-                  <div className="flex items-center gap-3">
+                  <div className="relative shrink-0">
                     <button
                       type="button"
-                      onClick={() => handleEdit(client)}
-                      title="Editar cliente"
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-full text-blue-600 transition hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/30"
+                      onClick={() => setOpenMenuId(openMenuId === client.id ? null : client.id)}
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-full text-gray-400 transition hover:bg-gray-100 dark:hover:bg-zinc-800"
                     >
-                      <Pencil className="h-4 w-4" />
+                      <MoreVertical className="h-4 w-4" />
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(client.id)}
-                      title="Excluir cliente"
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-full text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    {openMenuId === client.id && (
+                      <div className="absolute right-0 top-9 z-20 min-w-[160px] rounded-xl border border-gray-200 bg-white py-1.5 shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
+                        <button
+                          type="button"
+                          onClick={() => { handleEdit(client); setOpenMenuId(null) }}
+                          className="flex w-full items-center gap-2.5 px-3.5 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                        >
+                          <Eye className="h-4 w-4" /> Ver detalhes
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { handleEdit(client); setOpenMenuId(null) }}
+                          className="flex w-full items-center gap-2.5 px-3.5 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                        >
+                          <Pencil className="h-4 w-4" /> Editar
+                        </button>
+                        <div className="my-1 border-t border-gray-100 dark:border-zinc-700" />
+                        <button
+                          type="button"
+                          onClick={() => { handleDelete(client.id); setOpenMenuId(null) }}
+                          className="flex w-full items-center gap-2.5 px-3.5 py-2 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-zinc-700"
+                        >
+                          <Trash2 className="h-4 w-4" /> Excluir
+                        </button>
+                      </div>
+                    )}
                   </div>
+                </div>
+
+                {/* Value + Score ring */}
+                <div className="mt-4 flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-zinc-500">Valor solicitado</p>
+                    <p className="mt-0.5 text-xl font-bold text-gray-900 dark:text-zinc-100">{formatCurrency(displayedRequestedAmount)}</p>
+                  </div>
+                  <div className="flex shrink-0 flex-col items-center gap-0.5">
+                    <div className="relative h-14 w-14">
+                      <svg className="h-14 w-14 -rotate-90" viewBox="0 0 60 60">
+                        <circle cx="30" cy="30" r={scoreR} fill="none" strokeWidth="5" stroke="currentColor" className="text-gray-100 dark:text-zinc-700" />
+                        <circle cx="30" cy="30" r={scoreR} fill="none" strokeWidth="5" stroke={scoreStroke} strokeLinecap="round" strokeDasharray={scoreCircum} strokeDashoffset={scoreOffset} />
+                      </svg>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-sm font-bold text-gray-900 dark:text-zinc-100">{client.score}</span>
+                      </div>
+                    </div>
+                    <span className="text-xs font-semibold" style={{ color: scoreStroke }}>{getScoreLabel(client.score)}</span>
+                  </div>
+                </div>
+
+                {/* Info grid */}
+                <div className="mt-4 grid grid-cols-3 gap-x-2 border-t border-gray-100 pt-4 dark:border-zinc-800">
+                  <div>
+                    <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400 dark:text-zinc-500">Cadastro</p>
+                    <p className="mt-0.5 truncate text-xs font-medium text-gray-700 dark:text-zinc-300">{formatDate(client.createdAt)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400 dark:text-zinc-500">Cidade</p>
+                    <p className="mt-0.5 truncate text-xs font-medium text-gray-700 dark:text-zinc-300">{client.city || "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400 dark:text-zinc-500">Renda</p>
+                    <p className="mt-0.5 truncate text-xs font-medium text-gray-700 dark:text-zinc-300">{formatCurrency(client.income)}</p>
+                  </div>
+                </div>
+
+                {/* Loan status tag */}
+                <div className={`mt-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${
+                  hasActiveLoan
+                    ? "bg-primary/10 text-primary dark:bg-primary/20"
+                    : "bg-gray-50 text-gray-500 dark:bg-zinc-800 dark:text-zinc-400"
+                }`}>
+                  <span>{hasActiveLoan ? "🔥" : "💤"}</span>
+                  {hasActiveLoan ? "Com empréstimo ativo" : "Sem empréstimo ativo"}
+                </div>
+
+                {/* Action buttons */}
+                <div className="mt-4 flex items-center gap-2 border-t border-gray-100 pt-4 dark:border-zinc-800">
+                  <button
+                    type="button"
+                    onClick={() => handleEdit(client)}
+                    className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary/10 py-2 text-sm font-medium text-primary transition hover:bg-primary/20 dark:bg-primary/20 dark:hover:bg-primary/30"
+                  >
+                    <Eye className="h-3.5 w-3.5" /> Ver detalhes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleEdit(client)}
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-600 transition hover:bg-gray-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                    title="Editar"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(client.id)}
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600 transition hover:bg-red-100 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-950/50"
+                    title="Excluir"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </div>
               </div>
             )
@@ -833,19 +829,19 @@ export default function ClientesPage() {
         className="max-w-2xl"
       >
         {/* Tabs */}
-        <div className="grid grid-cols-1 gap-1 rounded-lg bg-gray-50 p-1 mb-6 dark:bg-zinc-800 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-1 rounded-xl bg-gray-100 dark:bg-zinc-800 p-1 mb-6 sm:grid-cols-3">
           {tabs.map((tab) => (
             <button
               key={tab.key}
               type="button"
               onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center justify-start gap-2 rounded-md px-4 py-2.5 text-sm font-medium transition-colors sm:justify-center ${
+              className={`flex items-center justify-start gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all sm:justify-center ${
                 activeTab === tab.key
-                  ? "bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
-                  : "text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:text-zinc-300"
+                  ? "bg-white dark:bg-zinc-900 text-primary shadow-sm"
+                  : "text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200"
               }`}
             >
-              {tab.icon}
+              <span className={activeTab === tab.key ? "text-primary" : ""}>{tab.icon}</span>
               {tab.label}
             </button>
           ))}
@@ -864,19 +860,19 @@ export default function ClientesPage() {
           {activeTab === "dados" && (
             <div className="space-y-5">
               {/* Avatar Section */}
-              <div className="flex flex-col items-center gap-2">
+              <div className="flex flex-col items-center gap-2 pb-2">
                 {photoPreview ? (
                   <img
                     src={photoPreview}
                     alt="Foto do cliente"
-                    className="h-20 w-20 rounded-full object-cover border-2 border-emerald-500"
+                    className="h-20 w-20 rounded-full object-cover ring-2 ring-ring ring-offset-2"
                   />
                 ) : (
-                  <div className="h-20 w-20 rounded-full bg-emerald-50 dark:bg-emerald-950/300 flex items-center justify-center text-white text-2xl font-bold">
-                    {watchName ? watchName.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() : "CL"}
+                  <div className="h-20 w-20 rounded-full bg-primary/10 dark:bg-primary/20 flex items-center justify-center text-primary text-2xl font-bold ring-2 ring-ring ring-offset-2">
+                    {watchName ? watchName.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase() : "CL"}
                   </div>
                 )}
-                <span className="text-xs text-gray-400 dark:text-zinc-500">Avatar gerado automaticamente</span>
+                <span className="text-xs text-gray-400 dark:text-zinc-500 font-medium">Avatar gerado automaticamente</span>
                 <input
                   type="file"
                   ref={fileInputRef}
@@ -887,7 +883,7 @@ export default function ClientesPage() {
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-gray-300 dark:border-zinc-700 text-sm text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 dark:bg-zinc-800 transition-colors"
+                  className="flex items-center gap-2 px-4 py-1.5 rounded-lg border border-gray-300 dark:border-zinc-700 text-sm font-medium text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
                 >
                   <Camera className="h-4 w-4" />
                   Adicionar foto
@@ -897,43 +893,50 @@ export default function ClientesPage() {
 
               {/* Nome Completo */}
               <div>
-                <Label className="flex items-center gap-1">Nome Completo *</Label>
+                <Label>Nome Completo <span className="text-red-500">*</span></Label>
                 <Input {...register("name")} className="mt-1" />
                 {errors.name && <p className="text-red-600 text-xs mt-1">{errors.name.message}</p>}
               </div>
 
-              {/* CPF */}
-              <div>
-                <Label className="flex items-center gap-1.5">
-                  <FileText className="h-3.5 w-3.5" /> CPF
-                </Label>
-                <Input
-                  {...register("document")}
-                  placeholder="000.000.000-00"
-                  className="mt-1"
-                  onChange={(e) => setValue("document", cpfMask(e.target.value))}
-                />
-              </div>
-
-              {/* Telefone */}
+              {/* CPF + Telefone */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <Label className="font-medium">Telefone (com DDD)</Label>
+                  <Label>CPF</Label>
+                  <Input
+                    {...register("document")}
+                    placeholder="000.000.000-00"
+                    className="mt-1"
+                    onChange={(e) => setValue("document", cpfMask(e.target.value))}
+                  />
+                </div>
+                <div>
+                  <Label>Telefone (com DDD)</Label>
                   <Input
                     {...register("phone")}
                     placeholder="(00) 00000-0000"
                     className="mt-1"
                     onChange={(e) => setValue("phone", phoneMask(e.target.value))}
                   />
-                  <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">Inclua o DDD para envio de mensagens via WhatsApp</p>
+                  <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">Inclua o DDD para WhatsApp</p>
                 </div>
+              </div>
+
+              {/* Instagram + Email */}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <Label className="flex items-center gap-1.5">
-                    <Instagram className="h-3.5 w-3.5" /> Instagram
-                  </Label>
+                  <Label>Instagram</Label>
                   <Input
                     {...register("instagram")}
                     placeholder="@usuario"
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label>E-mail</Label>
+                  <Input
+                    {...register("email")}
+                    type="email"
+                    placeholder="email@exemplo.com"
                     className="mt-1"
                   />
                 </div>
@@ -942,9 +945,7 @@ export default function ClientesPage() {
               {/* Profissão e Local de Trabalho */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <Label className="flex items-center gap-1.5">
-                    <Briefcase className="h-3.5 w-3.5" /> Profissão
-                  </Label>
+                  <Label>Profissão</Label>
                   <Input
                     {...register("profession")}
                     placeholder="Ex: Eletricista, Comerciante..."
@@ -969,7 +970,7 @@ export default function ClientesPage() {
                     type="number"
                     step="0.01"
                     {...register("income", { valueAsNumber: true })}
-                    placeholder="R$ 0,00"
+                    placeholder="0,00"
                     className="mt-1"
                   />
                 </div>
@@ -979,7 +980,7 @@ export default function ClientesPage() {
                     type="number"
                     step="0.01"
                     {...register("requestedAmount", { valueAsNumber: true })}
-                    placeholder="R$ 0,00"
+                    placeholder="0,00"
                     className="mt-1"
                   />
                 </div>
@@ -990,7 +991,7 @@ export default function ClientesPage() {
                 <Label>Categoria</Label>
                 <select
                   {...register("category")}
-                  className="flex h-10 w-full rounded-md border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 px-3 py-2 text-sm text-gray-900 dark:text-zinc-100 mt-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                  className="flex h-10 w-full rounded-md border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-sm text-gray-900 dark:text-zinc-100 mt-1 focus-visible:outline-none focus:ring-2 focus:ring-ring focus:border-ring outline-none"
                 >
                   <option value="">Selecione...</option>
                   <option value="CARTEIRA_ASSINADA">Carteira assinada</option>
@@ -1014,7 +1015,7 @@ export default function ClientesPage() {
                   }
                 }}
               >
-                <div className="flex h-5 w-5 items-center justify-center rounded-full text-emerald-600 dark:text-emerald-400">
+                <div className="flex h-5 w-5 items-center justify-center rounded-full text-primary">
                   <CheckCircle2 className={`h-5 w-5 transition-opacity ${watchReferral ? "opacity-100" : "opacity-30"}`} />
                 </div>
                 <Users className="h-4 w-4 text-gray-500 dark:text-zinc-400" />
@@ -1048,10 +1049,10 @@ export default function ClientesPage() {
               {/* Tipo de Cliente - removed */}
 
               <div>
-                <Label className="font-medium">Status do Cliente</Label>
+                <Label>Status do Cliente</Label>
                 <select
                   {...register("status")}
-                  className="mt-1 flex h-10 w-full rounded-md border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 px-3 py-2 text-sm text-gray-900 dark:text-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                  className="mt-1 flex h-10 w-full rounded-md border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-sm text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring outline-none"
                 >
                   <option value="ACTIVE">Ativo</option>
                   <option value="INACTIVE">Inativo</option>
@@ -1160,7 +1161,7 @@ export default function ClientesPage() {
                       <select
                         value={selectedDocType}
                         onChange={(e) => setSelectedDocType(e.target.value)}
-                        className="h-9 rounded-md border border-gray-300 bg-gray-50 px-3 text-sm text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                        className="h-9 rounded-md border border-gray-300 bg-gray-50 px-3 text-sm text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
                       >
                         {DOC_TYPES.map((dt) => (
                           <option key={dt.value} value={dt.value}>{dt.label}</option>
@@ -1178,7 +1179,7 @@ export default function ClientesPage() {
                         type="button"
                         onClick={() => docFileInputRef.current?.click()}
                         disabled={uploadingDoc}
-                        className="flex w-full items-center justify-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-50 sm:w-auto"
+                        className="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary/90 disabled:opacity-50 sm:w-auto"
                       >
                         <Upload className="h-4 w-4" />
                         {uploadingDoc ? "Enviando..." : "Selecionar Arquivo"}
@@ -1208,7 +1209,7 @@ export default function ClientesPage() {
                               <div>
                                 <p className="text-sm font-medium text-gray-800 dark:text-zinc-200">{doc.name}</p>
                                 <div className="flex items-center gap-2">
-                                  <span className="text-xs text-emerald-600 bg-emerald-50 dark:bg-emerald-950/300/10 px-2 py-0.5 rounded">
+                                  <span className="text-xs text-primary bg-primary/10 dark:bg-primary/20 px-2 py-0.5 rounded">
                                     {getDocTypeLabel(doc.type)}
                                   </span>
                                   <span className="text-xs text-gray-400 dark:text-zinc-500">
@@ -1253,7 +1254,7 @@ export default function ClientesPage() {
                   type="button"
                   variant="outline"
                   onClick={() => setActiveTab("endereco")}
-                  className="text-emerald-600 border-emerald-500/30 hover:bg-emerald-50 dark:bg-emerald-950/300/10"
+                  className="text-primary border-primary/30 hover:bg-primary/10"
                 >
                   Próximo: Endereço →
                 </Button>
@@ -1267,7 +1268,7 @@ export default function ClientesPage() {
                     type="button"
                     variant="outline"
                     onClick={() => setActiveTab("documentos")}
-                    className="text-emerald-600 border-emerald-500/30 hover:bg-emerald-50 dark:bg-emerald-950/300/10"
+                    className="text-primary border-primary/30 hover:bg-primary/10"
                   >
                     Próximo: Documentos →
                   </Button>

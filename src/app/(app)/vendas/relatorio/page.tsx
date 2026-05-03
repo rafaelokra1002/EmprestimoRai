@@ -186,7 +186,7 @@ export default function RelatorioVendasPage() {
       </div>
 
       {/* ===== PERIOD BAR ===== */}
-      <div className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-gray-50 dark:bg-zinc-800/80 p-4">
+      <div className="rounded-xl border border-primary/30 dark:border-primary/30 bg-gray-50 dark:bg-zinc-800/80 p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-zinc-300 font-medium">
@@ -216,9 +216,9 @@ export default function RelatorioVendasPage() {
       {/* ===== GLOBAL STAT CARDS ===== */}
       <div className="grid grid-cols-2 gap-3">
         {/* Vendido no Período */}
-        <div className="rounded-xl border border-emerald-500/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
-          <div className="h-10 w-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/300/10 flex items-center justify-center">
-            <DollarSign className="h-5 w-5 text-emerald-600" />
+        <div className="rounded-xl border border-primary/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
+          <div className="h-10 w-10 rounded-xl bg-primary/5 dark:bg-primary/150/10 flex items-center justify-center">
+            <DollarSign className="h-5 w-5 text-primary" />
           </div>
           <div>
             <p className="text-xs text-gray-500 dark:text-zinc-400">Vendido no Período</p>
@@ -228,9 +228,9 @@ export default function RelatorioVendasPage() {
         </div>
 
         {/* Recebido no Período */}
-        <div className="rounded-xl border border-emerald-500/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
-          <div className="h-10 w-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/300/10 flex items-center justify-center">
-            <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+        <div className="rounded-xl border border-primary/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
+          <div className="h-10 w-10 rounded-xl bg-primary/5 dark:bg-primary/150/10 flex items-center justify-center">
+            <CheckCircle2 className="h-5 w-5 text-primary" />
           </div>
           <div>
             <p className="text-xs text-gray-500 dark:text-zinc-400">Recebido no Período</p>
@@ -239,12 +239,12 @@ export default function RelatorioVendasPage() {
         </div>
 
         {/* Lucro no Período */}
-        <div className="rounded-xl border border-emerald-500/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
-          <div className="h-10 w-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/300/10 flex items-center justify-center">
-            <TrendingUp className="h-5 w-5 text-emerald-600" />
+        <div className="rounded-xl border border-primary/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
+          <div className="h-10 w-10 rounded-xl bg-primary/5 dark:bg-primary/150/10 flex items-center justify-center">
+            <TrendingUp className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <p className="text-xs text-emerald-600">Lucro no Período</p>
+            <p className="text-xs text-primary">Lucro no Período</p>
             <p className="text-2xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(globalStats.lucro)}</p>
             <p className="text-xs text-gray-400 dark:text-zinc-500">Vendido - Custo</p>
           </div>
@@ -264,7 +264,7 @@ export default function RelatorioVendasPage() {
       </div>
 
       {/* ===== DONUT CHART ===== */}
-      <div className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-gray-50 dark:bg-zinc-800/80 p-5">
+      <div className="rounded-xl border border-primary/30 dark:border-primary/30 bg-gray-50 dark:bg-zinc-800/80 p-5">
         <h2 className="text-sm font-bold text-gray-900 dark:text-zinc-100 mb-4">Distribuição de Vendas</h2>
         <div className="h-[220px]">
           {pieData.length > 0 ? (
@@ -329,7 +329,7 @@ export default function RelatorioVendasPage() {
               onClick={() => setActiveTab(tab.key)}
               className={`flex items-center gap-2 px-5 py-3 text-sm font-medium transition-all border-b-2 ${
                 active
-                  ? "border-emerald-500 text-gray-900 dark:text-zinc-100"
+                  ? "border-primary text-gray-900 dark:text-zinc-100"
                   : "border-transparent text-gray-400 dark:text-zinc-500 hover:text-gray-700 dark:text-zinc-300"
               }`}
             >
@@ -343,9 +343,9 @@ export default function RelatorioVendasPage() {
       {/* ===== PER-TAB STATS ===== */}
       <div className="grid grid-cols-2 gap-3">
         {/* Vendido no Período */}
-        <div className="rounded-xl border border-emerald-500/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
-          <div className="h-10 w-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/300/10 flex items-center justify-center">
-            <Package className="h-5 w-5 text-emerald-600" />
+        <div className="rounded-xl border border-primary/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
+          <div className="h-10 w-10 rounded-xl bg-primary/5 dark:bg-primary/150/10 flex items-center justify-center">
+            <Package className="h-5 w-5 text-primary" />
           </div>
           <div>
             <p className="text-xs text-gray-500 dark:text-zinc-400">Vendido no Período</p>
@@ -355,7 +355,7 @@ export default function RelatorioVendasPage() {
         </div>
 
         {/* Custo */}
-        <div className="rounded-xl border border-emerald-500/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
+        <div className="rounded-xl border border-primary/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
           <div className="h-10 w-10 rounded-xl bg-amber-50 dark:bg-amber-950/300/10 flex items-center justify-center">
             <DollarSign className="h-5 w-5 text-amber-600" />
           </div>
@@ -366,9 +366,9 @@ export default function RelatorioVendasPage() {
         </div>
 
         {/* Lucro */}
-        <div className="rounded-xl border border-emerald-500/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
-          <div className="h-10 w-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/300/10 flex items-center justify-center">
-            <Percent className="h-5 w-5 text-emerald-600" />
+        <div className="rounded-xl border border-primary/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
+          <div className="h-10 w-10 rounded-xl bg-primary/5 dark:bg-primary/150/10 flex items-center justify-center">
+            <Percent className="h-5 w-5 text-primary" />
           </div>
           <div>
             <p className="text-xs text-gray-500 dark:text-zinc-400">Lucro</p>
