@@ -39,22 +39,10 @@ export const ACCENT_PRESETS: AccentPreset[] = [
     shades: { 50:"#faf5ff",100:"#f3e8ff",200:"#e9d5ff",300:"#d8b4fe",400:"#c084fc",500:"#a855f7",600:"#9333ea",700:"#7e22ce",800:"#6b21a8",900:"#581c87",950:"#3b0764" },
   },
   {
-    id: "neon", name: "Neon",
-    primary: "135 100% 40%", primaryDark: "135 100% 50%",
-    gradient: ["#003310", "#00cc33", "#005c17"],
-    shades: { 50:"#f0fff4",100:"#ccffe0",200:"#99ffbf",300:"#66ff99",400:"#33ff66",500:"#00ff40",600:"#00cc33",700:"#009926",800:"#006619",900:"#003310",950:"#001a08" },
-  },
-  {
     id: "green", name: "Verde",
     primary: "142 76% 36%", primaryDark: "142 68% 58%",
     gradient: ["#14532d", "#16a34a", "#166534"],
     shades: { 50:"#f0fdf4",100:"#dcfce7",200:"#bbf7d0",300:"#86efac",400:"#4ade80",500:"#22c55e",600:"#16a34a",700:"#15803d",800:"#166534",900:"#14532d",950:"#052e16" },
-  },
-  {
-    id: "emerald", name: "Esmeralda",
-    primary: "152 69% 31%", primaryDark: "158 64% 52%",
-    gradient: ["#064e3b", "#059669", "#065f46"],
-    shades: { 50:"#ecfdf5",100:"#d1fae5",200:"#a7f3d0",300:"#6ee7b7",400:"#34d399",500:"#10b981",600:"#059669",700:"#047857",800:"#065f46",900:"#064e3b",950:"#022c22" },
   },
   {
     id: "teal", name: "Teal",
@@ -69,34 +57,16 @@ export const ACCENT_PRESETS: AccentPreset[] = [
     shades: { 50:"#f7fee7",100:"#ecfccb",200:"#d9f99d",300:"#bef264",400:"#a3e635",500:"#84cc16",600:"#65a30d",700:"#4d7c0f",800:"#3f6212",900:"#365314",950:"#1a2e05" },
   },
   {
-    id: "rose", name: "Rosa",
-    primary: "350 89% 40%", primaryDark: "351 75% 63%",
-    gradient: ["#881337", "#e11d48", "#9f1239"],
-    shades: { 50:"#fff1f2",100:"#ffe4e6",200:"#fecdd3",300:"#fda4af",400:"#fb7185",500:"#f43f5e",600:"#e11d48",700:"#be123c",800:"#9f1239",900:"#881337",950:"#4c0519" },
-  },
-  {
-    id: "fuchsia", name: "Fúcsia",
-    primary: "292 84% 40%", primaryDark: "293 69% 61%",
-    gradient: ["#701a75", "#c026d3", "#86198f"],
-    shades: { 50:"#fdf4ff",100:"#fae8ff",200:"#f5d0fe",300:"#f0abfc",400:"#e879f9",500:"#d946ef",600:"#c026d3",700:"#a21caf",800:"#86198f",900:"#701a75",950:"#4a044e" },
-  },
-  {
-    id: "orange", name: "Laranja",
-    primary: "21 90% 48%", primaryDark: "21 90% 62%",
-    gradient: ["#7c2d12", "#ea580c", "#9a3412"],
-    shades: { 50:"#fff7ed",100:"#ffedd5",200:"#fed7aa",300:"#fdba74",400:"#fb923c",500:"#f97316",600:"#ea580c",700:"#c2410c",800:"#9a3412",900:"#7c2d12",950:"#431407" },
-  },
-  {
     id: "amber", name: "Âmbar",
     primary: "43 96% 48%", primaryDark: "38 92% 55%",
     gradient: ["#78350f", "#d97706", "#92400e"],
     shades: { 50:"#fffbeb",100:"#fef3c7",200:"#fde68a",300:"#fcd34d",400:"#fbbf24",500:"#f59e0b",600:"#d97706",700:"#b45309",800:"#92400e",900:"#78350f",950:"#451a03" },
   },
   {
-    id: "red", name: "Vermelho",
-    primary: "0 72% 51%", primaryDark: "0 91% 71%",
-    gradient: ["#7f1d1d", "#dc2626", "#991b1b"],
-    shades: { 50:"#fef2f2",100:"#fee2e2",200:"#fecaca",300:"#fca5a5",400:"#f87171",500:"#ef4444",600:"#dc2626",700:"#b91c1c",800:"#991b1b",900:"#7f1d1d",950:"#450a0a" },
+    id: "black", name: "Preto",
+    primary: "220 9% 12%", primaryDark: "220 9% 78%",
+    gradient: ["#09090b", "#27272a", "#18181b"],
+    shades: { 50:"#fafafa",100:"#f4f4f5",200:"#e4e4e7",300:"#d4d4d8",400:"#a1a1aa",500:"#71717a",600:"#52525b",700:"#3f3f46",800:"#27272a",900:"#18181b",950:"#09090b" },
   },
   {
     id: "slate", name: "Cinza",
