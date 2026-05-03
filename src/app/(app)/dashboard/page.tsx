@@ -67,6 +67,8 @@ interface DashboardData {
   }
   financials: {
     pendingInterest: number
+    monthlyExpenses: number
+    pendingExpenses: number
   }
   charts: {
     interestTrend: { month: string; juros: number }[]
@@ -307,6 +309,22 @@ export default function DashboardPage() {
           icon={Users}
           iconClassName="text-emerald-600"
           iconBgClassName="bg-emerald-50 dark:bg-emerald-950/30"
+        />
+        <KpiCard
+          title="Gasto Mensal"
+          value={formatCurrency(data?.financials?.monthlyExpenses || 0)}
+          subtitle="despesas deste mês"
+          icon={Receipt}
+          iconClassName="text-red-500"
+          iconBgClassName="bg-red-50 dark:bg-red-950/30"
+        />
+        <KpiCard
+          title="Despesas Pendentes"
+          value={formatCurrency(data?.financials?.pendingExpenses || 0)}
+          subtitle="a pagar"
+          icon={Wallet}
+          iconClassName="text-orange-500"
+          iconBgClassName="bg-orange-50 dark:bg-orange-950/30"
         />
       </div>
 

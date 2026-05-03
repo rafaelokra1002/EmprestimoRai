@@ -23,7 +23,10 @@ export async function GET() {
     startOfPrevWeek.setDate(startOfPrevWeek.getDate() - 7)
     const endOfPrevWeek = new Date(startOfWeek)
 
-    const [loansResult, overdueCountResult, dueTodayCountResult, activeClientsResult, totalClientsResult, salesResult, vehiclesResult] = await Promise.all([
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
+
+    const [loansResult, overdueCountResult, dueTodayCountResult, activeClientsResult, totalClientsResult, salesResult, vehiclesResult, monthlyExpensesResult, pendingExpensesResult] = await Promise.all([
       prisma.loan.findMany({
         where: { userId, status: "ACTIVE" },
         include: { installments: true, payments: true },
@@ -46,9 +49,19 @@ export async function GET() {
       prisma.client.count({ where: { userId } }),
       prisma.sale.findMany({ where: { userId }, select: { id: true } }),
       prisma.vehicle.findMany({ where: { userId }, select: { id: true } }),
+      prisma.expense.aggregate({
+        where: { userId, dueDate: { gte: startOfMonth, lte: endOfMonth } },
+        _sum: { amount: true },
+      }),
+      prisma.expense.aggregate({
+        where: { userId, status: "PENDING" },
+        _sum: { amount: true },
+      }),
     ])
 
     const loans = loansResult || []
+    const monthlyExpenses = Number(monthlyExpensesResult._sum.amount || 0)
+    const pendingExpenses = Number(pendingExpensesResult._sum.amount || 0)
     const overdueCount = Number(overdueCountResult || 0)
     const dueTodayCount = Number(dueTodayCountResult || 0)
     const activeClients = Number(activeClientsResult || 0)
@@ -213,6 +226,8 @@ export async function GET() {
       },
       financials: {
         pendingInterest,
+        monthlyExpenses,
+        pendingExpenses,
       },
       charts: {
         interestTrend,
