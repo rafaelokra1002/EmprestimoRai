@@ -96,7 +96,7 @@ function KpiCard({
   iconBgClassName?: string
 }) {
   return (
-    <Card className="h-full border-emerald-200/80 dark:border-emerald-900/40 shadow-[0_10px_22px_-16px_rgba(16,185,129,0.5)]">
+    <Card className="h-full">
       <CardContent className="p-5">
         <div className={`rounded-lg ${iconBgClassName || "bg-emerald-50 dark:bg-emerald-950/30"} p-2 w-fit mb-3`}>
           <Icon className={`h-5 w-5 ${iconClassName || "text-emerald-600"}`} />
@@ -210,7 +210,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <Card className="border-emerald-200/80 dark:border-emerald-900/40 bg-emerald-50/40 dark:bg-emerald-950/10 shadow-[0_10px_22px_-16px_rgba(16,185,129,0.5)]">
+      <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-zinc-100">
             <Calendar className="h-5 w-5 text-emerald-500" />
@@ -218,7 +218,7 @@ export default function DashboardPage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-3">
-          <div className="rounded-xl border border-emerald-200 dark:border-emerald-900/40 bg-white/80 dark:bg-zinc-900/60 p-4">
+          <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/60 p-4">
             <div className="flex items-center gap-1.5 mb-1">
               <FileText className="h-3.5 w-3.5 text-emerald-500" />
               <p className="text-xs text-gray-500 dark:text-zinc-400">Contratos</p>
@@ -226,7 +226,7 @@ export default function DashboardPage() {
             <p className="text-2xl leading-none font-semibold tabular-nums tracking-tight text-emerald-600">{data?.weeklySummary?.contractsThisWeek || 0}</p>
             <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">esta semana</p>
           </div>
-          <div className="rounded-xl border border-emerald-200 dark:border-emerald-900/40 bg-white/80 dark:bg-zinc-900/60 p-4">
+          <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/60 p-4">
             <div className="flex items-center gap-1.5 mb-1">
               <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
               <p className="text-xs text-gray-500 dark:text-zinc-400">Recebido</p>
@@ -234,7 +234,7 @@ export default function DashboardPage() {
             <p className="text-2xl leading-none font-semibold tabular-nums tracking-tight text-emerald-600">{formatCurrency(data?.weeklySummary?.receivedThisWeek || 0)}</p>
             <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">esta semana</p>
           </div>
-          <div className="rounded-xl border border-amber-200 dark:border-amber-900/40 bg-white/80 dark:bg-zinc-900/60 p-4">
+          <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/60 p-4">
             <div className="flex items-center gap-1.5 mb-1">
               <Calendar className="h-3.5 w-3.5 text-amber-500" />
               <p className="text-xs text-gray-500 dark:text-zinc-400">Vence Hoje</p>
@@ -311,7 +311,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-4 xl:grid-cols-2">
-        <Card className="h-full border-emerald-200/80 dark:border-emerald-900/40 shadow-[0_10px_22px_-16px_rgba(16,185,129,0.5)]">
+        <Card className="h-full">
           <CardHeader>
             <CardTitle>Evolução Financeira (Últimos 6 meses)</CardTitle>
           </CardHeader>
@@ -336,7 +336,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="h-full border-emerald-200/80 dark:border-emerald-900/40 shadow-[0_10px_22px_-16px_rgba(16,185,129,0.5)]">
+        <Card className="h-full">
           <CardHeader>
             <CardTitle>Tendência de Juros Recebidos</CardTitle>
           </CardHeader>
@@ -376,7 +376,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-4 xl:grid-cols-2">
-        <Card className="h-full border-emerald-200/80 dark:border-emerald-900/40 shadow-[0_10px_22px_-16px_rgba(16,185,129,0.5)]">
+        <Card className="h-full">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <span className="inline-flex h-14 w-14 items-center justify-center rounded-full border-4 border-amber-300 text-2xl font-semibold tabular-nums text-amber-500">
