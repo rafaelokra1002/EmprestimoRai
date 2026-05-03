@@ -26,7 +26,7 @@ export async function GET() {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
 
-    const [loansResult, overdueCountResult, dueTodayCountResult, activeClientsResult, totalClientsResult, salesResult, vehiclesResult, monthlyExpensesResult, pendingExpensesResult] = await Promise.all([
+    const [loansResult, overdueCountResult, dueTodayCountResult, activeClientsResult, totalClientsResult, salesResult, vehiclesResult, monthlyExpensesResult] = await Promise.all([
       prisma.loan.findMany({
         where: { userId, status: "ACTIVE" },
         include: { installments: true, payments: true },
@@ -53,15 +53,10 @@ export async function GET() {
         where: { userId, dueDate: { gte: startOfMonth, lte: endOfMonth } },
         _sum: { amount: true },
       }),
-      prisma.expense.aggregate({
-        where: { userId, status: "PENDING" },
-        _sum: { amount: true },
-      }),
     ])
 
     const loans = loansResult || []
     const monthlyExpenses = Number(monthlyExpensesResult._sum.amount || 0)
-    const pendingExpenses = Number(pendingExpensesResult._sum.amount || 0)
     const overdueCount = Number(overdueCountResult || 0)
     const dueTodayCount = Number(dueTodayCountResult || 0)
     const activeClients = Number(activeClientsResult || 0)
@@ -90,6 +85,24 @@ export async function GET() {
       // Proporção de juros no que falta receber
       const interestRatio = loanProfit / loanTotal
       return acc + remaining * interestRatio
+    }, 0)
+
+    // Juros efetivamente recebidos neste mês
+    const monthlyReceivedInterest = loans.reduce((acc, loan) => {
+      const loanTotal = Number(loan.totalAmount || 0)
+      const loanProfit = Number(loan.profit || 0)
+      if (loanTotal <= 0) return acc
+      const interestRatio = loanProfit / loanTotal
+      return acc + loan.payments
+        .filter((p) => {
+          const d = new Date(p.date)
+          return d >= startOfMonth && d <= endOfMonth
+        })
+        .reduce((sum, p) => {
+          const notes = (p.notes || "").toLowerCase()
+          const isSoJuros = notes.includes("só juros") || notes.includes("parcial de juros")
+          return sum + (isSoJuros ? Number(p.amount) : Number(p.amount) * interestRatio)
+        }, 0)
     }, 0)
 
     const activeInstallments = loans.reduce(
@@ -227,7 +240,7 @@ export async function GET() {
       financials: {
         pendingInterest,
         monthlyExpenses,
-        pendingExpenses,
+        monthlyReceivedInterest,
       },
       charts: {
         interestTrend,
