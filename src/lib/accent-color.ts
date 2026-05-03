@@ -76,26 +76,12 @@ export const ACCENT_PRESETS: AccentPreset[] = [
   },
 ]
 
-function hexToRgb(hex: string) {
-  return `${parseInt(hex.slice(1,3),16)} ${parseInt(hex.slice(3,5),16)} ${parseInt(hex.slice(5,7),16)}`
-}
-
-export function applyAccentColor(presetId: string, isDark: boolean) {
+export function applyAccentColor(presetId: string, _isDark: boolean) {
   const preset = ACCENT_PRESETS.find((p) => p.id === presetId) ?? ACCENT_PRESETS[0]
   const root = document.documentElement
 
-  root.style.setProperty("--primary", isDark ? preset.primaryDark : preset.primary)
-  root.style.setProperty("--ring", isDark ? preset.primaryDark : preset.primary)
-  root.style.setProperty("--sidebar-from", preset.gradient[0])
+  // Only sidebar changes — buttons/primary color are fixed green
   root.style.setProperty("--sidebar-via", preset.gradient[1])
-  root.style.setProperty("--sidebar-to", preset.gradient[2])
-
-  const s = preset.shades
-  const keys = [50,100,200,300,400,500,600,700,800,900,950] as const
-  keys.forEach((n) => {
-    root.style.setProperty(`--ac-${n}`, s[n])
-    root.style.setProperty(`--ac-rgb-${n}`, hexToRgb(s[n]))
-  })
 }
 
 export function saveAccentColor(presetId: string) {
