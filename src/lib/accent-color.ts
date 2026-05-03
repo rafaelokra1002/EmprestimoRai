@@ -33,6 +33,18 @@ export const ACCENT_PRESETS: AccentPreset[] = [
     shades: { 50:"#eef2ff",100:"#e0e7ff",200:"#c7d2fe",300:"#a5b4fc",400:"#818cf8",500:"#6366f1",600:"#4f46e5",700:"#4338ca",800:"#3730a3",900:"#312e81",950:"#1e1b4b" },
   },
   {
+    id: "purple", name: "Roxo",
+    primary: "272 72% 47%", primaryDark: "270 89% 72%",
+    gradient: ["#3b0764", "#7e22ce", "#581c87"],
+    shades: { 50:"#faf5ff",100:"#f3e8ff",200:"#e9d5ff",300:"#d8b4fe",400:"#c084fc",500:"#a855f7",600:"#9333ea",700:"#7e22ce",800:"#6b21a8",900:"#581c87",950:"#3b0764" },
+  },
+  {
+    id: "neon", name: "Neon",
+    primary: "135 100% 40%", primaryDark: "135 100% 50%",
+    gradient: ["#003310", "#00cc33", "#005c17"],
+    shades: { 50:"#f0fff4",100:"#ccffe0",200:"#99ffbf",300:"#66ff99",400:"#33ff66",500:"#00ff40",600:"#00cc33",700:"#009926",800:"#006619",900:"#003310",950:"#001a08" },
+  },
+  {
     id: "green", name: "Verde",
     primary: "142 76% 36%", primaryDark: "142 68% 58%",
     gradient: ["#14532d", "#16a34a", "#166534"],
