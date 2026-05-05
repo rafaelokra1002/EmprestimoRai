@@ -7,7 +7,6 @@ import {
   CheckCircle2,
   Download,
   FileText,
-  Receipt,
   DollarSign,
   Users,
   FileSpreadsheet,
@@ -36,13 +35,6 @@ const backupSections = [
     description: "Somente empréstimos com duas ou mais parcelas",
     icon: Landmark,
     iconClassName: "text-primary",
-  },
-  {
-    key: "contracts",
-    title: "Contratos",
-    description: "Todos os contratos de empréstimo cadastrados",
-    icon: Receipt,
-    iconClassName: "text-violet-500",
   },
 ] as const
 
@@ -97,7 +89,7 @@ export default function BackupPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 pt-10">
+    <div className="mx-auto max-w-xl space-y-6 pt-10">
       <div className="text-center">
         <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/5 dark:bg-primary/15">
           <Download className="h-6 w-6 text-primary" />
@@ -117,13 +109,13 @@ export default function BackupPage() {
         </div>
       )}
 
-      <div className="grid gap-5 md:grid-cols-2">
+      <div className="flex flex-col gap-2">
         {backupSections.map((section) => {
           const Icon = section.icon
           return (
             <div
               key={section.title}
-              className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition-colors dark:border-zinc-800 dark:bg-zinc-900"
+              className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition-colors dark:border-zinc-800 dark:bg-zinc-900"
             >
               <div className="flex items-start gap-4">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-100 dark:bg-zinc-800">
@@ -135,7 +127,7 @@ export default function BackupPage() {
                 </div>
               </div>
 
-              <div className="mt-5 flex items-center gap-3">
+              <div className="mt-3 flex items-center gap-3">
                 <button
                   type="button"
                   onClick={() => handleBackup(section.key, section.title)}

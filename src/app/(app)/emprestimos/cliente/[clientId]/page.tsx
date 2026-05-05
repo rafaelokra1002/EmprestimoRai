@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useEffect, useMemo, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
@@ -640,11 +640,11 @@ export default function ClienteEmprestimosPage() {
               : false
             const isParcelado = loan.installmentCount > 1
 
-            const cardBorder = isAtrasado ? "border-red-400 dark:border-red-700" : isDueToday ? "border-orange-400 dark:border-orange-700" : isSoJuros ? "border-purple-400 dark:border-purple-700" : isQuitado ? "border-blue-400 dark:border-blue-700" : isParcelado ? "border-blue-400 dark:border-blue-700" : "border-gray-200 dark:border-zinc-700"
-            const cardBg = isAtrasado ? "bg-red-100 dark:bg-red-950/30" : isDueToday ? "bg-orange-100 dark:bg-orange-950/30" : isSoJuros ? "bg-purple-100 dark:bg-purple-950/30" : isQuitado ? "bg-blue-100 dark:bg-blue-950/30" : isParcelado ? "bg-blue-100 dark:bg-blue-950/30" : "bg-white dark:bg-zinc-900"
-            const remainingColor = isAtrasado ? "text-red-700 dark:text-red-400" : isDueToday ? "text-orange-700 dark:text-orange-400" : isSoJuros ? "text-purple-700 dark:text-purple-400" : isQuitado ? "text-blue-700 dark:text-blue-400" : isParcelado ? "text-blue-700 dark:text-blue-400" : "text-gray-900 dark:text-zinc-100"
-            const remainingBg = isAtrasado ? "bg-red-100 dark:bg-red-900/40" : isDueToday ? "bg-orange-100 dark:bg-orange-900/40" : isSoJuros ? "bg-purple-100 dark:bg-purple-900/40" : isQuitado ? "bg-blue-100 dark:bg-blue-900/40" : isParcelado ? "bg-blue-100 dark:bg-blue-900/40" : "bg-gray-100 dark:bg-zinc-800"
-            const cellBg = isAtrasado ? "bg-red-50 dark:bg-red-950/20" : isDueToday ? "bg-orange-50 dark:bg-orange-950/20" : isSoJuros ? "bg-purple-50 dark:bg-purple-950/20" : isQuitado ? "bg-blue-50 dark:bg-blue-950/20" : isParcelado ? "bg-blue-50 dark:bg-blue-950/20" : "bg-gray-50 dark:bg-zinc-800/50"
+            const cardBorder = isQuitado ? "border-blue-400 dark:border-blue-700" : "border-primary/40 dark:border-primary/30"
+            const cardBg = "bg-white dark:bg-zinc-900"
+            const remainingColor = isAtrasado ? "text-red-600 dark:text-red-400" : isDueToday ? "text-orange-600 dark:text-orange-400" : isQuitado ? "text-blue-700 dark:text-blue-400" : "text-primary dark:text-primary"
+            const remainingBg = isAtrasado ? "bg-red-50 dark:bg-red-950/20" : isDueToday ? "bg-orange-50 dark:bg-orange-950/20" : isQuitado ? "bg-blue-50 dark:bg-blue-900/40" : "bg-primary/10 dark:bg-primary/20"
+            const cellBg = "bg-gray-50 dark:bg-zinc-800/50"
 
             return (
               <div key={loan.id} className={`rounded-xl border overflow-hidden shadow-sm hover:shadow-md transition-shadow ${cardBorder} ${cardBg}`}>
@@ -665,14 +665,14 @@ export default function ClienteEmprestimosPage() {
                         J. Compostos
                       </span>
                     )}
-                    <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400">
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary">
                       {MODALITY_LABELS[loan.modality] || loan.modality}
                     </span>
                   </div>
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => { setEditingTags(loan.tags || []); setTagInput(""); setShowTagForm(false); setTagDialog(loan) }}
-                      className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors"
+                      className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-primary dark:text-primary border border-primary/30 dark:border-primary/30 hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors"
                     >
                       <Tag className="h-3 w-3" /> Etiqueta
                     </button>
@@ -788,11 +788,11 @@ export default function ClienteEmprestimosPage() {
                   </div>
                   <div className={`${cellBg} px-3 py-2.5`}>
                     <p className="text-[11px] text-gray-400 dark:text-zinc-500 flex items-center gap-1"><Lock className="h-3 w-3" /> Lucro Previsto</p>
-                    <p className="text-sm font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">{formatCurrency(loan.profit)}</p>
+                    <p className="text-sm font-semibold tabular-nums text-primary dark:text-primary">{formatCurrency(loan.profit)}</p>
                   </div>
                   <div className={`${cellBg} px-3 py-2.5 text-right`}>
                     <p className="text-[11px] text-gray-400 dark:text-zinc-500 flex items-center gap-1 justify-end"><Check className="h-3 w-3" /> Lucro Realizado</p>
-                    <p className="text-sm font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">{formatCurrency(receivedProfit)} <span className="text-gray-400 dark:text-zinc-500 text-xs">{profitPct}%</span></p>
+                    <p className="text-sm font-semibold tabular-nums text-primary dark:text-primary">{formatCurrency(receivedProfit)} <span className="text-gray-400 dark:text-zinc-500 text-xs">{profitPct}%</span></p>
                   </div>
                 </div>
 
@@ -804,7 +804,7 @@ export default function ClienteEmprestimosPage() {
                     <Pencil className="h-3 w-3 text-gray-300 dark:text-zinc-600" />
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
+                    <DollarSign className="h-3.5 w-3.5 text-primary" />
                     <span className="font-medium text-gray-700 dark:text-zinc-300">Pago: {formatCurrency(paid)}</span>
                   </div>
                 </div>
@@ -844,16 +844,16 @@ export default function ClienteEmprestimosPage() {
                 {/* Ações */}
                 <div className="px-4 pt-3 pb-4 mt-2 border-t border-gray-100 dark:border-zinc-800 space-y-3">
                   <div className="grid w-full min-w-0 grid-cols-[minmax(0,2.6fr)_repeat(5,minmax(0,1fr))] gap-1.5">
-                    <Button size="sm" variant="outline" onClick={() => openRenegotiateDialog(loan)} className="min-w-0 h-10 px-2 text-xs border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-400 transition-colors sm:text-sm">
+                    <Button size="sm" variant="outline" onClick={() => openRenegotiateDialog(loan)} className="min-w-0 h-10 px-2 text-xs border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:bg-primary/5 hover:text-primary hover:border-primary/30 dark:hover:bg-primary/10 dark:hover:text-primary transition-colors sm:text-sm">
                       <Receipt className="h-3.5 w-3.5 mr-1" /> Pagar
                     </Button>
-                    <button className="flex min-w-0 w-full items-center justify-center rounded-xl bg-emerald-50 p-2 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors" onClick={() => router.push(`/emprestimos/${loan.id}`)} title="Histórico">
+                    <button className="flex min-w-0 w-full items-center justify-center rounded-xl bg-emerald-50 p-2 dark:bg-emerald-950/30 text-primary dark:text-primary hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors" onClick={() => router.push(`/emprestimos/${loan.id}`)} title="Histórico">
                       <RotateCcw className="h-4 w-4" />
                     </button>
                     <button className="flex min-w-0 w-full items-center justify-center rounded-xl bg-blue-50 p-2 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors" onClick={() => router.push(`/emprestimos/${loan.id}/editar`)} title="Editar">
                       <Pencil className="h-4 w-4" />
                     </button>
-                    <button className="flex min-w-0 w-full items-center justify-center rounded-xl bg-emerald-50 p-2 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors" onClick={() => router.push(`/emprestimos/${loan.id}`)} title="Pagar Juros">
+                    <button className="flex min-w-0 w-full items-center justify-center rounded-xl bg-emerald-50 p-2 dark:bg-emerald-950/30 text-primary dark:text-primary hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors" onClick={() => router.push(`/emprestimos/${loan.id}`)} title="Pagar Juros">
                       <DollarSign className="h-4 w-4" />
                     </button>
                     <button className="flex min-w-0 w-full items-center justify-center rounded-xl bg-amber-50 p-2 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors" onClick={() => router.push(`/emprestimos/${loan.id}`)} title="Renovar">
@@ -865,7 +865,7 @@ export default function ClienteEmprestimosPage() {
                   </div>
                   {(status.label === "Atrasado" || status.label === "Inadimplente") && (
                     <div>
-                      <Button size="sm" onClick={() => openWhatsappDialog(loan)} className="w-full h-9 text-sm bg-green-600 hover:bg-green-700 text-white transition-colors">
+                      <Button size="sm" onClick={() => openWhatsappDialog(loan)} className="w-full h-9 text-sm bg-primary hover:bg-primary/90 text-white transition-colors">
                         <MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Cobrar via WhatsApp
                       </Button>
                     </div>
@@ -909,7 +909,7 @@ export default function ClienteEmprestimosPage() {
               </Button>
             </div>
           ) : (
-            <button onClick={() => setShowTagForm(true)} className="w-full py-2 text-sm text-emerald-600 dark:text-emerald-400 border border-dashed border-emerald-300 dark:border-emerald-800 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-colors">
+            <button onClick={() => setShowTagForm(true)} className="w-full py-2 text-sm text-primary dark:text-primary border border-dashed border-emerald-300 dark:border-emerald-800 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-colors">
               + Nova Etiqueta
             </button>
           )}
@@ -1139,7 +1139,7 @@ export default function ClienteEmprestimosPage() {
                         <span className="font-bold text-cyan-600 text-base">{formatCurrency(jurosPendente)}</span>
                       </div>
                       {jurosPendente === 0 && renegotiateAmount > 0 && (
-                        <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1">✅ Juros completo! A dívida renovará para o próximo mês.</p>
+                        <p className="text-xs text-primary dark:text-primary font-medium mt-1">✅ Juros completo! A dívida renovará para o próximo mês.</p>
                       )}
                     </div>
                   </div>
@@ -1336,7 +1336,7 @@ export default function ClienteEmprestimosPage() {
                     Cancelar
                   </Button>
                   <Button
-                    className="flex-1 gap-2 bg-green-600 hover:bg-green-700 text-white"
+                    className="flex-1 gap-2 bg-primary hover:bg-primary/90 text-white"
                     onClick={sendWhatsappMessage}
                     disabled={whatsappSending || !whatsappMessage.trim()}
                   >
@@ -1408,7 +1408,7 @@ export default function ClienteEmprestimosPage() {
                 <Copy className="h-4 w-4" /> Copiar
               </Button>
               <Button
-                className="gap-1.5 bg-green-600 hover:bg-green-700 text-white"
+                className="gap-1.5 bg-primary hover:bg-primary/90 text-white"
                 onClick={() => {
                   const text = `📋 *Comprovante de Pagamento*\n\n📌 Tipo: ${paymentReceiptInfo.type}\n👤 Cliente: ${paymentReceiptInfo.clientName}\n📄 Parcela: ${paymentReceiptInfo.installmentLabel}\n💰 Valor Pago: ${formatCurrency(paymentReceiptInfo.amount)}\n📅 Data: ${paymentReceiptInfo.date}\n💵 Saldo Restante: ${formatCurrency(paymentReceiptInfo.remainingBalance)}${paymentReceiptInfo.isCompleted ? "\n\n✅ *Contrato Quitado!*" : ""}`
                   const encoded = encodeURIComponent(text)

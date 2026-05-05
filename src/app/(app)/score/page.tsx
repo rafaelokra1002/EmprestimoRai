@@ -48,7 +48,7 @@ export default function ScorePage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [sortMode, setSortMode] = useState<SortMode>("score")
-  const [summaryOpen, setSummaryOpen] = useState(true)
+  const [summaryOpen, setSummaryOpen] = useState(false)
   const [editingClient, setEditingClient] = useState<Client | null>(null)
   const [editScore, setEditScore] = useState(100)
   const [savingScore, setSavingScore] = useState(false)

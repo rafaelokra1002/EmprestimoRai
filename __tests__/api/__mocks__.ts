@@ -44,6 +44,7 @@ type MockPrisma = {
     updateMany: MockFn
     findFirst: MockFn
     count: MockFn
+    aggregate: MockFn
   }
   payment: {
     create: MockFn
@@ -63,6 +64,7 @@ type MockPrisma = {
   }
   expense: {
     findMany: MockFn
+    aggregate: MockFn
     create: MockFn
     update: MockFn
     delete: MockFn
@@ -113,6 +115,7 @@ export const mockPrisma: MockPrisma = {
     updateMany: jest.fn(),
     findFirst: jest.fn(),
     count: jest.fn(),
+    aggregate: jest.fn(),
   },
   payment: {
     create: jest.fn(),
@@ -132,6 +135,7 @@ export const mockPrisma: MockPrisma = {
   },
   expense: {
     findMany: jest.fn(),
+    aggregate: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),

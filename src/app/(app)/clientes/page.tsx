@@ -483,10 +483,14 @@ export default function ClientesPage() {
         <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">Clientes</h1>
         <div className="flex flex-col items-end gap-2">
           <div className="flex items-center gap-2">
-            <Button onClick={() => router.push("/emprestimos?novo=true")} className="bg-primary hover:bg-primary/90 text-white gap-1.5 whitespace-nowrap text-xs px-3 py-1.5 h-8">
+            <button
+              type="button"
+              onClick={() => router.push("/emprestimos?novo=true")}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-primary/40 bg-white px-4 text-sm font-semibold text-primary transition hover:bg-primary/5 dark:bg-zinc-900 dark:border-primary/30 dark:text-primary dark:hover:bg-primary/10 h-10 whitespace-nowrap"
+            >
               <DollarSign className="h-4 w-4" />
               Criar Empréstimo
-            </Button>
+            </button>
             <button
               type="button"
               onClick={() => {
@@ -499,12 +503,12 @@ export default function ClientesPage() {
                   setTimeout(() => setLinkCopied(false), 2500)
                 })
               }}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-blue-300 bg-white px-3 py-1.5 text-xs font-semibold text-blue-600 transition hover:bg-blue-50 dark:bg-zinc-900 dark:border-blue-700 dark:text-blue-400 dark:hover:bg-zinc-800 h-8 whitespace-nowrap"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-blue-300 bg-white px-4 text-sm font-semibold text-blue-600 transition hover:bg-blue-50 dark:bg-zinc-900 dark:border-blue-700 dark:text-blue-400 dark:hover:bg-zinc-800 h-10 whitespace-nowrap"
             >
-              <Link2 className="h-3.5 w-3.5" />
+              <Link2 className="h-4 w-4" />
               {linkCopied ? "Link copiado!" : "Compartilhar Cadastro"}
             </button>
-            <Button onClick={() => openNewClient()} className="bg-primary hover:bg-primary/90 text-white gap-2 whitespace-nowrap">
+            <Button onClick={() => openNewClient()} className="bg-primary hover:bg-primary/90 text-white gap-2 whitespace-nowrap h-10 px-4 text-sm">
               <Plus className="h-4 w-4" />
               Novo Cliente
             </Button>
@@ -538,19 +542,20 @@ export default function ClientesPage() {
         </div>
       </div>
 
-      {/* Search bar with controls */}
-      <div className="flex items-start gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-zinc-500" />
-          <Input
-            placeholder="Buscar clientes..."
-            className="pl-10"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-        <div className="flex flex-col items-end gap-2">
-          <div className="flex items-center gap-4 text-sm">
+      {/* Listing */}
+      {viewMode === "table" ? (
+        <div className="rounded-xl border border-primary/40 dark:border-primary/30 overflow-hidden bg-white dark:bg-zinc-900">
+          {/* Search bar */}
+          <div className="flex items-center gap-3 px-5 py-4 bg-white dark:bg-zinc-900">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-zinc-500" />
+              <Input
+                placeholder="Buscar clientes..."
+                className="pl-10 h-10"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
             <FilterDropdown
               label="Filtros"
               icon={<Filter className="h-4 w-4" />}
@@ -569,12 +574,6 @@ export default function ClientesPage() {
               {filtered.length} clientes
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Listing */}
-      {viewMode === "table" ? (
-        <div className="rounded-xl border border-gray-200 dark:border-zinc-800 overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
@@ -641,16 +640,43 @@ export default function ClientesPage() {
             </TableBody>
           </Table>
         </div>
-      ) : loading ? (
-        <div className="rounded-xl border border-gray-200 dark:border-zinc-800 py-8 text-center text-gray-500 dark:text-zinc-400">
-          Carregando...
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="rounded-xl border border-gray-200 dark:border-zinc-800 py-8 text-center text-gray-500 dark:text-zinc-400">
-          Nenhum cliente encontrado
-        </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="rounded-xl border border-primary/40 dark:border-primary/30 overflow-hidden bg-white dark:bg-zinc-900">
+          {/* Search bar */}
+          <div className="flex items-center gap-3 px-5 py-4 bg-white dark:bg-zinc-900">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-zinc-500" />
+              <Input
+                placeholder="Buscar clientes..."
+                className="pl-10 h-10"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <FilterDropdown
+              label="Filtros"
+              icon={<Filter className="h-4 w-4" />}
+              tone="emerald"
+              value={statusFilter}
+              onChange={(value) => setStatusFilter(value as "all" | "active" | "inactive")}
+              options={[
+                { value: "all", label: "Todos" },
+                { value: "active", label: `Ativos (${clients.filter(c => c.status !== "DESAPARECIDO" && c.loans?.some(l => l.status === "ACTIVE")).length})` },
+                { value: "inactive", label: `Inativos (${clients.filter(c => c.status !== "DESAPARECIDO" && !c.loans?.some(l => l.status === "ACTIVE")).length})` },
+              ]}
+              minWidthClassName="min-w-[190px]"
+            />
+            <div className="flex h-10 items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm text-gray-500 whitespace-nowrap dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-400">
+              <Users className="h-4 w-4" />
+              {filtered.length} clientes
+            </div>
+          </div>
+          {loading ? (
+            <div className="py-8 text-center text-gray-500 dark:text-zinc-400">Carregando...</div>
+          ) : filtered.length === 0 ? (
+            <div className="py-8 text-center text-gray-500 dark:text-zinc-400">Nenhum cliente encontrado</div>
+          ) : (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 p-4">
           {filtered.map((client) => {
             const loanSummary = getActiveLoanSummary(client)
             const activeLoan = loanSummary?.loan
@@ -732,17 +758,17 @@ export default function ClientesPage() {
                     <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-zinc-500">Valor solicitado</p>
                     <p className="mt-0.5 text-xl font-bold text-gray-900 dark:text-zinc-100">{formatCurrency(displayedRequestedAmount)}</p>
                   </div>
-                  <div className="flex shrink-0 flex-col items-center gap-0.5">
-                    <div className="relative h-14 w-14">
-                      <svg className="h-14 w-14 -rotate-90" viewBox="0 0 60 60">
+                  <div className="flex shrink-0 flex-col items-center gap-1">
+                    <div className="relative h-20 w-20">
+                      <svg className="h-20 w-20 -rotate-90" viewBox="0 0 60 60">
                         <circle cx="30" cy="30" r={scoreR} fill="none" strokeWidth="5" stroke="currentColor" className="text-gray-100 dark:text-zinc-700" />
                         <circle cx="30" cy="30" r={scoreR} fill="none" strokeWidth="5" stroke={scoreStroke} strokeLinecap="round" strokeDasharray={scoreCircum} strokeDashoffset={scoreOffset} />
                       </svg>
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-sm font-bold text-gray-900 dark:text-zinc-100">{client.score}</span>
+                        <span className="text-base font-bold text-gray-900 dark:text-zinc-100">{client.score}</span>
                       </div>
                     </div>
-                    <span className="text-xs font-semibold" style={{ color: scoreStroke }}>{getScoreLabel(client.score)}</span>
+                    <span className="text-sm font-semibold" style={{ color: scoreStroke }}>{getScoreLabel(client.score)}</span>
                   </div>
                 </div>
 
@@ -801,6 +827,8 @@ export default function ClientesPage() {
               </div>
             )
           })}
+        </div>
+          )}
         </div>
       )}
 

@@ -34,7 +34,9 @@ describe("GET /api/dashboard", () => {
       },
     ])
     mockPrisma.installment.count.mockResolvedValue(1)
+    mockPrisma.installment.aggregate.mockResolvedValue({ _sum: { amount: 75 } })
     mockPrisma.client.count.mockResolvedValue(10)
+    mockPrisma.expense.aggregate.mockResolvedValue({ _sum: { amount: 0 } })
 
     const res = await GET()
     expect(res.status).toBe(200)
@@ -43,5 +45,7 @@ describe("GET /api/dashboard", () => {
     expect(data).toHaveProperty("totalReceived")
     expect(data).toHaveProperty("capitalOnStreet")
     expect(data).toHaveProperty("totalProfit")
+    expect(data).toHaveProperty("overdueAmount", 75)
+    expect(data).toHaveProperty("inactiveClients")
   })
 })

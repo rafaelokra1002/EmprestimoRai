@@ -26,7 +26,7 @@ export async function GET() {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
 
-    const [loansResult, overdueCountResult, dueTodayCountResult, activeClientsResult, totalClientsResult, salesResult, vehiclesResult, monthlyExpensesResult] = await Promise.all([
+    const [loansResult, overdueCountResult, overdueAmountResult, dueTodayCountResult, activeClientsResult, totalClientsResult, salesResult, vehiclesResult, monthlyExpensesResult] = await Promise.all([
       prisma.loan.findMany({
         where: { userId, status: "ACTIVE" },
         include: { installments: true, payments: true },
@@ -37,6 +37,14 @@ export async function GET() {
           status: "PENDING",
           dueDate: { lt: startOfToday },
         },
+      }),
+      prisma.installment.aggregate({
+        where: {
+          loan: { userId },
+          status: "PENDING",
+          dueDate: { lt: startOfToday },
+        },
+        _sum: { amount: true },
       }),
       prisma.installment.count({
         where: {
@@ -58,9 +66,11 @@ export async function GET() {
     const loans = loansResult || []
     const monthlyExpenses = Number(monthlyExpensesResult._sum.amount || 0)
     const overdueCount = Number(overdueCountResult || 0)
+    const overdueAmount = Number(overdueAmountResult._sum.amount || 0)
     const dueTodayCount = Number(dueTodayCountResult || 0)
     const activeClients = Number(activeClientsResult || 0)
     const totalClients = Number(totalClientsResult || 0)
+    const inactiveClients = Math.max(totalClients - activeClients, 0)
     const sales = salesResult || []
     const vehicles = vehiclesResult || []
 
@@ -74,7 +84,6 @@ export async function GET() {
     const capitalOnStreet = Math.max(totalToReceive - totalReceived, 0)
     const totalProfit = loans.reduce((acc, loan) => acc + Number(loan.profit || 0), 0)
 
-    const totalPrincipal = loans.reduce((acc, loan) => acc + Number(loan.amount || 0), 0)
     // Juros a receber: para cada empréstimo, calcula o juros pendente proporcionalmente
     const pendingInterest = loans.reduce((acc, loan) => {
       const loanTotal = Number(loan.totalAmount || 0)
@@ -217,6 +226,8 @@ export async function GET() {
       capitalOnStreet,
       totalProfit,
       overdueCount,
+      overdueAmount,
+      inactiveClients,
       activeClients,
       monthlyData,
       totalLoans: loans.length,

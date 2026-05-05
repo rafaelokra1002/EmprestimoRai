@@ -1,26 +1,18 @@
 ﻿"use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
-  Activity,
-  AlertTriangle,
   ArrowUpRight,
-  Calendar,
-  CalendarDays,
-  CheckCircle2,
   Clock3,
   FileText,
-  Package,
   DollarSign,
-  MessageSquare,
   Receipt,
   Shield,
   ShieldAlert,
   TrendingUp,
   Users,
-  Car,
-  Wallet,
   X,
   type LucideIcon,
 } from "lucide-react"
@@ -45,6 +37,8 @@ interface DashboardData {
   capitalOnStreet: number
   totalProfit: number
   overdueCount: number
+  overdueAmount: number
+  inactiveClients: number
   activeClients: number
   monthlyData: { month: string; emprestado: number; recebido: number }[]
   totalLoans: number
@@ -98,7 +92,7 @@ function KpiCard({
   iconBgClassName?: string
 }) {
   return (
-    <Card className="h-full">
+    <Card className="h-full border-primary/30 dark:border-primary/20">
       <CardContent className="p-5">
         <div className={`rounded-lg ${iconBgClassName || "bg-primary/5 dark:bg-primary/15"} p-2 w-fit mb-3`}>
           <Icon className={`h-5 w-5 ${iconClassName || "text-primary"}`} />
@@ -111,17 +105,9 @@ function KpiCard({
   )
 }
 
-function DeltaBadge({ value }: { value: number }) {
-  const isPositive = value >= 0
-  return (
-    <span className="rounded-md border border-primary/30 dark:border-primary/30 bg-primary/5 dark:bg-primary/15 px-2 py-0.5 text-[10px] font-medium tabular-nums text-primary">
-      {isPositive ? "+" : ""}
-      {value.toFixed(1)}%
-    </span>
-  )
-}
 
 export default function DashboardPage() {
+  const router = useRouter()
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [showInstallBanner, setShowInstallBanner] = useState(true)
@@ -206,19 +192,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-5 pt-6">
-      {/* Welcome */}
-      <div className="flex items-center gap-3">
-        <div>
-          <h2 className="text-lg font-bold text-gray-900 dark:text-zinc-100">Bem-vindo de volta!</h2>
-          <p className="text-sm text-gray-500 dark:text-zinc-400">Gerencie seus empréstimos</p>
-        </div>
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 dark:bg-primary/20 px-3 py-1 text-xs font-semibold text-primary dark:text-primary">
-          <Shield className="h-3.5 w-3.5" />
-          Dono (acesso total)
-        </span>
-      </div>
-
-      <div className="flex flex-col gap-1">
+<div className="flex flex-col gap-1">
         <h1 className="text-xl font-bold text-gray-900 dark:text-zinc-100">Dashboard</h1>
         <p className="text-sm text-gray-500 dark:text-zinc-400">Visão geral do seu sistema financeiro</p>
       </div>
@@ -233,13 +207,21 @@ export default function DashboardPage() {
             <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">Lembrete de backup</p>
             <p className="text-xs text-amber-700 dark:text-amber-400">Faça backup dos seus dados a cada 2 dias para evitar perdas. Clique em "Fazer Backup" para baixar o arquivo.</p>
           </div>
-          <button
-            onClick={handleBackup}
-            disabled={backupLoading}
-            className="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 disabled:opacity-60 px-4 py-1.5 text-sm font-medium text-white transition-colors"
-          >
-            {backupLoading ? "Baixando..." : "Fazer Backup"}
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              onClick={() => router.push("/backup")}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-amber-400 bg-white hover:bg-amber-50 dark:bg-zinc-900 dark:hover:bg-amber-950/20 px-4 py-1.5 text-sm font-medium text-amber-600 dark:text-amber-400 transition-colors"
+            >
+              Ir para Backup
+            </button>
+            <button
+              onClick={handleBackup}
+              disabled={backupLoading}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 disabled:opacity-60 px-4 py-1.5 text-sm font-medium text-white transition-colors"
+            >
+              {backupLoading ? "Baixando..." : "Fazer Backup"}
+            </button>
+          </div>
         </div>
       )}
 
@@ -265,34 +247,34 @@ export default function DashboardPage() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-zinc-100">
-            <Calendar className="h-5 w-5 text-primary" />
-            Resumo da Semana
+            <TrendingUp className="h-5 w-5 text-primary" />
+            Visão Geral
           </CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-3">
-          <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/60 p-4">
+          <div className="rounded-xl border border-blue-100 dark:border-blue-900/40 bg-blue-50/60 dark:bg-blue-950/20 p-4">
             <div className="flex items-center gap-1.5 mb-1">
-              <FileText className="h-3.5 w-3.5 text-primary" />
-              <p className="text-xs text-gray-500 dark:text-zinc-400">Contratos</p>
+              <Receipt className="h-3.5 w-3.5 text-primary" />
+              <p className="text-xs text-gray-500 dark:text-zinc-400">Total a Receber</p>
             </div>
-            <p className="text-2xl leading-none font-semibold tabular-nums tracking-tight text-primary">{data?.weeklySummary?.contractsThisWeek || 0}</p>
-            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">esta semana</p>
+            <p className="text-2xl leading-none font-semibold tabular-nums tracking-tight text-primary">{formatCurrency(data?.totalToReceive || 0)}</p>
+            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">empréstimos + parcelas</p>
           </div>
-          <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/60 p-4">
+          <div className="rounded-xl border border-orange-100 dark:border-orange-900/40 bg-orange-50/60 dark:bg-orange-950/20 p-4">
             <div className="flex items-center gap-1.5 mb-1">
-              <DollarSign className="h-3.5 w-3.5 text-primary" />
-              <p className="text-xs text-gray-500 dark:text-zinc-400">Recebido</p>
+              <DollarSign className="h-3.5 w-3.5 text-orange-500" />
+              <p className="text-xs text-gray-500 dark:text-zinc-400">Capital Total</p>
             </div>
-            <p className="text-2xl leading-none font-semibold tabular-nums tracking-tight text-primary">{formatCurrency(data?.weeklySummary?.receivedThisWeek || 0)}</p>
-            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">esta semana</p>
+            <p className="text-2xl leading-none font-semibold tabular-nums tracking-tight text-orange-500">{formatCurrency(data?.capitalOnStreet || 0)}</p>
+            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">principal emprestado</p>
           </div>
-          <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/60 p-4">
+          <div className="rounded-xl border border-violet-100 dark:border-violet-900/40 bg-violet-50/60 dark:bg-violet-950/20 p-4">
             <div className="flex items-center gap-1.5 mb-1">
-              <Calendar className="h-3.5 w-3.5 text-amber-500" />
-              <p className="text-xs text-gray-500 dark:text-zinc-400">Vence Hoje</p>
+              <TrendingUp className="h-3.5 w-3.5 text-blue-500" />
+              <p className="text-xs text-gray-500 dark:text-zinc-400">Juros Total a Receber</p>
             </div>
-            <p className="text-2xl leading-none font-semibold tabular-nums tracking-tight text-orange-500">{data?.weeklySummary?.dueToday || 0}</p>
-            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">cobranças</p>
+            <p className="text-2xl leading-none font-semibold tabular-nums tracking-tight text-blue-500">{formatCurrency(data?.financials?.pendingInterest || 0)}</p>
+            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">juros pendentes</p>
           </div>
         </CardContent>
       </Card>
@@ -326,33 +308,6 @@ export default function DashboardPage() {
 
       <div className="grid gap-4 md:grid-cols-3">
         <KpiCard
-          title="Empréstimos"
-          value={`${data?.counters?.activeLoans || 0}`}
-          subtitle={`${weekContractsDelta >= 0 ? "+" : ""}${weekContractsDelta.toFixed(0)} esta semana`}
-          icon={DollarSign}
-          iconClassName="text-primary"
-          iconBgClassName="bg-primary/5 dark:bg-primary/15"
-        />
-        <KpiCard
-          title="Contratos"
-          value={`${data?.counters?.totalContracts || data?.totalLoans || 0}`}
-          subtitle={`${weekContractsDelta >= 0 ? "+" : ""}${weekContractsDelta.toFixed(0)} esta semana`}
-          icon={FileText}
-          iconClassName="text-violet-500"
-          iconBgClassName="bg-violet-50 dark:bg-violet-950/30"
-        />
-        <KpiCard
-          title="Total a Receber"
-          value={formatCurrency(data?.totalToReceive || 0)}
-          subtitle="incluindo multas e juros"
-          icon={TrendingUp}
-          iconClassName="text-blue-600"
-          iconBgClassName="bg-blue-50 dark:bg-blue-950/30"
-        />
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-3">
-        <KpiCard
           title="Clientes"
           value={`${data?.counters?.totalClients || 0}`}
           subtitle="cadastrados"
@@ -375,6 +330,52 @@ export default function DashboardPage() {
           icon={TrendingUp}
           iconClassName="text-primary"
           iconBgClassName="bg-primary/5 dark:bg-primary/15"
+        />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <KpiCard
+          title="Em Atraso"
+          value={formatCurrency(data?.overdueAmount || 0)}
+          subtitle={`${data?.overdueCount || 0} parcela(s) vencida(s)`}
+          icon={Clock3}
+          iconClassName="text-red-500"
+          iconBgClassName="bg-red-50 dark:bg-red-950/30"
+        />
+        <KpiCard
+          title="Falta Receber"
+          value={formatCurrency(data?.capitalOnStreet || 0)}
+          subtitle="inclui multas"
+          icon={ArrowUpRight}
+          iconClassName="text-blue-600"
+          iconBgClassName="bg-blue-50 dark:bg-blue-950/30"
+        />
+        <KpiCard
+          title="Clientes Inativos"
+          value={`${data?.inactiveClients || 0}`}
+          subtitle="sem empréstimo ativo"
+          icon={Users}
+          iconClassName="text-gray-500"
+          iconBgClassName="bg-gray-100 dark:bg-zinc-800"
+        />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <KpiCard
+          title="Contratos"
+          value={`${data?.counters?.totalContracts || data?.totalLoans || 0}`}
+          subtitle={`${weekContractsDelta >= 0 ? "+" : ""}${weekContractsDelta.toFixed(0)} esta semana`}
+          icon={FileText}
+          iconClassName="text-violet-500"
+          iconBgClassName="bg-violet-50 dark:bg-violet-950/30"
+        />
+        <KpiCard
+          title="Total a Receber"
+          value={formatCurrency(data?.totalToReceive || 0)}
+          subtitle="incluindo multas e juros"
+          icon={TrendingUp}
+          iconClassName="text-blue-600"
+          iconBgClassName="bg-blue-50 dark:bg-blue-950/30"
         />
       </div>
 
@@ -447,7 +448,7 @@ export default function DashboardPage() {
         <Card className="h-full">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <span className="inline-flex h-14 w-14 items-center justify-center rounded-full border-4 border-amber-300 text-2xl font-semibold tabular-nums text-amber-500">
+              <span className="inline-flex h-20 w-20 items-center justify-center rounded-full border-4 border-amber-300 text-3xl font-semibold tabular-nums text-amber-500">
                 {healthScore}
               </span>
               <div>
