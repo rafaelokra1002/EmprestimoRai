@@ -94,6 +94,8 @@ export default function ClienteEmprestimosPage() {
     clientPhone: string | null
     installmentLabel: string
     amount: number
+    principalAmount: number
+    lateFeeAmount: number
     date: string
     isCompleted: boolean
     remainingBalance: number
@@ -143,6 +145,18 @@ export default function ClienteEmprestimosPage() {
 
   const toDateStr = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
   const todayStr = toDateStr(new Date())
+  const isSameMonthYear = (value: Date, reference: Date) => (
+    value.getFullYear() === reference.getFullYear() && value.getMonth() === reference.getMonth()
+  )
+  const hasCurrentMonthInstallmentPaid = (loan: Loan) => {
+    if (loan.installmentCount <= 1) return false
+
+    const now = new Date()
+
+    return loan.installments.some((installment: any) => (
+      installment.status === "PAID" && isSameMonthYear(new Date(installment.dueDate), now)
+    ))
+  }
 
   const getOverdueInstallments = (loan: Loan) => {
     return loan.installments.filter((i: any) => {
@@ -235,6 +249,7 @@ export default function ClienteEmprestimosPage() {
   const getLoanStatusInfo = (loan: Loan) => {
     if (loan.status === "COMPLETED") return { label: "Quitado", color: "bg-blue-50 dark:bg-blue-950/20 text-blue-600" }
     if (loan.status === "DEFAULTED") return { label: "Inadimplente", color: "bg-red-50 dark:bg-red-950/20 text-red-600" }
+    const isInstallmentLoan = loan.installmentCount > 1
     const hasOverdue = loan.installments.some((i: any) => i.status !== "PAID" && toDateStr(new Date(i.dueDate)) < todayStr)
     const paid = loan.payments.reduce((sum: number, payment: any) => sum + payment.amount, 0)
     const contractInterest = loan.totalAmount - loan.amount
@@ -247,6 +262,12 @@ export default function ClienteEmprestimosPage() {
       return { label: "Só Juros", color: "bg-purple-50 dark:bg-purple-950/20 text-purple-600" }
     }
     if (hasOverdue) return { label: "Atrasado", color: "bg-red-50 dark:bg-red-950/20 text-red-600" }
+    if (isInstallmentLoan && hasCurrentMonthInstallmentPaid(loan)) {
+      return { label: "Pago no Mês", color: "bg-purple-50 dark:bg-purple-950/20 text-purple-600" }
+    }
+    if (isInstallmentLoan) {
+      return { label: "Em Dia", color: "bg-blue-50 dark:bg-blue-950/20 text-blue-600" }
+    }
     return { label: "Pendente", color: "bg-orange-50 dark:bg-orange-950/20 text-orange-600" }
   }
 
@@ -327,6 +348,25 @@ export default function ClienteEmprestimosPage() {
 
     return overdueInterest + (getOverdueDailyAmountBRL(loanData) * daysOverdue)
   }
+  const getCurrentOverdueChargeDetails = (loan: Loan) => {
+    const loanData = buildLoanData({
+      amount: loan.amount,
+      interestRate: loan.interestRate,
+      interestType: loan.interestType || "SIMPLE",
+      totalAmount: loan.totalAmount,
+      dailyInterest: loan.dailyInterest,
+      dailyInterestAmount: loan.dailyInterestAmount || 0,
+      dueDay: loan.dueDay || new Date(loan.installments[0]?.dueDate || Date.now()).getDate(),
+      modality: loan.modality,
+      firstInstallmentDate: loan.firstInstallmentDate || loan.installments[0]?.dueDate || new Date().toISOString(),
+      installments: loan.installments,
+      payments: loan.payments,
+    })
+    const daysOverdue = getDaysOverdue(loanData)
+    const dailyFee = daysOverdue > 0 ? getOverdueDailyAmountBRL(loanData) * daysOverdue : 0
+
+    return { dailyFee }
+  }
   const getInstallmentPayableAmount = (loan: Loan, installment: Loan["installments"][number]) => {
     const baseRemaining = Math.max(0, installment.amount - (installment.paidAmount || 0))
     const firstPendingInstallment = loan.installments
@@ -338,6 +378,57 @@ export default function ClienteEmprestimosPage() {
     }
 
     return baseRemaining + getCurrentOverdueCharge(loan)
+  }
+  const getPaymentBreakdown = (
+    loan: Loan,
+    amount: number,
+    installmentId?: string,
+    type: "installment" | "partial" | "total" | "discount" | "interest" = "installment"
+  ) => {
+    if (type === "interest") {
+      return { principalAmount: 0, lateFeeAmount: 0 }
+    }
+
+    if (type === "total") {
+      const totalLateFee = loan.installments
+        .filter((installment) => installment.status !== "PAID")
+        .reduce((sum, installment) => {
+          const baseAmount = Math.max(0, installment.amount - (installment.paidAmount || 0))
+          const payableAmount = getInstallmentPayableAmount(loan, installment)
+          return sum + Math.max(0, payableAmount - baseAmount)
+        }, 0)
+
+      const lateFeeAmount = Math.min(amount, Math.round(totalLateFee * 100) / 100)
+      return {
+        principalAmount: Math.max(0, Math.round((amount - lateFeeAmount) * 100) / 100),
+        lateFeeAmount,
+      }
+    }
+
+    const installment = installmentId
+      ? loan.installments.find((item) => item.id === installmentId)
+      : loan.installments.find((item) => item.status !== "PAID")
+
+    if (!installment) {
+      return { principalAmount: amount, lateFeeAmount: 0 }
+    }
+
+    const baseAmount = Math.max(0, installment.amount - (installment.paidAmount || 0))
+    const payableAmount = getInstallmentPayableAmount(loan, installment)
+    const lateFeeTotal = Math.max(0, Math.round((payableAmount - baseAmount) * 100) / 100)
+    const lateFeeAmount = Math.min(amount, lateFeeTotal)
+
+    return {
+      principalAmount: Math.max(0, Math.round((amount - lateFeeAmount) * 100) / 100),
+      lateFeeAmount,
+    }
+  }
+  const buildPaymentReceiptText = (receipt: NonNullable<typeof paymentReceiptInfo>) => {
+    const breakdownLines = receipt.lateFeeAmount > 0
+      ? `\n🧾 Valor da Parcela: ${formatCurrency(receipt.principalAmount)}\n⚠️ Multa/Juros: ${formatCurrency(receipt.lateFeeAmount)}`
+      : ""
+
+    return `📋 *Comprovante de Pagamento*\n\n📌 Tipo: ${receipt.type}\n👤 Cliente: ${receipt.clientName}\n📄 Parcela: ${receipt.installmentLabel}\n💰 Valor Pago: ${formatCurrency(receipt.amount)}${breakdownLines}\n📅 Data: ${receipt.date}\n💵 Saldo Restante: ${formatCurrency(receipt.remainingBalance)}${receipt.isCompleted ? "\n\n✅ *Contrato Quitado!*" : ""}`
   }
   const getNextDueInst = (loan: Loan) =>
     loan.installments
@@ -443,6 +534,8 @@ export default function ClienteEmprestimosPage() {
           clientPhone: clientPhone,
           installmentLabel: `${instIdx + 1}/${allInsts.length}`,
           amount: receiptAmount,
+          principalAmount: 0,
+          lateFeeAmount: 0,
           date: new Date(dateStr.includes("T") ? dateStr : dateStr + "T12:00:00").toLocaleDateString("pt-BR"),
           isCompleted: false,
           remainingBalance: receiptLoan.totalAmount,
@@ -520,12 +613,15 @@ export default function ClienteEmprestimosPage() {
         if (allOk && pendingInsts.length > 0) {
           const allInsts = receiptLoan.installments
           const alreadyPaid = receiptLoan.payments.reduce((s: number, p: any) => s + p.amount, 0)
+          const breakdown = getPaymentBreakdown(receiptLoan, receiptAmount, undefined, "total")
           setPaymentReceiptInfo({
             type: "Empréstimo",
             clientName: receiptLoan.client.name,
             clientPhone: clientPhone,
             installmentLabel: `${paidCount + 1}/${allInsts.length}`,
             amount: receiptAmount,
+            principalAmount: breakdown.principalAmount,
+            lateFeeAmount: breakdown.lateFeeAmount,
             date: new Date(receiptDate.includes("T") ? receiptDate : receiptDate + "T12:00:00").toLocaleDateString("pt-BR"),
             isCompleted: true,
             remainingBalance: 0,
@@ -540,9 +636,53 @@ export default function ClienteEmprestimosPage() {
           notes: payNotes,
         }
         if (paymentType === "installment" && selectedInstallmentIds.length > 0) {
+          const selectedInstallment = paymentDialog.installments.find((i: any) => i.id === selectedInstallmentIds[0])
           body.installmentId = selectedInstallmentIds[0]
+          if (selectedInstallment) {
+            const installmentIndex = paymentDialog.installments.findIndex((i: any) => i.id === selectedInstallment.id)
+            const baseAmount = Math.max(0, selectedInstallment.amount - (selectedInstallment.paidAmount || 0))
+            const payableAmount = getInstallmentPayableAmount(paymentDialog, selectedInstallment)
+            const lateFeeForInstallment = Math.max(0, Math.round((payableAmount - baseAmount) * 100) / 100)
+            const noteParts = [`Parcela ${installmentIndex + 1} de ${paymentDialog.installmentCount}`]
+
+            if (lateFeeForInstallment > 0) {
+              const { dailyFee } = getCurrentOverdueChargeDetails(paymentDialog)
+              noteParts.push(`[lateFee:${lateFeeForInstallment.toFixed(2)}]`)
+              if (dailyFee > 0) {
+                noteParts.push(`[dailyFee:${dailyFee.toFixed(2)}]`)
+              }
+            }
+
+            if (payNotes.trim()) {
+              noteParts.push(payNotes.trim())
+            }
+
+            body.notes = noteParts.join(" ")
+          }
         } else if (paymentType === "partial" && selectedInstallmentIds.length > 0) {
           body.installmentId = selectedInstallmentIds[0]
+          const selectedInstallment = paymentDialog.installments.find((i: any) => i.id === selectedInstallmentIds[0])
+          if (selectedInstallment) {
+            const installmentIndex = paymentDialog.installments.findIndex((i: any) => i.id === selectedInstallment.id)
+            const baseAmount = Math.max(0, selectedInstallment.amount - (selectedInstallment.paidAmount || 0))
+            const payableAmount = getInstallmentPayableAmount(paymentDialog, selectedInstallment)
+            const lateFeeForInstallment = Math.max(0, Math.round((payableAmount - baseAmount) * 100) / 100)
+            const noteParts = [`Parcela ${installmentIndex + 1} de ${paymentDialog.installmentCount}`]
+
+            if (lateFeeForInstallment > 0) {
+              const { dailyFee } = getCurrentOverdueChargeDetails(paymentDialog)
+              noteParts.push(`[lateFee:${lateFeeForInstallment.toFixed(2)}]`)
+              if (dailyFee > 0) {
+                noteParts.push(`[dailyFee:${dailyFee.toFixed(2)}]`)
+              }
+            }
+
+            if (payNotes.trim()) {
+              noteParts.push(payNotes.trim())
+            }
+
+            body.notes = noteParts.join(" ")
+          }
         } else if (paymentType === "discount") {
           body.discount = payDiscount
           const pendingInst = paymentDialog.installments.find((i: any) => i.status !== "PAID")
@@ -565,12 +705,20 @@ export default function ClienteEmprestimosPage() {
           const instIdx = allInsts.findIndex((i: any) => i.id === receiptInstId)
           const dateStr = receiptDate
           const alreadyPaid = receiptLoan.payments.reduce((s: number, p: any) => s + p.amount, 0)
+          const breakdown = getPaymentBreakdown(
+            receiptLoan,
+            receiptAmount,
+            receiptInstId,
+            paymentType === "discount" ? "discount" : paymentType
+          )
           setPaymentReceiptInfo({
             type: "Empréstimo",
             clientName: receiptLoan.client.name,
             clientPhone: clientPhone,
             installmentLabel: `${instIdx + 1}/${allInsts.length}`,
             amount: receiptAmount,
+            principalAmount: breakdown.principalAmount,
+            lateFeeAmount: breakdown.lateFeeAmount,
             date: new Date(dateStr.includes("T") ? dateStr : dateStr + "T12:00:00").toLocaleDateString("pt-BR"),
             isCompleted: willBeCompleted,
             remainingBalance: Math.max(0, receiptLoan.totalAmount - alreadyPaid - receiptAmount),
@@ -630,6 +778,7 @@ export default function ClienteEmprestimosPage() {
 
             const isAtrasado = status.label === "Atrasado" || status.label === "Inadimplente"
             const isSoJuros = status.label === "Só Juros"
+            const isPagoNoMes = status.label === "Pago no Mês"
             const isQuitado = status.label === "Quitado"
             const isDueToday = nextInst
               ? (() => {
@@ -639,12 +788,13 @@ export default function ClienteEmprestimosPage() {
                 })()
               : false
             const isParcelado = loan.installmentCount > 1
+            const isParceladoCardBlue = isParcelado && !isAtrasado && !isQuitado && !isSoJuros && !isPagoNoMes
 
-            const cardBorder = isQuitado ? "border-blue-400 dark:border-blue-700" : "border-primary/40 dark:border-primary/30"
-            const cardBg = "bg-white dark:bg-zinc-900"
-            const remainingColor = isAtrasado ? "text-red-600 dark:text-red-400" : isDueToday ? "text-orange-600 dark:text-orange-400" : isQuitado ? "text-blue-700 dark:text-blue-400" : "text-primary dark:text-primary"
-            const remainingBg = isAtrasado ? "bg-red-50 dark:bg-red-950/20" : isDueToday ? "bg-orange-50 dark:bg-orange-950/20" : isQuitado ? "bg-blue-50 dark:bg-blue-900/40" : "bg-primary/10 dark:bg-primary/20"
-            const cellBg = "bg-gray-50 dark:bg-zinc-800/50"
+            const cardBorder = isAtrasado ? "border-red-400 dark:border-red-700" : (isSoJuros || isPagoNoMes) ? "border-purple-400 dark:border-purple-700" : (isQuitado || isParceladoCardBlue) ? "border-blue-400 dark:border-blue-700" : "border-primary/40 dark:border-primary/30"
+            const cardBg = isAtrasado ? "bg-red-50/40 dark:bg-red-950/20" : (isSoJuros || isPagoNoMes) ? "bg-purple-50/40 dark:bg-purple-950/20" : isParceladoCardBlue ? "bg-blue-50/40 dark:bg-blue-950/20" : "bg-white dark:bg-zinc-900"
+            const remainingColor = isAtrasado ? "text-red-600 dark:text-red-400" : (isSoJuros || isPagoNoMes) ? "text-purple-600 dark:text-purple-400" : (isQuitado || isParceladoCardBlue) ? "text-blue-700 dark:text-blue-400" : isDueToday ? "text-orange-600 dark:text-orange-400" : "text-primary dark:text-primary"
+            const remainingBg = isAtrasado ? "bg-red-50 dark:bg-red-950/20" : (isSoJuros || isPagoNoMes) ? "bg-purple-50 dark:bg-purple-950/20" : (isQuitado || isParceladoCardBlue) ? "bg-blue-50 dark:bg-blue-900/40" : isDueToday ? "bg-orange-50 dark:bg-orange-950/20" : "bg-primary/10 dark:bg-primary/20"
+            const cellBg = isParceladoCardBlue ? "bg-blue-50/60 dark:bg-blue-950/10" : (isSoJuros || isPagoNoMes) ? "bg-purple-50/60 dark:bg-purple-950/10" : "bg-gray-50 dark:bg-zinc-800/50"
 
             return (
               <div key={loan.id} className={`rounded-xl border overflow-hidden shadow-sm hover:shadow-md transition-shadow ${cardBorder} ${cardBg}`}>
@@ -847,7 +997,7 @@ export default function ClienteEmprestimosPage() {
                     <Button size="sm" variant="outline" onClick={() => openRenegotiateDialog(loan)} className="min-w-0 h-10 px-2 text-xs border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:bg-primary/5 hover:text-primary hover:border-primary/30 dark:hover:bg-primary/10 dark:hover:text-primary transition-colors sm:text-sm">
                       <Receipt className="h-3.5 w-3.5 mr-1" /> Pagar
                     </Button>
-                    <button className="flex min-w-0 w-full items-center justify-center rounded-xl bg-emerald-50 p-2 dark:bg-emerald-950/30 text-primary dark:text-primary hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors" onClick={() => router.push(`/emprestimos/${loan.id}`)} title="Histórico">
+                    <button className="flex min-w-0 w-full items-center justify-center rounded-2xl border border-violet-100 bg-violet-50/80 p-2 text-primary shadow-sm transition-colors hover:bg-violet-100 dark:border-violet-900/40 dark:bg-violet-950/30 dark:text-primary dark:hover:bg-violet-900/40" onClick={() => router.push(`/emprestimos/${loan.id}`)} title="Histórico">
                       <RotateCcw className="h-4 w-4" />
                     </button>
                     <button className="flex min-w-0 w-full items-center justify-center rounded-xl bg-blue-50 p-2 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors" onClick={() => router.push(`/emprestimos/${loan.id}/editar`)} title="Editar">
@@ -1379,6 +1529,18 @@ export default function ClienteEmprestimosPage() {
                 <span className="text-gray-500 dark:text-zinc-400">Valor Pago:</span>
                 <span className="font-bold text-emerald-600">{formatCurrency(paymentReceiptInfo.amount)}</span>
               </div>
+              {paymentReceiptInfo.lateFeeAmount > 0 && (
+                <>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500 dark:text-zinc-400">Valor da Parcela:</span>
+                    <span className="font-semibold text-gray-900 dark:text-zinc-100">{formatCurrency(paymentReceiptInfo.principalAmount)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-red-500 dark:text-red-400">Multa/Juros:</span>
+                    <span className="font-bold text-red-500 dark:text-red-400">{formatCurrency(paymentReceiptInfo.lateFeeAmount)}</span>
+                  </div>
+                </>
+              )}
               <div className="flex justify-between">
                 <span className="text-gray-500 dark:text-zinc-400">Data:</span>
                 <span className="font-semibold text-gray-900 dark:text-zinc-100">{paymentReceiptInfo.date}</span>
@@ -1400,7 +1562,7 @@ export default function ClienteEmprestimosPage() {
               <Button
                 className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
                 onClick={() => {
-                  const text = `📋 *Comprovante de Pagamento*\n\n📌 Tipo: ${paymentReceiptInfo.type}\n👤 Cliente: ${paymentReceiptInfo.clientName}\n📄 Parcela: ${paymentReceiptInfo.installmentLabel}\n💰 Valor Pago: ${formatCurrency(paymentReceiptInfo.amount)}\n📅 Data: ${paymentReceiptInfo.date}\n💵 Saldo Restante: ${formatCurrency(paymentReceiptInfo.remainingBalance)}${paymentReceiptInfo.isCompleted ? "\n\n✅ *Contrato Quitado!*" : ""}`
+                  const text = buildPaymentReceiptText(paymentReceiptInfo)
                   navigator.clipboard.writeText(text)
                   alert("Copiado!")
                 }}
@@ -1410,7 +1572,7 @@ export default function ClienteEmprestimosPage() {
               <Button
                 className="gap-1.5 bg-primary hover:bg-primary/90 text-white"
                 onClick={() => {
-                  const text = `📋 *Comprovante de Pagamento*\n\n📌 Tipo: ${paymentReceiptInfo.type}\n👤 Cliente: ${paymentReceiptInfo.clientName}\n📄 Parcela: ${paymentReceiptInfo.installmentLabel}\n💰 Valor Pago: ${formatCurrency(paymentReceiptInfo.amount)}\n📅 Data: ${paymentReceiptInfo.date}\n💵 Saldo Restante: ${formatCurrency(paymentReceiptInfo.remainingBalance)}${paymentReceiptInfo.isCompleted ? "\n\n✅ *Contrato Quitado!*" : ""}`
+                  const text = buildPaymentReceiptText(paymentReceiptInfo)
                   const encoded = encodeURIComponent(text)
                   window.open(`https://wa.me/?text=${encoded}`, "_blank")
                 }}
@@ -1431,6 +1593,8 @@ export default function ClienteEmprestimosPage() {
                     <tr><td>Cliente:</td><td>${paymentReceiptInfo.clientName}</td></tr>
                     <tr><td>Parcela:</td><td>${paymentReceiptInfo.installmentLabel}</td></tr>
                     <tr><td>Valor Pago:</td><td style="color:#059669">${formatCurrency(paymentReceiptInfo.amount)}</td></tr>
+                    ${paymentReceiptInfo.lateFeeAmount > 0 ? `<tr><td>Valor da Parcela:</td><td>${formatCurrency(paymentReceiptInfo.principalAmount)}</td></tr>
+                    <tr><td>Multa/Juros:</td><td style="color:#dc2626">${formatCurrency(paymentReceiptInfo.lateFeeAmount)}</td></tr>` : ""}
                     <tr><td>Data:</td><td>${paymentReceiptInfo.date}</td></tr>
                     <tr><td>Saldo Restante:</td><td>${formatCurrency(paymentReceiptInfo.remainingBalance)}</td></tr></table>
                     ${paymentReceiptInfo.isCompleted ? '<div class="badge">✅ Contrato Quitado!</div>' : ""}

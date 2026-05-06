@@ -518,6 +518,7 @@ export default function EmprestimosPage() {
   const getLoanStatusInfo = (loan: Loan) => {
     if (loan.status === "COMPLETED") return { label: "Quitado", color: "bg-blue-50 dark:bg-blue-950/300/20 text-blue-600" }
     if (loan.status === "DEFAULTED") return { label: "Inadimplente", color: "bg-red-50 dark:bg-red-950/300/20 text-red-600" }
+    const isInstallmentLoan = loan.installmentCount > 1
     const hasInterestPayment = loan.payments.some((p: any) => {
       const notes = (p.notes || "").toLowerCase()
       return notes.includes("só juros") || notes.includes("parcial de juros")
@@ -531,17 +532,26 @@ export default function EmprestimosPage() {
       return toDateStr(new Date(i.dueDate)) < todayStr
     })
     if (hasOverdue) return { label: "Atrasado", color: "bg-red-50 dark:bg-red-950/300/20 text-red-600" }
-    if (hasCurrentMonthInstallmentPaid(loan)) return { label: "Pago no Mês", color: "bg-purple-50 dark:bg-purple-950/20 text-purple-600" }
+    if (isInstallmentLoan && hasCurrentMonthInstallmentPaid(loan)) return { label: "Pago no Mês", color: "bg-purple-50 dark:bg-purple-950/20 text-purple-600" }
+    if (isInstallmentLoan) return { label: "Em Dia", color: "bg-blue-50 dark:bg-blue-950/20 text-blue-600" }
     return { label: "Pendente", color: "bg-orange-50 dark:bg-orange-950/300/20 text-orange-600" }
   }
 
   const getGroupStatusInfo = (groupLoans: Loan[]) => {
+    const hasActiveInstallmentLoan = groupLoans.some((loan) => loan.status !== "COMPLETED" && loan.installmentCount > 1)
     const anyOverdue = groupLoans.some(l =>
       l.status !== "COMPLETED" && l.installments.some((i: any) => i.status !== "PAID" && toDateStr(new Date(i.dueDate)) < todayStr)
     )
     if (anyOverdue) return { label: "Atrasado", color: "bg-red-50 dark:bg-red-950/300/20 text-red-600" }
     const allCompleted = groupLoans.every(l => l.status === "COMPLETED")
     if (allCompleted) return { label: "Quitado", color: "bg-blue-50 dark:bg-blue-950/300/20 text-blue-600" }
+    if (hasActiveInstallmentLoan) {
+      const anyCurrentMonthInstallmentPaid = groupLoans.some((loan) => hasCurrentMonthInstallmentPaid(loan))
+      if (anyCurrentMonthInstallmentPaid) {
+        return { label: "Pago no Mês", color: "bg-purple-50 dark:bg-purple-950/20 text-purple-600" }
+      }
+      return { label: "Em Dia", color: "bg-blue-50 dark:bg-blue-950/20 text-blue-600" }
+    }
     const anyDueToday = groupLoans.some(l =>
       l.status !== "COMPLETED" && l.installments.some((i: any) => i.status !== "PAID" && toDateStr(new Date(i.dueDate)) === todayStr)
     )
@@ -1532,13 +1542,14 @@ export default function EmprestimosPage() {
               const isPagoNoMes = status.label === "Pago no Mês"
               const isQuitado = status.label === "Quitado"
               const isDueToday = nextInst && toDateStr(new Date(nextInst.dueDate)) === todayStr
+              const isParceladoCardBlue = loan.installmentCount > 1 && !isAtrasado && !isQuitado && !isSoJuros && !isPagoNoMes
 
               // Cores: Vence hoje=laranja, Atrasado=vermelho, Só Juros/Pago no mês=roxo, Quitado=azul, resto=branco
-              const cardBorder = isAtrasado ? "border-red-400 dark:border-red-700" : isDueToday ? "border-orange-400 dark:border-orange-700" : (isSoJuros || isPagoNoMes) ? "border-purple-400 dark:border-purple-700" : isQuitado ? "border-blue-400 dark:border-blue-700" : "border-gray-200 dark:border-zinc-700"
-              const cardBg = isAtrasado ? "bg-red-100 dark:bg-red-950/30" : isDueToday ? "bg-orange-100 dark:bg-orange-950/30" : (isSoJuros || isPagoNoMes) ? "bg-purple-100 dark:bg-purple-950/30" : isQuitado ? "bg-blue-100 dark:bg-blue-950/30" : "bg-white dark:bg-zinc-900"
-              const remainingColor = isAtrasado ? "text-red-700 dark:text-red-400" : isDueToday ? "text-orange-700 dark:text-orange-400" : (isSoJuros || isPagoNoMes) ? "text-purple-700 dark:text-purple-400" : isQuitado ? "text-blue-700 dark:text-blue-400" : "text-gray-900 dark:text-zinc-100"
-              const remainingBg = isAtrasado ? "bg-red-100 dark:bg-red-900/40" : isDueToday ? "bg-orange-100 dark:bg-orange-900/40" : (isSoJuros || isPagoNoMes) ? "bg-purple-100 dark:bg-purple-900/40" : isQuitado ? "bg-blue-100 dark:bg-blue-900/40" : "bg-gray-100 dark:bg-zinc-800"
-              const cellBg = isAtrasado ? "bg-red-50 dark:bg-red-950/20" : isDueToday ? "bg-orange-50 dark:bg-orange-950/20" : (isSoJuros || isPagoNoMes) ? "bg-purple-50 dark:bg-purple-950/20" : isQuitado ? "bg-blue-50 dark:bg-blue-950/20" : "bg-gray-50 dark:bg-zinc-800/50"
+              const cardBorder = isAtrasado ? "border-red-400 dark:border-red-700" : (isSoJuros || isPagoNoMes) ? "border-purple-400 dark:border-purple-700" : (isQuitado || isParceladoCardBlue) ? "border-blue-400 dark:border-blue-700" : isDueToday ? "border-orange-400 dark:border-orange-700" : "border-gray-200 dark:border-zinc-700"
+              const cardBg = isAtrasado ? "bg-red-100 dark:bg-red-950/30" : (isSoJuros || isPagoNoMes) ? "bg-purple-100 dark:bg-purple-950/30" : (isQuitado || isParceladoCardBlue) ? "bg-blue-100 dark:bg-blue-950/30" : isDueToday ? "bg-orange-100 dark:bg-orange-950/30" : "bg-white dark:bg-zinc-900"
+              const remainingColor = isAtrasado ? "text-red-700 dark:text-red-400" : (isSoJuros || isPagoNoMes) ? "text-purple-700 dark:text-purple-400" : (isQuitado || isParceladoCardBlue) ? "text-blue-700 dark:text-blue-400" : isDueToday ? "text-orange-700 dark:text-orange-400" : "text-gray-900 dark:text-zinc-100"
+              const remainingBg = isAtrasado ? "bg-red-100 dark:bg-red-900/40" : (isSoJuros || isPagoNoMes) ? "bg-purple-100 dark:bg-purple-900/40" : (isQuitado || isParceladoCardBlue) ? "bg-blue-100 dark:bg-blue-900/40" : isDueToday ? "bg-orange-100 dark:bg-orange-900/40" : "bg-gray-100 dark:bg-zinc-800"
+              const cellBg = isAtrasado ? "bg-red-50 dark:bg-red-950/20" : (isSoJuros || isPagoNoMes) ? "bg-purple-50 dark:bg-purple-950/20" : (isQuitado || isParceladoCardBlue) ? "bg-blue-50 dark:bg-blue-950/20" : isDueToday ? "bg-orange-50 dark:bg-orange-950/20" : "bg-gray-50 dark:bg-zinc-800/50"
 
               return (
                 <div key={group.clientId} className={`rounded-xl border overflow-hidden shadow-sm hover:shadow-md transition-shadow ${cardBorder} ${cardBg}`}>
@@ -1759,7 +1770,7 @@ export default function EmprestimosPage() {
                       <Button size="sm" onClick={() => openInterestRenegotiateDialog(loan)} className="min-w-0 h-10 px-2 text-xs border border-primary/15 bg-primary/10 font-medium text-primary shadow-none transition-colors hover:bg-primary/15 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20 sm:text-sm">
                         <DollarSign className="mr-1 h-4 w-4 shrink-0" /> <span className="truncate">Pagar Juros</span>
                       </Button>
-                      <button className="flex min-w-0 w-full items-center justify-center rounded-xl bg-primary/10 p-2 text-primary transition-colors hover:bg-primary/15 dark:bg-primary/20 dark:text-primary dark:hover:bg-primary/20" onClick={() => router.push(`/emprestimos/${loan.id}`)} title="Histórico">
+                      <button className="flex min-w-0 w-full items-center justify-center rounded-2xl border border-violet-100 bg-violet-50/80 p-2 text-primary shadow-sm transition-colors hover:bg-violet-100 dark:border-violet-900/40 dark:bg-violet-950/30 dark:text-primary dark:hover:bg-violet-900/40" onClick={() => router.push(`/emprestimos/${loan.id}`)} title="Histórico">
                         <RotateCcw className="h-4 w-4" />
                       </button>
                       <button className="flex min-w-0 w-full items-center justify-center rounded-xl bg-blue-50 p-2 text-blue-600 transition-colors hover:bg-blue-100 dark:bg-blue-950/30 dark:text-blue-400 dark:hover:bg-blue-900/40" onClick={() => router.push(`/emprestimos/${loan.id}/editar`)} title="Editar">
@@ -1866,11 +1877,13 @@ export default function EmprestimosPage() {
               const groupStatus = getGroupStatusInfo(group.loans)
               const isGroupOrange = groupStatus.label === "Pendente"
               const isGroupRed = groupStatus.label === "Atrasado" || groupStatus.label === "Inadimplente"
+              const isGroupPurple = groupStatus.label === "Pago no Mês"
+              const isGroupBlue = groupStatus.label === "Em Dia" || groupStatus.label === "Quitado"
 
-              const fCardBorder = isGroupOrange ? "border-orange-300 dark:border-orange-800" : isGroupRed ? "border-red-300 dark:border-red-800" : "border-primary/30 dark:border-primary/30"
-              const fCardBg = isGroupOrange ? "bg-orange-50 dark:bg-orange-950/20" : isGroupRed ? "bg-red-50 dark:bg-red-950/20" : "bg-white dark:bg-zinc-900"
-              const fRemainingColor = isGroupRed ? "text-red-600 dark:text-red-400" : isGroupOrange ? "text-orange-600 dark:text-orange-400" : groupStatus.label === "Quitado" ? "text-blue-600 dark:text-blue-400" : "text-primary"
-              const fRemainingBg = isGroupOrange ? "bg-orange-50 dark:bg-orange-950/30" : isGroupRed ? "bg-red-50 dark:bg-red-950/30" : "bg-primary/10 dark:bg-primary/20"
+              const fCardBorder = isGroupRed ? "border-red-300 dark:border-red-800" : isGroupPurple ? "border-purple-300 dark:border-purple-800" : isGroupBlue ? "border-blue-300 dark:border-blue-800" : isGroupOrange ? "border-orange-300 dark:border-orange-800" : "border-primary/30 dark:border-primary/30"
+              const fCardBg = isGroupRed ? "bg-red-50 dark:bg-red-950/20" : isGroupPurple ? "bg-purple-50 dark:bg-purple-950/20" : isGroupBlue ? "bg-blue-50 dark:bg-blue-950/20" : isGroupOrange ? "bg-orange-50 dark:bg-orange-950/20" : "bg-white dark:bg-zinc-900"
+              const fRemainingColor = isGroupRed ? "text-red-600 dark:text-red-400" : isGroupPurple ? "text-purple-600 dark:text-purple-400" : isGroupBlue ? "text-blue-600 dark:text-blue-400" : isGroupOrange ? "text-orange-600 dark:text-orange-400" : "text-primary"
+              const fRemainingBg = isGroupRed ? "bg-red-50 dark:bg-red-950/30" : isGroupPurple ? "bg-purple-50 dark:bg-purple-950/30" : isGroupBlue ? "bg-blue-50 dark:bg-blue-950/30" : isGroupOrange ? "bg-orange-50 dark:bg-orange-950/30" : "bg-primary/10 dark:bg-primary/20"
 
               return (
                 <div key={group.clientId} className={`rounded-xl border overflow-hidden shadow-sm hover:shadow-md transition-shadow ${fCardBorder} ${fCardBg}`}>

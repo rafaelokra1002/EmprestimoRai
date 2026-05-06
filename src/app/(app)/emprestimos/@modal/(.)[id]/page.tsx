@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { LoanDetailsContent } from "@/app/(app)/emprestimos/_components/loan-details-content"
+import { PaymentHistoryContent } from "@/app/(app)/emprestimos/_components/payment-history-content"
 
 export default function EmprestimoDetalhesModalPage() {
   const router = useRouter()
@@ -18,8 +18,8 @@ export default function EmprestimoDetalhesModalPage() {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-2 sm:p-4">
       <button type="button" aria-label="Fechar detalhes" className="absolute inset-0 cursor-default" onClick={handleClose} />
-      <div className="relative z-10 w-full max-w-5xl">
-        <LoanDetailsContent presentation="modal" onClose={handleClose} />
+      <div className="relative z-10 w-full max-w-2xl">
+        <PaymentHistoryContent onClose={handleClose} />
       </div>
     </div>
   )

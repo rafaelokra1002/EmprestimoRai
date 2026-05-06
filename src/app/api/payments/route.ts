@@ -7,6 +7,13 @@ function parsePaymentDate(value: string) {
   return new Date(value.includes("T") ? value : `${value}T12:00:00`)
 }
 
+function extractTaggedAmount(notes: string | undefined, tag: string) {
+  if (!notes) return 0
+
+  const match = notes.match(new RegExp(`\\[${tag}:([\\d.]+)\\]`, "i"))
+  return match ? parseFloat(match[1]) || 0 : 0
+}
+
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions)
@@ -42,6 +49,7 @@ export async function POST(request: Request) {
       if (installment) {
         const notesCheck = (notes || "").toLowerCase()
         const isInterestOnly = notesCheck.includes("só juros") || notesCheck.includes("parcial de juros")
+        const lateFeeAmount = extractTaggedAmount(notes, "lateFee") + extractTaggedAmount(notes, "dailyFee")
 
         if (isInterestOnly) {
           // Interest-only payment: do NOT add to paidAmount (don't reduce capital)
@@ -60,7 +68,8 @@ export async function POST(request: Request) {
           })
         } else {
           const effectiveAmount = discount ? installment.amount - parseFloat(discount) : installment.amount
-          const newPaidAmount = installment.paidAmount + parseFloat(amount)
+          const principalPaymentAmount = Math.max(0, parseFloat(amount) - lateFeeAmount)
+          const newPaidAmount = installment.paidAmount + principalPaymentAmount
           const newStatus = newPaidAmount >= effectiveAmount ? "PAID" : "PENDING"
 
           const updateData: any = {

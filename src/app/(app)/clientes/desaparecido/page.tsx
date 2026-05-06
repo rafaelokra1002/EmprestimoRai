@@ -8,7 +8,7 @@ import { LoanDetailsContent } from "@/app/(app)/emprestimos/_components/loan-det
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Search, Users, Phone, MapPin, FileText, CalendarDays, Percent, Wallet, AlertTriangle, Plus, Banknote, LayoutGrid, Rows3, Camera, Upload, RotateCcw, Trash2, Eye, Download, X } from "lucide-react"
+import { Search, Users, Phone, MapPin, FileText, CalendarDays, Percent, Wallet, AlertTriangle, Plus, Banknote, LayoutGrid, Rows3, Camera, Upload, RotateCcw, Trash2, Eye, Download, X, Pencil } from "lucide-react"
 import { buildLoanData, calculateTotalAmountWithLateFee, getDaysOverdue, getOverdueDailyAmountBRL } from "@/lib/loan-logic"
 
 const MODALITY_LABELS: Record<string, string> = {
@@ -78,6 +78,24 @@ function formatCurrency(value: number | null | undefined) {
 function formatDate(value: string | null | undefined) {
   if (!value) return "-"
   return new Date(value).toLocaleDateString("pt-BR")
+}
+
+function readFileAsDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onloadend = () => resolve(reader.result as string)
+    reader.onerror = () => reject(new Error(`Falha ao ler ${file.name}`))
+    reader.readAsDataURL(file)
+  })
+}
+
+async function buildPendingDocuments(files: File[]) {
+  return Promise.all(files.map(async (file) => ({
+    name: file.name,
+    type: "RG",
+    fileData: await readFileAsDataUrl(file),
+    fileType: file.type || "application/octet-stream",
+  })))
 }
 
 function getLoanCurrentBalance(loan: DisappearedClient["loans"][number]) {
@@ -225,6 +243,24 @@ export default function ClientesDesaparecidosPage() {
   const [createOpen, setCreateOpen] = useState(false)
   const [createSaving, setCreateSaving] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
+  const [editOpen, setEditOpen] = useState(false)
+  const [editSaving, setEditSaving] = useState(false)
+  const [editError, setEditError] = useState<string | null>(null)
+  const [editingClient, setEditingClient] = useState<DisappearedClient | null>(null)
+  const [editForm, setEditForm] = useState({
+    name: "",
+    phone: "",
+    document: "",
+    city: "",
+    instagram: "",
+    notes: "",
+    photo: "",
+    status: "ACTIVE" as DisappearedClient["status"],
+  })
+  const [editPendingDocuments, setEditPendingDocuments] = useState<PendingDocument[]>([])
+  const [editDocuments, setEditDocuments] = useState<ClientDocumentSummary[]>([])
+  const [editDocsLoading, setEditDocsLoading] = useState(false)
+  const [editOpeningDocId, setEditOpeningDocId] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<"cards" | "table">("cards")
   const [documentsOpen, setDocumentsOpen] = useState(false)
   const [detailsLoanId, setDetailsLoanId] = useState<string | null>(null)
@@ -235,6 +271,8 @@ export default function ClientesDesaparecidosPage() {
   const [openingDocId, setOpeningDocId] = useState<string | null>(null)
   const photoInputRef = useRef<HTMLInputElement>(null)
   const documentInputRef = useRef<HTMLInputElement>(null)
+  const editPhotoInputRef = useRef<HTMLInputElement>(null)
+  const editDocumentInputRef = useRef<HTMLInputElement>(null)
 
   const getDocTypeLabel = (type: string) => {
     switch (type) {
@@ -251,15 +289,26 @@ export default function ClientesDesaparecidosPage() {
     }
   }
 
-  useEffect(() => {
-    const fetchClients = async () => {
-      const response = await fetch("/api/clients?includeInstallments=true")
-      const data = await response.json()
-      const list = Array.isArray(data) ? data : []
-      setClients(list)
-      setLoading(false)
+  const fetchClients = async () => {
+    const response = await fetch("/api/clients?includeInstallments=true")
+    const data = await response.json()
+    const list = Array.isArray(data) ? data : []
+    setClients(list)
+    setLoading(false)
+  }
+
+  const fetchClientDocuments = async (clientId: string) => {
+    const response = await fetch(`/api/clients/${clientId}/documents`)
+    const data = await response.json().catch(() => [])
+
+    if (!response.ok) {
+      throw new Error(data?.error || "Falha ao carregar documentos")
     }
 
+    return Array.isArray(data) ? data : []
+  }
+
+  useEffect(() => {
     fetchClients()
   }, [])
 
@@ -348,32 +397,20 @@ export default function ClientesDesaparecidosPage() {
     const file = event.target.files?.[0]
     if (!file) return
 
-    const reader = new FileReader()
-    reader.onloadend = () => {
-      const base64 = reader.result as string
-      setCreateForm((current) => ({ ...current, photo: base64 }))
-    }
-    reader.readAsDataURL(file)
+    readFileAsDataUrl(file)
+      .then((base64) => {
+        setCreateForm((current) => ({ ...current, photo: base64 }))
+      })
+      .catch(() => {
+        setCreateError("Não foi possível carregar a foto selecionada.")
+      })
   }
 
   const handleCreateDocumentsSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || [])
     if (files.length === 0) return
 
-    Promise.all(files.map((file) => new Promise<PendingDocument>((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        const fileData = reader.result as string
-        resolve({
-          name: file.name,
-          type: "RG",
-          fileData,
-          fileType: file.type || "application/octet-stream",
-        })
-      }
-      reader.onerror = () => reject(new Error(`Falha ao ler ${file.name}`))
-      reader.readAsDataURL(file)
-    })))
+    buildPendingDocuments(files)
       .then((documents) => {
         setPendingDocuments((current) => [...current, ...documents])
         if (documentInputRef.current) documentInputRef.current.value = ""
@@ -385,6 +422,37 @@ export default function ClientesDesaparecidosPage() {
 
   const removePendingDocument = (index: number) => {
     setPendingDocuments((current) => current.filter((_, currentIndex) => currentIndex !== index))
+  }
+
+  const handleEditPhotoSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    readFileAsDataUrl(file)
+      .then((base64) => {
+        setEditForm((current) => ({ ...current, photo: base64 }))
+      })
+      .catch(() => {
+        setEditError("Não foi possível carregar a foto selecionada.")
+      })
+  }
+
+  const handleEditDocumentsSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || [])
+    if (files.length === 0) return
+
+    buildPendingDocuments(files)
+      .then((documents) => {
+        setEditPendingDocuments((current) => [...current, ...documents])
+        if (editDocumentInputRef.current) editDocumentInputRef.current.value = ""
+      })
+      .catch(() => {
+        setEditError("Não foi possível carregar um dos arquivos selecionados.")
+      })
+  }
+
+  const removeEditPendingDocument = (index: number) => {
+    setEditPendingDocuments((current) => current.filter((_, currentIndex) => currentIndex !== index))
   }
 
   const createDisappearedClient = async () => {
@@ -487,7 +555,7 @@ export default function ClientesDesaparecidosPage() {
   }
 
   const deleteClient = async (clientId: string) => {
-    if (!confirm("Excluir este cliente desaparecido?")) return
+    if (!confirm("Excluir este cliente?")) return
 
     setActionId(clientId)
 
@@ -506,36 +574,71 @@ export default function ClientesDesaparecidosPage() {
     }
   }
 
-  const openClientDocuments = async (client: DisappearedClient) => {
-    setSelectedClient(client)
-    setDocumentsOpen(true)
-    setDocsLoading(true)
-    setDocsError(null)
+  const openEditClient = async (client: DisappearedClient) => {
+    setEditingClient(client)
+    setEditForm({
+      name: client.name || "",
+      phone: client.phone || "",
+      document: client.document || "",
+      city: client.city || "",
+      instagram: client.instagram || "",
+      notes: client.notes || "",
+      photo: client.photo || "",
+      status: client.status,
+    })
+    setEditPendingDocuments([])
+    setEditDocuments([])
+    setEditError(null)
+    setEditOpen(true)
 
+    setEditDocsLoading(true)
     try {
-      const response = await fetch(`/api/clients/${client.id}/documents`)
-      const data = await response.json().catch(() => [])
-
-      if (!response.ok) {
-        throw new Error(data?.error || "Falha ao carregar documentos")
-      }
-
-      setClientDocuments(Array.isArray(data) ? data : [])
+      const documents = await fetchClientDocuments(client.id)
+      setEditDocuments(documents)
     } catch (error: any) {
-      setClientDocuments([])
-      setDocsError(error.message || "Falha ao carregar documentos")
+      setEditDocuments([])
+      setEditError(error.message || "Falha ao carregar documentos")
     } finally {
-      setDocsLoading(false)
+      setEditDocsLoading(false)
     }
   }
 
-  const handleOpenDocument = async (document: ClientDocumentSummary, download = false) => {
-    if (!selectedClient) return
+  const deleteEditDocument = async (documentId: string) => {
+    if (!editingClient) return
+    if (!confirm("Excluir este documento?")) return
 
+    setEditOpeningDocId(documentId)
+    setEditError(null)
+
+    try {
+      const response = await fetch(`/api/clients/${editingClient.id}/documents?docId=${documentId}`, {
+        method: "DELETE",
+      })
+      const data = await response.json().catch(() => null)
+
+      if (!response.ok) {
+        throw new Error(data?.error || "Falha ao excluir documento")
+      }
+
+      setEditDocuments((current) => current.filter((document) => document.id !== documentId))
+    } catch (error: any) {
+      setEditError(error.message || "Falha ao excluir documento")
+    } finally {
+      setEditOpeningDocId(null)
+    }
+  }
+
+  const openClientDocument = async (
+    clientId: string,
+    document: ClientDocumentSummary,
+    setError: (value: string | null) => void,
+    setCurrentOpeningId: (value: string | null) => void,
+    download = false,
+  ) => {
     const previewWindow = download ? null : window.open("about:blank", "_blank")
 
-    setOpeningDocId(document.id)
-    setDocsError(null)
+    setCurrentOpeningId(document.id)
+    setError(null)
 
     if (previewWindow) {
       previewWindow.document.title = document.name
@@ -543,7 +646,7 @@ export default function ClientesDesaparecidosPage() {
     }
 
     try {
-      const response = await fetch(`/api/clients/${selectedClient.id}/documents?docId=${document.id}`)
+      const response = await fetch(`/api/clients/${clientId}/documents?docId=${document.id}`)
       const data = await response.json().catch(() => null)
 
       if (!response.ok || !data?.fileData) {
@@ -603,10 +706,96 @@ export default function ClientesDesaparecidosPage() {
       previewWindow.document.close()
     } catch (error: any) {
       previewWindow?.close()
-      setDocsError(error.message || "Falha ao abrir documento")
+      setError(error.message || "Falha ao abrir documento")
     } finally {
-      setOpeningDocId(null)
+      setCurrentOpeningId(null)
     }
+  }
+
+  const handleOpenEditDocument = async (document: ClientDocumentSummary, download = false) => {
+    if (!editingClient) return
+    await openClientDocument(editingClient.id, document, setEditError, setEditOpeningDocId, download)
+  }
+
+  const updateClient = async () => {
+    if (!editingClient) return
+    if (editForm.name.trim().length < 2) {
+      setEditError("Informe um nome com pelo menos 2 caracteres.")
+      return
+    }
+
+    setEditSaving(true)
+    setEditError(null)
+
+    try {
+      const response = await fetch(`/api/clients/${editingClient.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editForm.name.trim(),
+          phone: editForm.phone.trim() || undefined,
+          document: editForm.document.trim() || undefined,
+          city: editForm.city.trim() || undefined,
+          instagram: editForm.instagram.trim() || undefined,
+          notes: editForm.notes.trim() || undefined,
+          photo: editForm.photo || undefined,
+          status: editForm.status,
+        }),
+      })
+
+      const data = await response.json().catch(() => null)
+
+      if (!response.ok) {
+        throw new Error(data?.error || "Falha ao atualizar cliente")
+      }
+
+      if (editPendingDocuments.length > 0) {
+        const uploadResponses = await Promise.all(
+          editPendingDocuments.map((document) => fetch(`/api/clients/${editingClient.id}/documents`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(document),
+          }))
+        )
+
+        const failedUpload = uploadResponses.find((uploadResponse) => !uploadResponse.ok)
+        if (failedUpload) {
+          const uploadData = await failedUpload.json().catch(() => null)
+          throw new Error(uploadData?.error || "Falha ao salvar documentos do cliente")
+        }
+      }
+
+      await fetchClients()
+      setEditOpen(false)
+      setEditingClient(null)
+      setEditPendingDocuments([])
+    } catch (error: any) {
+      setEditError(error.message || "Falha ao atualizar cliente")
+    } finally {
+      setEditSaving(false)
+    }
+  }
+
+  const openClientDocuments = async (client: DisappearedClient) => {
+    setSelectedClient(client)
+    setDocumentsOpen(true)
+    setDocsLoading(true)
+    setDocsError(null)
+
+    try {
+      const documents = await fetchClientDocuments(client.id)
+      setClientDocuments(documents)
+    } catch (error: any) {
+      setClientDocuments([])
+      setDocsError(error.message || "Falha ao carregar documentos")
+    } finally {
+      setDocsLoading(false)
+    }
+  }
+
+  const handleOpenDocument = async (document: ClientDocumentSummary, download = false) => {
+    if (!selectedClient) return
+    await openClientDocument(selectedClient.id, document, setDocsError, setOpeningDocId, download)
   }
 
   const openLoanDetails = (loanId: string | null | undefined) => {
@@ -728,12 +917,12 @@ export default function ClientesDesaparecidosPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Cliente</TableHead>
-                <TableHead>Telefone</TableHead>
-                <TableHead>Cidade</TableHead>
                 {activeSection === "clientes" ? (
                   <>
                     <TableHead>CPF</TableHead>
                     <TableHead>Instagram</TableHead>
+                    <TableHead>Cadastrado em</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </>
                 ) : null}
                 {activeSection === "desaparecido" ? (
@@ -743,7 +932,6 @@ export default function ClientesDesaparecidosPage() {
                     <TableHead>Próximo vencimento</TableHead>
                     <TableHead>Juros</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Cadastrado em</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </>
                 ) : null}
@@ -766,12 +954,34 @@ export default function ClientesDesaparecidosPage() {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell>{client.phone || "-"}</TableCell>
-                    <TableCell>{client.city || "-"}</TableCell>
                     {activeSection === "clientes" ? (
                       <>
                         <TableCell>{client.document || "-"}</TableCell>
                         <TableCell>{client.instagram || "-"}</TableCell>
+                        <TableCell>{formatDate(client.createdAt)}</TableCell>
+                        <TableCell>
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => openEditClient(client)}
+                              className="gap-1.5"
+                            >
+                              <Pencil className="h-4 w-4" />
+                              Editar
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => deleteClient(client.id)}
+                              disabled={actionId === client.id}
+                              className="gap-1.5 border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900/40 dark:text-red-400 dark:hover:bg-red-950/20"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Excluir
+                            </Button>
+                          </div>
+                        </TableCell>
                       </>
                     ) : null}
                     {activeSection === "desaparecido" ? (
@@ -781,7 +991,6 @@ export default function ClientesDesaparecidosPage() {
                         <TableCell>{formatDate(getNextDueDate(client))}</TableCell>
                         <TableCell className="max-w-[220px] truncate">{getInterestSummary(client)}</TableCell>
                         <TableCell>{client.status === "DESAPARECIDO" ? "Desaparecido" : client.status === "ACTIVE" ? "Ativo" : "Inativo"}</TableCell>
-                        <TableCell>{formatDate(client.createdAt)}</TableCell>
                         <TableCell>
                           <div className="flex justify-end gap-2">
                             <Button
@@ -900,8 +1109,6 @@ export default function ClientesDesaparecidosPage() {
                   <div className="flex flex-wrap items-center gap-1.5">
                     <CalendarDays className="h-3.5 w-3.5" />
                     <span>Venc: {formatDate(nextDueDate)}</span>
-                    <MapPin className="h-3 w-3 text-gray-300 dark:text-zinc-600" />
-                    <span>{client.city || "Sem cidade"}</span>
                   </div>
                   <div className="flex flex-wrap items-center gap-1.5 sm:justify-end">
                     <Wallet className="h-3.5 w-3.5 text-primary" />
@@ -1010,7 +1217,6 @@ export default function ClientesDesaparecidosPage() {
                             <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Observações</p>
                             <p className="mt-1 text-xs text-gray-500 dark:text-zinc-400 line-clamp-2">{client.notes || "Sem observações registradas."}</p>
                           </div>
-                          <span className="text-[11px] text-gray-400 dark:text-zinc-500">{client.phone || "Sem telefone"}</span>
                         </div>
                       </div>
                       <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -1019,9 +1225,6 @@ export default function ClientesDesaparecidosPage() {
                         </span>
                         <span className="rounded-full bg-white px-2.5 py-1 font-semibold text-gray-600 dark:bg-zinc-900 dark:text-zinc-300">
                           Juros {getInterestSummary(client)}
-                        </span>
-                        <span className="rounded-full bg-white px-2.5 py-1 font-semibold text-gray-600 dark:bg-zinc-900 dark:text-zinc-300">
-                          Cadastrado em {formatDate(client.createdAt)}
                         </span>
                       </div>
                     </div>
@@ -1387,6 +1590,304 @@ export default function ClientesDesaparecidosPage() {
               ))}
             </div>
           )}
+        </div>
+      </Dialog>
+
+      <Dialog
+        open={editOpen}
+        onClose={() => {
+          setEditOpen(false)
+          setEditingClient(null)
+          setEditError(null)
+          setEditPendingDocuments([])
+          setEditDocuments([])
+          setEditOpeningDocId(null)
+        }}
+        title="Editar cliente"
+        className="max-w-3xl"
+      >
+        <div className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="sm:col-span-2 rounded-xl border border-gray-200 p-4 dark:border-zinc-800">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-4">
+                  {editForm.photo ? (
+                    <img
+                      src={editForm.photo}
+                      alt={editForm.name || "Cliente"}
+                      className="h-20 w-20 rounded-full object-cover ring-2 ring-gray-200 dark:ring-zinc-800"
+                    />
+                  ) : (
+                    <Avatar name={editForm.name || "Cliente"} size="xl" className="h-20 w-20 border border-gray-200 dark:border-zinc-800" />
+                  )}
+                  <div>
+                    <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">Foto do cliente</p>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-zinc-400">Atualize a foto principal exibida na listagem.</p>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <input
+                    ref={editPhotoInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleEditPhotoSelect}
+                  />
+                  <Button type="button" variant="outline" onClick={() => editPhotoInputRef.current?.click()}>
+                    <Camera className="h-4 w-4" />
+                    Alterar foto
+                  </Button>
+                  {editForm.photo ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setEditForm((current) => ({ ...current, photo: "" }))}
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                      Remover foto
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+
+            <div className="sm:col-span-2">
+              <p className="mb-1.5 text-sm font-medium text-gray-900 dark:text-zinc-100">Nome</p>
+              <Input
+                value={editForm.name}
+                onChange={(event) => setEditForm((current) => ({ ...current, name: event.target.value }))}
+                placeholder="Nome do cliente"
+              />
+            </div>
+
+            <div>
+              <p className="mb-1.5 text-sm font-medium text-gray-900 dark:text-zinc-100">Telefone</p>
+              <Input
+                value={editForm.phone}
+                onChange={(event) => setEditForm((current) => ({ ...current, phone: phoneMask(event.target.value) }))}
+                placeholder="(00) 00000-0000"
+              />
+            </div>
+
+            <div>
+              <p className="mb-1.5 text-sm font-medium text-gray-900 dark:text-zinc-100">CPF</p>
+              <Input
+                value={editForm.document}
+                onChange={(event) => setEditForm((current) => ({ ...current, document: cpfMask(event.target.value) }))}
+                placeholder="000.000.000-00"
+              />
+            </div>
+
+            <div>
+              <p className="mb-1.5 text-sm font-medium text-gray-900 dark:text-zinc-100">Cidade</p>
+              <Input
+                value={editForm.city}
+                onChange={(event) => setEditForm((current) => ({ ...current, city: event.target.value }))}
+                placeholder="Cidade"
+              />
+            </div>
+
+            <div>
+              <p className="mb-1.5 text-sm font-medium text-gray-900 dark:text-zinc-100">Instagram</p>
+              <Input
+                value={editForm.instagram}
+                onChange={(event) => setEditForm((current) => ({ ...current, instagram: event.target.value }))}
+                placeholder="@instagram"
+              />
+            </div>
+
+            <div className="sm:col-span-2">
+              <p className="mb-1.5 text-sm font-medium text-gray-900 dark:text-zinc-100">Observações</p>
+              <Textarea
+                value={editForm.notes}
+                onChange={(event) => setEditForm((current) => ({ ...current, notes: event.target.value }))}
+                rows={4}
+                placeholder="Observações do cliente"
+              />
+            </div>
+
+            <div className="sm:col-span-2 overflow-hidden rounded-2xl border border-gray-200 bg-gradient-to-br from-white via-slate-50 to-blue-50/60 dark:border-zinc-800 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-900">
+              <div className="border-b border-gray-200/80 px-4 py-4 dark:border-zinc-800/80 sm:px-5">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">
+                      <FileText className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Documentos</p>
+                        <span className="rounded-full bg-white/90 px-2.5 py-0.5 text-[11px] font-medium text-gray-600 ring-1 ring-gray-200 dark:bg-zinc-900 dark:text-zinc-300 dark:ring-zinc-700">
+                          {editDocuments.length} cadastrados
+                        </span>
+                        {editPendingDocuments.length > 0 ? (
+                          <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+                            {editPendingDocuments.length} para enviar
+                          </span>
+                        ) : null}
+                      </div>
+                      <p className="mt-1 text-xs text-gray-500 dark:text-zinc-400">Anexe novos arquivos e visualize os documentos j\u00e1 cadastrados.</p>
+                    </div>
+                  </div>
+
+                  <input
+                    ref={editDocumentInputRef}
+                    type="file"
+                    accept="image/*,.pdf"
+                    multiple
+                    className="hidden"
+                    onChange={handleEditDocumentsSelect}
+                  />
+                  <div className="grid w-full gap-2 sm:w-auto sm:min-w-[320px] sm:grid-cols-2 lg:max-w-[360px]">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => editDocumentInputRef.current?.click()}
+                      className="h-11 justify-center rounded-xl border-blue-200 bg-white/90 px-4 text-sm font-medium hover:bg-blue-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+                    >
+                      <Upload className="h-4 w-4" />
+                      Adicionar arquivos
+                    </Button>
+                    {editingClient ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => openClientDocuments(editingClient)}
+                        className="h-11 justify-center rounded-xl border-gray-200 bg-white/90 px-4 text-sm font-medium hover:bg-gray-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+                      >
+                        <FileText className="h-4 w-4" />
+                        Ver em tela cheia
+                      </Button>
+                    ) : null}
+                  </div>
+              </div>
+              </div>
+
+              {editPendingDocuments.length > 0 ? (
+                <div className="border-b border-gray-200/80 bg-white/70 px-4 py-4 dark:border-zinc-800/80 dark:bg-zinc-950/30 sm:px-5">
+                  <div className="mb-3 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.14em] text-emerald-700 dark:text-emerald-300">
+                    <Upload className="h-3.5 w-3.5" />
+                    Novos arquivos
+                  </div>
+                  <div className="space-y-2">
+                  {editPendingDocuments.map((document, index) => (
+                    <div key={`${document.name}-${index}`} className="flex items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50/80 px-3 py-3 dark:border-emerald-900/40 dark:bg-emerald-950/20">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-gray-900 dark:text-zinc-100">{document.name}</p>
+                        <p className="text-xs text-emerald-700 dark:text-emerald-300">Documento pronto para envio ao salvar.</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeEditPendingDocument(index)}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-md text-gray-500 transition hover:bg-white hover:text-gray-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+                        aria-label={`Remover ${document.name}`}
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                  </div>
+                </div>
+              ) : null}
+
+              <div className="px-4 py-4 sm:px-5">
+                {editDocsLoading ? (
+                  <div className="rounded-xl border border-gray-200 bg-white/80 px-4 py-8 text-center text-sm text-gray-500 dark:border-zinc-800 dark:bg-zinc-900/70 dark:text-zinc-400">
+                    Carregando documentos...
+                  </div>
+                ) : editDocuments.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-gray-300 bg-white/75 px-4 py-10 text-center dark:border-zinc-700 dark:bg-zinc-900/60">
+                    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-400">
+                      <FileText className="h-6 w-6" />
+                    </div>
+                    <p className="mt-4 text-sm font-medium text-gray-900 dark:text-zinc-100">Nenhum documento cadastrado</p>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-zinc-400">Adicione arquivos para manter RG, CPF, CNH ou PDF do cliente organizados aqui.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {editDocuments.map((document) => (
+                    <div
+                      key={document.id}
+                      className="flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white/90 px-4 py-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/90 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold text-gray-900 dark:text-zinc-100">{document.name}</p>
+                        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-zinc-400">
+                          <span className="rounded-full bg-gray-100 px-2 py-0.5 dark:bg-zinc-800">{getDocTypeLabel(document.type)}</span>
+                          <span>{new Date(document.createdAt).toLocaleDateString("pt-BR")}</span>
+                          <span>{document.fileType}</span>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => handleOpenEditDocument(document)}
+                          disabled={editOpeningDocId === document.id}
+                          className="rounded-xl"
+                        >
+                          <Eye className="h-4 w-4" />
+                          {editOpeningDocId === document.id ? "Abrindo..." : "Visualizar"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => handleOpenEditDocument(document, true)}
+                          disabled={editOpeningDocId === document.id}
+                          className="rounded-xl"
+                        >
+                          <Download className="h-4 w-4" />
+                          Baixar
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => deleteEditDocument(document.id)}
+                          disabled={editOpeningDocId === document.id}
+                          className="rounded-xl border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900/40 dark:text-red-400 dark:hover:bg-red-950/20"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Excluir
+                        </Button>
+                      </div>
+                    </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {editError ? (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-950/20 dark:text-red-300">
+              {editError}
+            </div>
+          ) : null}
+
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setEditOpen(false)
+                setEditingClient(null)
+                setEditError(null)
+                setEditPendingDocuments([])
+                setEditDocuments([])
+                setEditOpeningDocId(null)
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={updateClient}
+              disabled={editSaving}
+              className="bg-blue-600 text-white hover:bg-blue-700"
+            >
+              {editSaving ? "Salvando..." : "Salvar"}
+            </Button>
+          </div>
         </div>
       </Dialog>
     </div>
