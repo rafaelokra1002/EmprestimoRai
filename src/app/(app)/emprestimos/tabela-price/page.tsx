@@ -153,7 +153,7 @@ export default function TabelaPricePage() {
           <Button variant="outline" className="gap-2" onClick={() => window.open("https://pt.wikipedia.org/wiki/Sistema_de_amortiza%C3%A7%C3%A3o_franc%C3%AAs", "_blank")}>
             <HelpCircle className="h-4 w-4" /> Tutorial
           </Button>
-          <Button variant="outline" className="gap-2" onClick={() => router.push("/emprestimos/relatorio")}>
+          <Button variant="outline" className="gap-2" onClick={() => window.location.href = "/emprestimos/relatorio"}>
             <Download className="h-4 w-4" /> Baixar Relatório
           </Button>
         </div>

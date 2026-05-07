@@ -61,7 +61,7 @@ const menuItems = [
   { href: "/configuracoes", label: "Configurações", icon: Settings },
 ]
 
-const hardNavigationRoutes = new Set(["/emprestimos/tabela-price", "/emprestimos/recebimentos"])
+const hardNavigationRoutes = new Set(["/emprestimos/tabela-price", "/emprestimos/recebimentos", "/emprestimos/relatorio"])
 
 export function Sidebar() {
   const pathname = usePathname()

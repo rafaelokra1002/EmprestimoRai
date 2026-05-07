@@ -49,7 +49,9 @@ export async function POST(request: Request) {
       if (installment) {
         const notesCheck = (notes || "").toLowerCase()
         const isInterestOnly = notesCheck.includes("só juros") || notesCheck.includes("parcial de juros")
-        const lateFeeAmount = extractTaggedAmount(notes, "lateFee") + extractTaggedAmount(notes, "dailyFee")
+        const taggedLateFee = extractTaggedAmount(notes, "lateFee")
+        const taggedDailyFee = extractTaggedAmount(notes, "dailyFee")
+        const lateFeeAmount = taggedLateFee > 0 ? taggedLateFee : taggedDailyFee
 
         if (isInterestOnly) {
           // Interest-only payment: do NOT add to paidAmount (don't reduce capital)
@@ -173,6 +175,48 @@ export async function DELETE(request: Request) {
     }
 
     return NextResponse.json({ success: true })
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 400 })
+  }
+}
+
+export async function PUT(request: Request) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user) {
+      return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
+    }
+
+    const body = await request.json()
+    const { id, date } = body
+
+    if (!id || !date) {
+      return NextResponse.json({ error: "ID e data são obrigatórios" }, { status: 400 })
+    }
+
+    const existingPayment = await prisma.payment.findUnique({
+      where: { id },
+      include: {
+        loan: {
+          select: {
+            userId: true,
+          },
+        },
+      },
+    })
+
+    if (!existingPayment || existingPayment.loan.userId !== (session.user as any).id) {
+      return NextResponse.json({ error: "Pagamento não encontrado" }, { status: 404 })
+    }
+
+    const updatedPayment = await prisma.payment.update({
+      where: { id },
+      data: {
+        date: parsePaymentDate(date),
+      },
+    })
+
+    return NextResponse.json(updatedPayment)
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 400 })
   }

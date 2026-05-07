@@ -105,6 +105,12 @@ export function getOverdueDailyAmountBRL(loan: Pick<LoanData, "dailyInterest" | 
   )
 }
 
+function atStartOfDay(value: Date | string): Date {
+  const date = new Date(value)
+  date.setHours(0, 0, 0, 0)
+  return date
+}
+
 // ─── 4. Cálculo Total Final ──────────────────────────────────────────
 
 /**
@@ -116,27 +122,23 @@ export function getOverdueDailyAmountBRL(loan: Pick<LoanData, "dailyInterest" | 
  * 5. Resultado = max(0, valor_calculado - total_pago)
  */
 export function calculateTotalAmountWithLateFee(loan: LoanData): number {
-  const now = new Date()
+  const now = atStartOfDay(new Date())
   const dailyRate = getOverdueDailyAmountBRL(loan)
 
-  // Per-installment: base value + daily late fee for each unpaid installment
+  // Sum only the unpaid portion of each installment.
+  // Using pending balance here means payments were already applied via paidAmount,
+  // so they must not be subtracted again at the end.
   let total = 0
   for (const inst of loan.installments) {
     if (inst.status === "PAID") continue
-    const due = new Date(inst.dueDate)
+    const baseRemaining = Math.max(0, inst.amount - (inst.paidAmount || 0))
+    if (baseRemaining <= 0) continue
+    const due = atStartOfDay(inst.dueDate)
     const daysOverdue = Math.max(0, Math.floor((now.getTime() - due.getTime()) / (1000 * 60 * 60 * 24)))
-    total += inst.amount + (daysOverdue > 0 ? dailyRate * daysOverdue : 0)
+    total += baseRemaining + (daysOverdue > 0 ? dailyRate * daysOverdue : 0)
   }
 
-  // Subtrair pagamentos (exceto pagamentos só de juros)
-  const totalPaid = loan.payments
-    .filter(p => {
-      const notes = (p.notes || "").toLowerCase()
-      return !notes.includes("só juros") && !notes.includes("parcial de juros")
-    })
-    .reduce((s, p) => s + p.amount, 0)
-
-  return Math.max(0, Math.round((total - totalPaid) * 100) / 100)
+  return Math.max(0, Math.round(total * 100) / 100)
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────
@@ -151,8 +153,8 @@ export function getDaysOverdue(loan: LoanData): number {
 
   if (!nextDueInst) return 0
 
-  const now = new Date()
-  const due = new Date(nextDueInst.dueDate)
+  const now = atStartOfDay(new Date())
+  const due = atStartOfDay(nextDueInst.dueDate)
   return Math.max(0, Math.floor((now.getTime() - due.getTime()) / (1000 * 60 * 60 * 24)))
 }
 
@@ -208,6 +210,156 @@ export function getPaidExcludingInterest(payments: { amount: number; notes?: str
     .reduce((s, p) => s + p.amount, 0)
 }
 
+export function calculateRealizedProfitFromPayments(
+  totalAmount: number,
+  contractProfit: number,
+  payments: { amount: number; notes?: string | null }[],
+  installments?: { number: number; amount: number }[],
+  options?: { principalAmount?: number; interestType?: string }
+): number {
+  if (totalAmount <= 0 || contractProfit < 0) return 0
+
+  const contractProfitRatio = contractProfit / totalAmount
+  const {
+    principalReducingPaid,
+    lateFeesReceived,
+    interestOnlyReceived,
+    principalPaidByInstallment,
+    installmentAmountMap,
+  } = summarizeEffectivePayments(payments, installments)
+
+  const isCustom = (options?.interestType || "").toUpperCase() === "CUSTOM"
+
+  if (isCustom && typeof options?.principalAmount === "number" && installments && installments.length > 0) {
+    const principalPerInstallment = options.principalAmount / installments.length
+    const contractProfitRealized = Array.from(principalPaidByInstallment.entries()).reduce((sum, [installmentNumber, paidAmount]) => {
+      const installmentAmount = installmentAmountMap.get(installmentNumber)
+      const cappedPaidAmount = typeof installmentAmount === "number" ? Math.min(installmentAmount, paidAmount) : paidAmount
+      return sum + Math.max(0, cappedPaidAmount - principalPerInstallment)
+    }, 0)
+
+    return Math.round((contractProfitRealized + lateFeesReceived + interestOnlyReceived) * 100) / 100
+  }
+
+  const contractCollected = Math.min(totalAmount, principalReducingPaid)
+  const contractProfitRealized = contractCollected * contractProfitRatio
+  const extraProfitRealized = Math.max(0, principalReducingPaid - totalAmount)
+
+  return Math.round((contractProfitRealized + lateFeesReceived + interestOnlyReceived + extraProfitRealized) * 100) / 100
+}
+
+export function calculateEffectivePaidAmountFromPayments(
+  payments: { amount: number; notes?: string | null }[],
+  installments?: { number: number; amount: number }[]
+): number {
+  const { principalReducingPaid, lateFeesReceived, interestOnlyReceived } = summarizeEffectivePayments(payments, installments)
+  return Math.round((principalReducingPaid + lateFeesReceived + interestOnlyReceived) * 100) / 100
+}
+
+function summarizeEffectivePayments(
+  payments: { amount: number; notes?: string | null }[],
+  installments?: { number: number; amount: number }[]
+) {
+  const principalPaidByInstallment = new Map<number, number>()
+  let principalReducingPaidWithoutInstallment = 0
+  let lateFeesReceived = 0
+  let interestOnlyReceived = 0
+
+  for (const payment of payments) {
+    const notes = (payment.notes || "").toLowerCase()
+    const lateFeeAmount = extractLateFeeFromNotes(payment.notes)
+
+    if (notes.includes("só juros") || notes.includes("parcial de juros")) {
+      interestOnlyReceived += payment.amount
+      continue
+    }
+
+    lateFeesReceived += lateFeeAmount
+    const principalPaymentAmount = Math.max(0, payment.amount - lateFeeAmount)
+    const installmentNumber = extractInstallmentNumber(payment.notes)
+
+    if (installmentNumber) {
+      principalPaidByInstallment.set(
+        installmentNumber,
+        (principalPaidByInstallment.get(installmentNumber) || 0) + principalPaymentAmount
+      )
+    } else {
+      principalReducingPaidWithoutInstallment += principalPaymentAmount
+    }
+  }
+
+  const installmentAmountMap = new Map((installments || []).map((installment) => [installment.number, installment.amount]))
+  const principalReducingPaid = Array.from(principalPaidByInstallment.entries()).reduce((sum, [installmentNumber, paidAmount]) => {
+    const installmentAmount = installmentAmountMap.get(installmentNumber)
+    return sum + (typeof installmentAmount === "number" ? Math.min(installmentAmount, paidAmount) : paidAmount)
+  }, principalReducingPaidWithoutInstallment)
+
+  return {
+    principalReducingPaid,
+    lateFeesReceived,
+    interestOnlyReceived,
+    principalPaidByInstallment,
+    installmentAmountMap,
+  }
+}
+
+function extractInstallmentNumber(notes?: string | null): number | null {
+  if (!notes) return null
+
+  const match = notes.match(/parcela\s+(\d+)\s+de\s+\d+/i)
+  return match ? parseInt(match[1], 10) : null
+}
+
+function extractLateFeeFromNotes(notes?: string | null): number {
+  if (!notes) return 0
+
+  const lateFeeMatch = notes.match(/\[lateFee:([\d.]+)\]/i)
+  if (lateFeeMatch) return parseFloat(lateFeeMatch[1]) || 0
+
+  const dailyFeeMatch = notes.match(/\[dailyFee:([\d.]+)\]/i)
+  return dailyFeeMatch ? parseFloat(dailyFeeMatch[1]) || 0 : 0
+}
+
+export function normalizeInstallmentsFromPayments<T extends { number: number; amount: number; paidAmount: number; status: string }>(
+  installments: T[],
+  payments: { amount: number; notes?: string | null }[]
+): T[] {
+  const principalPaidByInstallment = new Map<number, number>()
+
+  for (const payment of payments) {
+    const notes = (payment.notes || "").toLowerCase()
+    if (notes.includes("só juros") || notes.includes("parcial de juros")) continue
+
+    const installmentNumber = extractInstallmentNumber(payment.notes)
+    if (!installmentNumber) continue
+
+    const lateFeeAmount = extractLateFeeFromNotes(payment.notes)
+    const principalPaymentAmount = Math.max(0, payment.amount - lateFeeAmount)
+    principalPaidByInstallment.set(
+      installmentNumber,
+      (principalPaidByInstallment.get(installmentNumber) || 0) + principalPaymentAmount
+    )
+  }
+
+  return installments.map((installment) => {
+    const derivedPaidAmount = principalPaidByInstallment.get(installment.number) || 0
+    const normalizedPaidAmount = Math.min(
+      installment.amount,
+      Math.max(installment.paidAmount || 0, Math.round(derivedPaidAmount * 100) / 100)
+    )
+
+    return {
+      ...installment,
+      paidAmount: normalizedPaidAmount,
+      status: normalizedPaidAmount >= installment.amount
+        ? "PAID"
+        : installment.status === "PAID"
+          ? "PENDING"
+          : installment.status,
+    }
+  })
+}
+
 /**
  * Constrói LoanData a partir dos dados do Prisma
  */
@@ -225,6 +377,7 @@ export function buildLoanData(loan: {
   payments: { amount: number; notes?: string | null }[]
 }): LoanData {
   const resolvedDailyInterestAmount = loan.dailyInterestAmount ?? 0
+  const normalizedInstallments = normalizeInstallmentsFromPayments(loan.installments, loan.payments)
 
   return {
     amount: loan.amount,
@@ -235,7 +388,7 @@ export function buildLoanData(loan: {
     dailyInterestAmount: resolvedDailyInterestAmount,
     dueDay: loan.dueDay || extractDueDay(loan.firstInstallmentDate),
     modality: loan.modality || "MONTHLY",
-    installments: loan.installments.map(i => ({
+    installments: normalizedInstallments.map(i => ({
       dueDate: i.dueDate,
       status: i.status,
       amount: i.amount,

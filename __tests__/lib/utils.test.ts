@@ -11,6 +11,7 @@ import {
   calculateLoan,
   generateInstallmentDates,
 } from "@/lib/utils"
+import { calculateTotalAmountWithLateFee, buildLoanData } from "@/lib/loan-logic"
 
 /* ─── cn (class merging) ─── */
 describe("cn()", () => {
@@ -210,5 +211,56 @@ describe("generateInstallmentDates()", () => {
     const dates = generateInstallmentDates(start, 1, "MONTHLY", false, true)
     // Should skip to Monday (Jan 12)
     expect(dates[0].getDay()).not.toBe(0) // Not Sunday
+  })
+})
+
+describe("calculateTotalAmountWithLateFee()", () => {
+  it("returns remaining principal without subtracting payments twice", () => {
+    const loan = buildLoanData({
+      amount: 10000,
+      interestRate: 0,
+      interestType: "simple",
+      totalAmount: 14000,
+      dailyInterest: false,
+      dailyInterestAmount: 0,
+      dueDay: 25,
+      modality: "MONTHLY",
+      firstInstallmentDate: "2026-04-25T12:00:00.000Z",
+      installments: [
+        { dueDate: "2026-04-25T12:00:00.000Z", status: "PAID", amount: 7000, paidAmount: 7000 },
+        { dueDate: "2099-05-25T12:00:00.000Z", status: "PENDING", amount: 7000, paidAmount: 0 },
+      ],
+      payments: [
+        { amount: 7000, notes: "Parcela 1 de 2" },
+      ],
+    })
+
+    expect(calculateTotalAmountWithLateFee(loan)).toBe(7000)
+  })
+
+  it("adds daily late fee on top of the unpaid installment balance", () => {
+    const now = new Date()
+    const overdueDate = new Date(now)
+    overdueDate.setDate(overdueDate.getDate() - 3)
+
+    const loan = buildLoanData({
+      amount: 1000,
+      interestRate: 0,
+      interestType: "simple",
+      totalAmount: 1200,
+      dailyInterest: true,
+      dailyInterestAmount: 15,
+      dueDay: overdueDate.getDate(),
+      modality: "MONTHLY",
+      firstInstallmentDate: overdueDate.toISOString(),
+      installments: [
+        { dueDate: overdueDate.toISOString(), status: "PENDING", amount: 1200, paidAmount: 200 },
+      ],
+      payments: [
+        { amount: 200, notes: "Pagamento parcial" },
+      ],
+    })
+
+    expect(calculateTotalAmountWithLateFee(loan)).toBe(1045)
   })
 })

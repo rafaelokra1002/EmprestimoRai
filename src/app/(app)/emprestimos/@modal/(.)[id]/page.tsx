@@ -1,10 +1,18 @@
 "use client"
 
-import { useRouter } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { PaymentHistoryContent } from "@/app/(app)/emprestimos/_components/payment-history-content"
 
+const loanIdPattern = /^c[a-z0-9]{24,}$/i
+
 export default function EmprestimoDetalhesModalPage() {
+  const params = useParams<{ id: string }>()
   const router = useRouter()
+  const routeLoanId = params?.id
+
+  if (!routeLoanId || !loanIdPattern.test(routeLoanId)) {
+    return null
+  }
 
   const handleClose = () => {
     if (window.history.length > 1) {

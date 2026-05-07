@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { loanSchema } from "@/lib/validations"
 import { calculateLoan, generateInstallmentDates, resolveDailyInterestAmount } from "@/lib/utils"
+import { normalizeInstallmentsFromPayments } from "@/lib/loan-logic"
 
 async function resolveSessionUserId(session: any) {
   const sessionUserId = (session?.user as any)?.id as string | undefined
@@ -39,6 +40,7 @@ export async function GET(
       where: { id: params.id, userId },
       include: {
         client: true,
+        user: { select: { pixKey: true } },
         installments: { orderBy: { number: "asc" } },
         payments: { orderBy: { date: "desc" } },
       },
@@ -48,7 +50,10 @@ export async function GET(
       return NextResponse.json({ error: "Empréstimo não encontrado" }, { status: 404 })
     }
 
-    return NextResponse.json(loan)
+    return NextResponse.json({
+      ...loan,
+      installments: normalizeInstallmentsFromPayments(loan.installments, loan.payments),
+    })
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
@@ -197,12 +202,16 @@ export async function PUT(
         where: { id: params.id, userId },
         include: {
           client: true,
+          user: { select: { pixKey: true } },
           installments: { orderBy: { number: "asc" } },
           payments: { orderBy: { date: "desc" } },
         },
       })
 
-      return NextResponse.json(loan)
+      return NextResponse.json({
+        ...loan,
+        installments: normalizeInstallmentsFromPayments(loan.installments, loan.payments),
+      })
     }
 
     const allowedStatus = ["ACTIVE", "COMPLETED", "DEFAULTED", "CANCELLED"]

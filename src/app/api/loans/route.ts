@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { loanSchema } from "@/lib/validations"
 import { calculateLoan, generateInstallmentDates, resolveDailyInterestAmount } from "@/lib/utils"
+import { normalizeInstallmentsFromPayments } from "@/lib/loan-logic"
 
 export async function GET() {
   try {
@@ -22,7 +23,12 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
     })
 
-    return NextResponse.json(loans)
+    const normalizedLoans = loans.map((loan) => ({
+      ...loan,
+      installments: normalizeInstallmentsFromPayments(loan.installments, loan.payments),
+    }))
+
+    return NextResponse.json(normalizedLoans)
   } catch (error: any) {
     console.error("GET /api/loans error:", error)
     return NextResponse.json({ error: error.message }, { status: 500 })

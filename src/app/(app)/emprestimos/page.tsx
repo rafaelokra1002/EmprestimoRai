@@ -15,8 +15,9 @@ import {
   MessageCircle, Send, Loader2
 } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
+import { LoanRenegotiationContent } from "./_components/loan-renegotiation-content"
 import { formatCurrency, formatDate, calculateLoan, generateInstallmentDates, resolveDailyInterestAmount, localDateStr } from "@/lib/utils"
-import { buildLoanData, calculateTotalAmountWithLateFee, getDaysOverdue, getNextDueDate, getOverdueDailyAmountBRL, getPaidExcludingInterest } from "@/lib/loan-logic"
+import { buildLoanData, calculateEffectivePaidAmountFromPayments, calculateOverdueInterest, calculateRealizedProfitFromPayments, calculateTotalAmountWithLateFee, getDaysOverdue, getNextDueDate, getOverdueDailyAmountBRL, getPaidExcludingInterest } from "@/lib/loan-logic"
 
 interface Loan {
   id: string
@@ -505,14 +506,20 @@ export default function EmprestimosPage() {
   const isSameMonthYear = (value: Date, reference: Date) => (
     value.getFullYear() === reference.getFullYear() && value.getMonth() === reference.getMonth()
   )
-  const hasCurrentMonthInstallmentPaid = (loan: Loan) => {
+  const hasCurrentMonthPrincipalPayment = (loan: Loan) => {
     if (loan.installmentCount <= 1) return false
 
     const now = new Date()
 
-    return loan.installments.some((installment: any) => (
-      installment.status === "PAID" && isSameMonthYear(new Date(installment.dueDate), now)
-    ))
+    return loan.payments.some((payment: any) => {
+      const notes = (payment.notes || "").toLowerCase()
+      if (notes.includes("só juros") || notes.includes("parcial de juros")) return false
+
+      const paymentDate = payment.date || payment.createdAt
+      if (!paymentDate) return false
+
+      return isSameMonthYear(new Date(paymentDate), now)
+    })
   }
 
   const getLoanStatusInfo = (loan: Loan) => {
@@ -532,7 +539,7 @@ export default function EmprestimosPage() {
       return toDateStr(new Date(i.dueDate)) < todayStr
     })
     if (hasOverdue) return { label: "Atrasado", color: "bg-red-50 dark:bg-red-950/300/20 text-red-600" }
-    if (isInstallmentLoan && hasCurrentMonthInstallmentPaid(loan)) return { label: "Pago no Mês", color: "bg-purple-50 dark:bg-purple-950/20 text-purple-600" }
+    if (isInstallmentLoan && hasCurrentMonthPrincipalPayment(loan)) return { label: "Pago no Mês", color: "bg-purple-50 dark:bg-purple-950/20 text-purple-600" }
     if (isInstallmentLoan) return { label: "Em Dia", color: "bg-blue-50 dark:bg-blue-950/20 text-blue-600" }
     return { label: "Pendente", color: "bg-orange-50 dark:bg-orange-950/300/20 text-orange-600" }
   }
@@ -546,8 +553,8 @@ export default function EmprestimosPage() {
     const allCompleted = groupLoans.every(l => l.status === "COMPLETED")
     if (allCompleted) return { label: "Quitado", color: "bg-blue-50 dark:bg-blue-950/300/20 text-blue-600" }
     if (hasActiveInstallmentLoan) {
-      const anyCurrentMonthInstallmentPaid = groupLoans.some((loan) => hasCurrentMonthInstallmentPaid(loan))
-      if (anyCurrentMonthInstallmentPaid) {
+      const anyCurrentMonthPrincipalPayment = groupLoans.some((loan) => hasCurrentMonthPrincipalPayment(loan))
+      if (anyCurrentMonthPrincipalPayment) {
         return { label: "Pago no Mês", color: "bg-purple-50 dark:bg-purple-950/20 text-purple-600" }
       }
       return { label: "Em Dia", color: "bg-blue-50 dark:bg-blue-950/20 text-blue-600" }
@@ -559,7 +566,7 @@ export default function EmprestimosPage() {
     return { label: "Em Dia", color: "bg-primary/50/20 text-green-400" }
   }
 
-  const getPaidTotal = (loan: Loan) => loan.payments.reduce((s: number, p: any) => s + p.amount, 0)
+  const getPaidTotal = (loan: Loan) => calculateEffectivePaidAmountFromPayments(loan.payments, loan.installments)
 
   // Pagamentos que realmente reduzem o saldo (exclui "só juros" e "parcial de juros")
   const getPaidTotalExcludingInterest = (loan: Loan) => loan.payments
@@ -570,9 +577,10 @@ export default function EmprestimosPage() {
     .reduce((s: number, p: any) => s + p.amount, 0)
 
   const getReceivedProfit = (loan: Loan) => {
-    const paidCount = loan.installments.filter((i: any) => i.status === "PAID").length
-    if (paidCount === 0) return 0
-    return Math.round(paidCount * (loan.profit / loan.installmentCount) * 100) / 100
+    return calculateRealizedProfitFromPayments(loan.totalAmount, loan.profit, loan.payments, loan.installments, {
+      principalAmount: loan.amount,
+      interestType: loan.interestType,
+    })
   }
 
   // Dias por modalidade
@@ -1491,7 +1499,7 @@ export default function EmprestimosPage() {
                           <>
                             <div className="fixed inset-0 z-40" onClick={() => setDropdownOpen(null)} />
                             <div className="absolute right-0 top-full mt-1 z-50 w-48 rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-lg py-1">
-                              <button onClick={() => { setDropdownOpen(null); openRenegotiateDialog(loan) }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800">
+                              <button onClick={() => { setDropdownOpen(null); openPaymentDialog(loan) }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800">
                                 <Receipt className="h-4 w-4" /> Pagar
                               </button>
                               <div className="border-t border-gray-100 dark:border-zinc-800 my-1" />
@@ -1532,6 +1540,7 @@ export default function EmprestimosPage() {
               const status = getLoanStatusInfo(loan)
               const paid = getPaidTotal(loan)
               const remaining = getRemaining(loan)
+              const currentTotalReceivable = remaining
               const receivedProfit = getReceivedProfit(loan)
               const profitPct = loan.profit > 0 ? Math.round((receivedProfit / loan.profit) * 100) : 0
               const nextInst = getNextDueInst(loan)
@@ -1542,14 +1551,15 @@ export default function EmprestimosPage() {
               const isPagoNoMes = status.label === "Pago no Mês"
               const isQuitado = status.label === "Quitado"
               const isDueToday = nextInst && toDateStr(new Date(nextInst.dueDate)) === todayStr
+              const isDueTodayHighlight = Boolean(isDueToday && loan.installmentCount > 1)
               const isParceladoCardBlue = loan.installmentCount > 1 && !isAtrasado && !isQuitado && !isSoJuros && !isPagoNoMes
 
               // Cores: Vence hoje=laranja, Atrasado=vermelho, Só Juros/Pago no mês=roxo, Quitado=azul, resto=branco
-              const cardBorder = isAtrasado ? "border-red-400 dark:border-red-700" : (isSoJuros || isPagoNoMes) ? "border-purple-400 dark:border-purple-700" : (isQuitado || isParceladoCardBlue) ? "border-blue-400 dark:border-blue-700" : isDueToday ? "border-orange-400 dark:border-orange-700" : "border-gray-200 dark:border-zinc-700"
-              const cardBg = isAtrasado ? "bg-red-100 dark:bg-red-950/30" : (isSoJuros || isPagoNoMes) ? "bg-purple-100 dark:bg-purple-950/30" : (isQuitado || isParceladoCardBlue) ? "bg-blue-100 dark:bg-blue-950/30" : isDueToday ? "bg-orange-100 dark:bg-orange-950/30" : "bg-white dark:bg-zinc-900"
-              const remainingColor = isAtrasado ? "text-red-700 dark:text-red-400" : (isSoJuros || isPagoNoMes) ? "text-purple-700 dark:text-purple-400" : (isQuitado || isParceladoCardBlue) ? "text-blue-700 dark:text-blue-400" : isDueToday ? "text-orange-700 dark:text-orange-400" : "text-gray-900 dark:text-zinc-100"
-              const remainingBg = isAtrasado ? "bg-red-100 dark:bg-red-900/40" : (isSoJuros || isPagoNoMes) ? "bg-purple-100 dark:bg-purple-900/40" : (isQuitado || isParceladoCardBlue) ? "bg-blue-100 dark:bg-blue-900/40" : isDueToday ? "bg-orange-100 dark:bg-orange-900/40" : "bg-gray-100 dark:bg-zinc-800"
-              const cellBg = isAtrasado ? "bg-red-50 dark:bg-red-950/20" : (isSoJuros || isPagoNoMes) ? "bg-purple-50 dark:bg-purple-950/20" : (isQuitado || isParceladoCardBlue) ? "bg-blue-50 dark:bg-blue-950/20" : isDueToday ? "bg-orange-50 dark:bg-orange-950/20" : "bg-gray-50 dark:bg-zinc-800/50"
+              const cardBorder = isAtrasado ? "border-red-400 dark:border-red-700" : isDueTodayHighlight ? "border-yellow-400 dark:border-yellow-700" : (isSoJuros || isPagoNoMes) ? "border-purple-400 dark:border-purple-700" : (isQuitado || isParceladoCardBlue) ? "border-blue-400 dark:border-blue-700" : isDueToday ? "border-orange-400 dark:border-orange-700" : "border-gray-200 dark:border-zinc-700"
+              const cardBg = isAtrasado ? "bg-red-100 dark:bg-red-950/30" : isDueTodayHighlight ? "bg-yellow-100 dark:bg-yellow-950/30" : (isSoJuros || isPagoNoMes) ? "bg-purple-100 dark:bg-purple-950/30" : (isQuitado || isParceladoCardBlue) ? "bg-blue-100 dark:bg-blue-950/30" : isDueToday ? "bg-orange-100 dark:bg-orange-950/30" : "bg-white dark:bg-zinc-900"
+              const remainingColor = isAtrasado ? "text-red-700 dark:text-red-400" : isDueTodayHighlight ? "text-yellow-700 dark:text-yellow-400" : (isSoJuros || isPagoNoMes) ? "text-purple-700 dark:text-purple-400" : (isQuitado || isParceladoCardBlue) ? "text-blue-700 dark:text-blue-400" : isDueToday ? "text-orange-700 dark:text-orange-400" : "text-gray-900 dark:text-zinc-100"
+              const remainingBg = isAtrasado ? "bg-red-100 dark:bg-red-900/40" : isDueTodayHighlight ? "bg-yellow-100 dark:bg-yellow-900/40" : (isSoJuros || isPagoNoMes) ? "bg-purple-100 dark:bg-purple-900/40" : (isQuitado || isParceladoCardBlue) ? "bg-blue-100 dark:bg-blue-900/40" : isDueToday ? "bg-orange-100 dark:bg-orange-900/40" : "bg-gray-100 dark:bg-zinc-800"
+              const cellBg = isAtrasado ? "bg-red-50 dark:bg-red-950/20" : isDueTodayHighlight ? "bg-yellow-50 dark:bg-yellow-950/20" : (isSoJuros || isPagoNoMes) ? "bg-purple-50 dark:bg-purple-950/20" : (isQuitado || isParceladoCardBlue) ? "bg-blue-50 dark:bg-blue-950/20" : isDueToday ? "bg-orange-50 dark:bg-orange-950/20" : "bg-gray-50 dark:bg-zinc-800/50"
 
               return (
                 <div key={group.clientId} className={`rounded-xl border overflow-hidden shadow-sm hover:shadow-md transition-shadow ${cardBorder} ${cardBg}`}>
@@ -1609,9 +1619,18 @@ export default function EmprestimosPage() {
 
                   {/* Valor Restante */}
                   <div className="px-4 pb-3">
-                    <div className={`${remainingBg} rounded-lg px-4 py-3 text-center`}>
-                      <p className={`text-lg font-bold tabular-nums tracking-tight ${remainingColor}`}>{formatCurrency(remaining)}</p>
-                      <p className="text-[11px] text-gray-400 dark:text-zinc-500 mt-0.5">restante a receber</p>
+                    <div className={`${remainingBg} rounded-2xl border border-white/50 px-4 py-3 shadow-sm dark:border-white/5`}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-500 dark:text-zinc-400">Saldo Atual</p>
+                          <p className={`mt-1 text-[1.65rem] font-bold tabular-nums leading-none tracking-tight ${remainingColor}`}>{formatCurrency(remaining)}</p>
+                          <p className="mt-1 text-[11px] text-gray-500 dark:text-zinc-400">restante a receber</p>
+                        </div>
+                        <span className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${status.color}`}>
+                          {status.label}
+                        </span>
+                      </div>
+                      <p className="mt-2 text-[11px] text-gray-500 dark:text-zinc-400">valor atualizado conforme pagamentos e vencimentos</p>
                     </div>
                   </div>
 
@@ -1623,7 +1642,7 @@ export default function EmprestimosPage() {
                     </div>
                     <div className={`${cellBg} px-3 py-2.5 text-right`}>
                       <p className="text-[11px] text-gray-400 dark:text-zinc-500">Total a Receber</p>
-                      <p className="text-sm font-semibold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(loan.totalAmount)}</p>
+                      <p className="text-sm font-semibold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(currentTotalReceivable)}</p>
                     </div>
                     <div className={`${cellBg} px-3 py-2.5`}>
                       <p className="text-[11px] text-gray-400 dark:text-zinc-500 flex items-center gap-1"><Lock className="h-3 w-3" /> Lucro Previsto</p>
@@ -1658,6 +1677,12 @@ export default function EmprestimosPage() {
                       <div className="flex flex-wrap items-center gap-1.5">
                         <Calendar className="h-3.5 w-3.5" />
                         <span>Venc: {nextInst ? formatDate(nextInst.dueDate) : "—"}</span>
+                        {(loan.installmentCount > 1 || loan.interestType === "CUSTOM") && nextInst && (
+                          <>
+                            <span className="text-gray-300 dark:text-zinc-600">•</span>
+                            <span>Parcela {nextInst.number}/{loan.installmentCount}</span>
+                          </>
+                        )}
                         <Pencil className="h-3 w-3 text-gray-300 dark:text-zinc-600" />
                       </div>
                       <div className="flex flex-wrap items-center gap-1.5 sm:justify-end">
@@ -1715,13 +1740,18 @@ export default function EmprestimosPage() {
                     const overdueInsts = loan.installments
                       .filter((i: any) => i.status !== "PAID" && new Date(i.dueDate) < new Date())
                       .sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+                    const visibleOverdueInsts = loan.installmentCount > 1
+                      ? overdueInsts.slice(0, 1)
+                      : overdueInsts
 
                     return (
                       <div className="mx-4 mt-2 px-3 py-2.5 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/50 space-y-2">
-                        {overdueInsts.map((inst: any, idx: number) => {
+                        {visibleOverdueInsts.map((inst: any, idx: number) => {
                           const instDue = new Date(inst.dueDate)
                           const instDays = Math.max(0, Math.floor((new Date().getTime() - instDue.getTime()) / (1000 * 60 * 60 * 24)))
-                          const instPenalty = dailyAmt > 0 ? dailyAmt * instDays : 0
+                          const baseAmount = Math.max(0, inst.amount - (inst.paidAmount || 0))
+                          const payableAmount = getInstallmentPayableAmount(loan, inst)
+                          const instPenalty = Math.max(0, Math.round((payableAmount - baseAmount) * 100) / 100)
                           return (
                             <div key={inst.id} className="space-y-1">
                               <div className="flex items-center justify-between">
@@ -1732,24 +1762,24 @@ export default function EmprestimosPage() {
                               </div>
                               <div className="flex items-center justify-between text-xs">
                                 <span className="text-gray-600 dark:text-zinc-400">Vencimento: {formatDate(inst.dueDate)}</span>
-                                <span className="text-gray-700 dark:text-zinc-300 font-medium">Valor: {formatCurrency(inst.amount)}</span>
+                                <span className="text-gray-700 dark:text-zinc-300 font-medium">Valor: {formatCurrency(baseAmount)}</span>
                               </div>
-                              {dailyAmt > 0 && instDays > 0 && (
+                              {instPenalty > 0 && (
                                 <div className="flex items-center justify-between text-xs">
-                                  <span className="text-red-600 dark:text-red-400">% Juros ({formatCurrency(dailyAmt)}/dia)</span>
+                                  <span className="text-red-600 dark:text-red-400">Multa Aplicada:</span>
                                   <span className="text-red-600 dark:text-red-400 font-bold">+{formatCurrency(instPenalty)}</span>
                                 </div>
                               )}
-                              {idx < overdueInsts.length - 1 && (
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="font-medium text-red-700 dark:text-red-300">Valor total com atraso:</span>
+                                <span className="font-bold text-red-700 dark:text-red-300">{formatCurrency(payableAmount)}</span>
+                              </div>
+                              {idx < visibleOverdueInsts.length - 1 && (
                                 <div className="border-b border-red-200 dark:border-red-800/40 pt-1" />
                               )}
                             </div>
                           )
                         })}
-                        <div className="flex items-center justify-between text-xs pt-1 border-t border-red-200 dark:border-red-800/40">
-                          <span className="font-semibold text-red-700 dark:text-red-300">Total com Atraso:</span>
-                          <span className="font-bold text-red-700 dark:text-red-300">{formatCurrency(remaining)}</span>
-                        </div>
                       </div>
                     )
                   })()}
@@ -1763,7 +1793,7 @@ export default function EmprestimosPage() {
                           </Button>
                       </div>
                     )}
-                    <div className="grid w-full min-w-0 grid-cols-[minmax(0,2.2fr)_minmax(0,2.8fr)_repeat(5,minmax(0,1fr))] gap-1.5 pb-1">
+                    <div className="grid w-full min-w-0 grid-cols-[minmax(0,2.2fr)_minmax(0,2.8fr)_repeat(4,minmax(0,1fr))] gap-1.5 pb-1">
                       <Button size="sm" onClick={() => openPaymentDialog(loan)} className="min-w-0 h-10 px-2 text-xs border border-primary/15 bg-primary/10 font-medium text-primary shadow-none transition-colors hover:bg-primary/15 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20 sm:text-sm">
                         <Receipt className="mr-1 h-4 w-4 shrink-0" /> <span className="truncate">Pagar</span>
                       </Button>
@@ -1776,10 +1806,7 @@ export default function EmprestimosPage() {
                       <button className="flex min-w-0 w-full items-center justify-center rounded-xl bg-blue-50 p-2 text-blue-600 transition-colors hover:bg-blue-100 dark:bg-blue-950/30 dark:text-blue-400 dark:hover:bg-blue-900/40" onClick={() => router.push(`/emprestimos/${loan.id}/editar`)} title="Editar">
                         <Pencil className="h-4 w-4" />
                       </button>
-                      <button className="flex min-w-0 w-full items-center justify-center rounded-xl bg-orange-50 p-2 text-orange-500 transition-colors hover:bg-orange-100 dark:bg-orange-950/30 dark:text-orange-400 dark:hover:bg-orange-900/40" onClick={() => openPaymentDialog(loan)} title="Pagamento">
-                        <DollarSign className="h-4 w-4" />
-                      </button>
-                      <button className="flex min-w-0 w-full items-center justify-center rounded-xl bg-amber-50 p-2 text-amber-500 transition-colors hover:bg-amber-100 dark:bg-amber-950/30 dark:text-amber-400 dark:hover:bg-amber-900/40" onClick={() => openInterestRenegotiateDialog(loan)} title="Pagar juros">
+                      <button className="flex min-w-0 w-full items-center justify-center rounded-xl bg-amber-50 p-2 text-amber-500 transition-colors hover:bg-amber-100 dark:bg-amber-950/30 dark:text-amber-400 dark:hover:bg-amber-900/40" onClick={() => openRenegotiateDialog(loan)} title="Renegociar">
                         <RotateCcw className="h-4 w-4" />
                       </button>
                       <button className="flex min-w-0 w-full items-center justify-center rounded-xl bg-red-50 p-2 text-red-500 transition-colors hover:bg-red-100 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-900/40" onClick={() => handleDelete(loan.id)} title="Excluir">
@@ -1869,7 +1896,7 @@ export default function EmprestimosPage() {
             } else {
               /* ===== FOLDER CARD (multiple loans) ===== */
               const totalAmount = group.loans.reduce((s, l) => s + l.amount, 0)
-              const totalReceivable = group.loans.reduce((s, l) => s + l.totalAmount, 0)
+              const totalReceivable = group.loans.reduce((s, l) => s + getRemaining(l), 0)
               const totalPaid = group.loans.reduce((s, l) => s + getPaidTotal(l), 0)
               const remaining = group.loans.reduce((s, l) => s + getRemaining(l), 0)
               const totalProfit = group.loans.reduce((s, l) => s + l.profit, 0)
@@ -2526,9 +2553,14 @@ export default function EmprestimosPage() {
                   <div className="space-y-2 max-h-48 overflow-y-auto">
                     {pendingInstallments.map((inst: any) => {
                       const isSelected = selectedInstallmentIds.includes(inst.id)
-                      const instOverdue = new Date(inst.dueDate) < now
+                      const instDueDate = new Date(inst.dueDate)
+                      instDueDate.setHours(0, 0, 0, 0)
+                      const todayDate = new Date(now)
+                      todayDate.setHours(0, 0, 0, 0)
+                      const instOverdue = instDueDate.getTime() < todayDate.getTime()
                       const payableAmount = getInstallmentPayableAmount(paymentDialog, inst)
-                      const installmentCharge = Math.max(0, payableAmount - Math.max(0, inst.amount - (inst.paidAmount || 0)))
+                      const baseAmount = Math.max(0, inst.amount - (inst.paidAmount || 0))
+                      const installmentCharge = Math.max(0, payableAmount - baseAmount)
                       return (
                         <button
                           key={inst.id}
@@ -2556,9 +2588,11 @@ export default function EmprestimosPage() {
                             <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">
                               Parcela {inst.number}/{paymentDialog.installmentCount}
                             </span>
+                            <p className="mt-0.5 text-[10px] text-gray-500 dark:text-zinc-400">Valor: {formatCurrency(baseAmount)}</p>
                             {instOverdue && installmentCharge > 0 && (
-                              <p className="text-[10px] text-red-500 mt-0.5">+ juros {formatCurrency(installmentCharge)}</p>
+                              <p className="text-[10px] text-red-500 mt-0.5">Multa Aplicada: +{formatCurrency(installmentCharge)}</p>
                             )}
+                            <p className="text-[10px] font-medium text-gray-700 dark:text-zinc-300 mt-0.5">Valor total com atraso: {formatCurrency(payableAmount)}</p>
                           </div>
                           <div className="text-right">
                             <p className="text-xs text-gray-500 dark:text-zinc-400">{formatDate(inst.dueDate)}</p>
@@ -2600,17 +2634,17 @@ export default function EmprestimosPage() {
                   {firstSelectedInst && (
                     <div className="rounded-lg border border-gray-200 dark:border-zinc-800 bg-gray-100 dark:bg-zinc-800/30 p-3 space-y-1 mt-3">
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-500 dark:text-zinc-400">Valor base:</span>
+                        <span className="text-gray-500 dark:text-zinc-400">Valor:</span>
                         <span className="text-gray-900 dark:text-zinc-100 font-medium">{formatCurrency(firstSelectedInst.amount)}</span>
                       </div>
                       {firstSelectedInstCharge > 0 && (
                         <div className="flex justify-between text-sm">
-                          <span className="text-red-500">Juros atraso ({overdueDays} dias):</span>
+                          <span className="text-red-500">Multa Aplicada:</span>
                           <span className="text-red-500 font-medium">+{formatCurrency(firstSelectedInstCharge)}</span>
                         </div>
                       )}
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-500 dark:text-zinc-400">Total da parcela:</span>
+                        <span className="text-gray-500 dark:text-zinc-400">Valor total com atraso:</span>
                         <span className="text-gray-900 dark:text-zinc-100 font-medium">{formatCurrency(firstSelectedInstPayable || firstSelectedInst.amount)}</span>
                       </div>
                       {firstSelectedInst.paidAmount > 0 && (
@@ -2820,9 +2854,7 @@ export default function EmprestimosPage() {
                           const baseNotes = `Parcela ${idx + 1} de ${paymentDialog.installmentCount}`
                           let notes = baseNotes
                           if (lateFeeForInst > 0) {
-                            const { dailyFee } = getCurrentOverdueChargeDetails(paymentDialog)
                             notes = `${baseNotes} [lateFee:${lateFeeForInst.toFixed(2)}]`
-                            if (dailyFee > 0) notes += `[dailyFee:${dailyFee.toFixed(2)}]`
                           }
                           const result = await handlePayment(paymentDialog.id, i.id, payableAmount, notes)
                           if (!result.ok) { allOk = false; break }
@@ -3007,317 +3039,27 @@ export default function EmprestimosPage() {
         </div>
       </Dialog>
 
-      {/* ===== RENEGOCIAR DÍVIDA DIALOG ===== */}
+      {/* ===== RENEGOCIAR CONTRATO DIALOG ===== */}
       <Dialog
         open={!!renegotiateDialog}
         onClose={() => { setRenegotiateDialog(null); setRenegotiateMode(null); setRenegotiateEntry("all"); setRenegotiateAmount(0); setRenegotiateNotes("") }}
-        title="Renegociar Dívida"
-        className="max-w-lg"
+        title="Renegociação de Contrato"
+        className="max-w-5xl"
       >
-        {renegotiateDialog && (() => {
-          const paid = renegotiateDialog.payments.reduce((s: number, p: any) => s + p.amount, 0)
-          const remaining = getRemaining(renegotiateDialog)
-          const instValue = renegotiateDialog.installmentValue
-          const intPerInst = interestPerInst(renegotiateDialog)
-          const nextInst = getNextDueInst(renegotiateDialog)
-
-          // Juros acumulados: juros da parcela + multa diária
-          const nextInstOverdue = (() => {
-            if (!nextInst) return 0
-            const now = new Date()
-            const due = new Date(nextInst.dueDate)
-            const diffDays = Math.max(0, Math.floor((now.getTime() - due.getTime()) / (1000 * 60 * 60 * 24)))
-            if (diffDays <= 0) return 0
-            return (renegotiateDialog.dailyInterestAmount || 0) * diffDays
-          })()
-          const totalJuros = intPerInst + nextInstOverdue
-          const totalAfterJuros = remaining - renegotiateAmount
-
-          return (
-            <div className="space-y-5">
-              {/* Client info */}
-              <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-gray-100 dark:bg-zinc-800/40 p-4 flex items-center gap-3">
-                <Avatar name={renegotiateDialog.client.name} src={renegotiateDialog.client.photo} size="sm" />
-                <div>
-                  <p className="font-semibold text-gray-900 dark:text-zinc-100">{renegotiateDialog.client.name}</p>
-                  <p className="text-xs text-gray-500 dark:text-zinc-400">Saldo devedor: {formatCurrency(remaining)}</p>
-                  <p className="text-xs text-gray-500 dark:text-zinc-400">Valor por parcela: {formatCurrency(instValue)}</p>
-                </div>
-              </div>
-
-              {/* Mode not selected - show options */}
-              {!renegotiateMode && (
-                <>
-                  {renegotiateEntry === "all" && (
-                    <button
-                      onClick={() => { setRenegotiateMode("total"); setRenegotiateDialog(null); setRenegotiateEntry("all"); openPaymentDialog(renegotiateDialog) }}
-                      className="w-full text-left rounded-xl border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:border-primary/50 p-4 transition-colors flex items-center gap-4"
-                    >
-                      <div className="h-10 w-10 rounded-full bg-primary/10 dark:bg-primary/15 flex items-center justify-center shrink-0">
-                        <Receipt className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-primary">Pagamento Total</p>
-                        <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">Registrar pagamento completo da parcela</p>
-                      </div>
-                    </button>
-                  )}
-
-                  <button
-                    onClick={() => { setRenegotiateMode("full"); setRenegotiateAmount(totalJuros) }}
-                    className="w-full text-left rounded-2xl border-2 border-primary/50 bg-primary/10/70 p-4 transition-colors flex items-center gap-4 shadow-sm dark:border-primary/50 dark:bg-primary/15"
-                  >
-                    <div className="h-12 w-12 rounded-full bg-primary/15 dark:bg-primary/20 flex items-center justify-center shrink-0">
-                      <DollarSign className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-primary">Cliente pagou só os juros</p>
-                      <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">Registrar pagamento apenas dos juros da parcela</p>
-                    </div>
-                  </button>
-
-                  <button
-                    onClick={() => { setRenegotiateMode("partial"); setRenegotiateAmount(0) }}
-                    className="w-full text-left rounded-2xl border-2 border-cyan-500 bg-cyan-50/70 p-4 transition-colors flex items-center gap-4 shadow-sm dark:border-cyan-500 dark:bg-cyan-950/20"
-                  >
-                    <div className="h-12 w-12 rounded-full bg-cyan-100 dark:bg-cyan-900/40 flex items-center justify-center shrink-0">
-                      <DollarSign className="h-5 w-5 text-cyan-600" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-cyan-600">Pagamento parcial de juros</p>
-                      <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">Registrar pagamento de parte dos juros de uma parcela</p>
-                    </div>
-                  </button>
-                </>
-              )}
-
-              {/* ===== FULL JUROS MODE ===== */}
-              {renegotiateMode === "full" && (
-                <div className="rounded-xl border border-primary/50 bg-primary/10 dark:bg-primary/20 p-5 space-y-5">
-                  {/* Header with back */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-5 w-5 text-primary" />
-                      <span className="font-semibold text-primary">Cliente pagou só os juros</span>
-                    </div>
-                    <button
-                      onClick={() => setRenegotiateMode(null)}
-                      className="text-sm text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 dark:text-zinc-200 flex items-center gap-1"
-                    >
-                      ← Voltar
-                    </button>
-                  </div>
-
-                  {/* Summary box */}
-                  <div className="rounded-lg bg-primary/10 dark:bg-primary/20 border border-primary/20 dark:border-primary/30 p-3">
-                    <p className="text-sm text-gray-800 dark:text-zinc-200">
-                      <strong>Resumo:</strong> Cliente paga <span className="text-primary font-bold">{formatCurrency(renegotiateAmount)}</span> de juros agora.
-                    </p>
-                    <p className="text-sm text-gray-800 dark:text-zinc-200">
-                      No próximo mês, o valor a cobrar será: <strong>{formatCurrency(totalAfterJuros)}</strong>
-                    </p>
-                  </div>
-
-                  {/* Valor Pago + Valor Total que Falta */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-sm font-medium">Valor Pago (Juros) (R$) *</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min={0}
-                        value={renegotiateAmount || ""}
-                        onChange={(e) => setRenegotiateAmount(Number(e.target.value) || 0)}
-                        className="mt-1"
-                      />
-                      <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">Valor calculado automaticamente, editável</p>
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium">Valor Total que Falta (R$)</Label>
-                      <Input
-                        type="number"
-                        readOnly
-                        value={totalAfterJuros.toFixed(2)}
-                        className="mt-1 bg-gray-100 dark:bg-zinc-800/50 cursor-default"
-                      />
-                      <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">Só diminui se pagar mais que o juros</p>
-                    </div>
-                  </div>
-
-                  {/* Data do Pagamento + Nova Data de Vencimento */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-sm font-medium">Data do Pagamento *</Label>
-                      <Input
-                        type="date"
-                        value={renegotiateDate}
-                        onChange={(e) => {
-                          setRenegotiateDate(e.target.value)
-                          // Atualiza vencimento: data do pagamento + dias conforme modalidade
-                          if (e.target.value && renegotiateDialog) {
-                            const d = new Date(e.target.value + "T12:00:00")
-                            d.setDate(d.getDate() + modalityDays(renegotiateDialog.modality))
-                            setRenegotiateNewDueDate(localDateStr(d))
-                          }
-                        }}
-                        className="mt-1"
-                      />
-                      <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">Quando o cliente pagou os juros</p>
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium">Nova Data de Vencimento *</Label>
-                      <Input
-                        type="date"
-                        value={renegotiateNewDueDate}
-                        onChange={(e) => setRenegotiateNewDueDate(e.target.value)}
-                        className="mt-1"
-                      />
-                      <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">Próxima data de cobrança</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* ===== PARTIAL JUROS MODE ===== */}
-              {renegotiateMode === "partial" && (() => {
-                const pendingInsts = renegotiateDialog.installments
-                  .filter((i: any) => i.status !== "PAID")
-                  .sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
-                const selInst = pendingInsts.find((i: any) => i.id === renegotiateInstallmentId)
-                
-                // Calculate already paid partial interest in current cycle
-                const partialPayments = renegotiateDialog.payments.filter((p: any) => {
-                  const notes = (p.notes || "").toLowerCase()
-                  return notes.includes("parcial de juros")
-                })
-                const totalPartialPaid = partialPayments.reduce((s: number, p: any) => s + p.amount, 0)
-                const cicloJurosPago = intPerInst > 0 ? totalPartialPaid % intPerInst : 0
-                const cicloJurosFaltante = intPerInst > 0 ? intPerInst - cicloJurosPago : intPerInst
-                const jurosPendente = Math.max(0, cicloJurosFaltante - renegotiateAmount)
-
-                return (
-                  <div className="rounded-xl border border-cyan-500 bg-cyan-950/20 p-5 space-y-5">
-                    {/* Header with back */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <DollarSign className="h-5 w-5 text-cyan-600" />
-                        <span className="font-semibold text-cyan-600">Pagamento Parcial de Juros</span>
-                      </div>
-                      <button
-                        onClick={() => setRenegotiateMode(null)}
-                        className="text-sm text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 dark:text-zinc-200 flex items-center gap-1"
-                      >
-                        ← Voltar
-                      </button>
-                    </div>
-
-                    {/* Parcela selector */}
-                    <div>
-                      <Label className="text-sm font-medium">Parcela referente:</Label>
-                      <select
-                        value={renegotiateInstallmentId}
-                        onChange={(e) => setRenegotiateInstallmentId(e.target.value)}
-                        className="mt-1 flex w-full rounded-md border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 px-3 py-2 text-sm text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                      >
-                        {pendingInsts.map((inst: any) => (
-                          <option key={inst.id} value={inst.id}>
-                            Parcela {inst.number} - {formatDate(inst.dueDate)} - Juros: {formatCurrency(intPerInst)}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Valor pago + Data do pagamento */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label className="text-sm font-medium">Valor pago agora (R$) *</Label>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min={0}
-                          max={cicloJurosFaltante}
-                          value={renegotiateAmount || ""}
-                          onChange={(e) => setRenegotiateAmount(Number(e.target.value) || 0)}
-                          className="mt-1"
-                          placeholder={`Ex: ${cicloJurosFaltante.toFixed(2).replace(".", ",")}`}
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-sm font-medium">Data do pagamento *</Label>
-                        <Input
-                          type="date"
-                          value={renegotiateDate}
-                          onChange={(e) => setRenegotiateDate(e.target.value)}
-                          className="mt-1"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Calculation summary */}
-                    <div className="rounded-lg border border-cyan-700/40 bg-gray-50 dark:bg-zinc-800/60 p-4 space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-700 dark:text-zinc-300">Juros total da parcela:</span>
-                        <span className="font-bold text-gray-900 dark:text-zinc-100">{formatCurrency(intPerInst)}</span>
-                      </div>
-                      {cicloJurosPago > 0 && (
-                        <div className="flex justify-between text-sm">
-                          <span className="text-yellow-600 dark:text-yellow-400">💳 Já pago neste ciclo:</span>
-                          <span className="font-bold text-yellow-600 dark:text-yellow-400">- {formatCurrency(cicloJurosPago)}</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-700 dark:text-zinc-300">Valor pago agora:</span>
-                        <span className="font-bold text-gray-900 dark:text-zinc-100">- {formatCurrency(renegotiateAmount)}</span>
-                      </div>
-                      <div className="border-t border-gray-300 dark:border-zinc-700 my-1" />
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-700 dark:text-zinc-300 font-semibold">Juros pendente final:</span>
-                        <span className="font-bold text-cyan-600 text-base">{formatCurrency(jurosPendente)}</span>
-                      </div>
-                      {jurosPendente === 0 && renegotiateAmount > 0 && (
-                        <p className="text-xs text-primary font-medium mt-1">✅ Juros completo! A dívida renovará para o próximo mês.</p>
-                      )}
-                    </div>
-
-                    {/* Explanatory note */}
-                    <p className="text-xs text-gray-400 dark:text-zinc-500">
-                      O saldo devedor e datas de vencimento não serão alterados. Apenas será registrado o pagamento parcial dos juros.
-                    </p>
-                  </div>
-                )
-              })()}
-
-              {/* Observações (outside colored box) */}
-              {renegotiateMode && (
-                <div className="space-y-4">
-                  <div>
-                    <Label className="text-sm font-medium">Observações</Label>
-                    <textarea
-                      value={renegotiateNotes}
-                      onChange={(e) => setRenegotiateNotes(e.target.value)}
-                      className="mt-1 flex w-full rounded-md border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 px-3 py-2 text-sm text-gray-900 dark:text-zinc-100 min-h-[60px] resize-y focus:outline-none focus:ring-2 focus:ring-ring"
-                      placeholder="Observações sobre o pagamento..."
-                    />
-                  </div>
-
-                  {/* Buttons */}
-                  <div className="flex justify-end gap-3 pt-2">
-                    <Button variant="outline" onClick={() => { setRenegotiateDialog(null); setRenegotiateMode(null); setRenegotiateAmount(0); setRenegotiateNotes("") }}>
-                      Cancelar
-                    </Button>
-                    <Button
-                      onClick={handleRenegotiatePayment}
-                      disabled={!renegotiateAmount || renegotiateAmount <= 0 || paying}
-                      className="bg-primary hover:bg-primary/90 text-white"
-                    >
-                      {paying ? "Processando..." : renegotiateMode === "partial" ? "Registrar Pagamento Parcial" : "Registrar Pagamento de Juros"}
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )
-        })()}
+        {renegotiateDialog && (
+          <LoanRenegotiationContent
+            loan={renegotiateDialog}
+            remainingAmount={getRemaining(renegotiateDialog)}
+            onClose={() => {
+              setRenegotiateDialog(null)
+              setRenegotiateMode(null)
+              setRenegotiateEntry("all")
+              setRenegotiateAmount(0)
+              setRenegotiateNotes("")
+            }}
+            onSuccess={fetchLoans}
+          />
+        )}
       </Dialog>
 
       {/* Dialog de Sucesso - Empréstimo Criado */}
