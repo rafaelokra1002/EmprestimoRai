@@ -208,6 +208,10 @@ export async function PUT(
         },
       })
 
+      if (!loan) {
+        return NextResponse.json({ error: "Empréstimo não encontrado" }, { status: 404 })
+      }
+
       return NextResponse.json({
         ...loan,
         installments: normalizeInstallmentsFromPayments(loan.installments, loan.payments),

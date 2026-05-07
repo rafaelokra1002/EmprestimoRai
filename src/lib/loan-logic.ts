@@ -373,11 +373,15 @@ export function buildLoanData(loan: {
   dueDay?: number
   modality?: string
   firstInstallmentDate: Date | string
-  installments: { dueDate: Date | string; status: string; amount: number; paidAmount: number }[]
+  installments: { number?: number; dueDate: Date | string; status: string; amount: number; paidAmount: number }[]
   payments: { amount: number; notes?: string | null }[]
 }): LoanData {
   const resolvedDailyInterestAmount = loan.dailyInterestAmount ?? 0
-  const normalizedInstallments = normalizeInstallmentsFromPayments(loan.installments, loan.payments)
+  const installmentsWithNumber = loan.installments.map((installment, index) => ({
+    ...installment,
+    number: installment.number ?? index + 1,
+  }))
+  const normalizedInstallments = normalizeInstallmentsFromPayments(installmentsWithNumber, loan.payments)
 
   return {
     amount: loan.amount,
