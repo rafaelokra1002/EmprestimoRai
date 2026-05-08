@@ -27,6 +27,10 @@ interface Loan {
   totalAmount: number
   profit: number
   status: string
+  payments: {
+    amount: number
+    notes?: string | null
+  }[]
   installments: Installment[]
 }
 
@@ -506,7 +510,7 @@ export default function ScorePage() {
                   <>
                     {client.loans.filter(l => l.status === "ACTIVE").slice(0, 1).map(loan => {
                       const remaining = loan.totalAmount - loan.installments.filter(i => i.status === "PAID").reduce((s, i) => s + i.paidAmount, 0)
-                      const totalPaid = loan.installments.filter(i => i.status === "PAID").reduce((s, i) => s + i.paidAmount, 0)
+                      const totalPaid = (loan.payments || []).reduce((sum, payment) => sum + payment.amount, 0)
                       return (
                         <div key={loan.id}>
                           <p className="text-[10px] uppercase font-semibold text-gray-400 dark:text-zinc-500 tracking-wide">A receber</p>

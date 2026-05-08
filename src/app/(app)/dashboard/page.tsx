@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   ArrowUpRight,
   Clock3,
-  FileText,
   DollarSign,
   Receipt,
   Shield,
@@ -32,6 +31,7 @@ import {
 } from "recharts"
 
 interface DashboardData {
+  totalPrincipal: number
   totalToReceive: number
   totalReceived: number
   capitalOnStreet: number
@@ -188,7 +188,6 @@ export default function DashboardPage() {
       jurosAcumulado: accumulated,
     }
   })
-  const weekContractsDelta = data?.weeklySummary?.deltas?.contractsPct || 0
 
   return (
     <div className="space-y-5 pt-6">
@@ -252,34 +251,34 @@ export default function DashboardPage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-3">
-          <div className="rounded-xl border border-blue-100 dark:border-blue-900/40 bg-blue-50/60 dark:bg-blue-950/20 p-4">
-            <div className="flex items-center gap-1.5 mb-1">
-              <Receipt className="h-3.5 w-3.5 text-primary" />
+          <div className="rounded-xl border border-emerald-100 dark:border-emerald-900/40 bg-emerald-50/60 dark:bg-emerald-950/20 p-4">
+            <div className="mb-1 flex items-center gap-1.5">
+              <Receipt className="h-3.5 w-3.5 text-emerald-600" />
               <p className="text-xs text-gray-500 dark:text-zinc-400">Total a Receber</p>
             </div>
-            <p className="text-2xl leading-none font-semibold tabular-nums tracking-tight text-primary">{formatCurrency(data?.totalToReceive || 0)}</p>
+            <p className="text-2xl leading-none font-semibold tabular-nums tracking-tight text-emerald-600 dark:text-emerald-400">{formatCurrency(data?.totalToReceive || 0)}</p>
             <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">empréstimos + parcelas</p>
           </div>
-          <div className="rounded-xl border border-orange-100 dark:border-orange-900/40 bg-orange-50/60 dark:bg-orange-950/20 p-4">
-            <div className="flex items-center gap-1.5 mb-1">
-              <DollarSign className="h-3.5 w-3.5 text-orange-500" />
+          <div className="rounded-xl border border-amber-100 dark:border-amber-900/40 bg-amber-50/60 dark:bg-amber-950/20 p-4">
+            <div className="mb-1 flex items-center gap-1.5">
+              <DollarSign className="h-3.5 w-3.5 text-amber-600" />
               <p className="text-xs text-gray-500 dark:text-zinc-400">Capital Total</p>
             </div>
-            <p className="text-2xl leading-none font-semibold tabular-nums tracking-tight text-orange-500">{formatCurrency(data?.capitalOnStreet || 0)}</p>
-            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">principal emprestado</p>
+            <p className="text-2xl leading-none font-semibold tabular-nums tracking-tight text-amber-600 dark:text-amber-400">{formatCurrency(data?.totalPrincipal || 0)}</p>
+            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">capital dos empréstimos + parcelamentos</p>
           </div>
           <div className="rounded-xl border border-violet-100 dark:border-violet-900/40 bg-violet-50/60 dark:bg-violet-950/20 p-4">
-            <div className="flex items-center gap-1.5 mb-1">
-              <TrendingUp className="h-3.5 w-3.5 text-blue-500" />
+            <div className="mb-1 flex items-center gap-1.5">
+              <Clock3 className="h-3.5 w-3.5 text-violet-500" />
               <p className="text-xs text-gray-500 dark:text-zinc-400">Juros Total a Receber</p>
             </div>
-            <p className="text-2xl leading-none font-semibold tabular-nums tracking-tight text-blue-500">{formatCurrency(data?.financials?.pendingInterest || 0)}</p>
+            <p className="text-2xl leading-none font-semibold tabular-nums tracking-tight text-violet-600 dark:text-violet-400">{formatCurrency(data?.financials?.pendingInterest || 0)}</p>
             <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">juros pendentes</p>
           </div>
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <KpiCard
           title="Recebido"
           value={formatCurrency(data?.totalReceived || 0)}
@@ -288,25 +287,6 @@ export default function DashboardPage() {
           iconClassName="text-primary"
           iconBgClassName="bg-primary/5 dark:bg-primary/15"
         />
-        <KpiCard
-          title="Capital na Rua"
-          value={formatCurrency(data?.capitalOnStreet || 0)}
-          subtitle="principal emprestado"
-          icon={DollarSign}
-          iconClassName="text-orange-500"
-          iconBgClassName="bg-orange-50 dark:bg-orange-950/30"
-        />
-        <KpiCard
-          title="Juros a Receber"
-          value={formatCurrency(data?.financials?.pendingInterest || 0)}
-          subtitle="juros pendentes"
-          icon={Clock3}
-          iconClassName="text-violet-500"
-          iconBgClassName="bg-violet-50 dark:bg-violet-950/30"
-        />
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-3">
         <KpiCard
           title="Clientes"
           value={`${data?.counters?.totalClients || 0}`}
@@ -343,39 +323,12 @@ export default function DashboardPage() {
           iconBgClassName="bg-red-50 dark:bg-red-950/30"
         />
         <KpiCard
-          title="Falta Receber"
-          value={formatCurrency(data?.capitalOnStreet || 0)}
-          subtitle="inclui multas"
-          icon={ArrowUpRight}
-          iconClassName="text-blue-600"
-          iconBgClassName="bg-blue-50 dark:bg-blue-950/30"
-        />
-        <KpiCard
           title="Clientes Inativos"
           value={`${data?.inactiveClients || 0}`}
           subtitle="sem empréstimo ativo"
           icon={Users}
           iconClassName="text-gray-500"
           iconBgClassName="bg-gray-100 dark:bg-zinc-800"
-        />
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-3">
-        <KpiCard
-          title="Contratos"
-          value={`${data?.counters?.totalContracts || data?.totalLoans || 0}`}
-          subtitle={`${weekContractsDelta >= 0 ? "+" : ""}${weekContractsDelta.toFixed(0)} esta semana`}
-          icon={FileText}
-          iconClassName="text-violet-500"
-          iconBgClassName="bg-violet-50 dark:bg-violet-950/30"
-        />
-        <KpiCard
-          title="Total a Receber"
-          value={formatCurrency(data?.totalToReceive || 0)}
-          subtitle="incluindo multas e juros"
-          icon={TrendingUp}
-          iconClassName="text-blue-600"
-          iconBgClassName="bg-blue-50 dark:bg-blue-950/30"
         />
       </div>
 

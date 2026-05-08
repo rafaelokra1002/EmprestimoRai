@@ -920,6 +920,8 @@ export default function ClientesDesaparecidosPage() {
                 {activeSection === "clientes" ? (
                   <>
                     <TableHead>CPF</TableHead>
+                    <TableHead>Cidade</TableHead>
+                    <TableHead>Telefone</TableHead>
                     <TableHead>Instagram</TableHead>
                     <TableHead>Cadastrado em</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
@@ -927,6 +929,8 @@ export default function ClientesDesaparecidosPage() {
                 ) : null}
                 {activeSection === "desaparecido" ? (
                   <>
+                    <TableHead>Valor emprestado</TableHead>
+                    <TableHead>Total</TableHead>
                     <TableHead>Empréstimos ativos</TableHead>
                     <TableHead>Saldo em aberto</TableHead>
                     <TableHead>Próximo vencimento</TableHead>
@@ -940,6 +944,8 @@ export default function ClientesDesaparecidosPage() {
             <TableBody>
               {filteredClients.map((client) => {
                 const activeLoans = getActiveLoans(client)
+                const primaryLoan = getPrimaryLoan(activeLoans)
+                const nextDueDate = getNextDueDate(client)
 
                 return (
                   <TableRow key={client.id}>
@@ -957,6 +963,8 @@ export default function ClientesDesaparecidosPage() {
                     {activeSection === "clientes" ? (
                       <>
                         <TableCell>{client.document || "-"}</TableCell>
+                        <TableCell>{client.city || "-"}</TableCell>
+                        <TableCell>{client.phone || "-"}</TableCell>
                         <TableCell>{client.instagram || "-"}</TableCell>
                         <TableCell>{formatDate(client.createdAt)}</TableCell>
                         <TableCell>
@@ -986,9 +994,11 @@ export default function ClientesDesaparecidosPage() {
                     ) : null}
                     {activeSection === "desaparecido" ? (
                       <>
+                        <TableCell>{formatCurrency(primaryLoan?.amount || 0)}</TableCell>
+                        <TableCell>{formatCurrency(primaryLoan?.totalAmount || 0)}</TableCell>
                         <TableCell>{activeLoans.length}</TableCell>
                         <TableCell>{formatCurrency(getOutstandingBalance(client))}</TableCell>
-                        <TableCell>{formatDate(getNextDueDate(client))}</TableCell>
+                        <TableCell>{formatDate(nextDueDate)}</TableCell>
                         <TableCell className="max-w-[220px] truncate">{getInterestSummary(client)}</TableCell>
                         <TableCell>{client.status === "DESAPARECIDO" ? "Desaparecido" : client.status === "ACTIVE" ? "Ativo" : "Inativo"}</TableCell>
                         <TableCell>
@@ -1106,9 +1116,19 @@ export default function ClientesDesaparecidosPage() {
                 </div>
 
                 <div className="mx-4 mt-3 flex flex-col gap-2 text-xs text-gray-500 dark:text-zinc-400 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <CalendarDays className="h-3.5 w-3.5" />
-                    <span>Venc: {formatDate(nextDueDate)}</span>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex items-center gap-1.5">
+                      <MapPin className="h-3.5 w-3.5" />
+                      <span>{client.city || "Cidade não informada"}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Phone className="h-3.5 w-3.5" />
+                      <span>{client.phone || "Telefone não informado"}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <CalendarDays className="h-3.5 w-3.5" />
+                      <span>Venc: {formatDate(nextDueDate)}</span>
+                    </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-1.5 sm:justify-end">
                     <Wallet className="h-3.5 w-3.5 text-primary" />
@@ -1166,7 +1186,7 @@ export default function ClientesDesaparecidosPage() {
                       <FileText className="h-3.5 w-3.5 mr-1.5" /> Ver documentos
                     </>
                   </Button>
-                  <div className="grid w-full min-w-0 grid-cols-[minmax(0,2.2fr)_repeat(3,minmax(0,1fr))] gap-1.5">
+                  <div className="grid w-full min-w-0 grid-cols-[minmax(0,2.2fr)_repeat(2,minmax(0,1fr))] gap-1.5">
                     <Button
                       type="button"
                       variant="outline"
@@ -1186,14 +1206,6 @@ export default function ClientesDesaparecidosPage() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => openClientDocuments(client)}
-                      className="flex min-w-0 w-full items-center justify-center rounded-xl bg-blue-50 p-2 text-blue-600 transition-colors hover:bg-blue-100 dark:bg-blue-950/30 dark:text-blue-400 dark:hover:bg-blue-900/40"
-                      title="Documentos"
-                    >
-                      <Download className="h-4 w-4" />
-                    </button>
-                    <button
-                      type="button"
                       onClick={() => deleteClient(client.id)}
                       className="flex min-w-0 w-full items-center justify-center rounded-xl bg-red-50 p-2 text-red-500 transition-colors hover:bg-red-100 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-900/40 disabled:opacity-60"
                       title="Excluir"
@@ -1204,32 +1216,6 @@ export default function ClientesDesaparecidosPage() {
                   </div>
                 </div>
 
-                <div className="px-4 pb-4 space-y-2">
-                  {!primaryLoan ? (
-                    <div className="rounded-xl border border-dashed border-gray-200 px-4 py-5 text-center text-sm text-gray-500 dark:border-zinc-800 dark:text-zinc-400">
-                      Nenhum empréstimo ativo vinculado a este cliente.
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <div className="rounded-lg border border-gray-200 dark:border-zinc-800 bg-gray-50/80 dark:bg-zinc-800/50 px-3 py-2.5">
-                        <div className="flex items-center justify-between gap-3">
-                          <div>
-                            <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Observações</p>
-                            <p className="mt-1 text-xs text-gray-500 dark:text-zinc-400 line-clamp-2">{client.notes || "Sem observações registradas."}</p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2 text-xs">
-                        <span className="rounded-full bg-white px-2.5 py-1 font-semibold text-gray-600 dark:bg-zinc-900 dark:text-zinc-300">
-                          Documento {client.document || "-"}
-                        </span>
-                        <span className="rounded-full bg-white px-2.5 py-1 font-semibold text-gray-600 dark:bg-zinc-900 dark:text-zinc-300">
-                          Juros {getInterestSummary(client)}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
               </div>
             )
           })}
