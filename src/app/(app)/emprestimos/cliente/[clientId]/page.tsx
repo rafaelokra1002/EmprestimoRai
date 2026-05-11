@@ -1095,7 +1095,7 @@ export default function ClienteEmprestimosPage() {
         open={!!renegotiateDialog}
         onClose={() => { setRenegotiateDialog(null); setRenegotiateMode(null); setRenegotiateAmount(0); setRenegotiateNotes("") }}
         title="Renegociação de Contrato"
-        className="max-w-5xl"
+        className="max-w-2xl"
       >
         {renegotiateDialog && (
           <LoanRenegotiationContent

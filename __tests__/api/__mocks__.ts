@@ -28,6 +28,12 @@ type MockPrisma = {
     delete: MockFn
     count: MockFn
   }
+  clientDocument: {
+    create: MockFn
+    findFirst: MockFn
+    findMany: MockFn
+    delete: MockFn
+  }
   loan: {
     findMany: MockFn
     findFirst: MockFn
@@ -98,6 +104,12 @@ export const mockPrisma: MockPrisma = {
     update: jest.fn(),
     delete: jest.fn(),
     count: jest.fn(),
+  },
+  clientDocument: {
+    create: jest.fn(),
+    findFirst: jest.fn(),
+    findMany: jest.fn(),
+    delete: jest.fn(),
   },
   loan: {
     findMany: jest.fn(),

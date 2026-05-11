@@ -83,6 +83,18 @@ export async function GET() {
         loan.payments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0),
       0
     )
+    const dueTodayInstallments = loans.flatMap((loan) =>
+      loan.installments
+        .filter(
+          (inst) =>
+            inst.status === "PENDING" &&
+            new Date(inst.dueDate) >= startOfToday &&
+            new Date(inst.dueDate) < endOfToday
+        )
+        .map((inst) => ({ clientId: loan.clientId, amount: Number(inst.amount || 0) }))
+    )
+    const dueTodayAmount = dueTodayInstallments.reduce((acc, item) => acc + item.amount, 0)
+    const dueTodayClients = new Set(dueTodayInstallments.map((item) => item.clientId)).size
     const capitalOnStreet = Math.max(totalToReceive - totalReceived, 0)
     const totalProfit = loans.reduce((acc, loan) => acc + Number(loan.profit || 0), 0)
 
@@ -228,6 +240,8 @@ export async function GET() {
         contractsThisWeek,
         receivedThisWeek,
         dueToday: dueTodayCount,
+        dueTodayAmount,
+        dueTodayClients,
         deltas: {
           contractsPct: toPercentDelta(contractsThisWeek, contractsPrevWeek),
           receivedPct: toPercentDelta(receivedThisWeek, receivedPrevWeek),

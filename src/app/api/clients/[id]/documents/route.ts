@@ -3,6 +3,11 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 
+function ensureDataUrl(fileData: string, fileType: string) {
+  if (fileData.startsWith("data:")) return fileData
+  return `data:${fileType};base64,${fileData}`
+}
+
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
@@ -42,7 +47,10 @@ export async function GET(
         return NextResponse.json({ error: "Documento não encontrado" }, { status: 404 })
       }
 
-      return NextResponse.json(document)
+      return NextResponse.json({
+        ...document,
+        fileData: ensureDataUrl(document.fileData, document.fileType),
+      })
     }
 
     const documents = await prisma.clientDocument.findMany({

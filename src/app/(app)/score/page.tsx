@@ -50,6 +50,7 @@ const SCORE_MAX = 150
 export default function ScorePage() {
   const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState("")
   const [sortMode, setSortMode] = useState<SortMode>("score")
   const [summaryOpen, setSummaryOpen] = useState(false)
@@ -59,8 +60,15 @@ export default function ScorePage() {
 
   useEffect(() => {
     fetch("/api/clients?includeInstallments=true")
-      .then((res) => res.json())
+      .then(async (res) => {
+        const data = await res.json()
+        if (!res.ok) {
+          throw new Error(data?.error || "Falha ao carregar os clientes")
+        }
+        return data
+      })
       .then((data) => setClients(Array.isArray(data) ? data : []))
+      .catch((err) => setError(err?.message || "Erro inesperado"))
       .finally(() => setLoading(false))
   }, [])
 
@@ -104,43 +112,55 @@ export default function ScorePage() {
   }
 
   const getScoreBadgeColor = (score: number) => {
-    if (score >= 120) return "bg-yellow-50 dark:bg-yellow-950/20 text-yellow-600 dark:text-yellow-400"
-    if (score >= 100) return "bg-primary/5 dark:bg-primary/10 text-green-500 dark:text-green-400"
-    if (score >= 70) return "bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400"
+    if (score >= 120) return "bg-violet-50 dark:bg-violet-950/20 text-violet-600 dark:text-violet-400"
+    if (score >= 100) return "bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400"
+    if (score >= 70) return "bg-yellow-50 dark:bg-yellow-950/20 text-yellow-600 dark:text-yellow-400"
     return "bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400"
   }
 
   const getScoreBorderColor = (score: number) => {
-    if (score >= 120) return "border-yellow-500/30"
-    if (score >= 100) return "border-green-500/30"
-    if (score >= 70) return "border-blue-500/30"
+    if (score >= 120) return "border-violet-500/30"
+    if (score >= 100) return "border-emerald-500/30"
+    if (score >= 70) return "border-yellow-500/30"
     return "border-red-500/30"
   }
 
   const getScoreBarColor = (score: number) => {
-    if (score >= 120) return "bg-yellow-400"
-    if (score >= 100) return "bg-primary/50"
-    if (score >= 70) return "bg-blue-500"
+    if (score >= 120) return "bg-violet-500"
+    if (score >= 100) return "bg-emerald-500"
+    if (score >= 70) return "bg-yellow-400"
     return "bg-red-500"
   }
 
   const getClientStats = (client: Client) => {
-    const allInstallments = client.loans.flatMap(l => l.installments || [])
+    const loans = Array.isArray(client.loans) ? client.loans : []
+    const allInstallments = loans.flatMap((l) => Array.isArray(l.installments) ? l.installments : [])
     const now = new Date()
-    const emDia = allInstallments.filter(i => i.status === "PAID" || (i.status === "PENDING" && new Date(i.dueDate) >= now)).length
-    const atrasados = allInstallments.filter(i => i.status === "OVERDUE" || (i.status === "PENDING" && new Date(i.dueDate) < now)).length
-    const totalPrincipal = client.loans.reduce((s, l) => s + l.amount, 0)
-    const completedLoans = client.loans.filter(l => l.status === "COMPLETED")
-    const activeLoans = client.loans.filter(l => l.status === "ACTIVE")
-    const totalQuitados = completedLoans.reduce((s, l) => s + l.totalAmount, 0)
-    const totalAtivos = activeLoans.reduce((s, l) => s + l.totalAmount, 0)
-    const totalProfit = client.loans.reduce((s, l) => s + l.profit, 0)
+    const emDia = allInstallments.filter((i) => i.status === "PAID" || (i.status === "PENDING" && new Date(i.dueDate) >= now)).length
+    const atrasados = allInstallments.filter((i) => i.status === "OVERDUE" || (i.status === "PENDING" && new Date(i.dueDate) < now)).length
+    const totalPrincipal = loans.reduce((s, l) => s + (l.amount || 0), 0)
+    const completedLoans = loans.filter((l) => l.status === "COMPLETED")
+    const activeLoans = loans.filter((l) => l.status === "ACTIVE")
+    const totalQuitados = completedLoans.reduce((s, l) => s + (l.totalAmount || 0), 0)
+    const totalAtivos = activeLoans.reduce((s, l) => s + (l.totalAmount || 0), 0)
+    const totalProfit = loans.reduce((s, l) => s + (l.profit || 0), 0)
     const lucroExtra = allInstallments.reduce((s, i) => {
-      const diff = i.paidAmount - i.amount
+      const diff = (i.paidAmount || 0) - (i.amount || 0)
       return diff > 0 ? s + diff : s
     }, 0)
     const recoveryPoints = Math.min(10, Math.floor(lucroExtra / 50) * 2)
-    return { emDia, atrasados, totalPrincipal, completedCount: completedLoans.length, activeCount: activeLoans.length, totalQuitados, totalAtivos, totalProfit, lucroExtra, recoveryPoints }
+    return {
+      emDia,
+      atrasados,
+      totalPrincipal,
+      completedCount: completedLoans.length,
+      activeCount: activeLoans.length,
+      totalQuitados,
+      totalAtivos,
+      totalProfit,
+      lucroExtra,
+      recoveryPoints,
+    }
   }
 
   const getClientTotalProfit = (client: Client) => client.loans.reduce((s, l) => s + l.profit, 0)
@@ -192,7 +212,7 @@ export default function ScorePage() {
     const circumference = 2 * Math.PI * radius
     const pct = Math.min(score / SCORE_MAX, 1)
     const offset = circumference * (1 - pct)
-    const color = score >= 120 ? "#facc15" : score >= 100 ? "#4ade80" : score >= 70 ? "#60a5fa" : "#f87171"
+    const color = score >= 120 ? "#8b5cf6" : score >= 100 ? "#22c55e" : score >= 70 ? "#facc15" : "#ef4444"
     return (
       <div className="relative flex flex-col items-center justify-center" style={{ width: size, height: size }}>
         <svg width={size} height={size} className="-rotate-90 absolute inset-0">
@@ -288,16 +308,16 @@ export default function ScorePage() {
               </div>
 
               {/* Excelentes */}
-              <div className="rounded-xl border border-green-500/20 border-l-4 border-l-green-500 bg-primary/5 dark:bg-primary/10 p-4">
+              <div className="rounded-xl border border-violet-500/20 border-l-4 border-l-violet-500 bg-violet-50 dark:bg-violet-950/20 p-4">
                 <div className="flex items-start justify-between mb-2">
                   <p className="text-xs text-gray-500 dark:text-zinc-400 font-medium">Excelentes</p>
-                  <div className="h-9 w-9 rounded-full bg-primary/10 dark:bg-primary/20 flex items-center justify-center">
-                    <CheckCircle2 className="h-4 w-4 text-green-500 dark:text-green-400" />
+                  <div className="h-9 w-9 rounded-full bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center">
+                    <CheckCircle2 className="h-4 w-4 text-violet-600 dark:text-violet-400" />
                   </div>
                 </div>
-                <p className="text-3xl font-bold text-green-500 dark:text-green-400">{excelentesCount}</p>
-                <div className="mt-2 h-1.5 rounded-full bg-primary/10 dark:bg-primary/20 overflow-hidden">
-                  <div className="h-full bg-primary/50 rounded-full" style={{ width: `${clients.length ? (excelentesCount / clients.length) * 100 : 0}%` }} />
+                <p className="text-3xl font-bold text-violet-600 dark:text-violet-400">{excelentesCount}</p>
+                <div className="mt-2 h-1.5 rounded-full bg-violet-100 dark:bg-violet-900/40 overflow-hidden">
+                  <div className="h-full bg-violet-500 rounded-full" style={{ width: `${clients.length ? (excelentesCount / clients.length) * 100 : 0}%` }} />
                 </div>
               </div>
 
@@ -466,12 +486,16 @@ export default function ScorePage() {
       {/* Client Cards — white background */}
       {loading ? (
         <div className="text-center py-8 text-gray-500 dark:text-zinc-400">Carregando...</div>
+      ) : error ? (
+        <div className="text-center py-8 text-red-600 dark:text-red-400">{error}</div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-8 text-gray-500 dark:text-zinc-400">Nenhum cliente encontrado</div>
       ) : (
         <div className="grid md:grid-cols-3 gap-4">
           {filtered.map((client, index) => {
+            const clientLoans = Array.isArray(client.loans) ? client.loans : []
             const stats = getClientStats(client)
+            const activeLoans = clientLoans.filter((l) => l.status === "ACTIVE")
             return (
               <div
                 key={client.id}
@@ -504,13 +528,13 @@ export default function ScorePage() {
                 <div className="my-3 border-t border-gray-100 dark:border-zinc-800" />
 
                 {/* Loan info or empty state */}
-                {client.loans.length === 0 || !client.loans.some(l => l.status === "ACTIVE") ? (
+                {clientLoans.length === 0 || activeLoans.length === 0 ? (
                   <p className="text-center text-xs text-gray-400 dark:text-zinc-500 py-2">Sem empréstimos ativos</p>
                 ) : (
                   <>
-                    {client.loans.filter(l => l.status === "ACTIVE").slice(0, 1).map(loan => {
-                      const remaining = loan.totalAmount - loan.installments.filter(i => i.status === "PAID").reduce((s, i) => s + i.paidAmount, 0)
-                      const totalPaid = (loan.payments || []).reduce((sum, payment) => sum + payment.amount, 0)
+                    {activeLoans.slice(0, 1).map((loan) => {
+                      const remaining = loan.totalAmount - (Array.isArray(loan.installments) ? loan.installments.filter((i) => i.status === "PAID").reduce((s, i) => s + (i.paidAmount || 0), 0) : 0)
+                      const totalPaid = Array.isArray(loan.payments) ? loan.payments.reduce((sum, payment) => sum + (payment.amount || 0), 0) : 0
                       return (
                         <div key={loan.id}>
                           <p className="text-[10px] uppercase font-semibold text-gray-400 dark:text-zinc-500 tracking-wide">A receber</p>
@@ -519,6 +543,8 @@ export default function ScorePage() {
                             <span>Emprestado {formatCurrency(loan.amount)}</span>
                             <span className="text-gray-300 dark:text-zinc-700">•</span>
                             <span>Recebido {formatCurrency(totalPaid)}</span>
+                            <span className="text-gray-300 dark:text-zinc-700">•</span>
+                            <span>Lucro {formatCurrency(loan.profit)}</span>
                           </div>
                         </div>
                       )

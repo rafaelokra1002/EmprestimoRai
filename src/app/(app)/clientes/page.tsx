@@ -360,6 +360,58 @@ export default function ClientesPage() {
     fetchClientDocs(editing.id)
   }
 
+  const handleDocView = async (doc: ClientDoc) => {
+    if (!editing) return
+    const previewWindow = window.open("", "_blank")
+
+    try {
+      const response = await fetch(`/api/clients/${editing.id}/documents?docId=${doc.id}`)
+      const data = await response.json()
+
+      if (!response.ok || !data?.fileData) {
+        previewWindow?.close()
+        setFormError(data?.error || "Nao foi possivel abrir o documento")
+        return
+      }
+
+      if (!previewWindow) {
+        const link = window.document.createElement("a")
+        link.href = data.fileData
+        link.target = "_blank"
+        link.rel = "noopener noreferrer"
+        link.click()
+        return
+      }
+
+      const safeTitle = doc.name.replace(/[<>&"]/g, "")
+      const content = doc.fileType.startsWith("image/")
+        ? `<img src="${data.fileData}" alt="${safeTitle}" style="max-width: 100%; height: auto; display: block; margin: 0 auto;" />`
+        : `<iframe src="${data.fileData}" title="${safeTitle}" style="width: 100%; height: 100vh; border: 0;"></iframe>`
+
+      previewWindow.document.write(`
+        <!doctype html>
+        <html>
+          <head>
+            <title>${safeTitle}</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1" />
+            <style>
+              body { margin: 0; padding: 16px; background: #111827; color: #f9fafb; font-family: Arial, sans-serif; }
+              header { margin-bottom: 16px; font-size: 14px; color: #d1d5db; }
+            </style>
+          </head>
+          <body>
+            <header>${safeTitle}</header>
+            ${content}
+          </body>
+        </html>
+      `)
+      previewWindow.document.close()
+    } catch {
+      previewWindow?.close()
+      setFormError("Erro ao abrir documento")
+    }
+  }
+
   const getDocTypeLabel = (type: string) => {
     return DOC_TYPES.find(d => d.value === type)?.label || type
   }
@@ -496,7 +548,7 @@ export default function ClientesPage() {
               onClick={() => {
                 const userId = (session?.user as any)?.id
                 if (!userId) return
-                const token = btoa(userId)
+                const token = btoa(userId).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")
                 const link = `${window.location.origin}/registro/${token}`
                 navigator.clipboard.writeText(link).then(() => {
                   setLinkCopied(true)
@@ -690,8 +742,20 @@ export default function ClientesPage() {
             const scoreOffset = scoreCircum * (1 - scorePct)
             const scoreStroke = client.score >= 150 ? "#eab308" : client.score >= 100 ? "#f97316" : client.score >= 50 ? "#3b82f6" : "#ef4444"
 
+            // Determine top border color by score ranges per requested mapping:
+            // >=150 -> roxo (Excelente/Premium), >=100 -> amarelo (Regular), >=50 -> verde (Bom), <50 -> vermelho (Crítico)
+            const scoreColorHex =
+              client.score >= 150 ? "#8B5CF6" :
+              client.score >= 100 ? "#F59E0B" :
+              client.score >= 50 ? "#10B981" :
+              "#EF4444"
+
             return (
-              <div key={client.id} className="relative rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-sm transition-shadow hover:shadow-md">
+              <div
+                key={client.id}
+                style={{ borderTopColor: scoreColorHex, borderTopWidth: '4px', borderTopStyle: 'solid' }}
+                className={`relative rounded-2xl border-t-4 border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-sm transition-shadow hover:shadow-md`}
+              >
                 {/* Header */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-3">
@@ -1230,7 +1294,17 @@ export default function ClientesPage() {
                         {clientDocs.map((doc) => (
                           <div
                             key={doc.id}
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => handleDocView(doc)}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter" || event.key === " ") {
+                                event.preventDefault()
+                                handleDocView(doc)
+                              }
+                            }}
                             className="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 transition-colors hover:bg-gray-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800 sm:flex-row sm:items-center sm:justify-between"
+                            title="Abrir documento"
                           >
                             <div className="flex items-center gap-3">
                               {getDocIcon(doc.fileType)}
@@ -1249,7 +1323,21 @@ export default function ClientesPage() {
                             <div className="flex items-center gap-1">
                               <button
                                 type="button"
-                                onClick={() => handleDocDelete(doc.id)}
+                                onClick={(event) => {
+                                  event.stopPropagation()
+                                  handleDocView(doc)
+                                }}
+                                className="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 transition-colors"
+                                title="Visualizar documento"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(event) => {
+                                  event.stopPropagation()
+                                  handleDocDelete(doc.id)
+                                }}
                                 className="p-1.5 rounded-md text-red-600 hover:bg-red-50 dark:bg-red-950/300/10 transition-colors"
                                 title="Excluir documento"
                               >

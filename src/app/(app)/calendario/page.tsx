@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   ChevronLeft, ChevronRight, Calendar as CalIcon,
-  Clock, AlertTriangle, Wallet, Car, ShoppingBag
+  Clock, AlertTriangle, Wallet, Car, ShoppingBag, CheckCircle2
 } from "lucide-react"
 import { formatCurrency, localDateStr } from "@/lib/utils"
 
@@ -14,6 +14,7 @@ import { formatCurrency, localDateStr } from "@/lib/utils"
 interface DueEntry {
   id: string
   type: "loan" | "vehicle" | "sale"
+  clientId: string
   clientName: string
   label: string
   description: string
@@ -30,6 +31,10 @@ interface DueEntry {
 
 function getLocalToday() {
   return new Date(`${localDateStr()}T12:00:00`)
+}
+
+function toLocalDate(value: Date | string) {
+  return new Date(`${localDateStr(value)}T12:00:00`)
 }
 
 export default function CalendarioPage() {
@@ -63,7 +68,7 @@ export default function CalendarioPage() {
   // Build unified entries
   const allEntries = useMemo<DueEntry[]>(() => {
     const entries: DueEntry[] = []
-    const now = new Date()
+    const todayKey = localDateStr()
 
     // Loan installments
     loans.forEach((loan: any) => {
@@ -71,10 +76,11 @@ export default function CalendarioPage() {
       const remaining = loan.totalAmount - totalPaid
       loan.installments?.forEach((inst: any) => {
         const isPaid = inst.status === "PAID"
-        const isOverdue = !isPaid && new Date(inst.dueDate) < now
+        const isOverdue = !isPaid && localDateStr(inst.dueDate) < todayKey
         entries.push({
           id: inst.id,
           type: "loan",
+          clientId: loan.client?.id || loan.clientId || loan.client?.name || inst.id,
           clientName: loan.client?.name || "—",
           label: `Empréstimo`,
           description: loan.notes || `Empréstimo de ${formatCurrency(loan.amount)}`,
@@ -97,10 +103,11 @@ export default function CalendarioPage() {
       const remaining = sale.totalAmount - totalPaid
       sale.saleInstallments?.forEach((inst: any) => {
         const isPaid = inst.status === "PAID"
-        const isOverdue = !isPaid && new Date(inst.dueDate) < now
+        const isOverdue = !isPaid && localDateStr(inst.dueDate) < todayKey
         entries.push({
           id: inst.id,
           type: "sale",
+          clientId: sale.client?.id || sale.clientId || sale.client?.name || inst.id,
           clientName: sale.client?.name || "—",
           label: `Venda`,
           description: sale.description || "Venda de produto",
@@ -120,24 +127,60 @@ export default function CalendarioPage() {
     return entries
   }, [loans, sales])
 
+  const monthStartKey = localDateStr(new Date(year, month, 1, 12))
+  const monthEndKey = localDateStr(new Date(year, month, daysInMonth, 12))
+  const isCurrentMonth = Boolean(
+    todayDate &&
+    month === todayDate.getMonth() &&
+    year === todayDate.getFullYear()
+  )
+
+  const isCarriedOverdue = (entry: DueEntry) => (
+    isCurrentMonth &&
+    entry.status === "OVERDUE" &&
+    localDateStr(entry.dueDate) < monthStartKey
+  )
+
   const getEntriesForDay = (day: number) => {
     return allEntries.filter((e) => {
-      const d = new Date(e.dueDate)
+      if (isCarriedOverdue(e)) {
+        return day === todayDate?.getDate()
+      }
+
+      const d = toLocalDate(e.dueDate)
       return d.getDate() === day && d.getMonth() === month && d.getFullYear() === year
+    }).sort((a, b) => {
+      if (a.status !== b.status) return a.status === "OVERDUE" ? -1 : 1
+      return localDateStr(a.dueDate).localeCompare(localDateStr(b.dueDate))
     })
   }
 
   // Month stats
   const monthEntries = useMemo(() => {
     return allEntries.filter((e) => {
-      const d = new Date(e.dueDate)
-      return d.getMonth() === month && d.getFullYear() === year
+      if (isCarriedOverdue(e)) return true
+      const key = localDateStr(e.dueDate)
+      return key >= monthStartKey && key <= monthEndKey
     })
-  }, [allEntries, month, year])
+  }, [allEntries, monthStartKey, monthEndKey, isCurrentMonth])
 
   const aVencer = monthEntries.filter(e => e.status === "PENDING").length
   const vencidos = monthEntries.filter(e => e.status === "OVERDUE").length
   const totalNoMes = monthEntries.filter(e => e.status !== "PAID").reduce((s, e) => s + e.amount, 0)
+  const clientesEmDia = useMemo(() => {
+    const clients = new Map<string, { hasPending: boolean; hasOverdue: boolean }>()
+
+    allEntries.forEach((entry) => {
+      if (entry.status === "PAID") return
+
+      const current = clients.get(entry.clientId) || { hasPending: false, hasOverdue: false }
+      current.hasPending = current.hasPending || entry.status === "PENDING"
+      current.hasOverdue = current.hasOverdue || entry.status === "OVERDUE"
+      clients.set(entry.clientId, current)
+    })
+
+    return Array.from(clients.values()).filter((client) => client.hasPending && !client.hasOverdue).length
+  }, [allEntries])
 
   const selectedEntries = selectedDay ? getEntriesForDay(selectedDay) : []
 
@@ -186,7 +229,7 @@ export default function CalendarioPage() {
       </div>
 
       {/* ===== STAT CARDS ===== */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Card className="border-gray-200 dark:border-zinc-800">
           <CardContent className="p-5 flex items-start gap-3">
             <Clock className="h-5 w-5 text-gray-500 dark:text-zinc-400 mt-0.5" />
@@ -202,6 +245,15 @@ export default function CalendarioPage() {
             <div>
               <p className="text-xs text-gray-500 dark:text-zinc-400">Vencidos</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{vencidos}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-emerald-200 dark:border-emerald-900/60">
+          <CardContent className="p-5 flex items-start gap-3">
+            <CheckCircle2 className="h-5 w-5 text-emerald-600 mt-0.5" />
+            <div>
+              <p className="text-xs text-gray-500 dark:text-zinc-400">Clientes em dia</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{clientesEmDia}</p>
             </div>
           </CardContent>
         </Card>
@@ -262,11 +314,6 @@ export default function CalendarioPage() {
               const isToday = day === todayDate.getDate() && month === todayDate.getMonth() && year === todayDate.getFullYear()
               const isSelected = day === selectedDay
               const hasOverdue = dayEntries.some(e => e.status === "OVERDUE")
-              const hasPending = dayEntries.some(e => e.status === "PENDING")
-
-              // Determine which types are present
-              const types = new Set(dayEntries.map(e => e.type))
-              const hasOverdueEntry = dayEntries.some(e => e.status === "OVERDUE")
 
               return (
                 <button
@@ -288,7 +335,9 @@ export default function CalendarioPage() {
                   {dayEntries.length > 0 && (
                     <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 flex items-center gap-1">
                       {dayEntries.filter(e => e.status !== "PAID").length > 0 && (
-                        <span className="flex items-center justify-center h-5 w-5 rounded-full bg-amber-500 text-white text-[10px] font-bold shadow-sm">
+                        <span className={`flex items-center justify-center h-5 w-5 rounded-full text-white text-[10px] font-bold shadow-sm ${
+                          hasOverdue ? "bg-red-500" : "bg-amber-500"
+                        }`}>
                           {dayEntries.filter(e => e.status !== "PAID").length}
                         </span>
                       )}
@@ -388,8 +437,9 @@ export default function CalendarioPage() {
                     </div>
 
                     {/* Entry cards */}
-                    <div className="flex-1 space-y-3 overflow-y-auto pr-1 min-h-0 max-h-[420px] lg:max-h-none">
+                    <div className="flex-1 space-y-3 overflow-y-auto pr-2 min-h-0 max-h-[430px] lg:max-h-[520px] [scrollbar-gutter:stable] [scrollbar-width:thin] [scrollbar-color:#94a3b8_transparent] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300 dark:[scrollbar-color:#52525b_transparent] dark:[&::-webkit-scrollbar-thumb]:bg-zinc-600">
                       {unpaidEntries.map((entry) => {
+                        const status = statusInfo(entry.status)
                         const typeIcon = entry.type === "loan"
                           ? <Wallet className="h-4 w-4 text-amber-600" />
                           : entry.type === "vehicle"
@@ -406,9 +456,12 @@ export default function CalendarioPage() {
                                 </div>
                                 <span className="font-bold text-gray-900 dark:text-zinc-100 text-sm uppercase tracking-wide">{entry.clientName}</span>
                               </div>
-                              <span className="text-sm font-semibold text-primary">
-                                {entry.installmentNumber}/{entry.totalInstallments}
-                              </span>
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline" className={status.cls}>{status.label}</Badge>
+                                <span className="text-sm font-semibold text-primary">
+                                  {entry.installmentNumber}/{entry.totalInstallments}
+                                </span>
+                              </div>
                             </div>
 
                             {/* Detail rows */}
@@ -416,6 +469,12 @@ export default function CalendarioPage() {
                               <div className="flex items-center justify-between">
                                 <span className="text-gray-500 dark:text-zinc-400">Parcela:</span>
                                 <span className="font-bold text-gray-900 dark:text-zinc-100">{formatCurrency(entry.amount)}</span>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-gray-500 dark:text-zinc-400">Vencimento:</span>
+                                <span className={entry.status === "OVERDUE" ? "font-medium text-red-600 dark:text-red-400" : "font-medium text-gray-900 dark:text-zinc-100"}>
+                                  {toLocalDate(entry.dueDate).toLocaleDateString("pt-BR")}
+                                </span>
                               </div>
                               {entry.interestAmount > 0 && (
                                 <div className="flex items-center justify-between">

@@ -3065,7 +3065,7 @@ export default function EmprestimosPage() {
         open={!!renegotiateDialog}
         onClose={() => { setRenegotiateDialog(null); setRenegotiateMode(null); setRenegotiateEntry("all"); setRenegotiateAmount(0); setRenegotiateNotes(""); setRenegotiatePaymentMethod("Dinheiro") }}
         title={renegotiateEntry === "interest" ? "Renegociar Dívida" : "Renegociação de Contrato"}
-        className={renegotiateEntry === "interest" ? "max-w-2xl" : "max-w-5xl"}
+        className={renegotiateEntry === "interest" ? "max-w-2xl" : "max-w-2xl"}
       >
         {renegotiateDialog && (
           renegotiateEntry === "interest" ? (() => {

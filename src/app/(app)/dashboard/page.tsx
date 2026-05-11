@@ -46,6 +46,8 @@ interface DashboardData {
     contractsThisWeek: number
     receivedThisWeek: number
     dueToday: number
+    dueTodayAmount?: number
+    dueTodayClients?: number
     deltas?: {
       contractsPct: number
       receivedPct: number
@@ -310,6 +312,33 @@ export default function DashboardPage() {
           icon={TrendingUp}
           iconClassName="text-primary"
           iconBgClassName="bg-primary/5 dark:bg-primary/15"
+        />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <KpiCard
+          title="Falta Receber"
+          value={formatCurrency(data?.capitalOnStreet || 0)}
+          subtitle="saldo ainda a receber"
+          icon={DollarSign}
+          iconClassName="text-emerald-600"
+          iconBgClassName="bg-emerald-50 dark:bg-emerald-950/20"
+        />
+        <KpiCard
+          title="Contrato Ativo"
+          value={`${data?.counters?.activeLoans || 0}`}
+          subtitle="contratos ativos"
+          icon={Shield}
+          iconClassName="text-blue-600"
+          iconBgClassName="bg-blue-50 dark:bg-blue-950/20"
+        />
+        <KpiCard
+          title="Vencendo Hoje"
+          value={formatCurrency(data?.weeklySummary?.dueTodayAmount || 0)}
+          subtitle={`${data?.weeklySummary?.dueTodayClients || 0} cliente(s)`}
+          icon={Clock3}
+          iconClassName="text-orange-600"
+          iconBgClassName="bg-orange-50 dark:bg-orange-950/20"
         />
       </div>
 

@@ -20,7 +20,7 @@ export function Dialog({ open, onClose, children, title, className }: DialogProp
       <div className="fixed inset-0 bg-black/80" onClick={onClose} />
       <div
         className={cn(
-          "relative z-50 w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-2xl",
+          "relative z-50 mx-4 max-w-lg max-h-[90vh] overflow-y-auto rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-2xl",
           className
         )}
       >
