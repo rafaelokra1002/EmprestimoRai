@@ -14,7 +14,7 @@ import { FilterDropdown } from "@/components/ui/filter-dropdown"
 import { Textarea } from "@/components/ui/textarea"
 import { Avatar } from "@/components/avatar"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Search, Pencil, Trash2, User, MapPin, FileText, Users, Camera, Upload, Eye, Image, DollarSign, LayoutGrid, Rows3, Filter, CheckCircle2, MoreVertical, Link2 } from "lucide-react"
+import { Plus, Search, Pencil, Trash2, User, MapPin, FileText, Users, Camera, Upload, Eye, Image, DollarSign, LayoutGrid, Rows3, Filter, CheckCircle2, MoreVertical, Link2, UserCheck } from "lucide-react"
 import { useSession } from "next-auth/react"
 
 interface Client {
@@ -130,6 +130,7 @@ export default function ClientesPage() {
   const [loanAmountsByClient, setLoanAmountsByClient] = useState<Record<string, number>>({})
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all")
+  const [clientesView, setClientesView] = useState<"clientes" | "aprovacoes">("clientes")
   const [viewMode, setViewMode] = useState<"table" | "cards">("table")
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<Client | null>(null)
@@ -215,6 +216,9 @@ export default function ClientesPage() {
     let list = clients
       .filter((client) => client.status !== "DESAPARECIDO")
       .filter((c) =>
+        clientesView === "aprovacoes" ? c.status === "INACTIVE" : c.status !== "INACTIVE"
+      )
+      .filter((c) =>
         c.name.toLowerCase().includes(search.toLowerCase()) ||
         c.email?.toLowerCase().includes(search.toLowerCase()) ||
         c.phone?.includes(search) ||
@@ -227,7 +231,7 @@ export default function ClientesPage() {
     }
     list = [...list].sort((left, right) => left.name.localeCompare(right.name, "pt-BR"))
     setFiltered(list)
-  }, [search, clients, statusFilter])
+  }, [search, clients, statusFilter, clientesView])
 
   const onSubmit = async (data: ClientFormData) => {
     setSaving(true)
@@ -531,8 +535,42 @@ export default function ClientesPage() {
   return (
     <div className="space-y-4 pt-6">
       {/* Title + actions */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">Clientes</h1>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">Clientes</h1>
+          <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">Gerencie seus clientes</p>
+          <div className="mt-3 inline-flex items-center rounded-lg border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-1">
+            <button
+              type="button"
+              onClick={() => setClientesView("clientes")}
+              className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                clientesView === "clientes"
+                  ? "bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
+                  : "text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200"
+              }`}
+            >
+              <Users className="h-4 w-4" />
+              Clientes
+            </button>
+            <button
+              type="button"
+              onClick={() => setClientesView("aprovacoes")}
+              className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                clientesView === "aprovacoes"
+                  ? "bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
+                  : "text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200"
+              }`}
+            >
+              <UserCheck className="h-4 w-4" />
+              Aprovações
+              {clients.filter(c => c.status === "INACTIVE").length > 0 && (
+                <span className="ml-1 inline-flex items-center justify-center rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold text-white leading-none">
+                  {clients.filter(c => c.status === "INACTIVE").length}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
         <div className="flex flex-col items-end gap-2">
           <div className="flex items-center gap-2">
             <button

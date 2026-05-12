@@ -8,7 +8,7 @@ import { Avatar } from "@/components/avatar"
 import { Dialog } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ArrowLeft, Calendar, Check, CheckCircle2, Copy, DollarSign, Download, Eye, FileText, Lock, Loader2, MessageCircle, Pencil, Receipt, RotateCcw, Send, Tag, Trash2, X, Plus } from "lucide-react"
+import { ArrowLeft, Calendar, Check, CheckCircle2, Clock, Copy, DollarSign, Download, Eye, FileText, Lock, Loader2, MessageCircle, Pencil, Receipt, RotateCcw, Send, Tag, Trash2, X, Plus } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import { LoanRenegotiationContent } from "../../_components/loan-renegotiation-content"
 import { formatCurrency, formatDate, localDateStr } from "@/lib/utils"
@@ -375,17 +375,36 @@ export default function ClienteEmprestimosPage() {
 
     return { dailyFee }
   }
+  const getInstallmentOverdueDetails = (loan: Loan, installment: Loan["installments"][number]) => {
+    if (installment.status === "PAID") return { daysOver: 0, juros: 0, multa: 0 }
+    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0)
+    const dueStart = new Date(installment.dueDate); dueStart.setHours(0, 0, 0, 0)
+    const daysOver = Math.max(0, Math.floor((todayStart.getTime() - dueStart.getTime()) / 86400000))
+    if (daysOver === 0) return { daysOver: 0, juros: 0, multa: 0 }
+    const loanData = buildLoanData({
+      amount: loan.amount,
+      interestRate: loan.interestRate,
+      interestType: loan.interestType || "SIMPLE",
+      totalAmount: loan.totalAmount,
+      dailyInterest: loan.dailyInterest,
+      dailyInterestAmount: loan.dailyInterestAmount || 0,
+      dueDay: loan.dueDay || new Date(loan.installments[0]?.dueDate || Date.now()).getDate(),
+      modality: loan.modality,
+      firstInstallmentDate: loan.firstInstallmentDate || loan.installments[0]?.dueDate || new Date().toISOString(),
+      installments: loan.installments,
+      payments: loan.payments,
+    })
+    return { daysOver, juros: getOverdueDailyAmountBRL(loanData) * daysOver, multa: loan.penaltyFee || 0 }
+  }
+
+  const getInstallmentOverdueCharge = (loan: Loan, installment: Loan["installments"][number]) => {
+    const d = getInstallmentOverdueDetails(loan, installment)
+    return d.juros + d.multa
+  }
+
   const getInstallmentPayableAmount = (loan: Loan, installment: Loan["installments"][number]) => {
     const baseRemaining = Math.max(0, installment.amount - (installment.paidAmount || 0))
-    const firstPendingInstallment = loan.installments
-      .filter((i: any) => i.status !== "PAID")
-      .sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0]
-
-    if (!firstPendingInstallment || firstPendingInstallment.id !== installment.id) {
-      return baseRemaining
-    }
-
-    return baseRemaining + getCurrentOverdueCharge(loan)
+    return baseRemaining + getInstallmentOverdueCharge(loan, installment)
   }
   const getPaymentBreakdown = (
     loan: Loan,
@@ -869,17 +888,14 @@ export default function ClienteEmprestimosPage() {
                       </span>
                     </div>
                     {(() => {
-                      const loanData = buildLoanData({
-                        amount: loan.amount, interestRate: loan.interestRate, interestType: loan.interestType || "SIMPLE",
-                        totalAmount: loan.totalAmount, dailyInterest: loan.dailyInterest, dailyInterestAmount: loan.dailyInterestAmount || 0,
-                        dueDay: loan.dueDay || new Date(loan.installments[0]?.dueDate || Date.now()).getDate(),
-                        modality: loan.modality, firstInstallmentDate: loan.firstInstallmentDate || loan.installments[0]?.dueDate || new Date().toISOString(),
-                        installments: loan.installments, payments: loan.payments,
-                      })
-                      const daysOverdue = getDaysOverdue(loanData)
-                      const overdueExtra = remaining - loan.totalAmount + paid
-                      if (daysOverdue > 0 && overdueExtra > 0) {
-                        return <p className="mt-2 text-[11px] text-green-600 dark:text-green-400">contém {formatCurrency(overdueExtra)} de juros por atraso</p>
+                      const overdueExtra = loan.installments
+                        .filter((i: any) => i.status !== "PAID")
+                        .reduce((sum: number, i: any) => {
+                          const d = getInstallmentOverdueDetails(loan, i)
+                          return sum + d.juros + d.multa
+                        }, 0)
+                      if (overdueExtra > 0) {
+                        return <p className="mt-2 text-[11px] text-primary">contém {formatCurrency(overdueExtra)} de juros por atraso</p>
                       }
                       return <p className="mt-2 text-[11px] text-gray-500 dark:text-zinc-400">valor atualizado conforme pagamentos e vencimentos</p>
                     })()}
@@ -909,7 +925,9 @@ export default function ClienteEmprestimosPage() {
                   return (
                     <div className="mx-4 mb-2 px-3 py-2.5 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/50 space-y-2">
                       {visibleOverdueInsts.map((inst: any) => {
-                        const instDays = Math.max(0, Math.floor((new Date().getTime() - new Date(inst.dueDate).getTime()) / (1000 * 60 * 60 * 24)))
+                        const todayStartInst = new Date(); todayStartInst.setHours(0, 0, 0, 0)
+                        const dueStartInst = new Date(inst.dueDate); dueStartInst.setHours(0, 0, 0, 0)
+                        const instDays = Math.max(0, Math.floor((todayStartInst.getTime() - dueStartInst.getTime()) / (1000 * 60 * 60 * 24)))
                         const baseAmount = Math.max(0, inst.amount - (inst.paidAmount || 0))
                         const payableAmount = getInstallmentPayableAmount(loan, inst)
                         const instPenalty = Math.max(0, Math.round((payableAmount - baseAmount) * 100) / 100)
@@ -961,23 +979,49 @@ export default function ClienteEmprestimosPage() {
                 </div>
 
                 {/* Info row */}
-                <div className="mx-4 mt-3 flex items-center justify-between text-xs text-gray-500 dark:text-zinc-400">
-                  <div className="flex items-center gap-1.5">
-                    <Calendar className="h-3.5 w-3.5" />
-                    <span>Venc: {nextInst ? formatDate(nextInst.dueDate) : "—"}</span>
-                    {(loan.installmentCount > 1 || loan.interestType === "CUSTOM") && nextInst && (
-                      <>
-                        <span className="text-gray-300 dark:text-zinc-600">•</span>
-                        <span>Parcela {nextInst.number}/{loan.installmentCount}</span>
-                      </>
-                    )}
-                    <Pencil className="h-3 w-3 text-gray-300 dark:text-zinc-600" />
+                {isDueToday && nextInst ? (
+                  <div className="mx-4 mt-3 rounded-2xl border border-orange-300 bg-orange-50/90 px-4 py-3 dark:border-orange-800 dark:bg-orange-950/20">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <div className="flex items-center gap-2 text-orange-700 dark:text-orange-300">
+                          <Clock className="h-4 w-4" />
+                          <span className="text-base font-semibold">Vence Hoje!</span>
+                        </div>
+                        <p className="mt-1 text-xs text-orange-600 dark:text-orange-300/90">Parcela {nextInst.number}/{loan.installmentCount}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xl font-bold tabular-nums text-orange-700 dark:text-orange-300">{formatCurrency(nextInst.amount)}</p>
+                        <p className="mt-1 text-xs text-orange-600 dark:text-orange-300/90">Vencimento: {formatDate(nextInst.dueDate)}</p>
+                      </div>
+                    </div>
+                    <p className="mt-3 text-xs text-orange-500 dark:text-orange-300/80">Lembre o cliente para evitar atrasos</p>
+                    <Button
+                      size="sm"
+                      onClick={() => openWhatsappDialog(loan)}
+                      className="w-full mt-3 h-9 text-sm bg-orange-500 hover:bg-orange-600 text-white transition-colors"
+                    >
+                      <MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Cobrar hoje
+                    </Button>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <DollarSign className="h-3.5 w-3.5 text-primary" />
-                    <span className="font-medium text-gray-700 dark:text-zinc-300">Pago: {formatCurrency(paid)}</span>
+                ) : (
+                  <div className="mx-4 mt-3 flex items-center justify-between text-xs text-gray-500 dark:text-zinc-400">
+                    <div className="flex items-center gap-1.5">
+                      <Calendar className="h-3.5 w-3.5" />
+                      <span>Venc: {nextInst ? formatDate(nextInst.dueDate) : "—"}</span>
+                      {(loan.installmentCount > 1 || loan.interestType === "CUSTOM") && nextInst && (
+                        <>
+                          <span className="text-gray-300 dark:text-zinc-600">•</span>
+                          <span>Parcela {nextInst.number}/{loan.installmentCount}</span>
+                        </>
+                      )}
+                      <Pencil className="h-3 w-3 text-gray-300 dark:text-zinc-600" />
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <DollarSign className="h-3.5 w-3.5 text-primary" />
+                      <span className="font-medium text-gray-700 dark:text-zinc-300">Pago: {formatCurrency(paid)}</span>
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Juros por parcela */}
                 {(() => {
@@ -1085,7 +1129,7 @@ export default function ClienteEmprestimosPage() {
           )}
           <div className="flex gap-2 pt-2 border-t border-gray-100 dark:border-zinc-800">
             <Button variant="outline" className="flex-1" onClick={() => setTagDialog(null)}>Cancelar</Button>
-            <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleSaveTags}>Salvar</Button>
+            <Button className="flex-1 bg-primary hover:bg-primary/90 text-white" onClick={handleSaveTags}>Salvar</Button>
           </div>
         </div>
       </Dialog>
@@ -1165,7 +1209,7 @@ export default function ClienteEmprestimosPage() {
                         setPayAmount(total)
                       } else if (t.key === "partial") { setPayAmount(0); if (selectedInstallmentIds.length > 1) setSelectedInstallmentIds(selectedInstallmentIds.slice(0, 1)) }
                       else if (t.key === "discount") { setPayAmount(0); setPayDiscount(0); setSelectedInstallmentIds([]) }
-                    }} className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${paymentType === t.key ? "bg-emerald-600 border-emerald-600 text-white" : "border-gray-300 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:border-gray-400"}`}>
+                    }} className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${paymentType === t.key ? "bg-green-500 border-green-600 text-white" : "border-gray-300 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:border-gray-400"}`}>
                       {t.label}
                     </button>
                   ))}
@@ -1185,27 +1229,82 @@ export default function ClienteEmprestimosPage() {
                       const instOverdue = instDueDate.getTime() < todayDate.getTime()
                       const payableAmount = getInstallmentPayableAmount(paymentDialog, inst)
                       const baseAmount = Math.max(0, inst.amount - (inst.paidAmount || 0))
-                      const overdueCharge = Math.max(0, payableAmount - baseAmount)
+                      const overdueDetails = getInstallmentOverdueDetails(paymentDialog, inst)
                       return (
                         <button key={inst.id} type="button" onClick={() => {
                           let newIds = isSelected ? selectedInstallmentIds.filter((id: string) => id !== inst.id) : [...selectedInstallmentIds, inst.id]
                           setSelectedInstallmentIds(newIds)
                           setPayAmount(paymentDialog.installments.filter((i: any) => newIds.includes(i.id)).reduce((sum: number, installment: any) => sum + getInstallmentPayableAmount(paymentDialog, installment), 0))
-                        }} className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors text-left ${isSelected ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30" : "border-gray-200 dark:border-zinc-700"}`}>
-                          <div>
-                            <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">Parcela {inst.number}/{paymentDialog.installmentCount}</span>
-                            <p className="mt-0.5 text-[10px] text-gray-500 dark:text-zinc-400">Valor: {formatCurrency(baseAmount)}</p>
-                            {instOverdue && overdueCharge > 0 && <p className="text-[10px] text-red-500 mt-0.5">Multa Aplicada: +{formatCurrency(overdueCharge)}</p>}
-                            <p className="text-[10px] font-medium text-gray-700 dark:text-zinc-300 mt-0.5">Valor total com atraso: {formatCurrency(payableAmount)}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-sm font-bold text-gray-900 dark:text-zinc-100">{formatCurrency(payableAmount)}</p>
-                            <p className="text-[10px] text-gray-400">{formatDate(inst.dueDate)}</p>
+                        }} className={`group w-full rounded-2xl border p-3 transition-colors text-left ${
+                          isSelected
+                            ? "border-green-600 bg-green-500 hover:bg-green-600 dark:border-green-700 dark:bg-green-600 dark:hover:bg-green-700"
+                            : instOverdue
+                              ? "border-red-400 bg-red-50 hover:border-red-500 hover:bg-green-50 dark:border-red-700 dark:bg-red-950/20 dark:hover:border-red-600 dark:hover:bg-green-950/20"
+                              : "border-gray-200 bg-gray-50/80 hover:border-green-500 hover:bg-green-50 dark:border-zinc-700 dark:bg-zinc-800/40 dark:hover:border-green-700 dark:hover:bg-green-950/20"
+                        }`}>
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="min-w-0 flex flex-1 items-center self-center">
+                              <p className={`text-left text-sm font-medium ${
+                                isSelected
+                                  ? "text-white"
+                                  : instOverdue
+                                    ? "text-red-600 dark:text-red-400 group-hover:text-green-700 dark:group-hover:text-green-400"
+                                    : "text-gray-900 dark:text-zinc-100 group-hover:text-green-700 dark:group-hover:text-green-400"
+                              }`}>
+                                {isSelected && <span className="mr-1">✓</span>}
+                                Parcela {inst.number}/{paymentDialog.installmentCount}{instOverdue ? " (Atrasada)" : ""}
+                              </p>
+                            </div>
+                            <div className="shrink-0 text-right">
+                              <p className={`text-xs ${
+                                isSelected
+                                  ? "text-white/90"
+                                  : instOverdue
+                                    ? "text-red-500 dark:text-red-400 group-hover:text-green-700 dark:group-hover:text-green-400"
+                                    : "text-gray-500 dark:text-zinc-400 group-hover:text-green-700 dark:group-hover:text-green-400"
+                              }`}>{formatDate(inst.dueDate)}</p>
+                              {instOverdue && overdueDetails.juros > 0 && (
+                                <p className="mt-0.5 text-xs font-medium text-orange-500 dark:text-orange-400">+{formatCurrency(overdueDetails.juros)} multa</p>
+                              )}
+                              {instOverdue && overdueDetails.multa > 0 && (
+                                <p className="mt-0.5 text-xs font-medium text-red-500">+{formatCurrency(overdueDetails.multa)} multa</p>
+                              )}
+                              <p className={`mt-0.5 text-[1.05rem] font-semibold leading-none ${
+                                isSelected
+                                  ? "text-white"
+                                  : instOverdue
+                                    ? "text-red-600 dark:text-red-400 group-hover:text-green-700 dark:group-hover:text-green-400"
+                                    : "text-gray-900 dark:text-zinc-100 group-hover:text-green-700 dark:group-hover:text-green-400"
+                              }`}>
+                                {formatCurrency(payableAmount)}
+                              </p>
+                            </div>
                           </div>
                         </button>
                       )
                     })}
                   </div>
+                  {selectedInstallmentIds.length > 1 && (
+                    <>
+                      <div className="mt-3 rounded-lg border border-yellow-300 dark:border-yellow-700/50 bg-yellow-50 dark:bg-yellow-950/20 px-3 py-2.5 text-sm">
+                        <p className="font-semibold text-yellow-800 dark:text-yellow-300 flex items-center gap-1.5">
+                          <span>⚠</span>
+                          Atenção: Você selecionou {selectedInstallmentIds.length} parcelas
+                        </p>
+                        <p className="mt-0.5 text-xs text-yellow-700 dark:text-yellow-400">
+                          O valor total será de {formatCurrency(payAmount)}
+                        </p>
+                      </div>
+                      <div className="mt-3 rounded-lg bg-gray-100 dark:bg-zinc-800/60 px-3 py-2.5 text-sm">
+                        <p className="font-semibold text-gray-900 dark:text-zinc-100">
+                          {selectedInstallmentIds.length} Parcelas selecionadas: <span className="text-primary">{formatCurrency(payAmount)}</span>
+                        </p>
+                        <p className="mt-0.5 text-xs text-gray-500 dark:text-zinc-400">
+                          Principal: {formatCurrency(principalPerInst * selectedInstallmentIds.length)} + Juros: {formatCurrency(interestPI * selectedInstallmentIds.length)}
+                        </p>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
 
@@ -1222,7 +1321,7 @@ export default function ClienteEmprestimosPage() {
 
               <div className="flex justify-end gap-3 pt-2">
                 <Button variant="outline" onClick={() => { setPaymentDialog(null); resetPaymentForm() }}>Cancelar</Button>
-                <Button onClick={handlePayment} disabled={!payAmount || payAmount <= 0 || paying} className="bg-emerald-600 hover:bg-emerald-700 text-white">{paying ? "Processando..." : "Registrar Pagamento"}</Button>
+                <Button onClick={handlePayment} disabled={!payAmount || payAmount <= 0 || paying} className="bg-primary hover:bg-primary/90 text-white">{paying ? "Processando..." : "Registrar Pagamento"}</Button>
               </div>
             </div>
           )
@@ -1309,10 +1408,10 @@ export default function ClienteEmprestimosPage() {
         {paymentReceiptInfo && (
           <div className="space-y-5">
             <div className="text-center">
-              <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-950/30">
-                <Receipt className="h-6 w-6 text-emerald-600" />
+              <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 dark:bg-primary/15">
+                <Receipt className="h-6 w-6 text-primary" />
               </div>
-              <h2 className="text-lg font-bold text-emerald-600">Pagamento Registrado!</h2>
+              <h2 className="text-lg font-bold text-primary">Pagamento Registrado!</h2>
               <p className="text-sm text-gray-500 dark:text-zinc-400">Deseja baixar ou enviar o comprovante?</p>
             </div>
 
@@ -1331,7 +1430,7 @@ export default function ClienteEmprestimosPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500 dark:text-zinc-400">Valor Pago:</span>
-                <span className="font-bold text-emerald-600">{formatCurrency(paymentReceiptInfo.amount)}</span>
+                <span className="font-bold text-primary">{formatCurrency(paymentReceiptInfo.amount)}</span>
               </div>
               {paymentReceiptInfo.lateFeeAmount > 0 && (
                 <>
@@ -1364,7 +1463,7 @@ export default function ClienteEmprestimosPage() {
 
             <div className="grid grid-cols-3 gap-2">
               <Button
-                className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="gap-1.5 bg-primary hover:bg-primary/90 text-white"
                 onClick={() => {
                   const text = buildPaymentReceiptText(paymentReceiptInfo)
                   navigator.clipboard.writeText(text)

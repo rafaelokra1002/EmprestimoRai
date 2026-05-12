@@ -113,7 +113,7 @@ export default function ScorePage() {
 
   const getScoreBadgeColor = (score: number) => {
     if (score >= 120) return "bg-violet-50 dark:bg-violet-950/20 text-violet-600 dark:text-violet-400"
-    if (score >= 100) return "bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400"
+    if (score >= 100) return "bg-green-500/10 dark:bg-green-500/15 text-green-800 dark:text-green-400"
     if (score >= 70) return "bg-yellow-50 dark:bg-yellow-950/20 text-yellow-600 dark:text-yellow-400"
     return "bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400"
   }
@@ -127,7 +127,7 @@ export default function ScorePage() {
 
   const getScoreBarColor = (score: number) => {
     if (score >= 120) return "bg-violet-500"
-    if (score >= 100) return "bg-emerald-500"
+    if (score >= 100) return "bg-green-500"
     if (score >= 70) return "bg-yellow-400"
     return "bg-red-500"
   }
@@ -535,16 +535,17 @@ export default function ScorePage() {
                     {activeLoans.slice(0, 1).map((loan) => {
                       const remaining = loan.totalAmount - (Array.isArray(loan.installments) ? loan.installments.filter((i) => i.status === "PAID").reduce((s, i) => s + (i.paidAmount || 0), 0) : 0)
                       const totalPaid = Array.isArray(loan.payments) ? loan.payments.reduce((sum, payment) => sum + (payment.amount || 0), 0) : 0
+                      const highlightLucro = sortMode === "lucro"
                       return (
                         <div key={loan.id}>
-                          <p className="text-[10px] uppercase font-semibold text-gray-400 dark:text-zinc-500 tracking-wide">A receber</p>
-                          <p className="text-xl font-bold text-gray-900 dark:text-zinc-100 mt-0.5">{formatCurrency(Math.max(0, remaining))}</p>
+                          <p className="text-[10px] uppercase font-semibold text-gray-400 dark:text-zinc-500 tracking-wide">{highlightLucro ? "Lucro" : "A receber"}</p>
+                          <p className="text-xl font-bold text-gray-900 dark:text-zinc-100 mt-0.5">{formatCurrency(highlightLucro ? loan.profit : Math.max(0, remaining))}</p>
                           <div className="flex items-center gap-2 mt-1 text-xs text-gray-400 dark:text-zinc-500 flex-wrap">
                             <span>Emprestado {formatCurrency(loan.amount)}</span>
                             <span className="text-gray-300 dark:text-zinc-700">•</span>
                             <span>Recebido {formatCurrency(totalPaid)}</span>
                             <span className="text-gray-300 dark:text-zinc-700">•</span>
-                            <span>Lucro {formatCurrency(loan.profit)}</span>
+                            <span>{highlightLucro ? "A receber" : "Lucro"} {formatCurrency(highlightLucro ? Math.max(0, remaining) : loan.profit)}</span>
                           </div>
                         </div>
                       )
