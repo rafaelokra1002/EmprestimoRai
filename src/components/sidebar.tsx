@@ -73,7 +73,8 @@ export function Sidebar() {
       {/* Mobile toggle */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed top-4 left-4 z-50 rounded-md border border-violet-500 bg-violet-700 p-2 text-white shadow-lg shadow-violet-900/30 lg:hidden"
+        style={{ background: "var(--sidebar-via)" }}
+        className="fixed top-4 left-4 z-50 rounded-md border border-white/20 p-2 text-white shadow-lg shadow-black/30 lg:hidden"
       >
         {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </button>

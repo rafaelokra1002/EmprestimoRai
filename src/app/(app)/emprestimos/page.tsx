@@ -16,6 +16,7 @@ import {
 } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import { LoanRenegotiationContent } from "./_components/loan-renegotiation-content"
+import { ComprovanteContent } from "./_components/comprovante-content"
 import { formatCurrency, formatDate, calculateLoan, generateInstallmentDates, resolveDailyInterestAmount, localDateStr } from "@/lib/utils"
 import { buildLoanData, calculateEffectivePaidAmountFromPayments, calculateOverdueInterest, calculateRealizedProfitFromPayments, calculateTotalAmountWithLateFee, getDaysOverdue, getNextDueDate, getOverdueDailyAmountBRL, getPaidExcludingInterest } from "@/lib/loan-logic"
 
@@ -78,6 +79,7 @@ export default function EmprestimosPage() {
   const [dropdownOpen, setDropdownOpen] = useState<string | null>(null)
   const [payMenuOpen, setPayMenuOpen] = useState<string | null>(null)
   const [expandedLoan, setExpandedLoan] = useState<string | null>(null)
+  const [comprovanteLoanId, setComprovanteLoanId] = useState<string | null>(null)
   const [tagDialog, setTagDialog] = useState<Loan | null>(null)
   const [tagInput, setTagInput] = useState("")
   const [tagColor, setTagColor] = useState("#10b981")
@@ -1653,7 +1655,7 @@ export default function EmprestimosPage() {
                         <Eye className="h-3 w-3" /> Detalhes
                       </button>
                       <button
-                        onClick={() => router.push(`/emprestimos/${loan.id}/comprovante`)}
+                        onClick={() => setComprovanteLoanId(loan.id)}
                         className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
                         title="Comprovante"
                       >
@@ -3831,6 +3833,25 @@ export default function EmprestimosPage() {
           )}
         </div>
       </Dialog>
+
+      {/* Modal Comprovante de Empréstimo (suspenso) */}
+      {comprovanteLoanId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-2 sm:p-4">
+          <button
+            type="button"
+            aria-label="Fechar comprovante"
+            className="absolute inset-0 cursor-default"
+            onClick={() => setComprovanteLoanId(null)}
+          />
+          <div className="relative z-10 w-full max-w-md">
+            <ComprovanteContent
+              presentation="modal"
+              loanId={comprovanteLoanId}
+              onClose={() => setComprovanteLoanId(null)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

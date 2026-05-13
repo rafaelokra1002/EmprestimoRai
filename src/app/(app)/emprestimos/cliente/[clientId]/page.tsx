@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label"
 import { ArrowLeft, Calendar, Check, CheckCircle2, Clock, Copy, DollarSign, Download, Eye, FileText, Lock, Loader2, MessageCircle, Pencil, Receipt, RotateCcw, Send, Tag, Trash2, X, Plus } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import { LoanRenegotiationContent } from "../../_components/loan-renegotiation-content"
+import { ComprovanteContent } from "../../_components/comprovante-content"
 import { formatCurrency, formatDate, localDateStr } from "@/lib/utils"
 import { buildLoanData, calculateEffectivePaidAmountFromPayments, calculateRealizedProfitFromPayments, calculateTotalAmountWithLateFee, calculateOverdueInterest, getDaysOverdue, getNextDueDate as getNextDueDateFn, getOverdueDailyAmountBRL, getPaidExcludingInterest } from "@/lib/loan-logic"
 
@@ -86,6 +87,9 @@ export default function ClienteEmprestimosPage() {
   const [payNewDueDate, setPayNewDueDate] = useState("")
   const [payDiscount, setPayDiscount] = useState<number>(0)
   const [paying, setPaying] = useState(false)
+
+  // Loan comprovante (preview) dialog state
+  const [comprovanteLoanId, setComprovanteLoanId] = useState<string | null>(null)
 
   // Payment receipt dialog state
   const [paymentReceiptDialog, setPaymentReceiptDialog] = useState(false)
@@ -854,7 +858,7 @@ export default function ClienteEmprestimosPage() {
                       <Eye className="h-3 w-3" /> Detalhes
                     </button>
                     <button
-                      onClick={() => router.push(`/emprestimos/${loan.id}/comprovante`)}
+                      onClick={() => setComprovanteLoanId(loan.id)}
                       className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
                     >
                       <FileText className="h-3 w-3" /> Comprovante
@@ -1512,6 +1516,25 @@ export default function ClienteEmprestimosPage() {
           </div>
         )}
       </Dialog>
+
+      {/* Modal Comprovante de Empréstimo (suspenso) */}
+      {comprovanteLoanId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-2 sm:p-4">
+          <button
+            type="button"
+            aria-label="Fechar comprovante"
+            className="absolute inset-0 cursor-default"
+            onClick={() => setComprovanteLoanId(null)}
+          />
+          <div className="relative z-10 w-full max-w-md">
+            <ComprovanteContent
+              presentation="modal"
+              loanId={comprovanteLoanId}
+              onClose={() => setComprovanteLoanId(null)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

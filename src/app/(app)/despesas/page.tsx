@@ -296,7 +296,7 @@ export default function DespesasPage() {
               onClick={() => setShowAllMonths((current) => !current)}
               className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
                 showAllMonths
-                  ? "bg-fuchsia-600 text-white"
+                  ? "bg-primary text-white"
                   : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
               }`}
             >
@@ -339,8 +339,8 @@ export default function DespesasPage() {
                   }}
                   className={`rounded-xl px-2 py-2 text-xs font-semibold transition ${
                     !showAllMonths && currentMonth === index
-                      ? "bg-fuchsia-600 text-white shadow-sm"
-                      : "bg-white text-gray-500 hover:bg-fuchsia-50 hover:text-fuchsia-700 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+                      ? "bg-primary text-white shadow-sm"
+                      : "bg-white text-gray-500 hover:bg-primary/10 hover:text-primary dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
                   }`}
                 >
                   {label}
@@ -352,9 +352,9 @@ export default function DespesasPage() {
 
         <section className="rounded-[28px] border border-gray-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400 dark:text-zinc-500">Resumo do período</p>
-          <div className="mt-5 rounded-[24px] border border-fuchsia-100 bg-fuchsia-50/60 p-5 dark:border-fuchsia-950/40 dark:bg-fuchsia-950/10">
+          <div className="mt-5 rounded-[24px] border border-primary/20 bg-primary/5 p-5 dark:border-primary/30 dark:bg-primary/10">
             <div className="flex items-center gap-4">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-fuchsia-600 shadow-sm dark:bg-zinc-900 dark:text-fuchsia-300">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-primary shadow-sm dark:bg-zinc-900 dark:text-primary">
                 <Receipt className="h-6 w-6" />
               </div>
               <div>
@@ -389,7 +389,7 @@ export default function DespesasPage() {
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400 dark:text-zinc-500">Distribuição</p>
               <h2 className="mt-2 text-lg font-bold text-gray-900 dark:text-zinc-100">Despesa por Categoria</h2>
             </div>
-            <Badge className="border-0 bg-fuchsia-50 text-fuchsia-700 dark:bg-fuchsia-950/30 dark:text-fuchsia-300">{sortedCategoryData.length} categorias</Badge>
+            <Badge className="border-0 bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary">{sortedCategoryData.length} categorias</Badge>
           </div>
 
           <div className="mt-5 space-y-4">
@@ -406,7 +406,7 @@ export default function DespesasPage() {
                   </div>
                   <div className="h-3 rounded-full bg-gray-100 dark:bg-zinc-800">
                     <div
-                      className="h-3 rounded-full bg-gradient-to-r from-fuchsia-500 to-violet-500"
+                      className="h-3 rounded-full bg-gradient-to-r from-primary to-primary/70"
                       style={{ width: `${Math.max((item.value / maxCategoryValue) * 100, 8)}%` }}
                     />
                   </div>
@@ -493,7 +493,7 @@ export default function DespesasPage() {
                       <td className="rounded-l-2xl px-4 py-4 text-gray-600 dark:text-zinc-300">{new Date(exp.dueDate).toLocaleDateString("pt-BR")}</td>
                       <td className="px-4 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-fuchsia-50 text-fuchsia-600 dark:bg-fuchsia-950/30 dark:text-fuchsia-300">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary">
                             <Package className="h-4 w-4" />
                           </div>
                           <div>
@@ -501,7 +501,7 @@ export default function DespesasPage() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-4 font-bold tabular-nums text-fuchsia-700 dark:text-fuchsia-300">{formatCurrency(exp.amount)}</td>
+                      <td className="px-4 py-4 font-bold tabular-nums text-primary dark:text-primary">{formatCurrency(exp.amount)}</td>
                       <td className="px-4 py-4 text-gray-700 dark:text-zinc-300">{exp.category}</td>
                       <td className="px-4 py-4">
                         <Badge className={`border-0 ${
