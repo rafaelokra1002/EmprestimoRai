@@ -402,18 +402,33 @@ export default function DashboardPage() {
             )}
           </div>
 
-          {/* Card data de pagamento — label compacto */}
-          <div className="flex items-center gap-3 rounded-xl border border-green-200 dark:border-green-900/40 bg-green-500/5 dark:bg-green-950/10 p-4">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-500/10 dark:bg-green-950/20">
-              <Clock3 className="h-5 w-5 text-green-600 dark:text-green-400" />
-            </div>
-            <div>
+          {/* Card data de pagamento */}
+          <div className="flex flex-col gap-2 rounded-xl border border-green-200 dark:border-green-900/40 bg-green-500/5 dark:bg-green-950/10 p-4 h-[112px]">
+            <div className="flex items-center gap-1.5 shrink-0">
+              <Clock3 className="h-4 w-4 text-green-600 dark:text-green-400" />
               <p className="text-xs font-semibold text-gray-500 dark:text-zinc-400">Data de Pagamento</p>
-              <p className="mt-0.5 text-xl font-bold tabular-nums tracking-tight text-green-600 dark:text-green-400">
-                {(data?.paymentsByDay || []).length}
-              </p>
-              <p className="text-xs text-gray-400 dark:text-zinc-500">dias com parcelas</p>
             </div>
+            {(data?.paymentsByDay || []).length === 0 ? (
+              <p className="text-xs text-gray-400 dark:text-zinc-500">Nenhuma parcela pendente</p>
+            ) : (
+              <div className="space-y-1.5 overflow-y-auto flex-1 min-h-0">
+                {(data?.paymentsByDay || []).map(({ day, amount }) => {
+                  const today = new Date().getDate()
+                  const isToday = day === today
+                  const isOverdue = day < today
+                  return (
+                    <div key={day} className="flex items-center justify-between gap-2 text-xs">
+                      <span className={`font-semibold ${isToday ? "text-primary" : isOverdue ? "text-red-500 dark:text-red-400" : "text-gray-700 dark:text-zinc-300"}`}>
+                        Dia {day}{isToday ? " (hoje)" : ""}
+                      </span>
+                      <span className={`font-bold tabular-nums ${isOverdue ? "text-red-500 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}>
+                        {formatCurrency(amount)}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
           {/* Card pills por dia */}
