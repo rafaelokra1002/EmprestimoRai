@@ -949,9 +949,11 @@ export default function EmprestimosPage() {
     const nextInst = pendingInsts[0]
     if (nextInst) {
       setRenegotiateInstallmentId(nextInst.id)
-      // Nova data = próximo vencimento mantendo dia fixo
+      // Nova data = a partir da parcela atual se adiantado, ou de hoje se em atraso
       const dueDay = loan.dueDay || new Date(loan.firstInstallmentDate).getDate()
-      const nextDue = getNextDueDate(dueDay, new Date())
+      const instDate = new Date(nextInst.dueDate)
+      const baseDate = instDate > new Date() ? instDate : new Date()
+      const nextDue = getNextDueDate(dueDay, baseDate)
       setRenegotiateNewDueDate(localDateStr(nextDue))
     } else {
       setRenegotiateInstallmentId("")
@@ -985,7 +987,9 @@ export default function EmprestimosPage() {
     if (nextInst) {
       setRenegotiateInstallmentId(nextInst.id)
       const dueDay = loan.dueDay || new Date(loan.firstInstallmentDate).getDate()
-      const nextDue = getNextDueDate(dueDay, new Date())
+      const instDate = new Date(nextInst.dueDate)
+      const baseDate = instDate > new Date() ? instDate : new Date()
+      const nextDue = getNextDueDate(dueDay, baseDate)
       setRenegotiateNewDueDate(localDateStr(nextDue))
     } else {
       setRenegotiateInstallmentId("")
@@ -3239,7 +3243,10 @@ export default function EmprestimosPage() {
                       type="button"
                       onClick={() => {
                         setRenegotiateMode("full")
-                        setRenegotiateAmount(currentInterest)
+                        const overdueCharge = getCurrentOverdueCharge(currentLoan)
+                        const hasOverdue = currentLoan.installments.some((i: any) => i.status === "PENDING" && new Date(i.dueDate) < new Date())
+                        const multa = hasOverdue ? (currentLoan.penaltyFee || 0) : 0
+                        setRenegotiateAmount(currentInterest + overdueCharge + multa)
                       }}
                       className="w-full rounded-3xl border p-5 text-left transition-colors border-gray-200 bg-white hover:bg-gray-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
                     >

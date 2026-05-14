@@ -192,3 +192,31 @@ html:not(.dark) .focus-visible\:ring-emerald-500:focus-visible { --tw-ring-color
 .ring-violet-500{--tw-ring-color:var(--ac-500)}
 .focus-visible\:ring-violet-500{--tw-ring-color:var(--ac-500)}
 .focus\:ring-violet-300:focus{--tw-ring-color:var(--ac-300)}
+
+/* ─── Purple theme ─── */
+.purple {
+  --background: 258 50% 12%;
+  --card: 258 44% 17%;
+  --card-foreground: 0 0% 95%;
+  --popover: 258 44% 17%;
+  --popover-foreground: 0 0% 95%;
+  --secondary: 258 34% 24%;
+  --secondary-foreground: 0 0% 95%;
+  --muted: 258 34% 22%;
+  --muted-foreground: 258 18% 65%;
+  --accent: 258 34% 24%;
+  --accent-foreground: 0 0% 95%;
+  --border: 258 28% 28%;
+  --input: 258 28% 28%;
+}
+
+.dark.purple body,
+.dark.purple .dark\:bg-zinc-950 { background-color: hsl(258 50% 12%) !important; }
+.dark.purple .dark\:bg-zinc-900 { background-color: hsl(258 44% 17%) !important; }
+.dark.purple .dark\:bg-zinc-800 { background-color: hsl(258 36% 23%) !important; }
+.dark.purple .dark\:bg-zinc-800\/30 { background-color: hsl(258 36% 23% / 0.3) !important; }
+.dark.purple .dark\:bg-zinc-800\/40 { background-color: hsl(258 36% 23% / 0.4) !important; }
+.dark.purple .dark\:border-zinc-800,
+.dark.purple .dark\:border-zinc-800\/50,
+.dark.purple .dark\:border-zinc-700 { border-color: hsl(258 28% 28%) !important; }
+.dark.purple .dark\:hover\:bg-zinc-800:hover { background-color: hsl(258 36% 27%) !important; }

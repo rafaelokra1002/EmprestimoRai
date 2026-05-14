@@ -248,9 +248,9 @@ export default function CalendarioPage() {
             </div>
           </CardContent>
         </Card>
-        <Card className="border-emerald-200 dark:border-emerald-900/60">
+        <Card className="border-blue-200 dark:border-blue-900/60">
           <CardContent className="p-5 flex items-start gap-3">
-            <CheckCircle2 className="h-5 w-5 text-emerald-600 mt-0.5" />
+            <CheckCircle2 className="h-5 w-5 text-blue-500 mt-0.5" />
             <div>
               <p className="text-xs text-gray-500 dark:text-zinc-400">Clientes em dia</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{clientesEmDia}</p>
@@ -313,7 +313,19 @@ export default function CalendarioPage() {
               const dayEntries = getEntriesForDay(day)
               const isToday = day === todayDate.getDate() && month === todayDate.getMonth() && year === todayDate.getFullYear()
               const isSelected = day === selectedDay
-              const hasOverdue = dayEntries.some(e => e.status === "OVERDUE")
+              const todayKey = localDateStr()
+              const overdueCount = dayEntries.filter(e => e.status === "OVERDUE").length
+              const dueTodayCount = dayEntries.filter(e => e.status === "PENDING" && localDateStr(e.dueDate) === todayKey).length
+              const pendingFutureCount = dayEntries.filter(e => e.status === "PENDING" && localDateStr(e.dueDate) > todayKey).length
+              const hasOverdue = overdueCount > 0
+              const hasDueToday = dueTodayCount > 0
+              const pendingClients = Array.from(
+                new Map(
+                  dayEntries
+                    .filter(e => e.status === "PENDING")
+                    .map(e => [e.clientId, e.clientName])
+                ).values()
+              )
 
               return (
                 <button
@@ -331,14 +343,40 @@ export default function CalendarioPage() {
                     {day}
                   </span>
 
-                  {/* Dots for entries */}
-                  {dayEntries.length > 0 && (
-                    <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 flex items-center gap-1">
-                      {dayEntries.filter(e => e.status !== "PAID").length > 0 && (
-                        <span className={`flex items-center justify-center h-5 w-5 rounded-full text-white text-[10px] font-bold shadow-sm ${
-                          hasOverdue ? "bg-red-500" : "bg-amber-500"
+                  {/* Client names for pending entries */}
+                  {pendingClients.length > 0 && (
+                    <div className="mt-0.5 space-y-0.5">
+                      {pendingClients.slice(0, 2).map((name, idx) => (
+                        <p key={idx} className={`text-[9px] leading-tight truncate max-w-full ${
+                          hasDueToday ? "text-amber-600 dark:text-amber-400" : "text-blue-600 dark:text-blue-400"
                         }`}>
-                          {dayEntries.filter(e => e.status !== "PAID").length}
+                          {name}
+                        </p>
+                      ))}
+                      {pendingClients.length > 2 && (
+                        <p className="text-[9px] leading-tight text-gray-400 dark:text-zinc-500">
+                          +{pendingClients.length - 2}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Count dots */}
+                  {(overdueCount > 0 || dueTodayCount > 0 || pendingFutureCount > 0) && (
+                    <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 flex items-center gap-1">
+                      {overdueCount > 0 && (
+                        <span className="flex items-center justify-center h-5 w-5 rounded-full bg-red-500 text-white text-[10px] font-bold shadow-sm">
+                          {overdueCount}
+                        </span>
+                      )}
+                      {dueTodayCount > 0 && (
+                        <span className="flex items-center justify-center h-5 w-5 rounded-full bg-amber-500 text-white text-[10px] font-bold shadow-sm">
+                          {dueTodayCount}
+                        </span>
+                      )}
+                      {pendingFutureCount > 0 && (
+                        <span className="flex items-center justify-center h-5 w-5 rounded-full bg-blue-500 text-white text-[10px] font-bold shadow-sm">
+                          {pendingFutureCount}
                         </span>
                       )}
                     </div>
@@ -360,8 +398,12 @@ export default function CalendarioPage() {
           {/* Legend */}
           <div className="flex items-center justify-center gap-6 mt-5 text-xs text-gray-500 dark:text-zinc-400">
             <div className="flex items-center gap-1.5">
+              <div className="h-2.5 w-2.5 rounded-full bg-blue-500" />
+              <span>Em Dia</span>
+            </div>
+            <div className="flex items-center gap-1.5">
               <div className="h-2.5 w-2.5 rounded-full bg-amber-500" />
-              <span>Empréstimo</span>
+              <span>Vence Hoje</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="h-2.5 w-2.5 rounded-full bg-red-500" />

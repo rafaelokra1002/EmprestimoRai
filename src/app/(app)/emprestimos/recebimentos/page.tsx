@@ -160,7 +160,11 @@ export default function RecebimentosPage() {
       })
     })
 
-    return rows.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    return rows.sort((a, b) => {
+      const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime()
+      if (dateDiff !== 0) return dateDiff
+      return b.id > a.id ? 1 : -1
+    })
   }, [loans, range.start, range.end])
 
   const stats = useMemo(() => {

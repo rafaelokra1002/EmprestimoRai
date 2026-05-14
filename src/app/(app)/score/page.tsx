@@ -144,10 +144,11 @@ export default function ScorePage() {
     const totalQuitados = completedLoans.reduce((s, l) => s + (l.totalAmount || 0), 0)
     const totalAtivos = activeLoans.reduce((s, l) => s + (l.totalAmount || 0), 0)
     const totalProfit = loans.reduce((s, l) => s + (l.profit || 0), 0)
-    const lucroExtra = allInstallments.reduce((s, i) => {
-      const diff = (i.paidAmount || 0) - (i.amount || 0)
-      return diff > 0 ? s + diff : s
-    }, 0)
+    const lucroExtra = loans.reduce((s, l) =>
+      s + (l.payments || []).reduce((ps, p) => {
+        const match = (p.notes || "").match(/\[lateFee:([\d.]+)\]/i)
+        return ps + (match ? parseFloat(match[1]) || 0 : 0)
+      }, 0), 0)
     const recoveryPoints = Math.min(10, Math.floor(lucroExtra / 50) * 2)
     return {
       emDia,
@@ -166,16 +167,21 @@ export default function ScorePage() {
   const getClientTotalProfit = (client: Client) => client.loans.reduce((s, l) => s + l.profit, 0)
 
   const getColorPriority = (score: number) => {
-    if (score >= 100 && score < 120) return 1  // green
-    if (score >= 70 && score < 100) return 2   // blue
-    if (score >= 120) return 3                  // yellow
+    if (score >= 120) return 1          // excelente (roxo)
+    if (score >= 100) return 2          // bom (verde)
+    if (score >= 70) return 3           // regular (amarelo)
     return 4                                    // red
   }
 
   const filtered = clients
     .filter(c => c.name.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => {
-      if (sortMode === "lucro") return getClientTotalProfit(b) - getClientTotalProfit(a)
+      if (sortMode === "lucro") {
+        const pa = getColorPriority(a.score)
+        const pb = getColorPriority(b.score)
+        if (pa !== pb) return pa - pb
+        return getClientTotalProfit(b) - getClientTotalProfit(a)
+      }
       const pa = getColorPriority(a.score)
       const pb = getColorPriority(b.score)
       if (pa !== pb) return pa - pb
@@ -198,10 +204,12 @@ export default function ScorePage() {
   const lucroPrevisto = globalProfit
   const lucroRealizado = clients.reduce((s, c) =>
     s + c.loans.filter(l => l.status === "COMPLETED").reduce((ls, l) => ls + l.profit, 0), 0)
-  const lucroExtra = allInstallments.reduce((s, i) => {
-    const diff = i.paidAmount - i.amount
-    return diff > 0 ? s + diff : s
-  }, 0)
+  const lucroExtra = clients.reduce((s, c) =>
+    s + c.loans.reduce((ls, l) =>
+      ls + (l.payments || []).reduce((ps, p) => {
+        const match = (p.notes || "").match(/\[lateFee:([\d.]+)\]/i)
+        return ps + (match ? parseFloat(match[1]) || 0 : 0)
+      }, 0), 0), 0)
   const lucroPct = lucroPrevisto > 0 ? Math.round((lucroRealizado / lucroPrevisto) * 100) : 0
   const totalPagamentos = globalEmDia + globalAtrasados
   const pctEmDia = totalPagamentos > 0 ? Math.round((globalEmDia / totalPagamentos) * 100) : 0
@@ -427,11 +435,11 @@ export default function ScorePage() {
               </h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                 <div className="flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full bg-primary/50 shrink-0" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-violet-500 shrink-0" />
                   <span className="text-gray-700 dark:text-zinc-300"><strong>120-150:</strong> Excelente ⭐</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full bg-blue-500 shrink-0" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-green-500 shrink-0" />
                   <span className="text-gray-700 dark:text-zinc-300"><strong>100-119:</strong> Bom 👍</span>
                 </div>
                 <div className="flex items-center gap-2">

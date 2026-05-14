@@ -26,6 +26,7 @@ import {
   LogOut,
   Sun,
   Moon,
+  Sparkles,
   ChevronRight,
   CheckCircle,
   XCircle,
@@ -206,8 +207,8 @@ export function Sidebar() {
             onClick={toggleTheme}
             className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-violet-50/90 transition-all hover:bg-white/10 hover:text-white"
           >
-            {theme === "light" ? <Moon className="h-4 w-4 shrink-0" /> : <Sun className="h-4 w-4 shrink-0" />}
-            <span>{theme === "light" ? "Modo Escuro" : "Modo Claro"}</span>
+            {theme === "light" ? <Moon className="h-4 w-4 shrink-0" /> : theme === "dark" ? <Sparkles className="h-4 w-4 shrink-0" /> : <Sun className="h-4 w-4 shrink-0" />}
+            <span>{theme === "light" ? "Modo Escuro" : theme === "dark" ? "Modo Roxo" : "Modo Claro"}</span>
           </button>
           <button
             onClick={() => signOut({ callbackUrl: "/login" })}

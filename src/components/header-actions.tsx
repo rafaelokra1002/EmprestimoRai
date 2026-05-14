@@ -1,7 +1,7 @@
 "use client"
 
 import { useTheme } from "@/lib/theme-provider"
-import { Moon, Sun, User, MessageCircle } from "lucide-react"
+import { Moon, Sun, Sparkles, User, MessageCircle } from "lucide-react"
 import { useEffect, useState } from "react"
 
 interface HeaderActionsProps {
@@ -45,9 +45,10 @@ export function HeaderActions({ email }: HeaderActionsProps) {
         type="button"
         onClick={toggleTheme}
         className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-600 dark:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
-        aria-label={theme === "light" ? "Ativar modo escuro" : "Ativar modo claro"}
+        aria-label="Alternar tema"
+        title={theme === "light" ? "Modo escuro" : theme === "dark" ? "Modo roxo" : "Modo claro"}
       >
-        {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+        {theme === "light" ? <Moon className="h-4 w-4" /> : theme === "dark" ? <Sparkles className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
       </button>
 
       <div className="inline-flex h-10 items-center gap-2 rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 text-sm font-medium text-slate-700 dark:text-zinc-100">

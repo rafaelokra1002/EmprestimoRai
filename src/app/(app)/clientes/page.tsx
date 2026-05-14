@@ -14,7 +14,7 @@ import { FilterDropdown } from "@/components/ui/filter-dropdown"
 import { Textarea } from "@/components/ui/textarea"
 import { Avatar } from "@/components/avatar"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Search, Pencil, Trash2, User, MapPin, FileText, Users, Camera, Upload, Eye, Image, DollarSign, LayoutGrid, Rows3, Filter, CheckCircle2, MoreVertical, Link2, UserCheck } from "lucide-react"
+import { Plus, Search, Pencil, Trash2, User, MapPin, FileText, Users, Camera, Upload, Eye, Image, DollarSign, LayoutGrid, Rows3, Filter, CheckCircle2, MoreVertical, UserCheck, Phone, Mail, XCircle, Share2, MessageCircle, Copy, Info } from "lucide-react"
 import { useSession } from "next-auth/react"
 
 interface Client {
@@ -124,13 +124,28 @@ export default function ClientesPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { data: session } = useSession()
-  const [linkCopied, setLinkCopied] = useState(false)
+  const [shareModalOpen, setShareModalOpen] = useState(false)
+  const [shareLinkCopied, setShareLinkCopied] = useState(false)
   const [clients, setClients] = useState<Client[]>([])
   const [filtered, setFiltered] = useState<Client[]>([])
   const [loanAmountsByClient, setLoanAmountsByClient] = useState<Record<string, number>>({})
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all")
   const [clientesView, setClientesView] = useState<"clientes" | "aprovacoes">("clientes")
+  const [aprovacaoTab, setAprovacaoTab] = useState<"pendentes" | "historico">("pendentes")
+  const [aprovacaoHistorico, setAprovacaoHistoricoState] = useState<{ id: string; name: string; phone: string | null; email: string | null; action: "aprovado" | "rejeitado"; at: string }[]>(() => {
+    try { return JSON.parse(localStorage.getItem("aprovacao-historico") || "[]") } catch { return [] }
+  })
+  const setAprovacaoHistorico = (updater: (prev: { id: string; name: string; phone: string | null; email: string | null; action: "aprovado" | "rejeitado"; at: string }[]) => { id: string; name: string; phone: string | null; email: string | null; action: "aprovado" | "rejeitado"; at: string }[]) => {
+    setAprovacaoHistoricoState((prev) => {
+      const next = updater(prev)
+      try { localStorage.setItem("aprovacao-historico", JSON.stringify(next)) } catch {}
+      return next
+    })
+  }
+  const [aprovacaoLoading, setAprovacaoLoading] = useState<string | null>(null)
+  const [rejeitarConfirm, setRejeitarConfirm] = useState<Client | null>(null)
+  const [rejeitarMotivo, setRejeitarMotivo] = useState("")
   const [viewMode, setViewMode] = useState<"table" | "cards">("table")
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<Client | null>(null)
@@ -211,6 +226,39 @@ export default function ClientesPage() {
   }
 
   useEffect(() => { fetchClients() }, [])
+
+  const handleAprovar = async (client: Client) => {
+    setAprovacaoLoading(client.id)
+    try {
+      await fetch(`/api/clients/${client.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "ACTIVE" }),
+      })
+      setAprovacaoHistorico((prev) => [
+        { id: client.id, name: client.name, phone: client.phone, email: client.email, action: "aprovado", at: new Date().toLocaleString("pt-BR") },
+        ...prev,
+      ])
+      await fetchClients()
+    } finally {
+      setAprovacaoLoading(null)
+    }
+  }
+
+  const handleRejeitar = async (client: Client) => {
+    setAprovacaoLoading(client.id)
+    try {
+      await fetch(`/api/clients/${client.id}`, { method: "DELETE" })
+      setAprovacaoHistorico((prev) => [
+        { id: client.id, name: client.name, phone: client.phone, email: client.email, action: "rejeitado", at: new Date().toLocaleString("pt-BR") },
+        ...prev,
+      ])
+      await fetchClients()
+    } finally {
+      setAprovacaoLoading(null)
+    }
+  }
+
 
   useEffect(() => {
     let list = clients
@@ -583,20 +631,11 @@ export default function ClientesPage() {
             </button>
             <button
               type="button"
-              onClick={() => {
-                const userId = (session?.user as any)?.id
-                if (!userId) return
-                const token = btoa(userId).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")
-                const link = `${window.location.origin}/registro/${token}`
-                navigator.clipboard.writeText(link).then(() => {
-                  setLinkCopied(true)
-                  setTimeout(() => setLinkCopied(false), 2500)
-                })
-              }}
+              onClick={() => setShareModalOpen(true)}
               className="inline-flex items-center gap-1.5 rounded-lg border border-blue-300 bg-white px-4 text-sm font-semibold text-blue-600 transition hover:bg-blue-50 dark:bg-zinc-900 dark:border-blue-700 dark:text-blue-400 dark:hover:bg-zinc-800 h-10 whitespace-nowrap"
             >
-              <Link2 className="h-4 w-4" />
-              {linkCopied ? "Link copiado!" : "Compartilhar Cadastro"}
+              <Share2 className="h-4 w-4" />
+              Compartilhar Cadastro
             </button>
             <Button onClick={() => openNewClient()} className="bg-primary hover:bg-primary/90 text-white gap-2 whitespace-nowrap h-10 px-4 text-sm">
               <Plus className="h-4 w-4" />
@@ -632,8 +671,149 @@ export default function ClientesPage() {
         </div>
       </div>
 
+      {/* Aprovações view */}
+      {clientesView === "aprovacoes" && (
+        <div className="space-y-4">
+          {/* Sub-tabs */}
+          <div className="flex items-center gap-1 border-b border-gray-200 dark:border-zinc-800 pb-0">
+            {(["pendentes", "historico"] as const).map((tab) => {
+              const label = tab === "pendentes" ? "Pendentes" : "Histórico"
+              const count = tab === "pendentes" ? clients.filter(c => c.status === "INACTIVE").length : aprovacaoHistorico.length
+              return (
+                <button
+                  key={tab}
+                  onClick={() => setAprovacaoTab(tab)}
+                  className={`relative px-4 py-2.5 text-sm font-medium transition-colors ${
+                    aprovacaoTab === tab
+                      ? "text-gray-900 dark:text-zinc-100 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-primary"
+                      : "text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200"
+                  }`}
+                >
+                  {label}
+                  {count > 0 && (
+                    <span className={`ml-1.5 inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none ${
+                      aprovacaoTab === tab ? "bg-primary text-white" : "bg-gray-200 dark:bg-zinc-700 text-gray-600 dark:text-zinc-300"
+                    }`}>{count}</span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Pendentes */}
+          {aprovacaoTab === "pendentes" && (
+            <div className="space-y-3">
+              {clients.filter(c => c.status === "INACTIVE").length === 0 ? (
+                <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-8 text-center text-sm text-gray-400 dark:text-zinc-500">
+                  Nenhum cadastro pendente de aprovação
+                </div>
+              ) : (
+                clients.filter(c => c.status === "INACTIVE").map((client) => (
+                  <div key={client.id} className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-5 py-4">
+                    <div className="flex items-start justify-between gap-4 mb-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4 text-gray-400 dark:text-zinc-500" />
+                          <span className="font-semibold text-gray-900 dark:text-zinc-100">{client.name}</span>
+                        </div>
+                        <p className="mt-0.5 text-xs text-gray-400 dark:text-zinc-500">
+                          Recebido em {new Date(client.createdAt).toLocaleString("pt-BR")}
+                        </p>
+                      </div>
+                      <span className="shrink-0 rounded-full border border-amber-300 bg-amber-50 dark:bg-amber-950/20 px-2.5 py-0.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
+                        Pendente
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-x-8 gap-y-1.5 mb-4 text-sm text-gray-600 dark:text-zinc-400">
+                      {client.phone && (
+                        <div className="flex items-center gap-1.5">
+                          <Phone className="h-3.5 w-3.5 shrink-0" />
+                          {client.phone}
+                        </div>
+                      )}
+                      {client.email && (
+                        <div className="flex items-center gap-1.5">
+                          <Mail className="h-3.5 w-3.5 shrink-0" />
+                          {client.email}
+                        </div>
+                      )}
+                      {client.document && (
+                        <div className="flex items-center gap-1.5">
+                          <FileText className="h-3.5 w-3.5 shrink-0" />
+                          CPF: {client.document}
+                        </div>
+                      )}
+                      {(client.address || client.city) && (
+                        <div className="flex items-center gap-1.5">
+                          <MapPin className="h-3.5 w-3.5 shrink-0" />
+                          <span className="truncate">
+                            {[client.address, client.number, client.neighborhood, client.city, client.state].filter(Boolean).join(", ")}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        onClick={() => handleAprovar(client)}
+                        disabled={aprovacaoLoading === client.id}
+                        className="flex items-center justify-center gap-2 rounded-lg bg-green-500 hover:bg-green-600 disabled:opacity-60 px-4 py-2.5 text-sm font-semibold text-white transition-colors"
+                      >
+                        <CheckCircle2 className="h-4 w-4" />
+                        {aprovacaoLoading === client.id ? "Aprovando..." : "Aprovar"}
+                      </button>
+                      <button
+                        onClick={() => { setRejeitarConfirm(client); setRejeitarMotivo("") }}
+                        disabled={aprovacaoLoading === client.id}
+                        className="flex items-center justify-center gap-2 rounded-lg bg-red-500 hover:bg-red-600 disabled:opacity-60 px-4 py-2.5 text-sm font-semibold text-white transition-colors"
+                      >
+                        <XCircle className="h-4 w-4" />
+                        Rejeitar
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
+          {/* Histórico */}
+          {aprovacaoTab === "historico" && (
+            <div className="space-y-2">
+              {aprovacaoHistorico.length === 0 ? (
+                <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-8 text-center text-sm text-gray-400 dark:text-zinc-500">
+                  Nenhuma ação registrada nesta sessão
+                </div>
+              ) : (
+                aprovacaoHistorico.map((item, i) => (
+                  <div key={i} className="flex items-center justify-between gap-4 rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-5 py-4">
+                    <div>
+                      <p className="font-semibold text-gray-900 dark:text-zinc-100">{item.name}</p>
+                      {(item.phone || item.email) && (
+                        <p className="mt-0.5 text-sm text-gray-500 dark:text-zinc-400">
+                          {[item.phone, item.email].filter(Boolean).join(" · ")}
+                        </p>
+                      )}
+                      <p className="mt-0.5 text-xs text-gray-400 dark:text-zinc-500">Revisado em {item.at}</p>
+                    </div>
+                    <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${
+                      item.action === "aprovado"
+                        ? "bg-green-500 text-white"
+                        : "bg-red-500 text-white"
+                    }`}>
+                      {item.action === "aprovado" ? "Aprovado" : "Rejeitado"}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Listing */}
-      {viewMode === "table" ? (
+      {clientesView === "clientes" && (viewMode === "table" ? (
         <div className="rounded-xl border border-primary/40 dark:border-primary/30 overflow-hidden bg-white dark:bg-zinc-900">
           {/* Search bar */}
           <div className="flex items-center gap-3 px-5 py-4 bg-white dark:bg-zinc-900">
@@ -932,7 +1112,128 @@ export default function ClientesPage() {
         </div>
           )}
         </div>
+      ))}
+
+      {/* Modal Confirmar Rejeição */}
+      {rejeitarConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="relative w-full max-w-sm rounded-2xl bg-white dark:bg-zinc-900 shadow-xl p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-bold text-gray-900 dark:text-zinc-100">Rejeitar cadastro</h2>
+              <button onClick={() => setRejeitarConfirm(null)} className="text-gray-400 hover:text-gray-600 dark:text-zinc-500 dark:hover:text-zinc-300">
+                <XCircle className="h-5 w-5" />
+              </button>
+            </div>
+            <p className="text-sm text-gray-600 dark:text-zinc-400">
+              Você está rejeitando o cadastro de <strong>{rejeitarConfirm.name}</strong>. Você pode informar um motivo (opcional).
+            </p>
+            <textarea
+              value={rejeitarMotivo}
+              onChange={(e) => setRejeitarMotivo(e.target.value)}
+              placeholder="Motivo (opcional)"
+              rows={4}
+              className="w-full rounded-xl border border-green-400 dark:border-green-700 bg-white dark:bg-zinc-800 px-3 py-2.5 text-sm text-gray-800 dark:text-zinc-200 placeholder-gray-400 dark:placeholder-zinc-500 outline-none resize-none focus:ring-2 focus:ring-green-400/40"
+            />
+            <div className="flex items-center justify-end gap-3 pt-1">
+              <button
+                onClick={() => setRejeitarConfirm(null)}
+                className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 dark:text-zinc-300 border border-gray-200 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={async () => {
+                  const client = rejeitarConfirm
+                  setRejeitarConfirm(null)
+                  await handleRejeitar(client)
+                }}
+                disabled={aprovacaoLoading === rejeitarConfirm.id}
+                className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-500 hover:bg-red-600 disabled:opacity-60 transition-colors"
+              >
+                Confirmar rejeição
+              </button>
+            </div>
+          </div>
+        </div>
       )}
+
+      {/* Modal Compartilhar Cadastro */}
+      {shareModalOpen && (() => {
+        const userId = (session?.user as any)?.id
+        const token = userId ? btoa(userId).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "") : ""
+        const link = userId ? `${window.location.origin}/registro/${token}` : ""
+        const handleCopy = () => {
+          navigator.clipboard.writeText(link).then(() => {
+            setShareLinkCopied(true)
+            setTimeout(() => setShareLinkCopied(false), 2500)
+          })
+        }
+        const handleWhatsApp = () => {
+          const text = encodeURIComponent(`Olá! Preencha seus dados pelo link abaixo para solicitar seu cadastro:\n${link}`)
+          window.open(`https://wa.me/?text=${text}`, "_blank")
+        }
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="relative w-full max-w-sm rounded-2xl bg-white dark:bg-zinc-900 shadow-xl">
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 pt-5 pb-3">
+                <div className="flex items-center gap-2">
+                  <Share2 className="h-5 w-5 text-gray-700 dark:text-zinc-200" />
+                  <h2 className="text-base font-bold text-gray-900 dark:text-zinc-100">Link de cadastro de clientes</h2>
+                </div>
+                <button onClick={() => setShareModalOpen(false)} className="text-gray-400 hover:text-gray-600 dark:text-zinc-500 dark:hover:text-zinc-300">
+                  <XCircle className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="px-5 pb-5 space-y-4">
+                <p className="text-sm text-gray-500 dark:text-zinc-400">
+                  Compartilhe o link abaixo com seus clientes. Eles preenchem os dados pelo celular e você aprova antes de eles entrarem na sua lista.
+                </p>
+
+                {/* Link box */}
+                <div className="flex items-center gap-2 rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 px-3 py-2.5">
+                  <span className="flex-1 truncate text-xs text-gray-600 dark:text-zinc-300 font-mono">{link}</span>
+                  <button
+                    onClick={handleCopy}
+                    className="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-primary hover:bg-primary/90 px-3 py-1.5 text-xs font-semibold text-white transition-colors"
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                    {shareLinkCopied ? "Copiado!" : "Copiar link"}
+                  </button>
+                </div>
+
+                {/* Como funciona */}
+                <div className="rounded-xl border border-green-200 dark:border-green-900/40 bg-green-500/5 dark:bg-green-950/10 p-4 space-y-2">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <Info className="h-4 w-4 text-green-600 dark:text-green-400" />
+                    <p className="text-sm font-semibold text-green-700 dark:text-green-400">Como funciona</p>
+                  </div>
+                  {[
+                    "Envie o link para o cliente (WhatsApp, e-mail, etc).",
+                    "Ele preenche o formulário com nome, telefone, e-mail e demais dados.",
+                    "O cadastro fica pendente até a sua aprovação.",
+                    <>Aprove ou rejeite na aba <strong>"Aprovações"</strong> aqui mesmo nesta página.</>,
+                  ].map((step, i) => (
+                    <p key={i} className="text-sm text-gray-600 dark:text-zinc-400">
+                      {i + 1}. {step}
+                    </p>
+                  ))}
+                </div>
+
+                {/* WhatsApp button */}
+                <button
+                  onClick={handleWhatsApp}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 px-4 py-3 text-sm font-semibold text-gray-700 dark:text-zinc-200 transition-colors"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  Compartilhar no WhatsApp
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
 
       <Dialog
         open={Boolean(profileImagePreview)}

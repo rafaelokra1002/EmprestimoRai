@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { buildLoanData, getOverdueDailyAmountBRL } from "@/lib/loan-logic"
 
 export async function GET() {
   try {
@@ -29,7 +30,7 @@ export async function GET() {
     const [loansResult, overdueCountResult, overdueAmountResult, dueTodayCountResult, activeClientsResult, inactiveClientsResult, totalClientsResult, salesResult, vehiclesResult, monthlyExpensesResult] = await Promise.all([
       prisma.loan.findMany({
         where: { userId, status: "ACTIVE" },
-        include: { installments: true, payments: true },
+        include: { installments: true, payments: true, client: { select: { name: true } } },
       }),
       prisma.installment.count({
         where: {
@@ -99,6 +100,90 @@ export async function GET() {
     const totalProfit = loans.reduce((acc, loan) => acc + Number(loan.profit || 0), 0)
 
     const pendingInterest = totalProfit
+
+    // Multas de atraso: juros diários acumulados + penaltyFee por parcela vencida não paga
+    const totalPendingLateFees = loans.reduce((acc, loan) => {
+      const loanData = buildLoanData({
+        amount: Number(loan.amount),
+        interestRate: Number(loan.interestRate),
+        interestType: loan.interestType,
+        totalAmount: Number(loan.totalAmount),
+        dailyInterest: loan.dailyInterest,
+        dailyInterestAmount: Number(loan.dailyInterestAmount || 0),
+        dueDay: loan.dueDay ?? undefined,
+        modality: loan.modality,
+        firstInstallmentDate: loan.firstInstallmentDate,
+        installments: loan.installments.map((i) => ({
+          number: i.number,
+          dueDate: i.dueDate,
+          status: i.status,
+          amount: Number(i.amount),
+          paidAmount: Number((i as any).paidAmount || 0),
+        })),
+        payments: loan.payments.map((p) => ({ amount: Number(p.amount), notes: p.notes })),
+      })
+      const dailyRate = getOverdueDailyAmountBRL(loanData)
+      return acc + loan.installments
+        .filter((i) => i.status === "PENDING" && new Date(i.dueDate) < startOfToday)
+        .reduce((sum, i) => {
+          const daysOver = Math.max(0, Math.floor((startOfToday.getTime() - new Date(i.dueDate).getTime()) / 86400000))
+          return sum + dailyRate * daysOver + Number(loan.penaltyFee || 0)
+        }, 0)
+    }, 0)
+
+    // Valores diários em atraso por empréstimo
+    const overdueByLoan = loans
+      .map((loan) => {
+        const loanData = buildLoanData({
+          amount: Number(loan.amount),
+          interestRate: Number(loan.interestRate),
+          interestType: loan.interestType,
+          totalAmount: Number(loan.totalAmount),
+          dailyInterest: loan.dailyInterest,
+          dailyInterestAmount: Number(loan.dailyInterestAmount || 0),
+          dueDay: loan.dueDay ?? undefined,
+          modality: loan.modality,
+          firstInstallmentDate: loan.firstInstallmentDate,
+          installments: loan.installments.map((i) => ({
+            number: i.number,
+            dueDate: i.dueDate,
+            status: i.status,
+            amount: Number(i.amount),
+            paidAmount: Number((i as any).paidAmount || 0),
+          })),
+          payments: loan.payments.map((p) => ({ amount: Number(p.amount), notes: p.notes })),
+        })
+        const dailyRate = getOverdueDailyAmountBRL(loanData)
+        const overdueInstallments = loan.installments.filter(
+          (i) => i.status === "PENDING" && new Date(i.dueDate) < startOfToday
+        )
+        if (overdueInstallments.length === 0) return null
+        const totalCharge = overdueInstallments.reduce((sum, i) => {
+          const daysOver = Math.max(0, Math.floor((startOfToday.getTime() - new Date(i.dueDate).getTime()) / 86400000))
+          return sum + dailyRate * daysOver + Number(loan.penaltyFee || 0)
+        }, 0)
+        return {
+          clientName: loan.client?.name || "—",
+          dailyRate,
+          totalCharge,
+          overdueCount: overdueInstallments.length,
+        }
+      })
+      .filter(Boolean) as { clientName: string; dailyRate: number; totalCharge: number; overdueCount: number }[]
+
+    // Parcelas pendentes agrupadas por dia do mês
+    const dayMap = new Map<number, number>()
+    loans.forEach((loan) => {
+      loan.installments
+        .filter((inst) => inst.status === "PENDING")
+        .forEach((inst) => {
+          const day = new Date(inst.dueDate).getDate()
+          dayMap.set(day, (dayMap.get(day) || 0) + Number(inst.amount || 0))
+        })
+    })
+    const paymentsByDay = Array.from(dayMap.entries())
+      .sort((a, b) => a[0] - b[0])
+      .map(([day, amount]) => ({ day, amount }))
 
     // Juros efetivamente recebidos neste mês
     const monthlyReceivedInterest = loans.reduce((acc, loan) => {
@@ -269,6 +354,9 @@ export async function GET() {
         defaultRate,
       },
       alerts,
+      totalPendingLateFees,
+      overdueByLoan,
+      paymentsByDay,
       updatedAt: now.toISOString(),
     })
   } catch (error: any) {
