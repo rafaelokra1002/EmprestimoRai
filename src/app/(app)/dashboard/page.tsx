@@ -283,7 +283,7 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
         <KpiCard
           title="Recebido"
           value={formatCurrency(data?.totalReceived || 0)}
@@ -316,9 +316,6 @@ export default function DashboardPage() {
           iconClassName="text-red-500"
           iconBgClassName="bg-red-50 dark:bg-red-950/30"
         />
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-3">
         <KpiCard
           title="Clientes"
           value={`${data?.counters?.totalClients || 0}`}
@@ -343,9 +340,6 @@ export default function DashboardPage() {
           iconClassName="text-orange-600"
           iconBgClassName="bg-orange-50 dark:bg-orange-950/20"
         />
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-3">
         <KpiCard
           title="Em Atraso"
           value={formatCurrency(data?.overdueAmount || 0)}
