@@ -70,6 +70,7 @@ export default function ClienteEmprestimosPage() {
 
   // Renegotiate dialog state
   const [renegotiateDialog, setRenegotiateDialog] = useState<Loan | null>(null)
+  const [renegotiateEntry, setRenegotiateEntry] = useState<"all" | "interest">("all")
   const [renegotiateMode, setRenegotiateMode] = useState<"total" | "full" | "partial" | null>(null)
   const [renegotiateAmount, setRenegotiateAmount] = useState<number>(0)
   const [renegotiateDate, setRenegotiateDate] = useState("")
@@ -477,9 +478,31 @@ export default function ClienteEmprestimosPage() {
   const today = () => localDateStr()
 
   const openRenegotiateDialog = (loan: Loan) => {
+    setRenegotiateEntry("all")
     setRenegotiateDialog(loan)
     setRenegotiateMode(null)
     setRenegotiateAmount(0)
+    setRenegotiateDate(today())
+    setRenegotiateNotes("[OVERDUE_CONFIG:fixed:15]")
+    const pendingInsts = loan.installments
+      .filter((i: any) => i.status !== "PAID")
+      .sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+    const nextInst = pendingInsts[0]
+    if (nextInst) {
+      setRenegotiateInstallmentId(nextInst.id)
+      const dueDay = new Date(loan.installments[0]?.dueDate || loan.installments[0]?.dueDate).getDate()
+      const nextDue = getNextDueDateFn(dueDay, new Date())
+      setRenegotiateNewDueDate(localDateStr(nextDue))
+    } else {
+      setRenegotiateInstallmentId("")
+      setRenegotiateNewDueDate("")
+    }
+  }
+
+  const openInterestRenegotiateDialog = (loan: Loan) => {
+    setRenegotiateEntry("interest")
+    setRenegotiateDialog(loan)
+    setRenegotiateMode(null)
     setRenegotiateDate(today())
     setRenegotiateNotes("[OVERDUE_CONFIG:fixed:15]")
     const pendingInsts = loan.installments
@@ -1061,9 +1084,12 @@ export default function ClienteEmprestimosPage() {
 
                 {/* Ações */}
                 <div className="px-4 pt-3 pb-4 mt-2 border-t border-gray-100 dark:border-zinc-800 space-y-3">
-                  <div className="grid w-full min-w-0 grid-cols-[minmax(0,2.6fr)_repeat(5,minmax(0,1fr))] gap-1.5">
-                    <Button size="sm" variant="outline" onClick={() => openPaymentDialog(loan)} className="min-w-0 h-10 px-2 text-xs border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:bg-primary/5 hover:text-primary hover:border-primary/30 dark:hover:bg-primary/10 dark:hover:text-primary transition-colors sm:text-sm">
-                      <Receipt className="h-3.5 w-3.5 mr-1" /> Pagar
+                  <div className="grid w-full min-w-0 grid-cols-[minmax(0,2.2fr)_minmax(0,2.8fr)_repeat(4,minmax(0,1fr))] gap-1.5 pb-1">
+                    <Button size="sm" onClick={() => openPaymentDialog(loan)} className="min-w-0 h-10 px-2 text-xs border border-primary/15 bg-primary/10 font-medium text-primary shadow-none transition-colors hover:bg-primary/15 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20 sm:text-sm">
+                      <Receipt className="mr-1 h-4 w-4 shrink-0" /> <span className="truncate">Pagar</span>
+                    </Button>
+                    <Button size="sm" onClick={() => openInterestRenegotiateDialog(loan)} className="min-w-0 h-10 px-2 text-xs border border-primary/15 bg-primary/10 font-medium text-primary shadow-none transition-colors hover:bg-primary/15 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20 sm:text-sm">
+                      <DollarSign className="mr-1 h-4 w-4 shrink-0" /> <span className="truncate">Pagar Juros</span>
                     </Button>
                     <button className="flex min-w-0 w-full items-center justify-center rounded-2xl border border-violet-100 bg-violet-50/80 p-2 text-primary shadow-sm transition-colors hover:bg-violet-100 dark:border-violet-900/40 dark:bg-violet-950/30 dark:text-primary dark:hover:bg-violet-900/40" onClick={() => router.push(`/emprestimos/${loan.id}`)} title="Histórico">
                       <RotateCcw className="h-4 w-4" />
@@ -1071,13 +1097,10 @@ export default function ClienteEmprestimosPage() {
                     <button className="flex min-w-0 w-full items-center justify-center rounded-xl bg-blue-50 p-2 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors" onClick={() => router.push(`/emprestimos/${loan.id}/editar`)} title="Editar">
                       <Pencil className="h-4 w-4" />
                     </button>
-                    <button className="flex min-w-0 w-full items-center justify-center rounded-xl bg-emerald-50 p-2 dark:bg-emerald-950/30 text-primary dark:text-primary hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors" onClick={() => router.push(`/emprestimos/${loan.id}`)} title="Pagar Juros">
-                      <DollarSign className="h-4 w-4" />
-                    </button>
-                    <button className="flex min-w-0 w-full items-center justify-center rounded-xl bg-amber-50 p-2 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors" onClick={() => openRenegotiateDialog(loan)} title="Renegociar">
+                    <button className="flex min-w-0 w-full items-center justify-center rounded-xl bg-amber-50 p-2 text-amber-500 transition-colors hover:bg-amber-100 dark:bg-amber-950/30 dark:text-amber-400 dark:hover:bg-amber-900/40" onClick={() => openRenegotiateDialog(loan)} title="Renegociar">
                       <RotateCcw className="h-4 w-4" />
                     </button>
-                    <button className="flex min-w-0 w-full items-center justify-center rounded-xl bg-red-50 p-2 dark:bg-red-950/30 text-red-500 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors" onClick={() => handleDelete(loan.id)} title="Excluir">
+                    <button className="flex min-w-0 w-full items-center justify-center rounded-xl bg-red-50 p-2 text-red-500 transition-colors hover:bg-red-100 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-900/40" onClick={() => handleDelete(loan.id)} title="Excluir">
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
@@ -1141,22 +1164,228 @@ export default function ClienteEmprestimosPage() {
       {/* ===== RENEGOCIAR CONTRATO DIALOG ===== */}
       <Dialog
         open={!!renegotiateDialog}
-        onClose={() => { setRenegotiateDialog(null); setRenegotiateMode(null); setRenegotiateAmount(0); setRenegotiateNotes("") }}
-        title="Renegociação de Contrato"
+        onClose={() => { setRenegotiateDialog(null); setRenegotiateMode(null); setRenegotiateEntry("all"); setRenegotiateAmount(0); setRenegotiateNotes("") }}
+        title={renegotiateEntry === "interest" ? "Renegociar Dívida" : "Renegociação de Contrato"}
         className="max-w-2xl"
       >
         {renegotiateDialog && (
-          <LoanRenegotiationContent
-            loan={renegotiateDialog}
-            remainingAmount={getRemaining(renegotiateDialog)}
-            onClose={() => {
-              setRenegotiateDialog(null)
-              setRenegotiateMode(null)
-              setRenegotiateAmount(0)
-              setRenegotiateNotes("")
-            }}
-            onSuccess={fetchLoans}
-          />
+          renegotiateEntry === "interest" ? (() => {
+            const currentLoan = renegotiateDialog
+            const nextInstallment = getNextDueInst(currentLoan)
+            const currentInterest = interestPerInst(currentLoan)
+            const currentRemaining = getRemaining(currentLoan)
+            const partialPayments = currentLoan.payments.filter((payment: any) => {
+              const notes = (payment.notes || "").toLowerCase()
+              return notes.includes("parcial de juros")
+            })
+            const totalPartialPaid = partialPayments.reduce((sum: number, payment: any) => sum + payment.amount, 0)
+            const cyclePaid = currentInterest > 0 ? totalPartialPaid % currentInterest : 0
+            const pendingPartialInterest = currentInterest > 0 ? Math.max(currentInterest - cyclePaid, 0) : 0
+            const amountAfterInterestPayment = Math.max(currentRemaining - renegotiateAmount, currentLoan.totalAmount)
+            return (
+              <div className="space-y-5">
+                <div className="rounded-3xl bg-gradient-to-r from-emerald-50 via-emerald-50 to-slate-50 p-5 dark:from-emerald-950/20 dark:via-emerald-950/10 dark:to-zinc-900">
+                  <div className="flex items-center gap-3">
+                    <Avatar name={currentLoan.client.name} src={currentLoan.client.photo} size="sm" />
+                    <div>
+                      <p className="text-xl font-semibold text-slate-900 dark:text-zinc-100">{currentLoan.client.name}</p>
+                      <p className="text-base text-slate-500 dark:text-zinc-400">Saldo devedor: {formatCurrency(getRemaining(currentLoan))}</p>
+                      <p className="text-base text-slate-500 dark:text-zinc-400">Valor por parcela: {formatCurrency(nextInstallment?.amount || currentLoan.installmentValue)}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {!renegotiateMode && (
+                  <div className="space-y-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRenegotiateMode("full")
+                        const overdueCharge = getCurrentOverdueCharge(currentLoan)
+                        const hasOverdue = currentLoan.installments.some((i: any) => i.status === "PENDING" && new Date(i.dueDate) < new Date())
+                        const multa = hasOverdue ? (currentLoan.penaltyFee || 0) : 0
+                        setRenegotiateAmount(currentInterest + overdueCharge + multa)
+                      }}
+                      className="w-full rounded-3xl border p-5 text-left transition-colors border-gray-200 bg-white hover:bg-gray-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary">
+                          <DollarSign className="h-6 w-6" />
+                        </div>
+                        <div>
+                          <p className="text-xl font-semibold text-gray-900 dark:text-zinc-100">Cliente pagou só os juros</p>
+                          <p className="text-base text-gray-500 dark:text-zinc-400">Registrar pagamento apenas dos juros da parcela</p>
+                        </div>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRenegotiateMode("partial")
+                        setRenegotiateAmount(pendingPartialInterest || currentInterest)
+                      }}
+                      className="w-full rounded-3xl border p-5 text-left transition-colors border-gray-200 bg-white hover:bg-gray-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary">
+                          <DollarSign className="h-6 w-6" />
+                        </div>
+                        <div>
+                          <p className="text-xl font-semibold text-gray-900 dark:text-zinc-100">Pagamento parcial de juros</p>
+                          <p className="text-base text-gray-500 dark:text-zinc-400">Registrar pagamento de parte dos juros de uma parcela</p>
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+                )}
+
+                {renegotiateMode === "full" && (
+                  <div className="space-y-2.5 rounded-3xl border border-gray-200 bg-white p-3.5 dark:border-zinc-800 dark:bg-zinc-900">
+                    <div className="flex items-center justify-between">
+                      <p className="text-base font-semibold text-gray-900 dark:text-zinc-100">Cliente pagou só os juros</p>
+                      <button type="button" onClick={() => setRenegotiateMode(null)} className="text-xs text-gray-500 transition-colors hover:text-primary dark:text-zinc-400 dark:hover:text-primary">
+                        Voltar
+                      </button>
+                    </div>
+
+                    <div className="rounded-2xl border border-primary/20 bg-primary/5 p-2.5 text-xs dark:border-primary/30 dark:bg-primary/10">
+                      <p className="font-semibold text-gray-900 dark:text-zinc-100">Resumo: Cliente paga <span className="text-primary">{formatCurrency(renegotiateAmount || currentInterest)}</span> de juros agora.</p>
+                      <p className="mt-0.5 text-gray-600 dark:text-zinc-300">No próximo vencimento, o valor a cobrar será: <span className="font-semibold text-primary">{formatCurrency(amountAfterInterestPayment)}</span></p>
+                    </div>
+
+                    <div className="grid gap-2.5 sm:grid-cols-2">
+                      <div>
+                        <Label>Valor Pago (Juros) (R$) *</Label>
+                        <Input type="number" step="0.01" value={renegotiateAmount || ""} onChange={(e) => setRenegotiateAmount(Number(e.target.value))} className="mt-1 h-9" />
+                        <p className="mt-0.5 text-[11px] leading-tight text-gray-500 dark:text-zinc-400">Valor calculado automaticamente, editavel</p>
+                      </div>
+                      <div>
+                        <Label>Valor Total que Falta (R$)</Label>
+                        <Input type="text" readOnly value={formatCurrency(amountAfterInterestPayment)} className="mt-1 h-9 bg-gray-50 dark:bg-zinc-800/60" />
+                        <p className="mt-0.5 text-[11px] leading-tight text-gray-500 dark:text-zinc-400">So diminui se pagar mais que o juros</p>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-2.5 sm:grid-cols-2">
+                      <div>
+                        <Label>Data do Pagamento *</Label>
+                        <Input type="date" value={renegotiateDate} onChange={(e) => setRenegotiateDate(e.target.value)} className="mt-1 h-9" />
+                        <p className="mt-0.5 text-[11px] leading-tight text-gray-500 dark:text-zinc-400">Quando o cliente pagou os juros</p>
+                      </div>
+                      <div>
+                        <Label>Nova Data de Vencimento *</Label>
+                        <Input type="date" value={renegotiateNewDueDate} onChange={(e) => setRenegotiateNewDueDate(e.target.value)} className="mt-1 h-9" />
+                        <p className="mt-0.5 text-[11px] leading-tight text-gray-500 dark:text-zinc-400">Proxima data de cobranca</p>
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label>Observações</Label>
+                      <Textarea value={renegotiateNotes} onChange={(e) => setRenegotiateNotes(e.target.value)} className="mt-1 min-h-[64px]" placeholder="Adicione uma observação para este pagamento" />
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-1">
+                      <Button variant="outline" onClick={() => { setRenegotiateDialog(null); setRenegotiateMode(null); setRenegotiateEntry("all"); setRenegotiateAmount(0); setRenegotiateNotes("") }}>
+                        Cancelar
+                      </Button>
+                      <Button onClick={handleRenegotiatePayment} disabled={paying}>
+                        {paying ? "Registrando..." : "Registrar Pagamento de Juros"}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {renegotiateMode === "partial" && (
+                  <div className="space-y-2.5 rounded-3xl border border-gray-200 bg-white p-3.5 dark:border-zinc-800 dark:bg-zinc-900">
+                    {(() => {
+                      const pendingInstallments = currentLoan.installments
+                        .filter((installment: any) => installment.status !== "PAID")
+                        .sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+                      const selectedInstallment = pendingInstallments.find((installment: any) => installment.id === renegotiateInstallmentId) || pendingInstallments[0]
+                      const partialPaidNow = renegotiateAmount || 0
+                      const partialRemaining = Math.max((pendingPartialInterest || currentInterest) - partialPaidNow, 0)
+                      return (
+                        <>
+                          <div className="flex items-center justify-between">
+                            <p className="text-base font-semibold text-gray-900 dark:text-zinc-100">Pagamento parcial de juros</p>
+                            <button type="button" onClick={() => setRenegotiateMode(null)} className="text-xs text-gray-500 transition-colors hover:text-primary dark:text-zinc-400 dark:hover:text-primary">
+                              Voltar
+                            </button>
+                          </div>
+
+                          <div>
+                            <Label>Parcela referente:</Label>
+                            <select value={selectedInstallment?.id || ""} onChange={(e) => setRenegotiateInstallmentId(e.target.value)} className="mt-1 flex h-9 w-full rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100">
+                              {pendingInstallments.map((installment: any) => (
+                                <option key={installment.id} value={installment.id}>
+                                  {`Parcela ${installment.number}/${currentLoan.installmentCount} - ${formatDate(installment.dueDate)}`}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div className="grid gap-2.5 sm:grid-cols-2">
+                            <div>
+                              <Label>Valor pago agora (R$) *</Label>
+                              <Input type="number" step="0.01" value={renegotiateAmount || ""} onChange={(e) => setRenegotiateAmount(Number(e.target.value))} className="mt-1 h-9" />
+                              <p className="mt-0.5 text-[11px] leading-tight text-gray-500 dark:text-zinc-400">Limite: {formatCurrency(pendingPartialInterest || currentInterest)}</p>
+                            </div>
+                            <div>
+                              <Label>Data do pagamento *</Label>
+                              <Input type="date" value={renegotiateDate} onChange={(e) => setRenegotiateDate(e.target.value)} className="mt-1 h-9" />
+                            </div>
+                          </div>
+
+                          <div className="rounded-2xl border border-primary/20 bg-primary/5 p-2.5 text-xs dark:border-primary/30 dark:bg-primary/10">
+                            <div className="space-y-1.5">
+                              <div className="flex items-center justify-between gap-3">
+                                <span className="text-gray-600 dark:text-zinc-300">Juros total da parcela:</span>
+                                <span className="font-semibold text-gray-900 dark:text-zinc-100">{formatCurrency(currentInterest)}</span>
+                              </div>
+                              <div className="flex items-center justify-between gap-3 border-t border-primary/10 pt-1.5 dark:border-primary/20">
+                                <span className="text-gray-600 dark:text-zinc-300">Valor pago agora:</span>
+                                <span className="font-semibold text-primary">- {formatCurrency(partialPaidNow)}</span>
+                              </div>
+                              <div className="flex items-center justify-between gap-3 border-t border-primary/10 pt-1.5 dark:border-primary/20">
+                                <span className="font-medium text-gray-900 dark:text-zinc-100">Juros pendente final:</span>
+                                <span className="text-sm font-semibold text-amber-500">{formatCurrency(partialRemaining)}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div>
+                            <Label>Observações</Label>
+                            <Textarea value={renegotiateNotes} onChange={(e) => setRenegotiateNotes(e.target.value)} className="mt-1 min-h-[64px]" placeholder="Adicione uma observação para este pagamento" />
+                          </div>
+
+                          <div className="flex justify-end gap-2 pt-1">
+                            <Button variant="outline" onClick={() => setRenegotiateMode(null)}>Voltar</Button>
+                            <Button onClick={handleRenegotiatePayment} disabled={paying}>
+                              {paying ? "Registrando..." : "Registrar Pagamento Parcial"}
+                            </Button>
+                          </div>
+                        </>
+                      )
+                    })()}
+                  </div>
+                )}
+              </div>
+            )
+          })() : (
+            <LoanRenegotiationContent
+              loan={renegotiateDialog}
+              remainingAmount={getRemaining(renegotiateDialog)}
+              onClose={() => {
+                setRenegotiateDialog(null)
+                setRenegotiateMode(null)
+                setRenegotiateEntry("all")
+                setRenegotiateAmount(0)
+                setRenegotiateNotes("")
+              }}
+              onSuccess={fetchLoans}
+            />
+          )
         )}
       </Dialog>
 

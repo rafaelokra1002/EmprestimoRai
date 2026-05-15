@@ -26,6 +26,10 @@ export async function GET() {
 
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
+    const endOfWeek = new Date(startOfWeek)
+    endOfWeek.setDate(endOfWeek.getDate() + 7)
+    const thirtyDaysAgo = new Date(startOfToday)
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
     const [loansResult, overdueCountResult, overdueAmountResult, dueTodayCountResult, activeClientsResult, inactiveClientsResult, totalClientsResult, salesResult, vehiclesResult, monthlyExpensesResult] = await Promise.all([
       prisma.loan.findMany({
@@ -96,6 +100,24 @@ export async function GET() {
     )
     const dueTodayAmount = dueTodayInstallments.reduce((acc, item) => acc + item.amount, 0)
     const dueTodayClients = new Set(dueTodayInstallments.map((item) => item.clientId)).size
+    // Vencem esta semana (de hoje até fim da semana)
+    const dueThisWeekInstallments = loans.flatMap((loan) =>
+      loan.installments
+        .filter((inst) => inst.status === "PENDING" && new Date(inst.dueDate) >= startOfToday && new Date(inst.dueDate) < endOfWeek)
+        .map((inst) => Number(inst.amount || 0))
+    )
+    const dueThisWeekCount = dueThisWeekInstallments.length
+    const dueThisWeekAmount = dueThisWeekInstallments.reduce((s, a) => s + a, 0)
+
+    // Atrasados há +30 dias (clientes únicos)
+    const overdue30DaysLoans = loans.filter((loan) =>
+      loan.installments.some((inst) => inst.status === "PENDING" && new Date(inst.dueDate) < thirtyDaysAgo)
+    )
+    const overdue30DaysCount = new Set(overdue30DaysLoans.map((l) => l.clientId)).size
+    const overdue30DaysAmount = overdue30DaysLoans.flatMap((loan) =>
+      loan.installments.filter((inst) => inst.status === "PENDING" && new Date(inst.dueDate) < thirtyDaysAgo).map((inst) => Number(inst.amount || 0))
+    ).reduce((s, a) => s + a, 0)
+
     const capitalOnStreet = Math.max(totalToReceive - totalReceived, 0)
     const totalProfit = loans.reduce((acc, loan) => acc + Number(loan.profit || 0), 0)
 
@@ -184,6 +206,30 @@ export async function GET() {
     const paymentsByDay = Array.from(dayMap.entries())
       .sort((a, b) => a[0] - b[0])
       .map(([day, amount]) => ({ day, amount }))
+
+    // Próximos 7 dias com vencimentos
+    const dueNextSevenDays = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(startOfToday)
+      d.setDate(d.getDate() + i)
+      const dateStr = d.toISOString().slice(0, 10)
+      const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+      const dayEnd = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)
+      const items = loans.flatMap((loan) =>
+        loan.installments
+          .filter((inst) => {
+            const due = new Date(inst.dueDate)
+            return inst.status === "PENDING" && due >= dayStart && due < dayEnd
+          })
+          .map((inst) => ({
+            clientName: loan.client?.name || "—",
+            installmentNumber: inst.number,
+            installmentCount: loan.installmentCount,
+            amount: Number(inst.amount || 0),
+            loanId: loan.id,
+          }))
+      )
+      return { date: dateStr, count: items.length, amount: items.reduce((s, it) => s + it.amount, 0), items }
+    })
 
     // Juros efetivamente recebidos neste mês
     const monthlyReceivedInterest = loans.reduce((acc, loan) => {
@@ -354,6 +400,11 @@ export async function GET() {
         defaultRate,
       },
       alerts,
+      dueThisWeekCount,
+      dueThisWeekAmount,
+      overdue30DaysCount,
+      overdue30DaysAmount,
+      dueNextSevenDays,
       totalPendingLateFees,
       overdueByLoan,
       paymentsByDay,

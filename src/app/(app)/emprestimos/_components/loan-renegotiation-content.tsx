@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { AlertTriangle, CalendarDays, CheckCircle2, FileText, Plus, RefreshCw, Shield, X } from "lucide-react"
+import { AlertTriangle, CalendarDays, CheckCircle2, FileText, Plus, RefreshCw, Shield } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -300,15 +300,6 @@ export function LoanRenegotiationContent({ loan, remainingAmount, onClose, onSuc
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2 text-lg font-bold text-slate-950 dark:text-zinc-100">
-          <AlertTriangle className="h-5 w-5 text-amber-500" />
-          <span>Renegociação de Contrato</span>
-        </div>
-        <button type="button" onClick={onClose} className="text-slate-500 transition-colors hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-100" aria-label="Fechar">
-          <X className="h-5 w-5" />
-        </button>
-      </div>
       <div className="rounded-lg border border-amber-400 bg-amber-50 px-3 py-2 text-sm leading-snug text-amber-500 dark:border-amber-500/60 dark:bg-amber-950/20 dark:text-amber-300">
         <div className="flex items-start gap-2">
           <div className="hidden">

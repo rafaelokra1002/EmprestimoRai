@@ -139,7 +139,6 @@ export default function EmprestimosPage() {
   const [renegotiateNewDueDate, setRenegotiateNewDueDate] = useState("")
   const [renegotiateNotes, setRenegotiateNotes] = useState("")
   const [renegotiateInstallmentId, setRenegotiateInstallmentId] = useState("")
-  const [renegotiatePaymentMethod, setRenegotiatePaymentMethod] = useState<"Dinheiro" | "Pix" | "Cartao">("Dinheiro")
 
   // Success dialog state
   const [successDialog, setSuccessDialog] = useState(false)
@@ -1055,7 +1054,7 @@ export default function EmprestimosPage() {
           amount,
           date: renegotiateDate || today(),
           newDueDate: sendNewDueDate,
-          notes: (renegotiateNotes ? renegotiateNotes + " | " : "") + `Forma: ${renegotiatePaymentMethod} | ` + (renegotiateMode === "full" ? "Pagamento só juros" : "Pagamento parcial de juros"),
+          notes: (renegotiateNotes ? renegotiateNotes + " | " : "") + (renegotiateMode === "full" ? "Pagamento só juros" : "Pagamento parcial de juros"),
         }),
       })
       setRenegotiateDialog(null)
@@ -3218,12 +3217,6 @@ export default function EmprestimosPage() {
             const cyclePaid = currentInterest > 0 ? totalPartialPaid % currentInterest : 0
             const pendingPartialInterest = currentInterest > 0 ? Math.max(currentInterest - cyclePaid, 0) : 0
             const amountAfterInterestPayment = Math.max(currentRemaining - renegotiateAmount, currentLoan.totalAmount)
-            const methodOptions: Array<{ value: "Dinheiro" | "Pix" | "Cartao"; label: string; icon: string }> = [
-              { value: "Dinheiro", label: "Dinheiro", icon: "\uD83D\uDCB5" },
-              { value: "Pix", label: "Pix", icon: "\uD83D\uDCB8" },
-              { value: "Cartao", label: "Cartao", icon: "\uD83D\uDCB3" },
-            ]
-
             return (
               <div className="space-y-5">
                 <div className="rounded-3xl bg-gradient-to-r from-emerald-50 via-emerald-50 to-slate-50 p-5 dark:from-emerald-950/20 dark:via-emerald-950/10 dark:to-zinc-900">
@@ -3329,23 +3322,6 @@ export default function EmprestimosPage() {
                         <Label>Nova Data de Vencimento *</Label>
                         <Input type="date" value={renegotiateNewDueDate} onChange={(e) => setRenegotiateNewDueDate(e.target.value)} className="mt-1 h-9" />
                         <p className="mt-0.5 text-[11px] leading-tight text-gray-500 dark:text-zinc-400">Proxima data de cobranca</p>
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label>Forma de Pagamento</Label>
-                      <div className="mt-1.5 grid gap-2 sm:grid-cols-3">
-                        {methodOptions.map((method) => (
-                          <button
-                            key={method.value}
-                            type="button"
-                            onClick={() => setRenegotiatePaymentMethod(method.value)}
-                            className={`rounded-xl border px-3 py-2 text-xs font-medium transition-colors ${renegotiatePaymentMethod === method.value ? "border-primary bg-primary text-white" : "border-gray-200 bg-white text-gray-700 hover:border-primary/30 hover:bg-primary/5 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-primary/30 dark:hover:bg-primary/10"}`}
-                          >
-                            <span className="mr-2">{method.icon}</span>
-                            {method.label}
-                          </button>
-                        ))}
                       </div>
                     </div>
 

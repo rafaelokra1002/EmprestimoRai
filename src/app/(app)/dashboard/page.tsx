@@ -4,14 +4,18 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
+  AlertTriangle,
   ArrowUpRight,
+  Calendar,
   Clock3,
   DollarSign,
   Receipt,
   Shield,
   ShieldAlert,
   TrendingUp,
+  UserX,
   Users,
+  Wallet,
   X,
   type LucideIcon,
 } from "lucide-react"
@@ -75,6 +79,11 @@ interface DashboardData {
     defaultRate: number
   }
   alerts: { title: string; description: string; severity: "high" | "medium" | "low" }[]
+  dueThisWeekCount: number
+  dueThisWeekAmount: number
+  overdue30DaysCount: number
+  overdue30DaysAmount: number
+  dueNextSevenDays: { date: string; count: number; amount: number; items: { clientName: string; installmentNumber: number; installmentCount: number; amount: number; loanId: string }[] }[]
   totalPendingLateFees: number
   overdueByLoan: { clientName: string; dailyRate: number; totalCharge: number; overdueCount: number }[]
   paymentsByDay: { day: number; amount: number }[]
@@ -118,6 +127,7 @@ export default function DashboardPage() {
   const [showInstallBanner, setShowInstallBanner] = useState(true)
   const [showBackupAlert, setShowBackupAlert] = useState(false)
   const [backupLoading, setBackupLoading] = useState(false)
+  const [hoveredDueDate, setHoveredDueDate] = useState<string | null>(null)
   const { theme } = useTheme()
   const isDark = theme === "dark"
 
@@ -255,7 +265,7 @@ export default function DashboardPage() {
             Visão Geral
           </CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-3">
+        <CardContent className="grid gap-4 md:grid-cols-4">
           <div className="rounded-xl border border-emerald-100 dark:border-emerald-900/40 bg-emerald-50/60 dark:bg-emerald-950/20 p-4">
             <div className="mb-1 flex items-center gap-1.5">
               <Receipt className="h-3.5 w-3.5 text-emerald-600" />
@@ -280,10 +290,18 @@ export default function DashboardPage() {
             <p className="text-2xl leading-none font-semibold tabular-nums tracking-tight text-violet-600 dark:text-violet-400">{formatCurrency(data?.financials?.pendingInterest || 0)}</p>
             <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">juros pendentes</p>
           </div>
+          <div className="rounded-xl border border-primary/20 dark:border-primary/20 bg-primary/5 dark:bg-primary/10 p-4">
+            <div className="mb-1 flex items-center gap-1.5">
+              <Wallet className="h-3.5 w-3.5 text-primary" />
+              <p className="text-xs text-gray-500 dark:text-zinc-400">Falta Receber</p>
+            </div>
+            <p className="text-2xl leading-none font-semibold tabular-nums tracking-tight text-primary">{formatCurrency(data?.capitalOnStreet || 0)}</p>
+            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">saldo restante a receber</p>
+          </div>
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
         <KpiCard
           title="Recebido"
           value={formatCurrency(data?.totalReceived || 0)}
@@ -291,14 +309,6 @@ export default function DashboardPage() {
           icon={Receipt}
           iconClassName="text-primary"
           iconBgClassName="bg-primary/5 dark:bg-primary/15"
-        />
-        <KpiCard
-          title="Falta Receber"
-          value={formatCurrency(data?.capitalOnStreet || 0)}
-          subtitle="saldo ainda a receber"
-          icon={DollarSign}
-          iconClassName="text-emerald-600"
-          iconBgClassName="bg-emerald-50 dark:bg-emerald-950/20"
         />
         <KpiCard
           title="Juros Recebido Mensal"
@@ -356,6 +366,80 @@ export default function DashboardPage() {
           iconClassName="text-gray-500"
           iconBgClassName="bg-gray-100 dark:bg-zinc-800"
         />
+      </div>
+
+      {/* Próximos Vencimentos */}
+      <div className="rounded-2xl border border-primary/20 dark:border-primary/20 bg-white dark:bg-zinc-900 p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <Calendar className="h-4 w-4 text-primary" />
+          <h2 className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Próximos Vencimentos</h2>
+        </div>
+        <div className="grid grid-cols-7 gap-2">
+          {(data?.dueNextSevenDays || []).map(({ date, count, amount, items }) => {
+            const d = new Date(date + "T12:00:00")
+            const isToday = date === new Date().toISOString().slice(0, 10)
+            const isHovered = hoveredDueDate === date
+            const dayName = d.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", "")
+            const dayNum = d.getDate()
+            return (
+              <div
+                key={date}
+                className="relative"
+                onMouseEnter={() => setHoveredDueDate(date)}
+                onMouseLeave={() => setHoveredDueDate(null)}
+              >
+                <div
+                  className={`flex flex-col items-center justify-center rounded-xl border py-3 gap-0.5 transition-all cursor-default ${
+                    isToday
+                      ? "border-primary bg-primary text-white"
+                      : count > 0
+                      ? "border-primary/30 bg-primary/5 dark:bg-primary/10 text-gray-800 dark:text-zinc-100"
+                      : "border-gray-100 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-800/50 text-gray-400 dark:text-zinc-500"
+                  } ${isHovered && count > 0 ? "shadow-md scale-105" : ""}`}
+                >
+                  <span className={`text-[11px] font-medium capitalize ${isToday ? "text-white/80" : "text-gray-400 dark:text-zinc-500"}`}>
+                    {dayName.charAt(0).toUpperCase() + dayName.slice(1)}
+                  </span>
+                  <span className="text-xl font-bold leading-tight">{dayNum}</span>
+                  {count > 0 && (
+                    <span className={`mt-0.5 text-[10px] font-semibold ${isToday ? "text-white/80" : "text-primary"}`}>
+                      {count} parc.
+                    </span>
+                  )}
+                </div>
+
+                {/* Popover */}
+                {isHovered && count > 0 && (
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 w-64 rounded-xl border border-primary/20 bg-white dark:bg-zinc-900 shadow-xl animate-in fade-in zoom-in-95 duration-150">
+                    <div className="flex items-center justify-between px-3 py-2.5 border-b border-primary/10">
+                      <p className="text-xs font-semibold text-primary capitalize">
+                        {d.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "short" })}
+                      </p>
+                      <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                        {formatCurrency(amount)}
+                      </span>
+                    </div>
+                    <div className="p-2 space-y-1 max-h-52 overflow-y-auto">
+                      {items.map((item, i) => (
+                        <div
+                          key={i}
+                          onClick={() => router.push(`/emprestimos/${item.loanId}`)}
+                          className="flex items-center justify-between rounded-lg px-2.5 py-2 cursor-pointer hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors"
+                        >
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold text-gray-800 dark:text-zinc-100 truncate">{item.clientName}</p>
+                            <p className="text-[10px] text-gray-400 dark:text-zinc-500">Parcela {item.installmentNumber}/{item.installmentCount}</p>
+                          </div>
+                          <span className="ml-2 shrink-0 text-xs font-bold text-primary">{formatCurrency(item.amount)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
       </div>
 
       {/* Multas de Atraso */}
@@ -568,32 +652,54 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="h-full border-primary/30/80 dark:border-primary/20 bg-primary/5/40 dark:bg-primary/5 shadow-[0_10px_22px_-16px_rgba(16,185,129,0.5)]">
-          <CardHeader>
-            <CardTitle>Alertas e acompanhamento</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {(data?.alerts || []).length === 0 ? (
-              <div className="rounded-lg border border-primary/30 dark:border-primary/30 bg-primary/5 dark:bg-primary/15 p-4">
-                <p className="flex items-center gap-2 text-2xl font-semibold text-primary">
-                  <Shield className="h-6 w-6" />
-                  Tudo em ordem!
-                </p>
-                <p className="text-gray-500 dark:text-zinc-400">Nenhum alerta no momento. Continue assim!</p>
+        <div className="h-full rounded-xl border border-primary/30 dark:border-primary/20 bg-primary/5 dark:bg-zinc-900 overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center gap-2 px-5 py-4 border-b border-primary/20 dark:border-primary/15">
+            <AlertTriangle className="h-4 w-4 text-primary" />
+            <span className="text-sm font-bold text-primary">Precisa de Atenção</span>
+          </div>
+
+          {/* Items */}
+          <div className="divide-y divide-primary/10 dark:divide-primary/10">
+            {/* Vencem esta semana */}
+            <div className="flex items-center gap-4 px-5 py-4 bg-primary/5 dark:bg-primary/10">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/15 dark:bg-primary/20">
+                <Calendar className="h-4 w-4 text-primary" />
               </div>
-            ) : (
-              (data?.alerts || []).map((alert, index) => (
-                <div
-                  key={`${alert.title}-${index}`}
-                  className="rounded-lg border border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-800 p-4"
-                >
-                  <p className="text-base font-semibold text-gray-900 dark:text-zinc-100">{alert.title}</p>
-                  <p className="text-sm text-gray-500 dark:text-zinc-400">{alert.description}</p>
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold text-primary">
+                  {data?.dueThisWeekCount ?? 0} Vencem esta semana
+                </p>
+                <p className="text-xs text-primary/70 dark:text-primary/60">
+                  {formatCurrency(data?.dueThisWeekAmount ?? 0)} – empréstimos
+                </p>
+              </div>
+            </div>
+
+            {/* Atrasados +30 dias */}
+            <div className="flex items-center gap-4 px-5 py-4 bg-red-50 dark:bg-red-950/20">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-100 dark:bg-red-900/30">
+                <UserX className="h-4 w-4 text-red-600 dark:text-red-400" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold text-red-700 dark:text-red-400">
+                  {data?.overdue30DaysCount ?? 0} Atrasados há +30 dias
+                </p>
+                <p className="text-xs text-red-500 dark:text-red-500">
+                  {formatCurrency(data?.overdue30DaysAmount ?? 0)} – clientes inadimplentes
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Rodapé – tudo em ordem */}
+          {(data?.dueThisWeekCount ?? 0) === 0 && (data?.overdue30DaysCount ?? 0) === 0 && (
+            <div className="flex items-center gap-2 px-5 py-4">
+              <Shield className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium text-primary">Tudo em ordem!</span>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

@@ -875,7 +875,13 @@ export default function ClientesPage() {
                   <TableRow key={client.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <Avatar name={client.name} src={client.photo} size="sm" />
+                        <span
+                          onClick={() => client.photo && setProfileImagePreview({ name: client.name, src: client.photo })}
+                          className={client.photo ? "cursor-zoom-in" : "cursor-default"}
+                          title={client.photo ? "Ampliar foto" : undefined}
+                        >
+                          <Avatar name={client.name} src={client.photo} size="sm" />
+                        </span>
                         <span className="font-medium">{client.name}</span>
                       </div>
                     </TableCell>
@@ -1174,6 +1180,13 @@ export default function ClientesPage() {
         }
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            {/* Toast link copiado */}
+            {shareLinkCopied && (
+              <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-2 rounded-xl bg-zinc-900 dark:bg-zinc-100 px-4 py-3 shadow-lg animate-in fade-in slide-in-from-bottom-4 duration-300">
+                <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                <span className="text-sm font-medium text-white dark:text-zinc-900">Link copiado para a área de transferência!</span>
+              </div>
+            )}
             <div className="relative w-full max-w-sm rounded-2xl bg-white dark:bg-zinc-900 shadow-xl">
               {/* Header */}
               <div className="flex items-center justify-between px-5 pt-5 pb-3">

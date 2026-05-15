@@ -69,7 +69,7 @@ export default function RelatorioEmprestimosPage() {
   const axisColor = isDark ? "#71717a" : "#9ca3af"
   const [startDate, setStartDate] = useState(firstOfMonth())
   const [endDate, setEndDate] = useState(today())
-  const [paymentFilter, setPaymentFilter] = useState<"all" | "daily" | "monthly" | "price">("all")
+  const [paymentFilter, setPaymentFilter] = useState<"all" | "monthly" | "price">("all")
   const [caixaExtra, setCaixaExtra] = useState(0)
   const [includeExpenses, setIncludeExpenses] = useState(true)
   const [updatedAt, setUpdatedAt] = useState("")
@@ -100,7 +100,6 @@ export default function RelatorioEmprestimosPage() {
     return loans.filter((loan) => {
       if (startDate && new Date(loan.createdAt) < new Date(startDate + "T00:00:00")) return false
       if (endDate && new Date(loan.createdAt) > new Date(endDate + "T23:59:59")) return false
-      if (paymentFilter === "daily" && loan.modality !== "DAILY") return false
       if (paymentFilter === "monthly" && loan.modality !== "MONTHLY") return false
       if (paymentFilter === "price" && loan.modality !== "PRICE") return false
       return true
@@ -365,7 +364,7 @@ export default function RelatorioEmprestimosPage() {
       </Card>
   */
 
-  const FILTER_LABELS: Record<string, string> = { all: "Todos", daily: "Diário", monthly: "Mensal", price: "Tabela Price" }
+  const FILTER_LABELS: Record<string, string> = { all: "Todos", monthly: "Mensal", price: "Tabela Price" }
 
   return (
     <div className="space-y-6 pt-6 pb-12">
@@ -415,8 +414,8 @@ export default function RelatorioEmprestimosPage() {
             icon={<Filter className="h-4 w-4" />}
             tone="emerald"
             value={paymentFilter}
-            onChange={(value) => setPaymentFilter(value as "all" | "daily" | "monthly" | "price")}
-            options={(["all", "daily", "monthly", "price"] as const).map((value) => ({ value, label: FILTER_LABELS[value] }))}
+            onChange={(value) => setPaymentFilter(value as "all" | "monthly" | "price")}
+            options={(["all", "monthly", "price"] as const).map((value) => ({ value, label: FILTER_LABELS[value] }))}
             minWidthClassName="min-w-[180px]"
           />
           <FilterDropdown
