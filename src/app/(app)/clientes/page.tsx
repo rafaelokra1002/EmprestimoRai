@@ -1169,10 +1169,33 @@ export default function ClientesPage() {
         const token = userId ? btoa(userId).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "") : ""
         const link = userId ? `${window.location.origin}/registro/${token}` : ""
         const handleCopy = () => {
-          navigator.clipboard.writeText(link).then(() => {
+          const markCopied = () => {
             setShareLinkCopied(true)
             setTimeout(() => setShareLinkCopied(false), 2500)
-          })
+          }
+          if (navigator.clipboard?.writeText) {
+            navigator.clipboard.writeText(link).then(markCopied).catch(() => {
+              const el = document.createElement("textarea")
+              el.value = link
+              el.style.position = "fixed"
+              el.style.opacity = "0"
+              document.body.appendChild(el)
+              el.select()
+              document.execCommand("copy")
+              document.body.removeChild(el)
+              markCopied()
+            })
+          } else {
+            const el = document.createElement("textarea")
+            el.value = link
+            el.style.position = "fixed"
+            el.style.opacity = "0"
+            document.body.appendChild(el)
+            el.select()
+            document.execCommand("copy")
+            document.body.removeChild(el)
+            markCopied()
+          }
         }
         const handleWhatsApp = () => {
           const text = encodeURIComponent(`Olá! Preencha seus dados pelo link abaixo para solicitar seu cadastro:\n${link}`)
