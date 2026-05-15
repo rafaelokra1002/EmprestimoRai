@@ -940,7 +940,6 @@ export default function EmprestimosPage() {
     setRenegotiateAmount(0)
     setRenegotiateDate(today())
     setRenegotiateNotes("[OVERDUE_CONFIG:fixed:15]")
-    setRenegotiatePaymentMethod("Dinheiro")
     // Pre-fill next due date & installment
     const pendingInsts = loan.installments
       .filter((i: any) => i.status !== "PAID")
@@ -966,7 +965,6 @@ export default function EmprestimosPage() {
     setRenegotiateMode(null)
     setRenegotiateDate(today())
     setRenegotiateNotes("[OVERDUE_CONFIG:fixed:15]")
-    setRenegotiatePaymentMethod("Dinheiro")
 
     const pendingInsts = loan.installments
       .filter((i: any) => i.status !== "PAID")
@@ -3199,7 +3197,7 @@ export default function EmprestimosPage() {
       {/* ===== RENEGOCIAR CONTRATO DIALOG ===== */}
       <Dialog
         open={!!renegotiateDialog}
-        onClose={() => { setRenegotiateDialog(null); setRenegotiateMode(null); setRenegotiateEntry("all"); setRenegotiateAmount(0); setRenegotiateNotes(""); setRenegotiatePaymentMethod("Dinheiro") }}
+        onClose={() => { setRenegotiateDialog(null); setRenegotiateMode(null); setRenegotiateEntry("all"); setRenegotiateAmount(0); setRenegotiateNotes("") }}
         title={renegotiateEntry === "interest" ? "Renegociar Dívida" : "Renegociação de Contrato"}
         className={renegotiateEntry === "interest" ? "max-w-2xl" : "max-w-2xl"}
       >
@@ -3344,7 +3342,6 @@ export default function EmprestimosPage() {
                           setRenegotiateEntry("all")
                           setRenegotiateAmount(0)
                           setRenegotiateNotes("")
-                          setRenegotiatePaymentMethod("Dinheiro")
                         }}
                       >
                         Cancelar
@@ -3464,7 +3461,6 @@ export default function EmprestimosPage() {
                 setRenegotiateEntry("all")
                 setRenegotiateAmount(0)
                 setRenegotiateNotes("")
-                setRenegotiatePaymentMethod("Dinheiro")
               }}
               onSuccess={fetchLoans}
             />
