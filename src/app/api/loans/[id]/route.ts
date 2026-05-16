@@ -100,30 +100,47 @@ export async function PUT(
 
       const hasPayments = existingLoan.payments.length > 0 || existingLoan.installments.some((i) => i.paidAmount > 0)
       if (hasPayments) {
-        // Metadata (tags, notes, etc.) can always be updated even when financial fields are blocked
-        const metadataUpdate: Record<string, any> = {}
+        // Allow metadata + date updates even when loan has payments
+        const allowedUpdate: Record<string, any> = {}
         if (Array.isArray(body.tags)) {
-          metadataUpdate.tags = body.tags.filter((t: unknown) => typeof t === "string" && (t as string).trim())
+          allowedUpdate.tags = body.tags.filter((t: unknown) => typeof t === "string" && (t as string).trim())
         }
         if (typeof body.notes === "string" || body.notes === null) {
-          metadataUpdate.notes = body.notes && (body.notes as string).trim() ? (body.notes as string).trim() : null
+          allowedUpdate.notes = body.notes && (body.notes as string).trim() ? (body.notes as string).trim() : null
         }
         if (typeof body.whatsappNotify === "boolean") {
-          metadataUpdate.whatsappNotify = body.whatsappNotify
+          allowedUpdate.whatsappNotify = body.whatsappNotify
         }
         if (typeof body.dailyInterest === "boolean") {
-          metadataUpdate.dailyInterest = body.dailyInterest
+          allowedUpdate.dailyInterest = body.dailyInterest
         }
         if (typeof body.dailyInterestAmount === "number") {
-          metadataUpdate.dailyInterestAmount = body.dailyInterestAmount
+          allowedUpdate.dailyInterestAmount = body.dailyInterestAmount
         }
-        if (Object.keys(metadataUpdate).length > 0) {
-          await prisma.loan.update({ where: { id: params.id }, data: metadataUpdate })
+        if (typeof body.contractDate === "string") {
+          allowedUpdate.contractDate = new Date(body.contractDate.includes("T") ? body.contractDate : body.contractDate + "T12:00:00")
         }
-        return NextResponse.json(
-          { error: "Não é possível alterar valores/datas de um empréstimo que já possui pagamentos." },
-          { status: 400 }
-        )
+        if (typeof body.firstInstallmentDate === "string") {
+          allowedUpdate.firstInstallmentDate = new Date(body.firstInstallmentDate.includes("T") ? body.firstInstallmentDate : body.firstInstallmentDate + "T12:00:00")
+        }
+
+        if (Object.keys(allowedUpdate).length > 0) {
+          await prisma.loan.update({ where: { id: params.id }, data: allowedUpdate })
+        }
+
+        // Update individual installment due dates if provided
+        if (Array.isArray(body.installmentDates) && body.installmentDates.length > 0) {
+          const sorted = [...existingLoan.installments].sort((a, b) => a.number - b.number)
+          for (let i = 0; i < Math.min(body.installmentDates.length, sorted.length); i++) {
+            const d = body.installmentDates[i] as string
+            await prisma.installment.update({
+              where: { id: sorted[i].id },
+              data: { dueDate: new Date(d.includes("T") ? d : d + "T12:00:00") },
+            })
+          }
+        }
+
+        return NextResponse.json({ success: true })
       }
 
       const { totalAmount, profit, installmentAmount, totalInterest } = calculateLoan(
