@@ -39,14 +39,14 @@ export async function GET() {
       prisma.installment.count({
         where: {
           loan: { userId },
-          status: "PENDING",
+          status: { not: "PAID" },
           dueDate: { lt: startOfToday },
         },
       }),
       prisma.installment.aggregate({
         where: {
           loan: { userId },
-          status: "PENDING",
+          status: { not: "PAID" },
           dueDate: { lt: startOfToday },
         },
         _sum: { amount: true },
@@ -92,7 +92,7 @@ export async function GET() {
       loan.installments
         .filter(
           (inst) =>
-            inst.status === "PENDING" &&
+            inst.status !== "PAID" &&
             new Date(inst.dueDate) >= startOfToday &&
             new Date(inst.dueDate) < endOfToday
         )
@@ -111,11 +111,11 @@ export async function GET() {
 
     // Atrasados há +30 dias (clientes únicos)
     const overdue30DaysLoans = loans.filter((loan) =>
-      loan.installments.some((inst) => inst.status === "PENDING" && new Date(inst.dueDate) < thirtyDaysAgo)
+      loan.installments.some((inst) => inst.status !== "PAID" && new Date(inst.dueDate) < thirtyDaysAgo)
     )
     const overdue30DaysCount = new Set(overdue30DaysLoans.map((l) => l.clientId)).size
     const overdue30DaysAmount = overdue30DaysLoans.flatMap((loan) =>
-      loan.installments.filter((inst) => inst.status === "PENDING" && new Date(inst.dueDate) < thirtyDaysAgo).map((inst) => Number(inst.amount || 0))
+      loan.installments.filter((inst) => inst.status !== "PAID" && new Date(inst.dueDate) < thirtyDaysAgo).map((inst) => Number(inst.amount || 0))
     ).reduce((s, a) => s + a, 0)
 
     const capitalOnStreet = Math.max(totalToReceive - totalReceived, 0)
@@ -146,7 +146,7 @@ export async function GET() {
       })
       const dailyRate = getOverdueDailyAmountBRL(loanData)
       return acc + loan.installments
-        .filter((i) => i.status === "PENDING" && new Date(i.dueDate) < startOfToday)
+        .filter((i) => i.status !== "PAID" && new Date(i.dueDate) < startOfToday)
         .reduce((sum, i) => {
           const daysOver = Math.max(0, Math.floor((startOfToday.getTime() - new Date(i.dueDate).getTime()) / 86400000))
           return sum + dailyRate * daysOver + Number(loan.penaltyFee || 0)
@@ -177,7 +177,7 @@ export async function GET() {
         })
         const dailyRate = getOverdueDailyAmountBRL(loanData)
         const overdueInstallments = loan.installments.filter(
-          (i) => i.status === "PENDING" && new Date(i.dueDate) < startOfToday
+          (i) => i.status !== "PAID" && new Date(i.dueDate) < startOfToday
         )
         if (overdueInstallments.length === 0) return null
         const totalCharge = overdueInstallments.reduce((sum, i) => {
@@ -197,7 +197,7 @@ export async function GET() {
     const dayMap = new Map<number, number>()
     loans.forEach((loan) => {
       loan.installments
-        .filter((inst) => inst.status === "PENDING")
+        .filter((inst) => inst.status !== "PAID")
         .forEach((inst) => {
           const day = new Date(inst.dueDate).getDate()
           dayMap.set(day, (dayMap.get(day) || 0) + Number(inst.amount || 0))
@@ -218,7 +218,7 @@ export async function GET() {
         loan.installments
           .filter((inst) => {
             const due = new Date(inst.dueDate)
-            return inst.status === "PENDING" && due >= dayStart && due < dayEnd
+            return inst.status !== "PAID" && due >= dayStart && due < dayEnd
           })
           .map((inst) => ({
             clientName: loan.client?.name || "—",
@@ -250,7 +250,7 @@ export async function GET() {
     }, 0)
 
     const activeInstallments = loans.reduce(
-      (acc, loan) => acc + loan.installments.filter((inst) => inst.status === "PENDING").length,
+      (acc, loan) => acc + loan.installments.filter((inst) => inst.status !== "PAID").length,
       0
     )
 
