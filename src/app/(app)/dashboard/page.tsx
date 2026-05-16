@@ -39,6 +39,7 @@ interface DashboardData {
   totalToReceive: number
   totalReceived: number
   capitalOnStreet: number
+  faltaReceber: number
   totalProfit: number
   overdueCount: number
   overdueAmount: number
@@ -295,8 +296,8 @@ export default function DashboardPage() {
               <Wallet className="h-3.5 w-3.5 text-primary" />
               <p className="text-xs text-gray-500 dark:text-zinc-400">Falta Receber</p>
             </div>
-            <p className="text-2xl leading-none font-semibold tabular-nums tracking-tight text-primary">{formatCurrency(data?.capitalOnStreet || 0)}</p>
-            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">saldo restante a receber</p>
+            <p className="text-2xl leading-none font-semibold tabular-nums tracking-tight text-primary">{formatCurrency(data?.faltaReceber || 0)}</p>
+            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">juros + multas pendentes</p>
           </div>
         </CardContent>
       </Card>

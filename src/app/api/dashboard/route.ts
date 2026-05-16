@@ -324,6 +324,18 @@ export async function GET() {
 
     const interestTrend = interestBuckets
 
+    // Juros pendentes: proporção do lucro ainda não recebida em cada empréstimo
+    const pendingInterestTotal = loans.reduce((acc, loan) => {
+      const totalPaid = loan.payments.reduce((s, p) => s + Number(p.amount || 0), 0)
+      const loanTotal = Number(loan.totalAmount || 0)
+      const profit = Number(loan.profit || 0)
+      if (loanTotal <= 0) return acc
+      const remainingRatio = Math.max(0, Math.min(1, (loanTotal - totalPaid) / loanTotal))
+      return acc + profit * remainingRatio
+    }, 0)
+
+    const faltaReceber = pendingInterestTotal + totalPendingLateFees
+
     const collectionRate = totalToReceive > 0 ? (totalReceived / totalToReceive) * 100 : 0
     const defaultRate = activeInstallments > 0 ? (overdueCount / activeInstallments) * 100 : 0
     const healthScore = Math.round(
@@ -362,6 +374,7 @@ export async function GET() {
       totalToReceive,
       totalReceived,
       capitalOnStreet,
+      faltaReceber,
       totalProfit,
       overdueCount,
       overdueAmount,
