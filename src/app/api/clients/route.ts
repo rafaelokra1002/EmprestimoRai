@@ -74,11 +74,24 @@ export async function GET(request: Request) {
               },
             }
           : { select: { id: true, amount: true, status: true } },
+        documents: {
+          where: { type: "SELFIE" },
+          select: { fileData: true, fileType: true },
+          take: 1,
+        },
       },
       orderBy: { createdAt: "desc" },
     })
 
-    return NextResponse.json(clients)
+    // Use selfie document as photo when client.photo is not set
+    const clientsWithPhoto = clients.map((c: any) => {
+      const selfie = c.documents?.[0]
+      const photo = c.photo || (selfie ? `data:${selfie.fileType};base64,${selfie.fileData}` : null)
+      const { documents: _docs, ...rest } = c
+      return { ...rest, photo }
+    })
+
+    return NextResponse.json(clientsWithPhoto)
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
