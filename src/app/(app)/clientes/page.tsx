@@ -480,7 +480,7 @@ export default function ClientesPage() {
     }
   }
 
-  const openNewClient = (initialStatus: Client["status"] = "INACTIVE") => {
+  const openNewClient = (initialStatus: Client["status"] = "ACTIVE") => {
     setEditing(null)
     setFormError(null)
     reset({

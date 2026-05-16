@@ -160,7 +160,7 @@ export async function POST(request: Request) {
       complement: data.complement || null,
       number: data.number || null,
       notes: data.notes || null,
-      status: data.status ?? "INACTIVE",
+      status: data.status ?? "ACTIVE",
       userId,
     }
 
