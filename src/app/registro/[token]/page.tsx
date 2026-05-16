@@ -295,18 +295,6 @@ export default function RegistroPage() {
             <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">Fotos dos Documentos</p>
             <div className="space-y-3">
               <PhotoUpload
-                label="RG / CNH — Frente"
-                photo={photos.docFrente}
-                onSelect={handlePhotoChange("docFrente")}
-                onRemove={removePhoto("docFrente")}
-              />
-              <PhotoUpload
-                label="RG / CNH — Verso"
-                photo={photos.docVerso}
-                onSelect={handlePhotoChange("docVerso")}
-                onRemove={removePhoto("docVerso")}
-              />
-              <PhotoUpload
                 label="Selfie segurando o documento"
                 photo={photos.selfie}
                 onSelect={handlePhotoChange("selfie")}
