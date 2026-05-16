@@ -36,8 +36,8 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const includeInstallments = searchParams.get("includeInstallments") === "true"
 
-    const clients = await prisma.client.findMany({
-      where: { userId },
+    const clients = await (prisma.client as any).findMany({
+      where: { userId, deleted: false },
       include: {
         loans: includeInstallments
           ? {

@@ -177,8 +177,10 @@ export async function DELETE(
       return NextResponse.json({ error: "Sessão inválida" }, { status: 401 })
     }
 
-    await prisma.client.deleteMany({
+    // Soft delete: preserve payment history in recebimentos
+    await (prisma.client as any).updateMany({
       where: { id: params.id, userId },
+      data: { deleted: true },
     })
 
     return NextResponse.json({ success: true })

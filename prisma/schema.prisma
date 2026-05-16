@@ -95,6 +95,7 @@ model Client {
   notes        String?
   score        Int              @default(100)
   status       ClientStatus     @default(ACTIVE)
+  deleted      Boolean          @default(false)
   userId       String
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
