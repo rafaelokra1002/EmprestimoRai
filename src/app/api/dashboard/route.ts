@@ -148,7 +148,8 @@ export async function GET() {
       return acc + loan.installments
         .filter((i) => i.status !== "PAID" && new Date(i.dueDate) < startOfToday)
         .reduce((sum, i) => {
-          const daysOver = Math.max(0, Math.floor((startOfToday.getTime() - new Date(i.dueDate).getTime()) / 86400000))
+          const due = new Date(i.dueDate); due.setHours(0, 0, 0, 0)
+          const daysOver = Math.max(0, Math.floor((startOfToday.getTime() - due.getTime()) / 86400000))
           return sum + dailyRate * daysOver + Number(loan.penaltyFee || 0)
         }, 0)
     }, 0)
@@ -181,7 +182,8 @@ export async function GET() {
         )
         if (overdueInstallments.length === 0) return null
         const totalCharge = overdueInstallments.reduce((sum, i) => {
-          const daysOver = Math.max(0, Math.floor((startOfToday.getTime() - new Date(i.dueDate).getTime()) / 86400000))
+          const due = new Date(i.dueDate); due.setHours(0, 0, 0, 0)
+          const daysOver = Math.max(0, Math.floor((startOfToday.getTime() - due.getTime()) / 86400000))
           return sum + dailyRate * daysOver + Number(loan.penaltyFee || 0)
         }, 0)
         return {
