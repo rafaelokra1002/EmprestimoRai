@@ -236,7 +236,7 @@ export default function ScorePage() {
           />
         </svg>
         <div className="relative flex flex-col items-center justify-center leading-none">
-          <span className="text-sm font-bold text-gray-900 dark:text-zinc-100">{score}</span>
+          <span className="text-sm font-bold text-gray-900 dark:text-zinc-100">{Math.min(score, SCORE_MAX)}</span>
           <span className="text-[9px] text-gray-400 dark:text-zinc-500">/{SCORE_MAX}</span>
         </div>
       </div>

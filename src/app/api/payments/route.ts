@@ -101,10 +101,17 @@ export async function POST(request: Request) {
           const isOnTime = paymentDate <= installment.dueDate
           const scoreChange = isOnTime ? 10 : -15
 
-          await prisma.client.update({
+          const currentClient = await prisma.client.findUnique({
             where: { id: loan.clientId },
-            data: { score: { increment: scoreChange } },
+            select: { score: true },
           })
+          if (currentClient) {
+            const newScore = Math.min(150, Math.max(0, currentClient.score + scoreChange))
+            await prisma.client.update({
+              where: { id: loan.clientId },
+              data: { score: newScore },
+            })
+          }
         }
       }
     }
