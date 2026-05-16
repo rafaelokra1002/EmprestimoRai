@@ -307,7 +307,7 @@ export default function EmprestimosPage() {
     setSkipSunday(false)
     setSkipHolidays(false)
     setDailyInterest(true)
-    setDailyInterestAmount(15)
+    setDailyInterestAmount("15")
     setPenaltyFee(0)
     setWhatsappNotify(false)
     setNotes("")
