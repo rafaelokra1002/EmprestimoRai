@@ -98,8 +98,9 @@ export default function RelatorioEmprestimosPage() {
   // Filter loans by date range & modality
   const filtered = useMemo(() => {
     return loans.filter((loan) => {
-      if (startDate && new Date(loan.createdAt) < new Date(startDate + "T00:00:00")) return false
-      if (endDate && new Date(loan.createdAt) > new Date(endDate + "T23:59:59")) return false
+      const loanDate = localDateStr(new Date(loan.contractDate || loan.createdAt))
+      if (startDate && loanDate < startDate) return false
+      if (endDate && loanDate > endDate) return false
       if (paymentFilter === "monthly" && loan.modality !== "MONTHLY") return false
       if (paymentFilter === "price" && loan.modality !== "PRICE") return false
       return true
@@ -110,8 +111,9 @@ export default function RelatorioEmprestimosPage() {
 
   const filteredExpenses = useMemo(() => {
     return expenses.filter((e) => {
-      if (startDate && new Date(e.dueDate) < new Date(startDate + "T00:00:00")) return false
-      if (endDate && new Date(e.dueDate) > new Date(endDate + "T23:59:59")) return false
+      const d = localDateStr(new Date(e.dueDate))
+      if (startDate && d < startDate) return false
+      if (endDate && d > endDate) return false
       return true
     })
   }, [expenses, startDate, endDate])
@@ -129,14 +131,12 @@ export default function RelatorioEmprestimosPage() {
   }, [filtered])
 
   const pagamentosNoPeriodo = useMemo(() => {
-    const start = startDate ? new Date(startDate + "T00:00:00") : null
-    const end = endDate ? new Date(endDate + "T23:59:59") : null
     let total = 0
     loans.forEach((l) => {
       l.payments.forEach((p: any) => {
-        const d = new Date(p.date)
-        if (start && d < start) return
-        if (end && d > end) return
+        const d = localDateStr(new Date(p.date))
+        if (startDate && d < startDate) return
+        if (endDate && d > endDate) return
         total += p.amount
       })
     })
@@ -144,17 +144,15 @@ export default function RelatorioEmprestimosPage() {
   }, [loans, startDate, endDate])
 
   const jurosRecebidos = useMemo(() => {
-    const start = startDate ? new Date(startDate + "T00:00:00") : null
-    const end = endDate ? new Date(endDate + "T23:59:59") : null
     let total = 0
     loans.forEach((l) => {
       const interestPerInst = l.installmentCount > 0
         ? Math.round((l.profit / l.installmentCount) * 100) / 100
         : 0
       l.payments.forEach((p: any) => {
-        const d = new Date(p.date)
-        if (start && d < start) return
-        if (end && d > end) return
+        const d = localDateStr(new Date(p.date))
+        if (startDate && d < startDate) return
+        if (endDate && d > endDate) return
         total += Math.min(p.amount, interestPerInst)
       })
     })
