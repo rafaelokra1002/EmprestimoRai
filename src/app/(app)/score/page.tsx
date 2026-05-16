@@ -164,7 +164,15 @@ export default function ScorePage() {
     }
   }
 
-  const getClientTotalProfit = (client: Client) => client.loans.reduce((s, l) => s + l.profit, 0)
+  const getClientRealizedProfit = (client: Client) =>
+    client.loans.reduce((s, l) => {
+      const totalPaid = (l.payments || []).reduce((ps, p) => ps + (p.amount || 0), 0)
+      if (l.status === "COMPLETED") return s + Math.max(0, totalPaid - l.amount)
+      const proportional = l.totalAmount > 0
+        ? Math.min(l.profit, Math.round((totalPaid / l.totalAmount) * l.profit * 100) / 100)
+        : 0
+      return s + proportional
+    }, 0)
 
   const getColorPriority = (score: number) => {
     if (score >= 120) return 1          // excelente (roxo)
@@ -177,10 +185,7 @@ export default function ScorePage() {
     .filter(c => c.name.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => {
       if (sortMode === "lucro") {
-        const pa = getColorPriority(a.score)
-        const pb = getColorPriority(b.score)
-        if (pa !== pb) return pa - pb
-        return getClientTotalProfit(b) - getClientTotalProfit(a)
+        return getClientRealizedProfit(b) - getClientRealizedProfit(a)
       }
       const pa = getColorPriority(a.score)
       const pb = getColorPriority(b.score)
