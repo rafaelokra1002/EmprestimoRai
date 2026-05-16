@@ -78,6 +78,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Link de cadastro invalido" }, { status: 404 })
     }
 
+    const selfieDataUrl = (photos as Record<string, PhotoFile | null>)?.selfie?.dataUrl || null
+
     const client = await prisma.client.create({
       data: {
         userId: user.id,
@@ -94,6 +96,7 @@ export async function POST(request: Request) {
         city: city || null,
         state: state || null,
         profession: profession || null,
+        photo: selfieDataUrl,
         status: "INACTIVE",
         score: 100,
       },
