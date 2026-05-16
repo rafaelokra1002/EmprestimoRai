@@ -544,10 +544,13 @@ export default function ScorePage() {
                       const remaining = loan.totalAmount - (Array.isArray(loan.installments) ? loan.installments.filter((i) => i.status === "PAID").reduce((s, i) => s + (i.paidAmount || 0), 0) : 0)
                       const totalPaid = Array.isArray(loan.payments) ? loan.payments.reduce((sum, payment) => sum + (payment.amount || 0), 0) : 0
                       const highlightLucro = sortMode === "lucro"
+                      const realizedProfit = loan.totalAmount > 0
+                        ? Math.min(loan.profit, Math.round((totalPaid / loan.totalAmount) * loan.profit * 100) / 100)
+                        : 0
                       return (
                         <div key={loan.id}>
                           <p className="text-[10px] uppercase font-semibold text-gray-400 dark:text-zinc-500 tracking-wide">{highlightLucro ? "Lucro" : "A receber"}</p>
-                          <p className="text-xl font-bold text-gray-900 dark:text-zinc-100 mt-0.5">{formatCurrency(highlightLucro ? loan.profit : Math.max(0, remaining))}</p>
+                          <p className="text-xl font-bold text-gray-900 dark:text-zinc-100 mt-0.5">{formatCurrency(highlightLucro ? realizedProfit : Math.max(0, remaining))}</p>
                           <div className="flex items-center gap-2 mt-1 text-xs text-gray-400 dark:text-zinc-500 flex-wrap">
                             <span>Emprestado {formatCurrency(loan.amount)}</span>
                             <span className="text-gray-300 dark:text-zinc-700">•</span>
