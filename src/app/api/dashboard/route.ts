@@ -33,19 +33,19 @@ export async function GET() {
 
     const [loansResult, overdueCountResult, overdueAmountResult, dueTodayCountResult, activeClientsResult, inactiveClientsResult, totalClientsResult, salesResult, vehiclesResult, monthlyExpensesResult] = await Promise.all([
       prisma.loan.findMany({
-        where: { userId, status: "ACTIVE" },
+        where: { userId, status: "ACTIVE", client: { status: { not: "DESAPARECIDO" } } },
         include: { installments: true, payments: true, client: { select: { name: true } } },
       }),
       prisma.installment.count({
         where: {
-          loan: { userId },
+          loan: { userId, client: { status: { not: "DESAPARECIDO" } } },
           status: { not: "PAID" },
           dueDate: { lt: startOfToday },
         },
       }),
       prisma.installment.aggregate({
         where: {
-          loan: { userId },
+          loan: { userId, client: { status: { not: "DESAPARECIDO" } } },
           status: { not: "PAID" },
           dueDate: { lt: startOfToday },
         },
@@ -53,7 +53,7 @@ export async function GET() {
       }),
       prisma.installment.count({
         where: {
-          loan: { userId },
+          loan: { userId, client: { status: { not: "DESAPARECIDO" } } },
           status: "PENDING",
           dueDate: { gte: startOfToday, lt: endOfToday },
         },
