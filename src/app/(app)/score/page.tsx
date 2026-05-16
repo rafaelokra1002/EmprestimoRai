@@ -549,8 +549,10 @@ export default function ScorePage() {
                       const remaining = loan.totalAmount - (Array.isArray(loan.installments) ? loan.installments.filter((i) => i.status === "PAID").reduce((s, i) => s + (i.paidAmount || 0), 0) : 0)
                       const totalPaid = Array.isArray(loan.payments) ? loan.payments.reduce((sum, payment) => sum + (payment.amount || 0), 0) : 0
                       const highlightLucro = sortMode === "lucro"
+                      // Para quitados: lucro real = tudo recebido acima do principal (inclui multas/juros extras)
+                      // Para ativos: proporcional aos pagamentos recebidos
                       const realizedProfit = isCompleted
-                        ? loan.profit
+                        ? Math.max(0, totalPaid - loan.amount)
                         : loan.totalAmount > 0
                           ? Math.min(loan.profit, Math.round((totalPaid / loan.totalAmount) * loan.profit * 100) / 100)
                           : 0
@@ -562,8 +564,18 @@ export default function ScorePage() {
                             <span>Emprestado {formatCurrency(loan.amount)}</span>
                             <span className="text-gray-300 dark:text-zinc-700">•</span>
                             <span>Recebido {formatCurrency(totalPaid)}</span>
-                            <span className="text-gray-300 dark:text-zinc-700">•</span>
-                            <span>{highlightLucro ? (isCompleted ? "Quitado" : "A receber") : "Lucro"} {highlightLucro ? (isCompleted ? "" : formatCurrency(Math.max(0, remaining))) : formatCurrency(loan.profit)}</span>
+                            {isCompleted && highlightLucro && (
+                              <>
+                                <span className="text-gray-300 dark:text-zinc-700">•</span>
+                                <span>Quitado</span>
+                              </>
+                            )}
+                            {!isCompleted && (
+                              <>
+                                <span className="text-gray-300 dark:text-zinc-700">•</span>
+                                <span>{highlightLucro ? "A receber" : "Lucro"} {formatCurrency(highlightLucro ? Math.max(0, remaining) : loan.profit)}</span>
+                              </>
+                            )}
                           </div>
                         </div>
                       )
