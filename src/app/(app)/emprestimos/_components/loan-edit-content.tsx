@@ -72,7 +72,7 @@ export function LoanEditContent({ presentation = "page", onClose }: LoanEditCont
   const [skipSunday, setSkipSunday] = useState(false)
   const [skipHolidays, setSkipHolidays] = useState(false)
   const [dailyInterest, setDailyInterest] = useState(false)
-  const [dailyInterestAmount, setDailyInterestAmount] = useState(0)
+  const [dailyInterestAmount, setDailyInterestAmount] = useState("")
   const [whatsappNotify, setWhatsappNotify] = useState(false)
   const [installmentDates, setInstallmentDates] = useState<string[]>([])
   const [notes, setNotes] = useState("")
@@ -122,7 +122,7 @@ export function LoanEditContent({ presentation = "page", onClose }: LoanEditCont
         setLoanTags(Array.isArray(data.tags) ? data.tags : [])
         setWhatsappNotify(Boolean(data.whatsappNotify))
         setDailyInterest(Boolean(data.dailyInterest))
-        setDailyInterestAmount(data.dailyInterestAmount || 0)
+        setDailyInterestAmount(String(data.dailyInterestAmount || 0))
         if (Array.isArray(data.installments)) {
           const sorted = [...data.installments].sort((a, b) => a.number - b.number)
           setInstallmentDates(sorted.map((inst) => localDateStr(inst.dueDate)))
@@ -212,7 +212,7 @@ export function LoanEditContent({ presentation = "page", onClose }: LoanEditCont
     try {
       const resolvedDailyInterestAmount = resolveDailyInterestAmount(
         dailyInterest,
-        dailyInterestAmount,
+        parseFloat(dailyInterestAmount) || 0,
         amount,
         interestRate,
         modality
@@ -505,7 +505,7 @@ export function LoanEditContent({ presentation = "page", onClose }: LoanEditCont
             {dailyInterest && (
               <div className="flex items-center gap-2">
                 <label className="text-sm text-slate-600 dark:text-zinc-300">R$</label>
-                <input type="number" step="0.01" min="0" value={dailyInterestAmount || ""} onChange={(e) => setDailyInterestAmount(parseFloat(e.target.value) || 0)} className="h-11 w-28 rounded-xl border border-gray-200 bg-white px-3 text-sm text-slate-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white" placeholder="0.00" />
+                <input type="text" inputMode="decimal" value={dailyInterestAmount} onChange={(e) => { const v = e.target.value; if (/^\d*[,.]?\d*$/.test(v)) setDailyInterestAmount(v.replace(",", ".")) }} className="h-11 w-28 rounded-xl border border-gray-200 bg-white px-3 text-sm text-slate-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white" placeholder="0.00" />
                 <span className="text-sm text-slate-500 dark:text-zinc-400">/dia</span>
               </div>
             )}

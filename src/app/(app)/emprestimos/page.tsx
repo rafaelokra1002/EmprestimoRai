@@ -183,7 +183,7 @@ export default function EmprestimosPage() {
   const [skipSunday, setSkipSunday] = useState(false)
   const [skipHolidays, setSkipHolidays] = useState(false)
   const [dailyInterest, setDailyInterest] = useState(true)
-  const [dailyInterestAmount, setDailyInterestAmount] = useState<number>(15)
+  const [dailyInterestAmount, setDailyInterestAmount] = useState("15")
   const [penaltyFee, setPenaltyFee] = useState<number>(0)
   const [whatsappNotify, setWhatsappNotify] = useState(false)
   const [notes, setNotes] = useState("")
@@ -323,7 +323,7 @@ export default function EmprestimosPage() {
 
     const calculatedDailyInterest = resolveDailyInterestAmount(
       dailyInterest,
-      dailyInterestAmount,
+      parseFloat(dailyInterestAmount) || 0,
       amount,
       interestRate,
       modality
@@ -2518,11 +2518,13 @@ export default function EmprestimosPage() {
             <div>
               <Label className="text-sm font-medium">Valor do Juros Diário (R$)</Label>
               <Input
-                type="number"
-                step="0.01"
-                min={0}
+                type="text"
+                inputMode="decimal"
                 value={dailyInterestAmount}
-                onChange={(e) => setDailyInterestAmount(Number(e.target.value) || 0)}
+                onChange={(e) => {
+                  const v = e.target.value
+                  if (/^\d*[,.]?\d*$/.test(v)) setDailyInterestAmount(v.replace(",", "."))
+                }}
                 className="mt-1"
                 placeholder="Ex: 15.00"
               />
