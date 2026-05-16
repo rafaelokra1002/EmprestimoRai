@@ -22,7 +22,7 @@ interface Installment {
 export default function SimuladorPage() {
   const [paymentType, setPaymentType] = useState<PaymentType>("MONTHLY")
   const [interestMode, setInterestMode] = useState<InterestMode>("PER_INSTALLMENT")
-  const [installmentCount, setInstallmentCount] = useState(6)
+  const [installmentCount, setInstallmentCount] = useState("6")
   const [startDate, setStartDate] = useState(() => {
     return localDateStr()
   })
@@ -31,15 +31,15 @@ export default function SimuladorPage() {
     d.setMonth(d.getMonth() + 1)
     return localDateStr(d)
   })
-  const [valor, setValor] = useState(1000)
-  const [taxa, setTaxa] = useState(10)
+  const [valor, setValor] = useState("1000")
+  const [taxa, setTaxa] = useState("10")
   const [showCompare, setShowCompare] = useState(false)
 
   // ===== CALCULATION =====
   const result = useMemo(() => {
-    const amount = valor
-    const rate = taxa / 100
-    const count = Math.max(1, installmentCount)
+    const amount = parseFloat(valor) || 0
+    const rate = (parseFloat(taxa) || 0) / 100
+    const count = Math.max(1, parseInt(installmentCount) || 1)
 
     let totalInterest = 0
     let totalAmount = 0
@@ -74,9 +74,9 @@ export default function SimuladorPage() {
 
   // ===== COMPARE MODES =====
   const compareResults = useMemo(() => {
-    const amount = valor
-    const rate = taxa / 100
-    const count = Math.max(1, installmentCount)
+    const amount = parseFloat(valor) || 0
+    const rate = (parseFloat(taxa) || 0) / 100
+    const count = Math.max(1, parseInt(installmentCount) || 1)
 
     const perInst = amount * rate * count
     const perInstTotal = amount + perInst
@@ -96,7 +96,7 @@ export default function SimuladorPage() {
 
   // ===== INSTALLMENT SCHEDULE =====
   const schedule = useMemo(() => {
-    const count = Math.max(1, installmentCount)
+    const count = Math.max(1, parseInt(installmentCount) || 1)
     const base = firstDueDate ? new Date(firstDueDate + "T12:00:00") : new Date()
     const installments: Installment[] = []
 
@@ -181,11 +181,10 @@ export default function SimuladorPage() {
           <div>
             <Label className="text-xs font-semibold text-gray-600 dark:text-zinc-400">Nº de Parcelas</Label>
             <Input
-              type="number"
-              min={1}
-              max={360}
+              type="text"
+              inputMode="numeric"
               value={installmentCount}
-              onChange={(e) => setInstallmentCount(parseInt(e.target.value) || 1)}
+              onChange={(e) => { const v = e.target.value; if (/^\d*$/.test(v)) setInstallmentCount(v) }}
               className="mt-1 h-9 bg-gray-50 dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 text-sm"
             />
           </div>
@@ -198,12 +197,10 @@ export default function SimuladorPage() {
               <span className="text-primary text-xs">$</span> Valor
             </Label>
             <Input
-              type="number"
-              step="100"
-              min={100}
-              max={100000}
+              type="text"
+              inputMode="decimal"
               value={valor}
-              onChange={(e) => setValor(parseFloat(e.target.value) || 0)}
+              onChange={(e) => { const v = e.target.value; if (/^\d*[,.]?\d*$/.test(v)) setValor(v.replace(",", ".")) }}
               className="mt-1 h-9 bg-gray-50 dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 text-sm font-medium"
             />
             <input
@@ -211,8 +208,8 @@ export default function SimuladorPage() {
               min={100}
               max={100000}
               step={100}
-              value={valor}
-              onChange={(e) => setValor(parseFloat(e.target.value))}
+              value={parseFloat(valor) || 100}
+              onChange={(e) => setValor(e.target.value)}
               className="w-full mt-1.5 h-1 rounded-full appearance-none cursor-pointer bg-gray-200 dark:bg-zinc-700 accent-green-500"
             />
           </div>
@@ -221,12 +218,10 @@ export default function SimuladorPage() {
               <span className="text-primary text-xs">%</span> Taxa de Juros
             </Label>
             <Input
-              type="number"
-              step="0.5"
-              min={0}
-              max={100}
+              type="text"
+              inputMode="decimal"
               value={taxa}
-              onChange={(e) => setTaxa(parseFloat(e.target.value) || 0)}
+              onChange={(e) => { const v = e.target.value; if (/^\d*[,.]?\d*$/.test(v)) setTaxa(v.replace(",", ".")) }}
               className="mt-1 h-9 bg-gray-50 dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 text-sm font-medium"
             />
             <input
@@ -234,8 +229,8 @@ export default function SimuladorPage() {
               min={0}
               max={100}
               step={0.5}
-              value={taxa}
-              onChange={(e) => setTaxa(parseFloat(e.target.value))}
+              value={parseFloat(taxa) || 0}
+              onChange={(e) => setTaxa(e.target.value)}
               className="w-full mt-1.5 h-1 rounded-full appearance-none cursor-pointer bg-gray-200 dark:bg-zinc-700 accent-green-500"
             />
           </div>
