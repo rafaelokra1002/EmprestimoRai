@@ -108,6 +108,7 @@ export default function RelatorioEmprestimosPage() {
   }, [loans, startDate, endDate, paymentFilter])
 
   const activeLoans = useMemo(() => loans.filter(l => l.status === "ACTIVE"), [loans])
+  const filteredActiveLoans = useMemo(() => filtered.filter(l => l.status === "ACTIVE"), [filtered])
 
   const filteredExpenses = useMemo(() => {
     return expenses.filter((e) => {
@@ -120,11 +121,11 @@ export default function RelatorioEmprestimosPage() {
 
   // ===== CALCULATIONS =====
   const capitalNaRua = useMemo(() => {
-    return activeLoans.reduce((sum, l) => {
+    return filteredActiveLoans.reduce((sum, l) => {
       const paid = l.payments.reduce((s: number, p: any) => s + p.amount, 0)
-      return sum + (l.totalAmount - paid)
+      return sum + Math.max(0, l.totalAmount - paid)
     }, 0)
-  }, [activeLoans])
+  }, [filteredActiveLoans])
 
   const emprestimosNoPeriodo = useMemo(() => {
     return filtered.reduce((sum, l) => sum + l.amount, 0)
@@ -181,39 +182,28 @@ export default function RelatorioEmprestimosPage() {
   }, [loans])
 
   const faltaReceber = useMemo(() => {
-    return activeLoans.reduce((sum, l) => {
+    return filteredActiveLoans.reduce((sum, l) => {
       const paid = l.payments.reduce((s: number, p: any) => s + p.amount, 0)
       return sum + Math.max(0, l.totalAmount - paid)
     }, 0)
-  }, [activeLoans])
+  }, [filteredActiveLoans])
 
   const emAtraso = useMemo(() => {
     const now = new Date()
     let total = 0
     let count = 0
-    activeLoans.forEach((l) => {
-      const hasOverdue = l.installments.some((i: any) => i.status === "PENDING" && new Date(i.dueDate) < now)
+    filteredActiveLoans.forEach((l) => {
+      const hasOverdue = l.installments.some((i: any) => i.status !== "PAID" && new Date(i.dueDate) < now)
       if (hasOverdue) {
         count++
         const paid = l.payments.reduce((s: number, p: any) => s + p.amount, 0)
-        total += l.totalAmount - paid
+        total += Math.max(0, l.totalAmount - paid)
       }
     })
     return { total, count }
-  }, [activeLoans])
+  }, [filteredActiveLoans])
 
-  const lucroRealizado = useMemo(() => {
-    let total = 0
-    loans.forEach((l) => {
-      const interestPerInst = l.installmentCount > 0
-        ? Math.round((l.profit / l.installmentCount) * 100) / 100
-        : 0
-      l.payments.forEach((p: any) => {
-        total += Math.min(p.amount, interestPerInst)
-      })
-    })
-    return total
-  }, [loans])
+  const lucroRealizado = jurosRecebidos
 
   const saidas = emprestimosNoPeriodo + contasPagar
   const entradas = pagamentosNoPeriodo
@@ -486,7 +476,7 @@ export default function RelatorioEmprestimosPage() {
               <span className="text-xs text-gray-500 dark:text-zinc-400">Capital na Rua</span>
             </div>
             <p className="text-2xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(capitalNaRua)}</p>
-            <p className="text-xs text-gray-400 dark:text-zinc-500">{activeLoans.length} contratos ativos</p>
+            <p className="text-xs text-gray-400 dark:text-zinc-500">{filteredActiveLoans.length} contratos no período</p>
           </CardContent>
         </Card>
 
@@ -507,8 +497,8 @@ export default function RelatorioEmprestimosPage() {
               <CheckCircle2 className="h-4 w-4 text-primary" />
               <span className="text-xs text-gray-500 dark:text-zinc-400">Total Recebido</span>
             </div>
-            <p className="text-2xl font-bold tabular-nums tracking-tight text-primary">{formatCurrency(totalRecebidoHistorico)}</p>
-            <p className="text-xs text-gray-400 dark:text-zinc-500">Histórico</p>
+            <p className="text-2xl font-bold tabular-nums tracking-tight text-primary">{formatCurrency(pagamentosNoPeriodo)}</p>
+            <p className="text-xs text-gray-400 dark:text-zinc-500">No período</p>
           </CardContent>
         </Card>
 
@@ -519,7 +509,7 @@ export default function RelatorioEmprestimosPage() {
               <span className="text-xs text-gray-500 dark:text-zinc-400">Falta Receber</span>
             </div>
             <p className="text-2xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(faltaReceber)}</p>
-            <p className="text-xs text-gray-400 dark:text-zinc-500">Saldo restante</p>
+            <p className="text-xs text-gray-400 dark:text-zinc-500">No período</p>
           </CardContent>
         </Card>
 
@@ -530,7 +520,7 @@ export default function RelatorioEmprestimosPage() {
               <span className="text-xs text-gray-500 dark:text-zinc-400">Em Atraso</span>
             </div>
             <p className="text-2xl font-bold tabular-nums tracking-tight text-red-600">{formatCurrency(emAtraso.total)}</p>
-            <p className="text-xs text-gray-400 dark:text-zinc-500">{emAtraso.count} contratos</p>
+            <p className="text-xs text-gray-400 dark:text-zinc-500">{emAtraso.count} contratos no período</p>
           </CardContent>
         </Card>
 
@@ -541,7 +531,7 @@ export default function RelatorioEmprestimosPage() {
               <span className="text-xs text-gray-500 dark:text-zinc-400">Lucro Realizado</span>
             </div>
             <p className="text-2xl font-bold tabular-nums tracking-tight text-purple-600">{formatCurrency(lucroRealizado)}</p>
-            <p className="text-xs text-gray-400 dark:text-zinc-500">Juros já recebidos</p>
+            <p className="text-xs text-gray-400 dark:text-zinc-500">Juros recebidos no período</p>
           </CardContent>
         </Card>
       </div>
