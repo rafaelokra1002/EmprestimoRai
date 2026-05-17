@@ -132,33 +132,19 @@ export default function RelatorioEmprestimosPage() {
   }, [filtered])
 
   const pagamentosNoPeriodo = useMemo(() => {
-    let total = 0
-    loans.forEach((l) => {
-      l.payments.forEach((p: any) => {
-        const d = localDateStr(new Date(p.date))
-        if (startDate && d < startDate) return
-        if (endDate && d > endDate) return
-        total += p.amount
-      })
-    })
-    return total
-  }, [loans, startDate, endDate])
+    return filtered.reduce((sum, l) => {
+      return sum + l.payments.reduce((s: number, p: any) => s + p.amount, 0)
+    }, 0)
+  }, [filtered])
 
   const jurosRecebidos = useMemo(() => {
-    let total = 0
-    loans.forEach((l) => {
+    return filtered.reduce((total, l) => {
       const interestPerInst = l.installmentCount > 0
         ? Math.round((l.profit / l.installmentCount) * 100) / 100
         : 0
-      l.payments.forEach((p: any) => {
-        const d = localDateStr(new Date(p.date))
-        if (startDate && d < startDate) return
-        if (endDate && d > endDate) return
-        total += Math.min(p.amount, interestPerInst)
-      })
-    })
-    return total
-  }, [loans, startDate, endDate])
+      return total + l.payments.reduce((s: number, p: any) => s + Math.min(p.amount, interestPerInst), 0)
+    }, 0)
+  }, [filtered])
 
   const contasPagar = useMemo(() => {
     if (!includeExpenses) return 0
@@ -168,14 +154,12 @@ export default function RelatorioEmprestimosPage() {
   const contasPagarCount = filteredExpenses.length
 
   const jurosAReceber = useMemo(() => {
-    return filtered.filter(l => l.status === "ACTIVE").reduce((sum, l) => {
-      const interestPerInst = l.installmentCount > 0
-        ? Math.round((l.profit / l.installmentCount) * 100) / 100
-        : 0
-      const pendingInsts = l.installments.filter((i: any) => i.status !== "PAID").length
-      return sum + (interestPerInst * pendingInsts)
+    return filteredActiveLoans.reduce((sum, l) => {
+      const totalPaid = l.payments.reduce((s: number, p: any) => s + p.amount, 0)
+      const ratio = l.totalAmount > 0 ? Math.max(0, Math.min(1, (l.totalAmount - totalPaid) / l.totalAmount)) : 0
+      return sum + l.profit * ratio
     }, 0)
-  }, [filtered])
+  }, [filteredActiveLoans])
 
   const totalRecebidoHistorico = useMemo(() => {
     return loans.reduce((sum, l) => sum + l.payments.reduce((s: number, p: any) => s + p.amount, 0), 0)
