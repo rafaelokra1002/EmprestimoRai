@@ -16,6 +16,7 @@ import { calculateRealizedProfitFromPayments } from "@/lib/loan-logic"
 
 interface Installment {
   id: string
+  number: number
   amount: number
   paidAmount: number
   status: string
