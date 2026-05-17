@@ -543,7 +543,20 @@ export default function ClienteEmprestimosPage() {
       // For partial mode, check if this payment completes the interest cycle
       let sendNewDueDate: string | undefined = undefined
       if (renegotiateMode === "full") {
-        sendNewDueDate = renegotiateNewDueDate || undefined
+        if (renegotiateNewDueDate) {
+          sendNewDueDate = renegotiateNewDueDate
+        } else {
+          const targetInst = renegotiateDialog.installments.find((i: any) => i.id === targetInstId)
+          if (targetInst) {
+            const nextDue = new Date(targetInst.dueDate)
+            if (renegotiateDialog.modality === "MONTHLY") {
+              nextDue.setMonth(nextDue.getMonth() + 1)
+            } else {
+              nextDue.setDate(nextDue.getDate() + modalityDays(renegotiateDialog.modality))
+            }
+            sendNewDueDate = localDateStr(nextDue)
+          }
+        }
       } else if (renegotiateMode === "partial") {
         const partialPayments = renegotiateDialog.payments.filter((p: any) => {
           const notes = (p.notes || "").toLowerCase()
@@ -1205,6 +1218,16 @@ export default function ClienteEmprestimosPage() {
                         const hasOverdue = currentLoan.installments.some((i: any) => i.status === "PENDING" && new Date(i.dueDate) < new Date())
                         const multa = hasOverdue ? (currentLoan.penaltyFee || 0) : 0
                         setRenegotiateAmount(currentInterest + overdueCharge + multa)
+                        const nextInstForDate = getNextDueInst(currentLoan)
+                        if (nextInstForDate) {
+                          const nextDue = new Date(nextInstForDate.dueDate)
+                          if (currentLoan.modality === "MONTHLY") {
+                            nextDue.setMonth(nextDue.getMonth() + 1)
+                          } else {
+                            nextDue.setDate(nextDue.getDate() + modalityDays(currentLoan.modality))
+                          }
+                          setRenegotiateNewDueDate(localDateStr(nextDue))
+                        }
                       }}
                       className="w-full rounded-3xl border p-5 text-left transition-colors border-gray-200 bg-white hover:bg-gray-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
                     >

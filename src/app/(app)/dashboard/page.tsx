@@ -19,7 +19,7 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react"
-import { formatCurrency } from "@/lib/utils"
+import { formatCurrency, localDateStr } from "@/lib/utils"
 import { useTheme } from "@/lib/theme-provider"
 import {
   BarChart,
@@ -378,7 +378,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-7 gap-2">
           {(data?.dueNextSevenDays || []).map(({ date, count, amount, items }) => {
             const d = new Date(date + "T12:00:00")
-            const isToday = date === new Date().toISOString().slice(0, 10)
+            const isToday = date === localDateStr(new Date())
             const isHovered = hoveredDueDate === date
             const dayName = d.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", "")
             const dayNum = d.getDate()

@@ -95,12 +95,24 @@ export default function RelatorioEmprestimosPage() {
 
   useEffect(() => { fetchData() }, [fetchData])
 
-  // Filter loans by date range & modality
-  const filtered = useMemo(() => {
+  // Loans created within the selected period (for "new capital deployed" metric)
+  const newLoansInPeriod = useMemo(() => {
     return loans.filter((loan) => {
       const loanDate = localDateStr(new Date(loan.contractDate || loan.createdAt))
       if (startDate && loanDate < startDate) return false
       if (endDate && loanDate > endDate) return false
+      if (paymentFilter === "monthly" && loan.modality !== "MONTHLY") return false
+      if (paymentFilter === "price" && loan.modality !== "PRICE") return false
+      return true
+    })
+  }, [loans, startDate, endDate, paymentFilter])
+
+  // All loans active during the period: active loans always included; completed only if created in period
+  const filtered = useMemo(() => {
+    return loans.filter((loan) => {
+      const loanDate = localDateStr(new Date(loan.contractDate || loan.createdAt))
+      if (endDate && loanDate > endDate) return false
+      if (loan.status !== "ACTIVE" && startDate && loanDate < startDate) return false
       if (paymentFilter === "monthly" && loan.modality !== "MONTHLY") return false
       if (paymentFilter === "price" && loan.modality !== "PRICE") return false
       return true
@@ -121,30 +133,50 @@ export default function RelatorioEmprestimosPage() {
 
   // ===== CALCULATIONS =====
   const capitalNaRua = useMemo(() => {
-    return filteredActiveLoans.reduce((sum, l) => {
-      const paid = l.payments.reduce((s: number, p: any) => s + p.amount, 0)
-      return sum + Math.max(0, l.totalAmount - paid)
-    }, 0)
+    return filteredActiveLoans.reduce((sum, l) => sum + l.amount, 0)
   }, [filteredActiveLoans])
 
   const emprestimosNoPeriodo = useMemo(() => {
-    return filtered.reduce((sum, l) => sum + l.amount, 0)
-  }, [filtered])
+    return newLoansInPeriod.reduce((sum, l) => sum + l.amount, 0)
+  }, [newLoansInPeriod])
 
   const pagamentosNoPeriodo = useMemo(() => {
     return filtered.reduce((sum, l) => {
-      return sum + l.payments.reduce((s: number, p: any) => s + p.amount, 0)
+      return sum + l.payments
+        .filter((p: any) => {
+          const payDate = localDateStr(new Date(p.date))
+          if (startDate && payDate < startDate) return false
+          if (endDate && payDate > endDate) return false
+          return true
+        })
+        .reduce((s: number, p: any) => s + p.amount, 0)
     }, 0)
-  }, [filtered])
+  }, [filtered, startDate, endDate])
 
   const jurosRecebidos = useMemo(() => {
     return filtered.reduce((total, l) => {
-      const interestPerInst = l.installmentCount > 0
-        ? Math.round((l.profit / l.installmentCount) * 100) / 100
-        : 0
-      return total + l.payments.reduce((s: number, p: any) => s + Math.min(p.amount, interestPerInst), 0)
+      const periodPayments = l.payments.filter((p: any) => {
+        const payDate = localDateStr(new Date(p.date))
+        if (startDate && payDate < startDate) return false
+        if (endDate && payDate > endDate) return false
+        return true
+      })
+      if (periodPayments.length === 0) return total
+
+      // If all installments have paidAmount=0, capital never decreased — all payments are interest
+      const capitalIntact = l.installments.every((i: any) => (i.paidAmount || 0) === 0)
+      if (capitalIntact) {
+        return total + periodPayments.reduce((s: number, p: any) => s + Number(p.amount), 0)
+      }
+
+      const interestRatio = l.totalAmount > 0 ? l.profit / l.totalAmount : 0
+      return total + periodPayments.reduce((s: number, p: any) => {
+        const notes = (p.notes || "").toLowerCase()
+        const isSoJuros = notes.includes("só juros") || notes.includes("so juros") || notes.includes("parcial de juros")
+        return s + (isSoJuros ? Number(p.amount) : Number(p.amount) * interestRatio)
+      }, 0)
     }, 0)
-  }, [filtered])
+  }, [filtered, startDate, endDate])
 
   const contasPagar = useMemo(() => {
     if (!includeExpenses) return 0
@@ -155,9 +187,10 @@ export default function RelatorioEmprestimosPage() {
 
   const jurosAReceber = useMemo(() => {
     return filteredActiveLoans.reduce((sum, l) => {
-      const totalPaid = l.payments.reduce((s: number, p: any) => s + p.amount, 0)
-      const ratio = l.totalAmount > 0 ? Math.max(0, Math.min(1, (l.totalAmount - totalPaid) / l.totalAmount)) : 0
-      return sum + l.profit * ratio
+      const totalInst = l.installmentCount
+      if (totalInst <= 0) return sum
+      const unpaidInst = l.installments.filter((i: any) => i.status !== "PAID").length
+      return sum + (l.profit * unpaidInst / totalInst)
     }, 0)
   }, [filteredActiveLoans])
 

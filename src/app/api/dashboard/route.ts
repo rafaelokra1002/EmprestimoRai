@@ -324,14 +324,18 @@ export async function GET() {
 
     const interestTrend = interestBuckets
 
-    // Juros pendentes: proporção do lucro ainda não recebida em cada empréstimo
+    // Juros pendentes: lucro total menos a parcela de juros já recebida em cada pagamento
     const pendingInterestTotal = loans.reduce((acc, loan) => {
-      const totalPaid = loan.payments.reduce((s, p) => s + Number(p.amount || 0), 0)
       const loanTotal = Number(loan.totalAmount || 0)
       const profit = Number(loan.profit || 0)
-      if (loanTotal <= 0) return acc
-      const remainingRatio = Math.max(0, Math.min(1, (loanTotal - totalPaid) / loanTotal))
-      return acc + profit * remainingRatio
+      if (loanTotal <= 0 || profit <= 0) return acc
+      const interestRatio = profit / loanTotal
+      const interestReceived = loan.payments.reduce((s, p) => {
+        const notes = (p.notes || "").toLowerCase()
+        const isSoJuros = notes.includes("só juros") || notes.includes("so juros") || notes.includes("parcial de juros")
+        return s + (isSoJuros ? Number(p.amount || 0) : Number(p.amount || 0) * interestRatio)
+      }, 0)
+      return acc + Math.max(0, profit - interestReceived)
     }, 0)
 
     const faltaReceber = pendingInterestTotal + totalPendingLateFees
