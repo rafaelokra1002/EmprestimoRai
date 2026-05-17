@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { buildLoanData, getOverdueDailyAmountBRL } from "@/lib/loan-logic"
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user) {
@@ -13,7 +13,11 @@ export async function GET() {
 
     const userId = (session.user as any).id
 
+    const { searchParams } = new URL(request.url)
     const now = new Date()
+    const filterMonth = searchParams.has("month") ? parseInt(searchParams.get("month")!) : now.getMonth()
+    const filterYear = searchParams.has("year") ? parseInt(searchParams.get("year")!) : now.getFullYear()
+
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
     const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
     const startOfWeek = new Date(startOfToday)
@@ -24,8 +28,8 @@ export async function GET() {
     startOfPrevWeek.setDate(startOfPrevWeek.getDate() - 7)
     const endOfPrevWeek = new Date(startOfWeek)
 
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
+    const startOfMonth = new Date(filterYear, filterMonth, 1)
+    const endOfMonth = new Date(filterYear, filterMonth + 1, 0, 23, 59, 59)
     const endOfWeek = new Date(startOfWeek)
     endOfWeek.setDate(endOfWeek.getDate() + 7)
     const thirtyDaysAgo = new Date(startOfToday)
@@ -88,6 +92,34 @@ export async function GET() {
         loan.payments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0),
       0
     )
+
+    // Métricas do mês selecionado
+    const monthReceived = loans.reduce((acc, loan) =>
+      acc + loan.payments
+        .filter(p => { const d = new Date(p.date); return d >= startOfMonth && d <= endOfMonth })
+        .reduce((s, p) => s + Number(p.amount), 0), 0)
+
+    const monthNewLoansCapital = loans
+      .filter(loan => { const d = new Date((loan as any).contractDate || loan.createdAt); return d >= startOfMonth && d <= endOfMonth })
+      .reduce((acc, loan) => acc + Number(loan.amount), 0)
+
+    const monthNewLoansProfit = loans
+      .filter(loan => { const d = new Date((loan as any).contractDate || loan.createdAt); return d >= startOfMonth && d <= endOfMonth })
+      .reduce((acc, loan) => acc + Number(loan.profit), 0)
+
+    const monthInstallmentsDue = loans.reduce((acc, loan) => {
+      const installmentCount = loan.installments.length || 1
+      const interestPerInst = Number(loan.profit) / installmentCount
+      const monthInsts = loan.installments.filter(i => {
+        const due = new Date(i.dueDate)
+        return due >= startOfMonth && due <= endOfMonth
+      })
+      return {
+        total: acc.total + monthInsts.reduce((s, i) => s + Number(i.amount), 0),
+        interest: acc.interest + monthInsts.length * interestPerInst,
+        capital: acc.capital + monthInsts.reduce((s, i) => s + Math.max(0, Number(i.amount) - interestPerInst), 0),
+      }
+    }, { total: 0, interest: 0, capital: 0 })
     const dueTodayInstallments = loans.flatMap((loan) =>
       loan.installments
         .filter(
@@ -238,17 +270,20 @@ export async function GET() {
       const loanTotal = Number(loan.totalAmount || 0)
       const loanProfit = Number(loan.profit || 0)
       if (loanTotal <= 0) return acc
+      const capitalIntact = loan.installments.every((i) => Number((i as any).paidAmount || 0) === 0)
       const interestRatio = loanProfit / loanTotal
-      return acc + loan.payments
-        .filter((p) => {
-          const d = new Date(p.date)
-          return d >= startOfMonth && d <= endOfMonth
-        })
-        .reduce((sum, p) => {
-          const notes = (p.notes || "").toLowerCase()
-          const isSoJuros = notes.includes("só juros") || notes.includes("parcial de juros")
-          return sum + (isSoJuros ? Number(p.amount) : Number(p.amount) * interestRatio)
-        }, 0)
+      const monthPayments = loan.payments.filter((p) => {
+        const d = new Date(p.date)
+        return d >= startOfMonth && d <= endOfMonth
+      })
+      if (capitalIntact) {
+        return acc + monthPayments.reduce((sum, p) => sum + Number(p.amount), 0)
+      }
+      return acc + monthPayments.reduce((sum, p) => {
+        const notes = (p.notes || "").toLowerCase()
+        const isSoJuros = notes.includes("só juros") || notes.includes("so juros") || notes.includes("parcial de juros")
+        return sum + (isSoJuros ? Number(p.amount) : Number(p.amount) * interestRatio)
+      }, 0)
     }, 0)
 
     const activeInstallments = loans.reduce(
@@ -340,6 +375,49 @@ export async function GET() {
 
     const faltaReceber = pendingInterestTotal + totalPendingLateFees
 
+    // Falta receber do mês atual: juros das parcelas que vencem este mês (não pagas) + multas dessas parcelas
+    const faltaReceberMes = loans.reduce((acc, loan) => {
+      const installmentCount = loan.installments.length || loan.installmentCount || 1
+      const interestPerInstallment = Number(loan.profit || 0) / installmentCount
+
+      const loanData = buildLoanData({
+        amount: Number(loan.amount),
+        interestRate: Number(loan.interestRate),
+        interestType: loan.interestType,
+        totalAmount: Number(loan.totalAmount),
+        dailyInterest: loan.dailyInterest,
+        dailyInterestAmount: Number(loan.dailyInterestAmount || 0),
+        dueDay: loan.dueDay ?? undefined,
+        modality: loan.modality,
+        firstInstallmentDate: loan.firstInstallmentDate,
+        installments: loan.installments.map((i) => ({
+          number: i.number,
+          dueDate: i.dueDate,
+          status: i.status,
+          amount: Number(i.amount),
+          paidAmount: Number((i as any).paidAmount || 0),
+        })),
+        payments: loan.payments.map((p) => ({ amount: Number(p.amount), notes: p.notes })),
+      })
+      const dailyRate = getOverdueDailyAmountBRL(loanData)
+
+      const monthInstallments = loan.installments.filter((i) => {
+        const due = new Date(i.dueDate)
+        return i.status !== "PAID" && due >= startOfMonth && due <= endOfMonth
+      })
+
+      const interest = monthInstallments.length * interestPerInstallment
+      const lateFees = monthInstallments
+        .filter((i) => new Date(i.dueDate) < startOfToday)
+        .reduce((sum, i) => {
+          const due = new Date(i.dueDate); due.setHours(0, 0, 0, 0)
+          const daysOver = Math.max(0, Math.floor((startOfToday.getTime() - due.getTime()) / 86400000))
+          return sum + dailyRate * daysOver + Number(loan.penaltyFee || 0)
+        }, 0)
+
+      return acc + interest + lateFees
+    }, 0)
+
     const collectionRate = totalToReceive > 0 ? (totalReceived / totalToReceive) * 100 : 0
     const defaultRate = activeInstallments > 0 ? (overdueCount / activeInstallments) * 100 : 0
     const healthScore = Math.round(
@@ -379,6 +457,11 @@ export async function GET() {
       totalReceived,
       capitalOnStreet,
       faltaReceber,
+      faltaReceberMes,
+      monthReceived,
+      monthNewLoansCapital,
+      monthNewLoansProfit,
+      monthInstallmentsDue,
       totalProfit,
       overdueCount,
       overdueAmount,

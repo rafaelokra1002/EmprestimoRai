@@ -83,9 +83,33 @@ export default function RegistroPage() {
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState("")
+  const [cepLoading, setCepLoading] = useState(false)
 
   const set = (field: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((prev) => ({ ...prev, [field]: e.target.value }))
+
+  const handleCepChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/\D/g, "").slice(0, 8)
+    const formatted = raw.length > 5 ? `${raw.slice(0, 5)}-${raw.slice(5)}` : raw
+    setForm((prev) => ({ ...prev, zipCode: formatted }))
+    if (raw.length === 8) {
+      setCepLoading(true)
+      try {
+        const res = await fetch(`https://viacep.com.br/ws/${raw}/json/`)
+        const data = await res.json()
+        if (!data.erro) {
+          setForm((prev) => ({
+            ...prev,
+            address: data.logradouro || prev.address,
+            neighborhood: data.bairro || prev.neighborhood,
+            city: data.localidade || prev.city,
+            state: data.uf || prev.state,
+          }))
+        }
+      } catch {}
+      finally { setCepLoading(false) }
+    }
+  }
 
   const handlePhotoChange = (field: keyof Photos) => async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -206,12 +230,19 @@ export default function RegistroPage() {
           </div>
 
           <Field icon={<Briefcase className="h-4 w-4" />} label="Profissão">
-            <input
-              placeholder="Sua profissão"
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            <select
+              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
               value={form.profession}
-              onChange={set("profession")}
-            />
+              onChange={(e) => setForm((prev) => ({ ...prev, profession: e.target.value }))}
+            >
+              <option value="">Selecione...</option>
+              <option value="Carteira assinada">Carteira assinada</option>
+              <option value="CLT sem registro">CLT sem registro</option>
+              <option value="Autônomo">Autônomo</option>
+              <option value="Beneficiário">Beneficiário</option>
+              <option value="Estagiário">Estagiário</option>
+              <option value="Não consigo comprovação renda">Não consigo comprovação renda</option>
+            </select>
           </Field>
 
           {/* Endereço */}
@@ -220,12 +251,20 @@ export default function RegistroPage() {
 
             <div className="grid grid-cols-2 gap-3 mb-3">
               <Field icon={<MapPin className="h-4 w-4" />} label="CEP">
-                <input
-                  placeholder="00000-000"
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  value={form.zipCode}
-                  onChange={set("zipCode")}
-                />
+                <div className="relative">
+                  <input
+                    placeholder="00000-000"
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    value={form.zipCode}
+                    onChange={handleCepChange}
+                    maxLength={9}
+                  />
+                  {cepLoading && (
+                    <div className="absolute right-2 top-1/2 -translate-y-1/2 mt-0.5">
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-emerald-500" />
+                    </div>
+                  )}
+                </div>
               </Field>
               <Field icon={null} label="Número">
                 <input

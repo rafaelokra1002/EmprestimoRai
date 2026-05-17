@@ -77,6 +77,7 @@ export default function ClienteEmprestimosPage() {
   const [renegotiateNewDueDate, setRenegotiateNewDueDate] = useState("")
   const [renegotiateNotes, setRenegotiateNotes] = useState("")
   const [renegotiateInstallmentId, setRenegotiateInstallmentId] = useState("")
+  const [renegotiateLateFee, setRenegotiateLateFee] = useState<number>(0)
 
   // Payment dialog state
   const [paymentDialog, setPaymentDialog] = useState<Loan | null>(null)
@@ -173,37 +174,73 @@ export default function ClienteEmprestimosPage() {
   const getOverdueInstallments = (loan: Loan) => {
     return loan.installments.filter((i: any) => {
       if (i.status === "PAID") return false
-      return toDateStr(new Date(i.dueDate)) <= todayStr
+      return toDateStr(new Date(i.dueDate)) < todayStr
     })
   }
 
   const buildDefaultWhatsappMessage = (loan: Loan) => {
     const name = loan.client.name.split(" ")[0]
+    const isParcelado = loan.installmentCount > 1
     const overdueInsts = getOverdueInstallments(loan)
-    let totalOverdue = overdueInsts.reduce((s: number, i: any) => s + i.amount, 0)
-    let count = overdueInsts.length
-    let daysLate = overdueInsts.length > 0
-      ? Math.floor((Date.now() - new Date(overdueInsts[0].dueDate).getTime()) / (1000 * 60 * 60 * 24))
-      : 0
 
-    // Fallback: if no overdue installments found but loan is overdue, use loan-level data
-    if (count === 0) {
-      const unpaid = loan.installments.filter((i: any) => i.status !== "PAID")
-      if (unpaid.length > 0) {
-        count = unpaid.length
-        totalOverdue = unpaid.reduce((s: number, i: any) => s + i.amount, 0)
-        const oldest = unpaid.sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0]
-        daysLate = Math.max(0, Math.floor((Date.now() - new Date(oldest.dueDate).getTime()) / (1000 * 60 * 60 * 24)))
-      } else {
-        totalOverdue = loan.totalAmount
-      }
+    // Build loan data to compute daily late fee rate
+    const loanData = buildLoanData({
+      amount: loan.amount,
+      interestRate: loan.interestRate,
+      interestType: loan.interestType || "SIMPLE",
+      totalAmount: loan.totalAmount,
+      dailyInterestAmount: loan.dailyInterestAmount || 0,
+      dueDay: loan.dueDay || new Date(loan.installments[0]?.dueDate || Date.now()).getDate(),
+      modality: loan.modality,
+      firstInstallmentDate: loan.firstInstallmentDate || loan.installments[0]?.dueDate || new Date().toISOString(),
+      installments: loan.installments,
+      payments: loan.payments,
+    })
+    const dailyRate = getOverdueDailyAmountBRL(loanData)
+
+    if (overdueInsts.length === 0) {
+      const nextInst = getNextDueInst(loan)
+      if (!nextInst) return `👤 Cliente: ${name}\n\n📋 Olá! Passando para lembrar do seu compromisso.\n\n💳 Chave Pix: ${profilePixKey || "Não cadastrada"}`
+      const instLabel = isParcelado ? `Parcela ${nextInst.number} de ${loan.installmentCount}` : "Parcela"
+      return `👤 Cliente: ${name}\n\n📋 ${instLabel}\n📅 Vencimento: ${formatDate(nextInst.dueDate)}\n💰 Valor: ${formatCurrency(nextInst.amount)}\n\n💳 Chave Pix: ${profilePixKey || "Não cadastrada"}`
     }
 
-    const oldestOverdue = overdueInsts.length > 0 ? overdueInsts[0] : null
-    const vencimento = oldestOverdue ? formatDate(oldestOverdue.dueDate) : ""
-    const juros = loan.interestRate > 0 ? formatCurrency(totalOverdue * (loan.interestRate / 100)) : "0,00"
+    const oldestOverdue = overdueInsts[0]
+    const daysLate = Math.max(0, Math.floor((Date.now() - new Date(oldestOverdue.dueDate).getTime()) / (1000 * 60 * 60 * 24)))
+    const baseAmount = Math.max(0, oldestOverdue.amount - (oldestOverdue.paidAmount || 0))
+    const lateFee = Math.round((dailyRate * daysLate + (loan.penaltyFee || 0)) * 100) / 100
+    const totalToPay = Math.round((baseAmount + lateFee) * 100) / 100
 
-    return `👤 Cliente: ${name}\n\n🔴 PARCELA EM ATRASO\n\n📅 Data de vencimento: ${vencimento}\n\n💰 pagamento total: ${formatCurrency(totalOverdue)}\n\n🔄 Valor para regularização parcial (juros): R$ ${juros}\n\n📆 Dias em atraso: ${daysLate} dias\n\n⚠️ Multa por atraso: R$ 15,00 por dia\n\n\n💳 Chave Pix: ${profilePixKey || "Não cadastrada"}`
+    let msg = `👤 Cliente: ${name}\n\n🔴 PARCELA EM ATRASO\n\n`
+
+    if (isParcelado) {
+      msg += `📋 Parcela ${oldestOverdue.number} de ${loan.installmentCount}\n`
+    }
+
+    if (overdueInsts.length > 1) {
+      msg += `⚠️ ${overdueInsts.length} parcelas em atraso\n`
+    }
+
+    msg += `📅 Vencimento: ${formatDate(oldestOverdue.dueDate)}\n`
+    msg += `📆 Dias em atraso: ${daysLate} dia${daysLate !== 1 ? "s" : ""}\n`
+    msg += `\n💰 Valor da parcela: ${formatCurrency(baseAmount)}\n`
+
+    if (lateFee > 0) {
+      msg += `⚠️ Multa/juros de atraso: ${formatCurrency(lateFee)}`
+      if (dailyRate > 0) msg += ` (${formatCurrency(dailyRate)}/dia × ${daysLate} dias)`
+      msg += `\n`
+      msg += `\n💳 *Total a pagar: ${formatCurrency(totalToPay)}*\n`
+    } else {
+      msg += `\n💳 *Total a pagar: ${formatCurrency(totalToPay)}*\n`
+    }
+
+    if (overdueInsts.length > 1) {
+      const totalAllOverdue = overdueInsts.reduce((s: number, i: any) => s + Math.max(0, i.amount - (i.paidAmount || 0)), 0)
+      msg += `📊 Total de todas as parcelas em atraso: ${formatCurrency(totalAllOverdue)}\n`
+    }
+
+    msg += `\n💳 Chave Pix: ${profilePixKey || "Não cadastrada"}`
+    return msg
   }
 
   const openWhatsappDialog = (loan: Loan) => {
@@ -291,6 +328,10 @@ export default function ClienteEmprestimosPage() {
     })
     .reduce((s: number, p: any) => s + p.amount, 0)
   const getReceivedProfit = (loan: Loan) => {
+    const capitalIntact = loan.installments.every((i: any) => (i.paidAmount || 0) === 0)
+    if (capitalIntact && loan.payments.length > 0) {
+      return loan.payments.reduce((s: number, p: any) => s + Number(p.amount), 0)
+    }
     return calculateRealizedProfitFromPayments(loan.totalAmount, loan.profit, loan.payments, loan.installments, {
       principalAmount: loan.amount,
       interestType: loan.interestType,
@@ -581,7 +622,7 @@ export default function ClienteEmprestimosPage() {
           amount,
           date: renegotiateDate || new Date().toISOString(),
           newDueDate: sendNewDueDate,
-          notes: (renegotiateNotes ? renegotiateNotes + " | " : "") + (renegotiateMode === "full" ? "Pagamento só juros" : "Pagamento parcial de juros"),
+          notes: (renegotiateNotes ? renegotiateNotes + " | " : "") + (renegotiateMode === "full" ? "Pagamento só juros" : "Pagamento parcial de juros") + (renegotiateMode === "full" && renegotiateLateFee > 0 ? ` [lateFee:${renegotiateLateFee.toFixed(2)}]` : ""),
         }),
       })
       setRenegotiateDialog(null)
@@ -589,6 +630,7 @@ export default function ClienteEmprestimosPage() {
       setRenegotiateAmount(0)
       setRenegotiateNotes("")
       setRenegotiateInstallmentId("")
+      setRenegotiateLateFee(0)
 
       if (res.ok) {
         const paidCount = allInsts.filter((i: any) => i.status === "PAID").length
@@ -1217,7 +1259,9 @@ export default function ClienteEmprestimosPage() {
                         const overdueCharge = getCurrentOverdueCharge(currentLoan)
                         const hasOverdue = currentLoan.installments.some((i: any) => i.status === "PENDING" && new Date(i.dueDate) < new Date())
                         const multa = hasOverdue ? (currentLoan.penaltyFee || 0) : 0
-                        setRenegotiateAmount(currentInterest + overdueCharge + multa)
+                        const lateFeeTotal = overdueCharge + multa
+                        setRenegotiateLateFee(lateFeeTotal)
+                        setRenegotiateAmount(currentInterest + lateFeeTotal)
                         const nextInstForDate = getNextDueInst(currentLoan)
                         if (nextInstForDate) {
                           const nextDue = new Date(nextInstForDate.dueDate)

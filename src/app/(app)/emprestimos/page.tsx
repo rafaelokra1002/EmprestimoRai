@@ -152,6 +152,9 @@ export default function EmprestimosPage() {
     totalAmount: number
     firstInstallmentDate: string
     modality: string
+    dailyLateFee: number
+    penaltyFee: number
+    profit: number
   } | null>(null)
 
   // Form state
@@ -368,6 +371,9 @@ export default function EmprestimosPage() {
         totalAmount: preview.totalAmount,
         firstInstallmentDate,
         modality,
+        dailyLateFee: calculatedDailyInterest,
+        penaltyFee: penaltyFee || 0,
+        profit: preview.totalAmount - amount,
       })
       setDialogOpen(false)
       resetForm()
@@ -587,6 +593,10 @@ export default function EmprestimosPage() {
     .reduce((s: number, p: any) => s + p.amount, 0)
 
   const getReceivedProfit = (loan: Loan) => {
+    const capitalIntact = loan.installments.every((i: any) => (i.paidAmount || 0) === 0)
+    if (capitalIntact && loan.payments.length > 0) {
+      return loan.payments.reduce((s: number, p: any) => s + Number(p.amount), 0)
+    }
     return calculateRealizedProfitFromPayments(loan.totalAmount, loan.profit, loan.payments, loan.installments, {
       principalAmount: loan.amount,
       interestType: loan.interestType,
@@ -755,37 +765,71 @@ export default function EmprestimosPage() {
   const getOverdueInstallments = (loan: Loan) => {
     return loan.installments.filter((i: any) => {
       if (i.status === "PAID") return false
-      return toDateStr(new Date(i.dueDate)) <= todayStr
+      return toDateStr(new Date(i.dueDate)) < todayStr
     })
   }
 
   const buildDefaultWhatsappMessage = (loan: Loan) => {
-    const clientName = loan.client.name.split(" ")[0]
+    const name = loan.client.name.split(" ")[0]
+    const isParcelado = loan.installmentCount > 1
     const overdueInsts = getOverdueInstallments(loan)
-    let totalOverdue = overdueInsts.reduce((s: number, i: any) => s + i.amount, 0)
-    let count = overdueInsts.length
-    let daysLate = overdueInsts.length > 0
-      ? Math.floor((Date.now() - new Date(overdueInsts[0].dueDate).getTime()) / (1000 * 60 * 60 * 24))
-      : 0
 
-    // Fallback: if no overdue installments found but loan is overdue, use loan-level data
-    if (count === 0) {
-      const unpaid = loan.installments.filter((i: any) => i.status !== "PAID")
-      if (unpaid.length > 0) {
-        count = unpaid.length
-        totalOverdue = unpaid.reduce((s: number, i: any) => s + i.amount, 0)
-        const oldest = unpaid.sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0]
-        daysLate = Math.max(0, Math.floor((Date.now() - new Date(oldest.dueDate).getTime()) / (1000 * 60 * 60 * 24)))
-      } else {
-        totalOverdue = loan.totalAmount
-      }
+    const loanData = buildLoanData({
+      amount: loan.amount,
+      interestRate: loan.interestRate,
+      interestType: loan.interestType || "SIMPLE",
+      totalAmount: loan.totalAmount,
+      dailyInterestAmount: loan.dailyInterestAmount || 0,
+      dueDay: loan.dueDay || new Date(loan.installments[0]?.dueDate || Date.now()).getDate(),
+      modality: loan.modality,
+      firstInstallmentDate: loan.firstInstallmentDate || loan.installments[0]?.dueDate || new Date().toISOString(),
+      installments: loan.installments,
+      payments: loan.payments,
+    })
+    const dailyRate = getOverdueDailyAmountBRL(loanData)
+
+    if (overdueInsts.length === 0) {
+      const nextInst = getNextDueInst(loan)
+      if (!nextInst) return `👤 Cliente: ${name}\n\n📋 Olá! Passando para lembrar do seu compromisso.\n\n💳 Chave Pix: ${profilePixKey || "Não cadastrada"}`
+      const instLabel = isParcelado ? `Parcela ${nextInst.number} de ${loan.installmentCount}` : "Parcela"
+      return `👤 Cliente: ${name}\n\n📋 ${instLabel}\n📅 Vencimento: ${formatDate(nextInst.dueDate)}\n💰 Valor: ${formatCurrency(nextInst.amount)}\n\n💳 Chave Pix: ${profilePixKey || "Não cadastrada"}`
     }
 
-    const oldestOverdue = overdueInsts.length > 0 ? overdueInsts[0] : null
-    const vencimento = oldestOverdue ? formatDate(oldestOverdue.dueDate) : ""
-    const juros = loan.interestRate > 0 ? formatCurrency(totalOverdue * (loan.interestRate / 100)) : "0,00"
+    const oldestOverdue = overdueInsts[0]
+    const daysLate = Math.max(0, Math.floor((Date.now() - new Date(oldestOverdue.dueDate).getTime()) / (1000 * 60 * 60 * 24)))
+    const baseAmount = Math.max(0, oldestOverdue.amount - (oldestOverdue.paidAmount || 0))
+    const lateFee = Math.round((dailyRate * daysLate + (loan.penaltyFee || 0)) * 100) / 100
+    const totalToPay = Math.round((baseAmount + lateFee) * 100) / 100
 
-    return `👤 Cliente: ${clientName}\n\n🔴 PARCELA EM ATRASO\n\n📅 Data de vencimento: ${vencimento}\n\n💰 pagamento total: ${formatCurrency(totalOverdue)}\n\n🔄 Valor para regularização parcial (juros): R$ ${juros}\n\n📆 Dias em atraso: ${daysLate} dias\n\n⚠️ Multa por atraso: R$ 15,00 por dia\n\n\n💳 Chave Pix: ${profilePixKey || "Não cadastrada"}`
+    let msg = `👤 Cliente: ${name}\n\n🔴 PARCELA EM ATRASO\n\n`
+
+    if (isParcelado) {
+      msg += `📋 Parcela ${oldestOverdue.number} de ${loan.installmentCount}\n`
+    }
+
+    if (overdueInsts.length > 1) {
+      msg += `⚠️ ${overdueInsts.length} parcelas em atraso\n`
+    }
+
+    msg += `📅 Vencimento: ${formatDate(oldestOverdue.dueDate)}\n`
+    msg += `📆 Dias em atraso: ${daysLate} dia${daysLate !== 1 ? "s" : ""}\n`
+    msg += `\n💰 Valor da parcela: ${formatCurrency(baseAmount)}\n`
+
+    if (lateFee > 0) {
+      msg += `⚠️ Multa/juros de atraso: ${formatCurrency(lateFee)}`
+      if (dailyRate > 0) msg += ` (${formatCurrency(dailyRate)}/dia × ${daysLate} dias)`
+      msg += `\n`
+    }
+
+    msg += `\n💳 *Total a pagar: ${formatCurrency(totalToPay)}*\n`
+
+    if (overdueInsts.length > 1) {
+      const totalAllOverdue = overdueInsts.reduce((s: number, i: any) => s + Math.max(0, i.amount - (i.paidAmount || 0)), 0)
+      msg += `📊 Total de todas as parcelas em atraso: ${formatCurrency(totalAllOverdue)}\n`
+    }
+
+    msg += `\n💳 Chave Pix: ${profilePixKey || "Não cadastrada"}`
+    return msg
   }
 
   const openWhatsappDialog = (loan: Loan) => {
@@ -3497,6 +3541,20 @@ export default function EmprestimosPage() {
                 <span className="text-sm text-gray-500 dark:text-zinc-400">Total a Receber:</span>
                 <span className="text-lg font-bold tabular-nums text-primary">{formatCurrency(createdLoanInfo.totalAmount)}</span>
               </div>
+              {createdLoanInfo.dailyLateFee > 0 && (
+                <div className="border-t border-gray-200 dark:border-zinc-700 pt-3 space-y-1.5 text-sm">
+                  <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                    <span>⚠️</span>
+                    <span className="font-medium">Em caso de Atraso:</span>
+                    <span>{formatCurrency(createdLoanInfo.dailyLateFee)} por dia{createdLoanInfo.penaltyFee > 0 ? ` + multa ${formatCurrency(createdLoanInfo.penaltyFee)}` : ""}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
+                    <span>🔄</span>
+                    <span className="font-medium">Opção de renovação:</span>
+                    <span>Pague os juros ({formatCurrency(createdLoanInfo.profit / createdLoanInfo.installmentCount)}) e ganhe +{createdLoanInfo.modality === "DAILY" ? "1 dia" : createdLoanInfo.modality === "WEEKLY" ? "7 dias" : createdLoanInfo.modality === "BIWEEKLY" ? "15 dias" : "30 dias"}</span>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -3505,7 +3563,12 @@ export default function EmprestimosPage() {
               className="w-full gap-2 bg-amber-500 hover:bg-amber-600 text-white"
               onClick={() => {
                 if (!createdLoanInfo) return
-                const text = `📋 *Comprovante de Empréstimo*\n\n👤 Cliente: ${createdLoanInfo.clientName}\n💰 Valor: ${formatCurrency(createdLoanInfo.amount)}\n📊 Juros: ${createdLoanInfo.interestRate}%\n📄 ${createdLoanInfo.installmentCount}x ${formatCurrency(createdLoanInfo.installmentValue)}\n📅 1º Vencimento: ${new Date(createdLoanInfo.firstInstallmentDate + "T12:00:00").toLocaleDateString("pt-BR")}\n\n💵 *Total a Receber: ${formatCurrency(createdLoanInfo.totalAmount)}*`
+                const modalityDaysLabel = createdLoanInfo.modality === "DAILY" ? "1 dia" : createdLoanInfo.modality === "WEEKLY" ? "7 dias" : createdLoanInfo.modality === "BIWEEKLY" ? "15 dias" : "30 dias"
+                const interestPerPeriod = createdLoanInfo.profit / createdLoanInfo.installmentCount
+                const lateSection = createdLoanInfo.dailyLateFee > 0
+                  ? `\n\n⚠️ *Em caso de Atraso:*\n${formatCurrency(createdLoanInfo.dailyLateFee)} por dia${createdLoanInfo.penaltyFee > 0 ? ` + multa ${formatCurrency(createdLoanInfo.penaltyFee)}` : ""}\n\n🔄 *Opção de renovação*\nPague os juros (${formatCurrency(interestPerPeriod)}) e ganhe +${modalityDaysLabel}`
+                  : ""
+                const text = `📋 *Relatório de Pagamento*\n\n📅 Vencimento: ${new Date(createdLoanInfo.firstInstallmentDate + "T12:00:00").toLocaleDateString("pt-BR")}\n\n💰 Valor liberado: ${formatCurrency(createdLoanInfo.amount)}\n📊 Juros: ${createdLoanInfo.interestRate}%\n👉 Total a pagar: ${formatCurrency(createdLoanInfo.totalAmount)}${lateSection}`
                 navigator.clipboard.writeText(text)
                 alert("Texto copiado!")
               }}
@@ -3516,7 +3579,12 @@ export default function EmprestimosPage() {
               className="w-full gap-2 bg-amber-500 hover:bg-amber-600 text-white"
               onClick={() => {
                 if (!createdLoanInfo) return
-                const text = `📋 *Comprovante de Empréstimo*\n\n👤 Cliente: ${createdLoanInfo.clientName}\n💰 Valor: ${formatCurrency(createdLoanInfo.amount)}\n📊 Juros: ${createdLoanInfo.interestRate}%\n📄 ${createdLoanInfo.installmentCount}x ${formatCurrency(createdLoanInfo.installmentValue)}\n📅 1º Vencimento: ${new Date(createdLoanInfo.firstInstallmentDate + "T12:00:00").toLocaleDateString("pt-BR")}\n\n💵 *Total a Receber: ${formatCurrency(createdLoanInfo.totalAmount)}*`
+                const modalityDaysLabel = createdLoanInfo.modality === "DAILY" ? "1 dia" : createdLoanInfo.modality === "WEEKLY" ? "7 dias" : createdLoanInfo.modality === "BIWEEKLY" ? "15 dias" : "30 dias"
+                const interestPerPeriod = createdLoanInfo.profit / createdLoanInfo.installmentCount
+                const lateSection = createdLoanInfo.dailyLateFee > 0
+                  ? `\n\n⚠️ *Em caso de Atraso:*\n${formatCurrency(createdLoanInfo.dailyLateFee)} por dia${createdLoanInfo.penaltyFee > 0 ? ` + multa ${formatCurrency(createdLoanInfo.penaltyFee)}` : ""}\n\n🔄 *Opção de renovação*\nPague os juros (${formatCurrency(interestPerPeriod)}) e ganhe +${modalityDaysLabel}`
+                  : ""
+                const text = `📋 *Relatório de Pagamento*\n\n📅 Vencimento: ${new Date(createdLoanInfo.firstInstallmentDate + "T12:00:00").toLocaleDateString("pt-BR")}\n\n💰 Valor liberado: ${formatCurrency(createdLoanInfo.amount)}\n📊 Juros: ${createdLoanInfo.interestRate}%\n👉 Total a pagar: ${formatCurrency(createdLoanInfo.totalAmount)}${lateSection}`
                 const phone = createdLoanInfo.clientPhone?.replace(/\D/g, "") || ""
                 window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank")
               }}
@@ -3527,7 +3595,33 @@ export default function EmprestimosPage() {
               variant="outline"
               className="w-full gap-2"
               onClick={() => {
-                setSuccessDialog(false)
+                if (!createdLoanInfo) return
+                const modalityDaysLabel = createdLoanInfo.modality === "DAILY" ? "1 dia" : createdLoanInfo.modality === "WEEKLY" ? "7 dias" : createdLoanInfo.modality === "BIWEEKLY" ? "15 dias" : "30 dias"
+                const interestPerPeriod = createdLoanInfo.profit / createdLoanInfo.installmentCount
+                const venc = new Date(createdLoanInfo.firstInstallmentDate + "T12:00:00").toLocaleDateString("pt-BR")
+                const lateRows = createdLoanInfo.dailyLateFee > 0
+                  ? `<tr><td>Em caso de Atraso:</td><td style="color:#d97706">${formatCurrency(createdLoanInfo.dailyLateFee)} por dia${createdLoanInfo.penaltyFee > 0 ? ` + multa ${formatCurrency(createdLoanInfo.penaltyFee)}` : ""}</td></tr>
+                     <tr><td>Opção de renovação:</td><td>Pague os juros (${formatCurrency(interestPerPeriod)}) e ganhe +${modalityDaysLabel}</td></tr>`
+                  : ""
+                const printContent = `<html><head><title>Relatório de Pagamento</title>
+                  <style>body{font-family:sans-serif;padding:40px;max-width:420px;margin:auto}
+                  h2{color:#059669;text-align:center;margin-bottom:4px}p.sub{text-align:center;color:#6b7280;font-size:13px;margin-top:0}
+                  table{width:100%;border-collapse:collapse;margin:20px 0}
+                  td{padding:9px 4px;border-bottom:1px solid #e5e7eb}td:first-child{color:#6b7280}td:last-child{text-align:right;font-weight:600}
+                  .total{background:#f0fdf4;border-radius:8px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+                  .total span:first-child{color:#374151}.total span:last-child{color:#059669;font-size:18px;font-weight:700}</style></head>
+                  <body><h2>📋 Relatório de Pagamento</h2><p class="sub">${createdLoanInfo.clientName}</p>
+                  <table>
+                    <tr><td>Vencimento:</td><td>${venc}</td></tr>
+                    <tr><td>Valor liberado:</td><td>${formatCurrency(createdLoanInfo.amount)}</td></tr>
+                    <tr><td>Juros:</td><td>${createdLoanInfo.interestRate}%</td></tr>
+                    <tr><td>Parcelas:</td><td>${createdLoanInfo.installmentCount}x ${formatCurrency(createdLoanInfo.installmentValue)}</td></tr>
+                    ${lateRows}
+                  </table>
+                  <div class="total"><span>Total a Pagar:</span><span>${formatCurrency(createdLoanInfo.totalAmount)}</span></div>
+                  </body></html>`
+                const w = window.open("", "_blank")
+                if (w) { w.document.write(printContent); w.document.close(); w.print() }
               }}
             >
               <Download className="h-4 w-4" /> Baixar PDF

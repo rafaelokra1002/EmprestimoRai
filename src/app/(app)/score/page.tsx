@@ -12,6 +12,7 @@ import {
   CheckCircle2, ShieldAlert, BookOpen,
 } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
+import { calculateRealizedProfitFromPayments } from "@/lib/loan-logic"
 
 interface Installment {
   id: string
@@ -144,11 +145,19 @@ export default function ScorePage() {
     const totalQuitados = completedLoans.reduce((s, l) => s + (l.totalAmount || 0), 0)
     const totalAtivos = activeLoans.reduce((s, l) => s + (l.totalAmount || 0), 0)
     const totalProfit = loans.reduce((s, l) => s + (l.profit || 0), 0)
-    const lucroExtra = loans.reduce((s, l) =>
-      s + (l.payments || []).reduce((ps, p) => {
-        const match = (p.notes || "").match(/\[lateFee:([\d.]+)\]/i)
-        return ps + (match ? parseFloat(match[1]) || 0 : 0)
-      }, 0), 0)
+    const lucroExtra = loans.reduce((s, l) => {
+      const installmentCount = (l.installments || []).length || 1
+      const interestPerPeriod = installmentCount > 0 ? l.profit / installmentCount : l.profit
+      return s + (l.payments || []).reduce((ps, p) => {
+        const notes = (p.notes || "")
+        const lateFeeMatch = notes.match(/\[lateFee:([\d.]+)\]/i) || notes.match(/\[dailyFee:([\d.]+)\]/i)
+        if (lateFeeMatch) return ps + (parseFloat(lateFeeMatch[1]) || 0)
+        const notesLower = notes.toLowerCase()
+        const isSoJuros = notesLower.includes("só juros") || notesLower.includes("so juros") || notesLower.includes("parcial de juros")
+        if (isSoJuros) return ps + Math.max(0, Number(p.amount) - interestPerPeriod)
+        return ps
+      }, 0)
+    }, 0)
     const recoveryPoints = Math.min(10, Math.floor(lucroExtra / 50) * 2)
     return {
       emDia,
@@ -166,12 +175,14 @@ export default function ScorePage() {
 
   const getClientRealizedProfit = (client: Client) =>
     client.loans.reduce((s, l) => {
-      const totalPaid = (l.payments || []).reduce((ps, p) => ps + (p.amount || 0), 0)
-      if (l.status === "COMPLETED") return s + Math.max(0, totalPaid - l.amount)
-      const proportional = l.totalAmount > 0
-        ? Math.min(l.profit, Math.round((totalPaid / l.totalAmount) * l.profit * 100) / 100)
-        : 0
-      return s + proportional
+      const capitalIntact = (l.installments || []).every((i: any) => (i.paidAmount || 0) === 0)
+      if (capitalIntact && (l.payments || []).length > 0) {
+        return s + (l.payments || []).reduce((ps, p) => ps + Number(p.amount), 0)
+      }
+      return s + calculateRealizedProfitFromPayments(l.totalAmount, l.profit, l.payments || [], l.installments || [], {
+        principalAmount: l.amount,
+        interestType: undefined,
+      })
     }, 0)
 
   const getColorPriority = (score: number) => {
@@ -210,11 +221,19 @@ export default function ScorePage() {
   const lucroRealizado = clients.reduce((s, c) =>
     s + c.loans.filter(l => l.status === "COMPLETED").reduce((ls, l) => ls + l.profit, 0), 0)
   const lucroExtra = clients.reduce((s, c) =>
-    s + c.loans.reduce((ls, l) =>
-      ls + (l.payments || []).reduce((ps, p) => {
-        const match = (p.notes || "").match(/\[lateFee:([\d.]+)\]/i)
-        return ps + (match ? parseFloat(match[1]) || 0 : 0)
-      }, 0), 0), 0)
+    s + c.loans.reduce((ls, l) => {
+      const installmentCount = (l.installments || []).length || 1
+      const interestPerPeriod = installmentCount > 0 ? l.profit / installmentCount : l.profit
+      return ls + (l.payments || []).reduce((ps, p) => {
+        const notes = (p.notes || "")
+        const lateFeeMatch = notes.match(/\[lateFee:([\d.]+)\]/i) || notes.match(/\[dailyFee:([\d.]+)\]/i)
+        if (lateFeeMatch) return ps + (parseFloat(lateFeeMatch[1]) || 0)
+        const notesLower = notes.toLowerCase()
+        const isSoJuros = notesLower.includes("só juros") || notesLower.includes("so juros") || notesLower.includes("parcial de juros")
+        if (isSoJuros) return ps + Math.max(0, Number(p.amount) - interestPerPeriod)
+        return ps
+      }, 0)
+    }, 0), 0)
   const lucroPct = lucroPrevisto > 0 ? Math.round((lucroRealizado / lucroPrevisto) * 100) : 0
   const totalPagamentos = globalEmDia + globalAtrasados
   const pctEmDia = totalPagamentos > 0 ? Math.round((globalEmDia / totalPagamentos) * 100) : 0
@@ -556,19 +575,25 @@ export default function ScorePage() {
                       const highlightLucro = sortMode === "lucro"
                       // Para quitados: lucro real = tudo recebido acima do principal (inclui multas/juros extras)
                       // Para ativos: proporcional aos pagamentos recebidos
-                      const realizedProfit = isCompleted
-                        ? Math.max(0, totalPaid - loan.amount)
-                        : loan.totalAmount > 0
-                          ? Math.min(loan.profit, Math.round((totalPaid / loan.totalAmount) * loan.profit * 100) / 100)
-                          : 0
+                      const capitalIntact = (loan.installments || []).every((i: any) => (i.paidAmount || 0) === 0)
+                      const realizedProfit = capitalIntact && totalPaid > 0
+                        ? totalPaid
+                        : calculateRealizedProfitFromPayments(loan.totalAmount, loan.profit, loan.payments || [], loan.installments || [], {
+                            principalAmount: loan.amount,
+                            interestType: undefined,
+                          })
                       return (
                         <div key={loan.id}>
                           <p className="text-[10px] uppercase font-semibold text-gray-400 dark:text-zinc-500 tracking-wide">{highlightLucro ? "Lucro" : "A receber"}</p>
                           <p className="text-xl font-bold text-gray-900 dark:text-zinc-100 mt-0.5">{formatCurrency(highlightLucro ? realizedProfit : Math.max(0, remaining))}</p>
                           <div className="flex items-center gap-2 mt-1 text-xs text-gray-400 dark:text-zinc-500 flex-wrap">
                             <span>Emprestado {formatCurrency(loan.amount)}</span>
-                            <span className="text-gray-300 dark:text-zinc-700">•</span>
-                            <span>Recebido {formatCurrency(totalPaid)}</span>
+                            {!highlightLucro && (
+                              <>
+                                <span className="text-gray-300 dark:text-zinc-700">•</span>
+                                <span>Recebido {formatCurrency(totalPaid)}</span>
+                              </>
+                            )}
                             {isCompleted && highlightLucro && (
                               <>
                                 <span className="text-gray-300 dark:text-zinc-700">•</span>

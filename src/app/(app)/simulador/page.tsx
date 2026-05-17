@@ -7,11 +7,11 @@ import { Badge } from "@/components/ui/badge"
 import { formatCurrency, localDateStr } from "@/lib/utils"
 import {
   Calculator, Calendar, ChevronDown, TrendingUp,
-  FileDown, GitCompareArrows
+  FileDown, GitCompareArrows, Copy, ExternalLink, Phone
 } from "lucide-react"
 
 type PaymentType = "MONTHLY" | "BIWEEKLY" | "WEEKLY" | "DAILY"
-type InterestMode = "PER_INSTALLMENT" | "COMPOUND" | "SIMPLE"
+type InterestMode = "PER_INSTALLMENT" | "PRICE"
 
 interface Installment {
   number: number
@@ -34,6 +34,7 @@ export default function SimuladorPage() {
   const [valor, setValor] = useState("1000")
   const [taxa, setTaxa] = useState("10")
   const [showCompare, setShowCompare] = useState(false)
+  const [clientPhone, setClientPhone] = useState("")
 
   // ===== CALCULATION =====
   const result = useMemo(() => {
@@ -50,16 +51,15 @@ export default function SimuladorPage() {
       totalInterest = amount * rate * count
       totalAmount = amount + totalInterest
       installmentValue = totalAmount / count
-    } else if (interestMode === "COMPOUND") {
-      // Compound: totalAmount = principal * (1 + rate)^count
-      totalAmount = amount * Math.pow(1 + rate, count)
-      totalInterest = totalAmount - amount
-      installmentValue = totalAmount / count
     } else {
-      // Simple: total = principal * (1 + rate * count)
-      totalInterest = amount * rate * count
-      totalAmount = amount + totalInterest
-      installmentValue = totalAmount / count
+      // Tabela Price (French amortization): PMT = PV * i / (1 - (1+i)^-n)
+      if (rate === 0) {
+        installmentValue = amount / count
+      } else {
+        installmentValue = (amount * rate) / (1 - Math.pow(1 + rate, -count))
+      }
+      totalAmount = installmentValue * count
+      totalInterest = totalAmount - amount
     }
 
     const effectiveRate = amount > 0 ? ((totalAmount - amount) / amount) * 100 : 0
@@ -81,16 +81,13 @@ export default function SimuladorPage() {
     const perInst = amount * rate * count
     const perInstTotal = amount + perInst
 
-    const compound = amount * Math.pow(1 + rate, count) - amount
-    const compoundTotal = amount + compound
-
-    const simple = amount * rate * count
-    const simpleTotal = amount + simple
+    const priceInstallment = rate === 0 ? amount / count : (amount * rate) / (1 - Math.pow(1 + rate, -count))
+    const priceTotal = priceInstallment * count
+    const priceInterest = priceTotal - amount
 
     return [
       { label: "Por Parcela", interest: perInst, total: perInstTotal, installment: perInstTotal / count },
-      { label: "Juros Compostos", interest: compound, total: compoundTotal, installment: compoundTotal / count },
-      { label: "Juros Simples", interest: simple, total: simpleTotal, installment: simpleTotal / count },
+      { label: "Tabela Price", interest: priceInterest, total: priceTotal, installment: priceInstallment },
     ]
   }, [valor, taxa, installmentCount])
 
@@ -125,13 +122,19 @@ export default function SimuladorPage() {
 
   const interestOptions: { value: InterestMode; label: string }[] = [
     { value: "PER_INSTALLMENT", label: "Por Parcela" },
-    { value: "COMPOUND", label: "Juros Compostos" },
-    { value: "SIMPLE", label: "Juros Simples" },
+    { value: "PRICE", label: "Tabela Price" },
   ]
 
 
   const formatDateBR = (d: Date) =>
     d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })
+
+  const buildSimulationText = () => {
+    const modeLabel = interestMode === "PER_INSTALLMENT" ? "Por Parcela" : "Tabela Price"
+    const venc = firstDueDate ? new Date(firstDueDate + "T12:00:00").toLocaleDateString("pt-BR") : "-"
+    const scheduleLines = schedule.map((i) => `  ${i.number}/${installmentCount} - ${formatDateBR(i.dueDate)} - ${formatCurrency(i.amount)}`).join("\n")
+    return `📊 *Simulação de Empréstimo*\n\n💰 Valor: ${formatCurrency(parseFloat(valor) || 0)}\n📈 Juros: ${taxa}% (${modeLabel})\n📄 Parcelas: ${installmentCount}x ${formatCurrency(result.installmentValue)}\n📅 1º Vencimento: ${venc}\n\n💵 Total de Juros: ${formatCurrency(result.totalInterest)}\n💵 *Total a Pagar: ${formatCurrency(result.totalAmount)}*\n\n📋 *Cronograma:*\n${scheduleLines}`
+  }
 
   return (
     <div className="space-y-4 pt-4 pb-8 max-w-2xl">
@@ -296,18 +299,14 @@ export default function SimuladorPage() {
               <div
                 key={cr.label}
                 className={`rounded-xl border p-4 ${
-                  cr.label ===
-                    (interestMode === "PER_INSTALLMENT" ? "Por Parcela" :
-                     interestMode === "COMPOUND" ? "Juros Compostos" : "Juros Simples")
+                  cr.label === (interestMode === "PER_INSTALLMENT" ? "Por Parcela" : "Tabela Price")
                     ? "border-primary/40 bg-primary/5 dark:bg-primary/150/5"
                     : "border-gray-200 dark:border-zinc-800 bg-gray-100 dark:bg-zinc-800/30"
                 }`}
               >
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-gray-800 dark:text-zinc-200">{cr.label}</span>
-                  {cr.label ===
-                    (interestMode === "PER_INSTALLMENT" ? "Por Parcela" :
-                     interestMode === "COMPOUND" ? "Juros Compostos" : "Juros Simples") && (
+                  {cr.label === (interestMode === "PER_INSTALLMENT" ? "Por Parcela" : "Tabela Price") && (
                     <Badge className="bg-primary/5 dark:bg-primary/150/20 text-primary border-primary/30 text-[10px]">
                       Selecionado
                     </Badge>
@@ -331,6 +330,39 @@ export default function SimuladorPage() {
             ))}
           </div>
         )}
+
+        {/* ===== ENVIAR PARA CLIENTE ===== */}
+        <div className="border-t border-gray-200 dark:border-zinc-700 pt-3 space-y-2">
+          <p className="text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Enviar para Cliente</p>
+          <div className="relative">
+            <Phone className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
+            <input
+              type="tel"
+              placeholder="Telefone do cliente (opcional)"
+              value={clientPhone}
+              onChange={(e) => setClientPhone(e.target.value.replace(/\D/g, "").slice(0, 15))}
+              className="w-full rounded-lg border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 pl-8 pr-3 py-2 text-sm text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-primary/50"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => { navigator.clipboard.writeText(buildSimulationText()); alert("Texto copiado!") }}
+              className="flex items-center justify-center gap-2 py-2 rounded-lg border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700 text-xs font-medium text-gray-700 dark:text-zinc-300 transition"
+            >
+              <Copy className="h-3.5 w-3.5" /> Copiar Texto
+            </button>
+            <button
+              onClick={() => {
+                const phone = clientPhone.replace(/\D/g, "")
+                const text = buildSimulationText()
+                window.open(`https://wa.me/${phone ? phone : ""}?text=${encodeURIComponent(text)}`, "_blank")
+              }}
+              className="flex items-center justify-center gap-2 py-2 rounded-lg bg-green-500 hover:bg-green-600 text-white text-xs font-medium transition"
+            >
+              <ExternalLink className="h-3.5 w-3.5" /> Enviar via WhatsApp
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* ===== CRONOGRAMA DE PARCELAS ===== */}
@@ -343,7 +375,34 @@ export default function SimuladorPage() {
               {installmentCount}x de {formatCurrency(result.installmentValue)}
             </Badge>
           </div>
-          <button className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs text-gray-600 dark:text-zinc-400 hover:bg-gray-50 transition">
+          <button
+            onClick={() => {
+              const scheduleRows = schedule.map((i) =>
+                `<tr><td style="text-align:center">${i.number}/${installmentCount}</td><td style="text-align:center">${formatDateBR(i.dueDate)}</td><td style="text-align:right;color:#059669;font-weight:600">${formatCurrency(i.amount)}</td></tr>`
+              ).join("")
+              const modeLabel = interestMode === "PER_INSTALLMENT" ? "Por Parcela" : "Tabela Price"
+              const printContent = `<html><head><title>Simulação de Empréstimo</title>
+                <style>body{font-family:sans-serif;padding:40px;max-width:500px;margin:auto}h2{color:#059669;text-align:center}
+                .summary{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:16px 0}
+                .card{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px;text-align:center}
+                .card p{margin:0;font-size:11px;color:#6b7280}.card span{font-size:16px;font-weight:700;color:#059669}
+                table{width:100%;border-collapse:collapse;margin-top:16px}
+                th{background:#f9fafb;padding:8px;font-size:11px;text-transform:uppercase;color:#6b7280;border-bottom:2px solid #e5e7eb}
+                td{padding:8px;border-bottom:1px solid #e5e7eb;font-size:13px}</style></head>
+                <body><h2>📊 Simulação de Empréstimo</h2>
+                <div class="summary">
+                  <div class="card"><p>Valor</p><span>${formatCurrency(parseFloat(valor)||0)}</span></div>
+                  <div class="card"><p>Juros (${modeLabel})</p><span>${taxa}%</span></div>
+                  <div class="card"><p>Total de Juros</p><span>${formatCurrency(result.totalInterest)}</span></div>
+                  <div class="card"><p>Total a Pagar</p><span>${formatCurrency(result.totalAmount)}</span></div>
+                </div>
+                <table><thead><tr><th>Parcela</th><th>Vencimento</th><th>Valor</th></tr></thead>
+                <tbody>${scheduleRows}</tbody></table></body></html>`
+              const w = window.open("", "_blank")
+              if (w) { w.document.write(printContent); w.document.close(); w.print() }
+            }}
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs text-gray-600 dark:text-zinc-400 hover:bg-gray-50 transition"
+          >
             <FileDown className="h-3 w-3" /> Exportar PDF
           </button>
         </div>

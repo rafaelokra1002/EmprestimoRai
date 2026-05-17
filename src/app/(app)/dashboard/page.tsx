@@ -7,6 +7,8 @@ import {
   AlertTriangle,
   ArrowUpRight,
   Calendar,
+  ChevronLeft,
+  ChevronRight,
   Clock3,
   DollarSign,
   Receipt,
@@ -40,6 +42,11 @@ interface DashboardData {
   totalReceived: number
   capitalOnStreet: number
   faltaReceber: number
+  faltaReceberMes: number
+  monthReceived: number
+  monthNewLoansCapital: number
+  monthNewLoansProfit: number
+  monthInstallmentsDue: { total: number; interest: number; capital: number }
   totalProfit: number
   overdueCount: number
   overdueAmount: number
@@ -129,6 +136,8 @@ export default function DashboardPage() {
   const [showBackupAlert, setShowBackupAlert] = useState(false)
   const [backupLoading, setBackupLoading] = useState(false)
   const [hoveredDueDate, setHoveredDueDate] = useState<string | null>(null)
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth())
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
   const { theme } = useTheme()
   const isDark = theme === "dark"
 
@@ -143,7 +152,8 @@ export default function DashboardPage() {
   const gridColor = isDark ? "#27272a" : "#e5e7eb"
 
   useEffect(() => {
-    fetch("/api/dashboard")
+    setLoading(true)
+    fetch(`/api/dashboard?month=${selectedMonth}&year=${selectedYear}`)
       .then((res) => res.json())
       .then((dashboardData) => {
         if (dashboardData && !dashboardData.error) {
@@ -152,7 +162,19 @@ export default function DashboardPage() {
       })
       .catch(console.error)
       .finally(() => setLoading(false))
-  }, [])
+  }, [selectedMonth, selectedYear])
+
+  const selectedMonthName = new Date(selectedYear, selectedMonth, 1).toLocaleString("pt-BR", { month: "long" })
+  const isCurrentMonth = selectedMonth === new Date().getMonth() && selectedYear === new Date().getFullYear()
+
+  const prevMonth = () => {
+    if (selectedMonth === 0) { setSelectedMonth(11); setSelectedYear(y => y - 1) }
+    else setSelectedMonth(m => m - 1)
+  }
+  const nextMonth = () => {
+    if (selectedMonth === 11) { setSelectedMonth(0); setSelectedYear(y => y + 1) }
+    else setSelectedMonth(m => m + 1)
+  }
 
   useEffect(() => {
     const last = localStorage.getItem("backup-alert-dismissed")
@@ -259,6 +281,22 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* Month filter */}
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-gray-500 dark:text-zinc-400">Filtrando por mês</p>
+        <div className="flex items-center gap-1 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-1 py-1">
+          <button onClick={prevMonth} className="rounded-lg p-1.5 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors">
+            <ChevronLeft className="h-4 w-4 text-gray-500 dark:text-zinc-400" />
+          </button>
+          <span className="min-w-[120px] text-center text-sm font-semibold text-gray-900 dark:text-zinc-100 capitalize">
+            {selectedMonthName} {selectedYear}
+          </span>
+          <button onClick={nextMonth} disabled={isCurrentMonth} className="rounded-lg p-1.5 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+            <ChevronRight className="h-4 w-4 text-gray-500 dark:text-zinc-400" />
+          </button>
+        </div>
+      </div>
+
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-zinc-100">
@@ -272,41 +310,41 @@ export default function DashboardPage() {
               <Receipt className="h-3.5 w-3.5 text-emerald-600" />
               <p className="text-xs text-gray-500 dark:text-zinc-400">Total a Receber</p>
             </div>
-            <p className="text-2xl leading-none font-semibold tabular-nums tracking-tight text-emerald-600 dark:text-emerald-400">{formatCurrency(data?.totalToReceive || 0)}</p>
-            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">empréstimos + parcelas</p>
+            <p className="text-2xl leading-none font-semibold tabular-nums tracking-tight text-emerald-600 dark:text-emerald-400">{formatCurrency(data?.monthInstallmentsDue?.total || 0)}</p>
+            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">parcelas com venc. em {selectedMonthName}</p>
           </div>
           <div className="rounded-xl border border-amber-100 dark:border-amber-900/40 bg-amber-50/60 dark:bg-amber-950/20 p-4">
             <div className="mb-1 flex items-center gap-1.5">
               <DollarSign className="h-3.5 w-3.5 text-amber-600" />
-              <p className="text-xs text-gray-500 dark:text-zinc-400">Capital Total</p>
+              <p className="text-xs text-gray-500 dark:text-zinc-400">Emprestado no Mês</p>
             </div>
-            <p className="text-2xl leading-none font-semibold tabular-nums tracking-tight text-amber-600 dark:text-amber-400">{formatCurrency(data?.totalPrincipal || 0)}</p>
-            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">capital dos empréstimos + parcelamentos</p>
+            <p className="text-2xl leading-none font-semibold tabular-nums tracking-tight text-amber-600 dark:text-amber-400">{formatCurrency(data?.monthNewLoansCapital || 0)}</p>
+            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">capital emprestado em {selectedMonthName}</p>
           </div>
           <div className="rounded-xl border border-violet-100 dark:border-violet-900/40 bg-violet-50/60 dark:bg-violet-950/20 p-4">
             <div className="mb-1 flex items-center gap-1.5">
               <Clock3 className="h-3.5 w-3.5 text-violet-500" />
-              <p className="text-xs text-gray-500 dark:text-zinc-400">Juros Total a Receber</p>
+              <p className="text-xs text-gray-500 dark:text-zinc-400">Juros do Mês</p>
             </div>
-            <p className="text-2xl leading-none font-semibold tabular-nums tracking-tight text-violet-600 dark:text-violet-400">{formatCurrency(data?.financials?.pendingInterest || 0)}</p>
-            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">juros pendentes</p>
+            <p className="text-2xl leading-none font-semibold tabular-nums tracking-tight text-violet-600 dark:text-violet-400">{formatCurrency(data?.monthInstallmentsDue?.interest || 0)}</p>
+            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">juros das parcelas de {selectedMonthName}</p>
           </div>
           <div className="rounded-xl border border-primary/20 dark:border-primary/20 bg-primary/5 dark:bg-primary/10 p-4">
             <div className="mb-1 flex items-center gap-1.5">
               <Wallet className="h-3.5 w-3.5 text-primary" />
               <p className="text-xs text-gray-500 dark:text-zinc-400">Falta Receber</p>
             </div>
-            <p className="text-2xl leading-none font-semibold tabular-nums tracking-tight text-primary">{formatCurrency(data?.faltaReceber || 0)}</p>
-            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">juros + multas pendentes</p>
+            <p className="text-2xl leading-none font-semibold tabular-nums tracking-tight text-primary">{formatCurrency(data?.faltaReceberMes || 0)}</p>
+            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">juros + multas de {selectedMonthName}</p>
           </div>
         </CardContent>
       </Card>
 
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
         <KpiCard
-          title="Recebido"
-          value={formatCurrency(data?.totalReceived || 0)}
-          subtitle="total histórico"
+          title="Recebido no Mês"
+          value={formatCurrency(data?.monthReceived || 0)}
+          subtitle={`pagamentos recebidos em ${selectedMonthName}`}
           icon={Receipt}
           iconClassName="text-primary"
           iconBgClassName="bg-primary/5 dark:bg-primary/15"
@@ -314,7 +352,7 @@ export default function DashboardPage() {
         <KpiCard
           title="Juros Recebido Mensal"
           value={formatCurrency(data?.financials?.monthlyReceivedInterest || 0)}
-          subtitle="juros recebidos este mês"
+          subtitle={`juros recebidos em ${selectedMonthName}`}
           icon={TrendingUp}
           iconClassName="text-primary"
           iconBgClassName="bg-primary/5 dark:bg-primary/15"
@@ -322,7 +360,7 @@ export default function DashboardPage() {
         <KpiCard
           title="Gasto Mensal"
           value={formatCurrency(data?.financials?.monthlyExpenses || 0)}
-          subtitle="despesas deste mês"
+          subtitle={`despesas de ${selectedMonthName}`}
           icon={Receipt}
           iconClassName="text-red-500"
           iconBgClassName="bg-red-50 dark:bg-red-950/30"
