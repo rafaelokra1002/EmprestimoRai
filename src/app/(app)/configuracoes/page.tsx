@@ -8,52 +8,53 @@ import { ACCENT_PRESETS } from "@/lib/accent-color"
 
 /* ─── Default template contents ─── */
 const DEFAULT_TEMPLATES: Record<string, string> = {
-  ATRASO: `👤 Cliente: {CLIENTE}
+  ATRASO: `Olá {CLIENTE}
 
 🔴 PARCELA EM ATRASO
 
-📅 Data de vencimento: {DATA}
-
-💰 pagamento total: {TOTAL}
-
-🔄 Valor para regularização parcial (juros): {JUROS}
-
+📅 Vencimento: {DATA}
 📆 Dias em atraso: {DIAS_ATRASO} dias
 
-⚠️ Multa por atraso: R$ 15,00 por dia
+💰 Valor total: {TOTAL}
 
+🔄 Renovação disponível:
+Pague {JUROS} (juros) e regularize o contrato.
 
-💳 Chave Pix: {PIX}`,
-  VENCE_HOJE: `👤 Cliente: {CLIENTE}
+─────────────────
+👤 Titular : {NOME_PIX}
 
-  VENCIMENTO HOJE
+💠 Chave Pix: {PIX}`,
+  VENCE_HOJE: `Olá {CLIENTE}
 
-📅 Data de vencimento: {DATA}
+📌 VENCIMENTO HOJE
 
-💰 pagamento total : {TOTAL}
+📅 Vencimento: {DATA}
 
-🔄 Opção de renovação:
+💰 Valor total: {VALOR}
+
+🔄 Renovação disponível:
 Pague {JUROS} (juros) e receba +30 dias de prazo.
 
-⚠️ Em caso de atraso,
-será cobrado R$ 15,00 por dia.
+─────────────────
+👤 Titular : {NOME_PIX}
 
+💠 Chave Pix: {PIX}`,
+  ANTECIPADA: `Olá {CLIENTE}
 
-💳 Chave Pix: {PIX}`,
-  ANTECIPADA: `Olá *{CLIENTE}*!
+📌 LEMBRETE DE PAGAMENTO
 
-📅 *LEMBRETE DE PAGAMENTO*
+📅 Vencimento: {DATA}
+⏳ Restam: {DIAS_PARA_VENCER} dias
 
-💵 *Valor:* {VALOR}
-📅 *{PARCELA}*
-📆 *Vencimento:* {DATA} (em {DIAS_PARA_VENCER} dias)
+💰 Valor total: {VALOR}
 
-{PROGRESSO}
+🔄 Renovação disponível:
+Pague {JUROS} (juros) e receba +30 dias de prazo.
 
-{PIX}
+─────────────────
+👤 Titular : {NOME_PIX}
 
-{FECHAMENTO}
-{ASSINATURA}`,
+💠 Chave Pix: {PIX}`,
 }
 
 /* ─── Pre-built template options ─── */
@@ -114,7 +115,7 @@ const PRESET_TEMPLATES: Record<string, { icon: string; label: string; desc: stri
     {
       icon: "📋",
       label: "Padrão do Sistema",
-      desc: "Template completo de lembrete antecipado",
+      desc: "Lembrete antecipado com renovação e PIX",
       content: DEFAULT_TEMPLATES.ANTECIPADA,
     },
     {
@@ -141,7 +142,7 @@ const PRESET_TEMPLATES: Record<string, { icon: string; label: string; desc: stri
 const AVAILABLE_VARIABLES = [
   "{CLIENTE}", "{VALOR}", "{PARCELA}", "{DATA}", "{DIAS_ATRASO}", "{DIAS_PARA_VENCER}",
   "{JUROS_CONTRATO}", "{MULTA}", "{JUROS}", "{JUROS_MULTA}", "{TOTAL}", "{PROGRESSO}",
-  "{PIX}", "{ASSINATURA}", "{FECHAMENTO}",
+  "{PIX}", "{NOME_PIX}", "{ASSINATURA}", "{FECHAMENTO}",
 ]
 
 type TabKey = "ATRASO" | "VENCE_HOJE" | "ANTECIPADA"

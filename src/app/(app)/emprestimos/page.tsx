@@ -93,6 +93,7 @@ export default function EmprestimosPage() {
   // Profile PIX key & phone
   const [profilePixKey, setProfilePixKey] = useState("")
   const [profilePhone, setProfilePhone] = useState("")
+  const [profileChargeName, setProfileChargeName] = useState("")
 
   // WhatsApp cobrança state
   const [whatsappDialog, setWhatsappDialog] = useState(false)
@@ -272,6 +273,7 @@ export default function EmprestimosPage() {
       const data = await res.json()
       setProfilePixKey(data.pixKey || "")
       setProfilePhone(data.phone || "")
+      setProfileChargeName(data.chargeName || "")
     } catch {}
   }
 
@@ -927,7 +929,7 @@ export default function EmprestimosPage() {
     const juros = loan.interestRate > 0 ? formatCurrency(total * (loan.interestRate / 100)) : "0,00"
     const vencimento = todayInsts.length > 0 ? formatDate(todayInsts[0].dueDate) : ""
 
-    return `👤 Cliente: ${name}\n\n  VENCIMENTO HOJE\n\n📅 Data de vencimento: ${vencimento}\n\n💰 pagamento total : ${formatCurrency(total)}\n\n🔄 Opção de renovação:\nPague R$ ${juros} (juros) e receba +30 dias de prazo.\n\n⚠️ Em caso de atraso,\nserá cobrado R$ 15,00 por dia.\n\n\n💳 Chave Pix: ${profilePixKey || "Não cadastrada"}`
+    return `Olá ${name}\n\n📌 VENCIMENTO HOJE\n\n📅 Vencimento: ${vencimento}\n\n💰 Valor total: ${formatCurrency(total)}\n\n🔄 Renovação disponível:\nPague ${juros} (juros) e receba +30 dias de prazo.\n\n─────────────────\n👤 Titular : ${profileChargeName || "Titular"}\n\n💠 Chave Pix: ${profilePixKey || "Não cadastrada"}`
   }
 
   const sendBulkDueToday = async () => {
