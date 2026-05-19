@@ -797,16 +797,49 @@ export default function EmprestimosPage() {
       return `👤 Cliente: ${name}\n\n📋 ${instLabel}\n📅 Vencimento: ${formatDate(nextInst.dueDate)}\n💰 Valor: ${formatCurrency(nextInst.amount)}\n\n💳 Chave Pix: ${profilePixKey || "Não cadastrada"}`
     }
 
+    const now = Date.now()
+    const penaltyOnce = loan.penaltyFee || 0
+
+    if (isParcelado && overdueInsts.length > 0) {
+      // ── Parcelado: detailed per-installment breakdown ──
+      let grandTotal = 0
+      const parcelasAtrasoLines: string[] = []
+      overdueInsts.forEach((inst: any) => {
+        const days = Math.max(0, Math.floor((now - new Date(inst.dueDate).getTime()) / 86400000))
+        const base = Math.max(0, inst.amount - (inst.paidAmount || 0))
+        const fee = Math.round((dailyRate * days + penaltyOnce) * 100) / 100
+        grandTotal += base + fee
+        parcelasAtrasoLines.push(
+          `📌 Parcela ${inst.number}/${loan.installmentCount} • ${days} dia${days !== 1 ? "s" : ""}\n💰 ${formatCurrency(base)}${fee > 0 ? ` + ${formatCurrency(fee)} (multa)` : ""}`
+        )
+      })
+      grandTotal = Math.round(grandTotal * 100) / 100
+
+      const numEmojis = ["1️⃣","2️⃣","3️⃣","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣","🔟"]
+      const allInsts: any[] = [...loan.installments].sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+      const statusLines = allInsts.map((inst: any, idx: number) => {
+        const days = Math.max(0, Math.floor((now - new Date(inst.dueDate).getTime()) / 86400000))
+        const isPaid = inst.status === "PAID"
+        const isOverdue = !isPaid && new Date(inst.dueDate).getTime() < now
+        const emoji = numEmojis[idx] || `${idx + 1}.`
+        const dateStr = formatDate(inst.dueDate)
+        if (isPaid) return `${emoji} ✅ ${dateStr} — Pago`
+        if (isOverdue) return `${emoji} ❌ ${dateStr} — Em atraso (${days}d)`
+        return `${emoji} ⏳ ${dateStr} — Em aberto`
+      })
+
+      return `👤 Cliente: ${name}\n\n────────────────\n🚨 ${overdueInsts.length} PARCELA${overdueInsts.length > 1 ? "S" : ""} EM ATRASO\n\n${parcelasAtrasoLines.join("\n\n")}\n\n💵 TOTAL A PAGAR: ${formatCurrency(grandTotal)}\n────────────────\n\n📊 STATUS DAS PARCELAS\n${statusLines.join("\n")}\n\n────────────────\n👤 Titular: ${profileChargeName || "Titular"}\n\n💳 Chave PIX: ${profilePixKey || "Não cadastrada"}`
+    }
+
+    // ── Simples (não parcelado) ──
     const oldestOverdue = overdueInsts[0]
-    const daysLate = Math.max(0, Math.floor((Date.now() - new Date(oldestOverdue.dueDate).getTime()) / (1000 * 60 * 60 * 24)))
+    const daysLate = Math.max(0, Math.floor((now - new Date(oldestOverdue.dueDate).getTime()) / 86400000))
     const baseAmount = Math.max(0, oldestOverdue.amount - (oldestOverdue.paidAmount || 0))
-    const lateFee = Math.round((dailyRate * daysLate + (loan.penaltyFee || 0)) * 100) / 100
+    const lateFee = Math.round((dailyRate * daysLate + penaltyOnce) * 100) / 100
     const totalToPay = Math.round((baseAmount + lateFee) * 100) / 100
     const jurosRegularizacao = Math.round(loan.profit / loan.installmentCount * 100) / 100
 
-    const instLabel = isParcelado ? ` (Parcela ${oldestOverdue.number}/${loan.installmentCount}${overdueInsts.length > 1 ? ` — ${overdueInsts.length} em atraso` : ""})` : ""
-
-    return `Cliente: ${name}${instLabel}\n\n────────────────\n🚨 PAGAMENTO EM ATRASO\n\n📅 Vencimento: ${formatDate(oldestOverdue.dueDate)}\n📆 Atraso: ${daysLate} dia${daysLate !== 1 ? "s" : ""}\n\n💰 Pagamento Total: ${formatCurrency(totalToPay)}\n🔄 Regularização (juros): ${formatCurrency(jurosRegularizacao)}\n\n⚠️ Atraso:\n${formatCurrency(dailyRate > 0 ? dailyRate : 15)} por dia até regularização.\n\n────────────────\n👤 Titular: ${profileChargeName || "Titular"}\n\n💠 Chave Pix: ${profilePixKey || "Não cadastrada"}`
+    return `Cliente: ${name}\n\n────────────────\n🚨 PAGAMENTO EM ATRASO\n\n📅 Vencimento: ${formatDate(oldestOverdue.dueDate)}\n📆 Atraso: ${daysLate} dia${daysLate !== 1 ? "s" : ""}\n\n💰 Pagamento Total: ${formatCurrency(totalToPay)}\n🔄 Regularização (juros): ${formatCurrency(jurosRegularizacao)}\n\n⚠️ Atraso:\n${formatCurrency(dailyRate > 0 ? dailyRate : 15)} por dia até regularização.\n\n────────────────\n👤 Titular: ${profileChargeName || "Titular"}\n\n💠 Chave Pix: ${profilePixKey || "Não cadastrada"}`
   }
 
   const openWhatsappDialog = (loan: Loan) => {

@@ -72,22 +72,10 @@ const PRESET_TEMPLATES: Record<string, { icon: string; label: string; desc: stri
       content: DEFAULT_TEMPLATES.ATRASO,
     },
     {
-      icon: "😊",
-      label: "Lembrete Amigável",
-      desc: "Tom leve e amigável para cobrar",
-      content: `Olá {CLIENTE}, tudo bem? 😊\n\nNotamos que sua parcela {PARCELA} no valor de {VALOR} venceu em {DATA} e está com {DIAS_ATRASO} dias de atraso.\n\n{TOTAL}\n\nPor favor, regularize o quanto antes.\n\n{PIX}`,
-    },
-    {
-      icon: "🚨",
-      label: "Cobrança Direta",
-      desc: "Mensagem objetiva e urgente",
-      content: `🚨 *{CLIENTE}*, sua parcela está em atraso!\n\n📌 *{PARCELA}* — {VALOR}\n📅 Venceu em {DATA} ({DIAS_ATRASO} dias)\n{JUROS_MULTA}{TOTAL}\n\nRegularize agora:\n{PIX}`,
-    },
-    {
-      icon: "✨",
-      label: "Minimalista",
-      desc: "Apenas dados essenciais",
-      content: `*{CLIENTE}*, parcela {PARCELA} em atraso.\nValor: {VALOR} | Venceu: {DATA}\n{TOTAL}\n{PIX}`,
+      icon: "📄",
+      label: "Parcelado",
+      desc: "Cobrança detalhada por parcela com status",
+      content: `👤 Cliente: {CLIENTE}\n\n────────────────\n🚨 {N_ATRASO} PARCELAS EM ATRASO\n\n{PARCELAS_ATRASO}\n💵 TOTAL A PAGAR: {TOTAL}\n────────────────\n\n📊 STATUS DAS PARCELAS\n{STATUS_PARCELAS}\n\n────────────────\n👤 Titular: {NOME_PIX}\n\n💳 Chave PIX: {PIX}`,
     },
   ],
   VENCE_HOJE: [
@@ -147,7 +135,8 @@ const PRESET_TEMPLATES: Record<string, { icon: string; label: string; desc: stri
 const AVAILABLE_VARIABLES = [
   "{CLIENTE}", "{VALOR}", "{PARCELA}", "{DATA}", "{DIAS_ATRASO}", "{DIAS_PARA_VENCER}",
   "{JUROS_CONTRATO}", "{MULTA}", "{JUROS}", "{JUROS_MULTA}", "{TOTAL}", "{PROGRESSO}",
-  "{PIX}", "{NOME_PIX}", "{ASSINATURA}", "{FECHAMENTO}",
+  "{PIX}", "{NOME_PIX}", "{N_ATRASO}", "{PARCELAS_ATRASO}", "{STATUS_PARCELAS}",
+  "{ASSINATURA}", "{FECHAMENTO}",
 ]
 
 type TabKey = "ATRASO" | "VENCE_HOJE" | "ANTECIPADA"
