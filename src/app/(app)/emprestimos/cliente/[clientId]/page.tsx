@@ -267,8 +267,9 @@ export default function ClienteEmprestimosPage() {
   }
 
   const openWhatsappDialog = (loan: Loan) => {
-    setWhatsappLoan(loan)
-    setWhatsappMessage(buildDefaultWhatsappMessage(loan))
+    const freshLoan = loans.find(l => l.id === loan.id) || loan
+    setWhatsappLoan(freshLoan)
+    setWhatsappMessage(buildDefaultWhatsappMessage(freshLoan))
     setWhatsappSent(false)
     setWhatsappDialog(true)
   }
@@ -1686,7 +1687,10 @@ export default function ClienteEmprestimosPage() {
               <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-zinc-500">
                 <button
                   type="button"
-                  onClick={() => setWhatsappMessage(buildDefaultWhatsappMessage(whatsappLoan))}
+                  onClick={() => {
+                    const freshLoan = whatsappLoan ? (loans.find(l => l.id === whatsappLoan.id) || whatsappLoan) : whatsappLoan
+                    if (freshLoan) { setWhatsappLoan(freshLoan); setWhatsappMessage(buildDefaultWhatsappMessage(freshLoan)) }
+                  }}
                   className="text-emerald-600 hover:underline"
                 >
                   Restaurar mensagem padrão
