@@ -86,22 +86,10 @@ const PRESET_TEMPLATES: Record<string, { icon: string; label: string; desc: stri
       content: DEFAULT_TEMPLATES.VENCE_HOJE,
     },
     {
-      icon: "💰",
-      label: "Apenas Juros",
-      desc: "Lembrete com foco em evitar juros",
-      content: `📢 Olá {CLIENTE}!\n\nSua parcela {PARCELA} no valor de {VALOR} *vence hoje* ({DATA}).\n\nEvite juros, pague agora:\n{PIX}`,
-    },
-    {
-      icon: "🤗",
-      label: "Lembrete Gentil",
-      desc: "Tom leve e amigável",
-      content: `Olá {CLIENTE}! 😊\n\nLembrando que sua parcela {PARCELA} ({VALOR}) vence *hoje* ({DATA}).\n\n{PROGRESSO}\n\nQualquer dúvida estamos à disposição!\n{PIX}`,
-    },
-    {
-      icon: "✨",
-      label: "Minimalista",
-      desc: "Apenas dados essenciais",
-      content: `*{CLIENTE}*, parcela {PARCELA} vence hoje.\nValor: {VALOR}\n{PIX}`,
+      icon: "📄",
+      label: "Parcelado",
+      desc: "Vencimento hoje com status de todas as parcelas",
+      content: `👤 Cliente: {CLIENTE}\n\n────────────────\n⚠️ VENCIMENTO HOJE\n\n📌 Parcela: {PARCELA}\n💵 Valor da parcela: {VALOR}\n📅 Vencimento: {DATA}\n\n📊 STATUS DAS PARCELAS:\n{STATUS_PARCELAS}\n\n⚠️ Atraso: multa de R$ 15,00 por dia\n\n────────────────\n👤 Titular: {NOME_PIX}\n\n💳 Chave PIX: {PIX}`,
     },
   ],
   ANTECIPADA: [

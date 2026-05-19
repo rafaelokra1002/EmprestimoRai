@@ -925,14 +925,43 @@ export default function EmprestimosPage() {
 
   const buildDueTodayMessage = (loan: Loan) => {
     const name = loan.client.name.split(" ")[0]
+    const isParcelado = loan.installmentCount > 1
+    const nowTs = Date.now()
+    const nowStr = localDateStr()
+
     const todayInsts = loan.installments.filter((i: any) => {
       if (i.status === "PAID") return false
-      const now = new Date()
-      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`
-      const d = new Date(i.dueDate)
-      const dueStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
-      return dueStr === todayStr
+      return localDateStr(new Date(i.dueDate)) === nowStr
     })
+
+    if (isParcelado && todayInsts.length > 0) {
+      const inst = todayInsts[0]
+      const allInsts: any[] = [...loan.installments].sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+      const numEmojis = ["1️⃣","2️⃣","3️⃣","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣","🔟"]
+      const statusLines = allInsts.map((i: any, idx: number) => {
+        const dStr = localDateStr(new Date(i.dueDate))
+        const isPaid = i.status === "PAID"
+        const isToday = dStr === nowStr
+        const isOverdue = !isPaid && new Date(i.dueDate).getTime() < nowTs && !isToday
+        const emoji = numEmojis[idx] || `${idx + 1}.`
+        const dateStr = formatDate(i.dueDate)
+        if (isPaid) return `${emoji} ✅ ${dateStr} — Paga`
+        if (isOverdue) {
+          const days = Math.max(0, Math.floor((nowTs - new Date(i.dueDate).getTime()) / 86400000))
+          return `${emoji} ❌ ${dateStr} — Em atraso (${days}d)`
+        }
+        if (isToday) return `${emoji} ⏳ ${dateStr} — Em aberto`
+        return `${emoji} ⏳ ${dateStr} — Em aberto`
+      })
+
+      const dailyFeeStr = loan.dailyInterestAmount > 0
+        ? `multa de ${formatCurrency(loan.dailyInterestAmount)} por dia`
+        : "multa de R$ 15,00 por dia"
+
+      return `👤 Cliente: ${name}\n\n────────────────\n⚠️ VENCIMENTO HOJE\n\n📌 Parcela: ${inst.number}/${loan.installmentCount}\n💵 Valor da parcela: ${formatCurrency(inst.amount)}\n📅 Vencimento: ${formatDate(inst.dueDate)}\n\n📊 STATUS DAS PARCELAS:\n${statusLines.join("\n")}\n\n⚠️ Atraso: ${dailyFeeStr}\n\n────────────────\n👤 Titular: ${profileChargeName || "Titular"}\n\n💳 Chave PIX: ${profilePixKey || "Não cadastrada"}`
+    }
+
+    // Simples (não parcelado)
     const total = todayInsts.reduce((s: number, i: any) => s + i.amount, 0)
     const juros = loan.interestRate > 0 ? formatCurrency(total * (loan.interestRate / 100)) : "0,00"
     const vencimento = todayInsts.length > 0 ? formatDate(todayInsts[0].dueDate) : ""
