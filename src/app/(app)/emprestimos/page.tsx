@@ -802,36 +802,11 @@ export default function EmprestimosPage() {
     const baseAmount = Math.max(0, oldestOverdue.amount - (oldestOverdue.paidAmount || 0))
     const lateFee = Math.round((dailyRate * daysLate + (loan.penaltyFee || 0)) * 100) / 100
     const totalToPay = Math.round((baseAmount + lateFee) * 100) / 100
+    const jurosRegularizacao = Math.round(loan.profit / loan.installmentCount * 100) / 100
 
-    let msg = `👤 Cliente: ${name}\n\n🔴 PARCELA EM ATRASO\n\n`
+    const instLabel = isParcelado ? ` (Parcela ${oldestOverdue.number}/${loan.installmentCount}${overdueInsts.length > 1 ? ` — ${overdueInsts.length} em atraso` : ""})` : ""
 
-    if (isParcelado) {
-      msg += `📋 Parcela ${oldestOverdue.number} de ${loan.installmentCount}\n`
-    }
-
-    if (overdueInsts.length > 1) {
-      msg += `⚠️ ${overdueInsts.length} parcelas em atraso\n`
-    }
-
-    msg += `📅 Vencimento: ${formatDate(oldestOverdue.dueDate)}\n`
-    msg += `📆 Dias em atraso: ${daysLate} dia${daysLate !== 1 ? "s" : ""}\n`
-    msg += `\n💰 Valor da parcela: ${formatCurrency(baseAmount)}\n`
-
-    if (lateFee > 0) {
-      msg += `⚠️ Multa/juros de atraso: ${formatCurrency(lateFee)}`
-      if (dailyRate > 0) msg += ` (${formatCurrency(dailyRate)}/dia × ${daysLate} dias)`
-      msg += `\n`
-    }
-
-    msg += `\n💳 *Total a pagar: ${formatCurrency(totalToPay)}*\n`
-
-    if (overdueInsts.length > 1) {
-      const totalAllOverdue = overdueInsts.reduce((s: number, i: any) => s + Math.max(0, i.amount - (i.paidAmount || 0)), 0)
-      msg += `📊 Total de todas as parcelas em atraso: ${formatCurrency(totalAllOverdue)}\n`
-    }
-
-    msg += `\n💳 Chave Pix: ${profilePixKey || "Não cadastrada"}`
-    return msg
+    return `Cliente: ${name}${instLabel}\n\n────────────────\n🚨 PAGAMENTO EM ATRASO\n\n📅 Vencimento: ${formatDate(oldestOverdue.dueDate)}\n📆 Atraso: ${daysLate} dia${daysLate !== 1 ? "s" : ""}\n\n💰 Pagamento Total: ${formatCurrency(totalToPay)}\n🔄 Regularização (juros): ${formatCurrency(jurosRegularizacao)}\n\n⚠️ Atraso:\n${formatCurrency(dailyRate > 0 ? dailyRate : 15)} por dia até regularização.\n\n────────────────\n👤 Titular: ${profileChargeName || "Titular"}\n\n💠 Chave Pix: ${profilePixKey || "Não cadastrada"}`
   }
 
   const openWhatsappDialog = (loan: Loan) => {

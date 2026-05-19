@@ -8,20 +8,22 @@ import { ACCENT_PRESETS } from "@/lib/accent-color"
 
 /* ─── Default template contents ─── */
 const DEFAULT_TEMPLATES: Record<string, string> = {
-  ATRASO: `Olá {CLIENTE}
+  ATRASO: `Cliente: {CLIENTE}
 
-🔴 PARCELA EM ATRASO
+────────────────
+🚨 PAGAMENTO EM ATRASO
 
 📅 Vencimento: {DATA}
-📆 Dias em atraso: {DIAS_ATRASO} dias
+📆 Atraso: {DIAS_ATRASO} dias
 
-💰 Valor total: {TOTAL}
+💰 Pagamento Total: {TOTAL}
+🔄 Regularização (juros): {JUROS}
 
-🔄 Renovação disponível:
-Pague {JUROS} (juros) e regularize o contrato.
+⚠️ Atraso:
+R$ 15,00 por dia até regularização.
 
-─────────────────
-👤 Titular : {NOME_PIX}
+────────────────
+👤 Titular: {NOME_PIX}
 
 💠 Chave Pix: {PIX}`,
   VENCE_HOJE: `Cliente: {CLIENTE}
