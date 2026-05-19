@@ -158,12 +158,12 @@ export async function PUT(
         data.modality
       )
 
-      const firstDate = new Date(data.firstInstallmentDate)
-      const contractDate = new Date(data.contractDate)
+      const firstDate = new Date(data.firstInstallmentDate + (data.firstInstallmentDate.includes("T") ? "" : "T12:00:00"))
+      const contractDate = new Date(data.contractDate + (data.contractDate.includes("T") ? "" : "T12:00:00"))
 
       let installmentDates: Date[]
       if (data.installmentDates && data.installmentDates.length === data.installmentCount) {
-        installmentDates = data.installmentDates.map((d) => new Date(d))
+        installmentDates = data.installmentDates.map((d) => new Date(d.includes("T") ? d : d + "T12:00:00"))
       } else {
         installmentDates = generateInstallmentDates(
           firstDate,
