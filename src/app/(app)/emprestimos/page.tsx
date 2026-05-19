@@ -793,8 +793,23 @@ export default function EmprestimosPage() {
     if (overdueInsts.length === 0) {
       const nextInst = getNextDueInst(loan)
       if (!nextInst) return `👤 Cliente: ${name}\n\n📋 Olá! Passando para lembrar do seu compromisso.\n\n💳 Chave Pix: ${profilePixKey || "Não cadastrada"}`
-      const instLabel = isParcelado ? `Parcela ${nextInst.number} de ${loan.installmentCount}` : "Parcela"
-      return `👤 Cliente: ${name}\n\n📋 ${instLabel}\n📅 Vencimento: ${formatDate(nextInst.dueDate)}\n💰 Valor: ${formatCurrency(nextInst.amount)}\n\n💳 Chave Pix: ${profilePixKey || "Não cadastrada"}`
+
+      if (isParcelado) {
+        const nowTs = Date.now()
+        const daysLeft = Math.max(0, Math.ceil((new Date(nextInst.dueDate).getTime() - nowTs) / 86400000))
+        const allInsts: any[] = [...loan.installments].sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+        const numEmojis = ["1️⃣","2️⃣","3️⃣","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣","🔟"]
+        const statusLines = allInsts.map((i: any, idx: number) => {
+          const isPaid = i.status === "PAID"
+          const emoji = numEmojis[idx] || `${idx + 1}.`
+          const dateStr = formatDate(i.dueDate)
+          if (isPaid) return `${emoji} ✅ ${dateStr} - Paga`
+          return `${emoji} ⏳ ${dateStr} - Em Aberto`
+        })
+        return `👤 Cliente: ${name}\n\n────────────────\n📋 LEMBRETE DE PAGAMENTO\n\n📌 Parcela: ${nextInst.number}/${loan.installmentCount}\n💵 Valor: ${formatCurrency(nextInst.amount)}\n📅 Vencimento: ${formatDate(nextInst.dueDate)}\n⏳ Faltam: ${daysLeft} dia${daysLeft !== 1 ? "s" : ""})\n\n📊 STATUS DAS PARCELAS:\n${statusLines.join("\n")}\n\n────────────────\n👤 Titular: ${profileChargeName || "Titular"}\n\n💳 Chave PIX: ${profilePixKey || "Não cadastrada"}`
+      }
+
+      return `👤 Cliente: ${name}\n\n📋 Parcela\n📅 Vencimento: ${formatDate(nextInst.dueDate)}\n💰 Valor: ${formatCurrency(nextInst.amount)}\n\n💳 Chave Pix: ${profilePixKey || "Não cadastrada"}`
     }
 
     const now = Date.now()

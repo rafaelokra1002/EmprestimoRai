@@ -100,22 +100,10 @@ const PRESET_TEMPLATES: Record<string, { icon: string; label: string; desc: stri
       content: DEFAULT_TEMPLATES.ANTECIPADA,
     },
     {
-      icon: "💰",
-      label: "Apenas Juros",
-      desc: "Lembrete antecipado com opção de pagar só os juros",
-      content: `Olá {CLIENTE}! 👋\n\nSua parcela {PARCELA} no valor de {VALOR} vence em {DATA} ({DIAS_PARA_VENCER} dias).\n\n{JUROS_CONTRATO}\n\nPague antecipado e evite multas!\n{PIX}`,
-    },
-    {
-      icon: "🤗",
-      label: "Lembrete Gentil",
-      desc: "Tom leve e amigável",
-      content: `Olá {CLIENTE}! 😊\n\nEstamos passando para lembrar que sua parcela {PARCELA} ({VALOR}) vence em {DATA}, faltam {DIAS_PARA_VENCER} dias.\n\n{PROGRESSO}\n\nQualquer dúvida é só chamar!\n{PIX}`,
-    },
-    {
-      icon: "✨",
-      label: "Minimalista",
-      desc: "Apenas dados essenciais",
-      content: `*{CLIENTE}*, parcela {PARCELA} vence em {DATA} ({DIAS_PARA_VENCER} dias).\nValor: {VALOR}\n{PIX}`,
+      icon: "📄",
+      label: "Parcelado",
+      desc: "Lembrete antecipado com status de todas as parcelas",
+      content: `👤 Cliente: {CLIENTE}\n\n────────────────\n📋 LEMBRETE DE PAGAMENTO\n\n📌 Parcela: {PARCELA}\n💵 Valor: {VALOR}\n📅 Vencimento: {DATA}\n⏳ Faltam: {DIAS_PARA_VENCER} dias)\n\n📊 STATUS DAS PARCELAS:\n{STATUS_PARCELAS}\n\n────────────────\n👤 Titular: {NOME_PIX}\n\n💳 Chave PIX: {PIX}`,
     },
   ],
 }
