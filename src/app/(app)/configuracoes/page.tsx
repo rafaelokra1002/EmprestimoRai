@@ -24,19 +24,22 @@ Pague {JUROS} (juros) e regularize o contrato.
 👤 Titular : {NOME_PIX}
 
 💠 Chave Pix: {PIX}`,
-  VENCE_HOJE: `Olá {CLIENTE}
+  VENCE_HOJE: `Cliente: {CLIENTE}
 
-📌 VENCIMENTO HOJE
+────────────────
+⚠️ VENCIMENTO HOJE
 
-📅 Vencimento: {DATA}
-
-💰 Valor total: {VALOR}
+📅 Data: {DATA}
+💰 Valor total: {TOTAL}
 
 🔄 Renovação disponível:
-Pague {JUROS} (juros) e receba +30 dias de prazo.
+Pague {JUROS} (juros) e ganhe +30 dias de prazo.
 
-─────────────────
-👤 Titular : {NOME_PIX}
+⚠️  Atraso:
+R$ 15,00 por dia até regularização.
+
+────────────────
+👤 Titular: {NOME_PIX}
 
 💠 Chave Pix: {PIX}`,
   ANTECIPADA: `Olá {CLIENTE}
