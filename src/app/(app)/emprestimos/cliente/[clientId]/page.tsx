@@ -59,6 +59,7 @@ export default function ClienteEmprestimosPage() {
 
   // Profile PIX key
   const [profilePixKey, setProfilePixKey] = useState("")
+  const [profileChargeName, setProfileChargeName] = useState("")
 
   // WhatsApp state
   const [whatsappDialog, setWhatsappDialog] = useState(false)
@@ -138,6 +139,7 @@ export default function ClienteEmprestimosPage() {
       const res = await fetch("/api/profile")
       const data = await res.json()
       setProfilePixKey(data.pixKey || "")
+      setProfileChargeName(data.chargeName || "")
     } catch {}
   }
 
@@ -198,49 +200,70 @@ export default function ClienteEmprestimosPage() {
     })
     const dailyRate = getOverdueDailyAmountBRL(loanData)
 
+    const nowTs = Date.now()
+    const penaltyOnce = loan.penaltyFee || 0
+    const numEmojis = ["1️⃣","2️⃣","3️⃣","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣","🔟"]
+    const pix = profilePixKey || "Não cadastrada"
+    const titular = profileChargeName || "Titular"
+
     if (overdueInsts.length === 0) {
       const nextInst = getNextDueInst(loan)
-      if (!nextInst) return `👤 Cliente: ${name}\n\n📋 Olá! Passando para lembrar do seu compromisso.\n\n💳 Chave Pix: ${profilePixKey || "Não cadastrada"}`
-      const instLabel = isParcelado ? `Parcela ${nextInst.number} de ${loan.installmentCount}` : "Parcela"
-      return `👤 Cliente: ${name}\n\n📋 ${instLabel}\n📅 Vencimento: ${formatDate(nextInst.dueDate)}\n💰 Valor: ${formatCurrency(nextInst.amount)}\n\n💳 Chave Pix: ${profilePixKey || "Não cadastrada"}`
+      if (!nextInst) return `👤 Cliente: ${name}\n\n📋 Olá! Passando para lembrar do seu compromisso.\n\n💳 Chave PIX: ${pix}`
+
+      if (isParcelado) {
+        const daysLeft = Math.max(0, Math.ceil((new Date(nextInst.dueDate).getTime() - nowTs) / 86400000))
+        const allInsts: any[] = [...loan.installments].sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+        const statusLines = allInsts.map((i: any, idx: number) => {
+          const isPaid = i.status === "PAID"
+          const emoji = numEmojis[idx] || `${idx + 1}.`
+          const dateStr = formatDate(i.dueDate)
+          if (isPaid) return `${emoji} ✅ ${dateStr} - Paga`
+          return `${emoji} ⏳ ${dateStr} - Em Aberto`
+        })
+        return `👤 Cliente: ${name}\n\n────────────────\n📋 LEMBRETE DE PAGAMENTO\n\n📌 Parcela: ${nextInst.number}/${loan.installmentCount}\n💵 Valor: ${formatCurrency(nextInst.amount)}\n📅 Vencimento: ${formatDate(nextInst.dueDate)}\n⏳ Faltam: ${daysLeft} dia${daysLeft !== 1 ? "s" : ""})\n\n📊 STATUS DAS PARCELAS:\n${statusLines.join("\n")}\n\n────────────────\n👤 Titular: ${titular}\n\n💳 Chave PIX: ${pix}`
+      }
+
+      return `👤 Cliente: ${name}\n\n📋 Parcela\n📅 Vencimento: ${formatDate(nextInst.dueDate)}\n💰 Valor: ${formatCurrency(nextInst.amount)}\n\n💳 Chave PIX: ${pix}`
     }
-
-    const oldestOverdue = overdueInsts[0]
-    const daysLate = Math.max(0, Math.floor((Date.now() - new Date(oldestOverdue.dueDate).getTime()) / (1000 * 60 * 60 * 24)))
-    const baseAmount = Math.max(0, oldestOverdue.amount - (oldestOverdue.paidAmount || 0))
-    const lateFee = Math.round((dailyRate * daysLate + (loan.penaltyFee || 0)) * 100) / 100
-    const totalToPay = Math.round((baseAmount + lateFee) * 100) / 100
-
-    let msg = `👤 Cliente: ${name}\n\n🔴 PARCELA EM ATRASO\n\n`
 
     if (isParcelado) {
-      msg += `📋 Parcela ${oldestOverdue.number} de ${loan.installmentCount}\n`
+      let grandTotal = 0
+      const parcelasAtrasoLines: string[] = []
+      overdueInsts.forEach((inst: any) => {
+        const days = Math.max(0, Math.floor((nowTs - new Date(inst.dueDate).getTime()) / 86400000))
+        const base = Math.max(0, inst.amount - (inst.paidAmount || 0))
+        const fee = Math.round((dailyRate * days + penaltyOnce) * 100) / 100
+        grandTotal += base + fee
+        parcelasAtrasoLines.push(
+          `📌 Parcela ${inst.number}/${loan.installmentCount} • ${days} dia${days !== 1 ? "s" : ""}\n💰 ${formatCurrency(base)}${fee > 0 ? ` + ${formatCurrency(fee)} (multa)` : ""}`
+        )
+      })
+      grandTotal = Math.round(grandTotal * 100) / 100
+
+      const allInsts: any[] = [...loan.installments].sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+      const statusLines = allInsts.map((i: any, idx: number) => {
+        const days = Math.max(0, Math.floor((nowTs - new Date(i.dueDate).getTime()) / 86400000))
+        const isPaid = i.status === "PAID"
+        const isOverdue = !isPaid && new Date(i.dueDate).getTime() < nowTs
+        const emoji = numEmojis[idx] || `${idx + 1}.`
+        const dateStr = formatDate(i.dueDate)
+        if (isPaid) return `${emoji} ✅ ${dateStr} — Pago`
+        if (isOverdue) return `${emoji} ❌ ${dateStr} — Em atraso (${days}d)`
+        return `${emoji} ⏳ ${dateStr} — Em aberto`
+      })
+
+      return `👤 Cliente: ${name}\n\n────────────────\n🚨 ${overdueInsts.length} PARCELA${overdueInsts.length > 1 ? "S" : ""} EM ATRASO\n\n${parcelasAtrasoLines.join("\n\n")}\n\n💵 TOTAL A PAGAR: ${formatCurrency(grandTotal)}\n────────────────\n\n📊 STATUS DAS PARCELAS\n${statusLines.join("\n")}\n\n────────────────\n👤 Titular: ${titular}\n\n💳 Chave PIX: ${pix}`
     }
 
-    if (overdueInsts.length > 1) {
-      msg += `⚠️ ${overdueInsts.length} parcelas em atraso\n`
-    }
+    // Simples (não parcelado)
+    const oldestOverdue = overdueInsts[0]
+    const daysLate = Math.max(0, Math.floor((nowTs - new Date(oldestOverdue.dueDate).getTime()) / 86400000))
+    const baseAmount = Math.max(0, oldestOverdue.amount - (oldestOverdue.paidAmount || 0))
+    const lateFee = Math.round((dailyRate * daysLate + penaltyOnce) * 100) / 100
+    const totalToPay = Math.round((baseAmount + lateFee) * 100) / 100
+    const jurosRegularizacao = Math.round(loan.profit / loan.installmentCount * 100) / 100
 
-    msg += `📅 Vencimento: ${formatDate(oldestOverdue.dueDate)}\n`
-    msg += `📆 Dias em atraso: ${daysLate} dia${daysLate !== 1 ? "s" : ""}\n`
-    msg += `\n💰 Valor da parcela: ${formatCurrency(baseAmount)}\n`
-
-    if (lateFee > 0) {
-      msg += `⚠️ Multa/juros de atraso: ${formatCurrency(lateFee)}`
-      if (dailyRate > 0) msg += ` (${formatCurrency(dailyRate)}/dia × ${daysLate} dias)`
-      msg += `\n`
-      msg += `\n💳 *Total a pagar: ${formatCurrency(totalToPay)}*\n`
-    } else {
-      msg += `\n💳 *Total a pagar: ${formatCurrency(totalToPay)}*\n`
-    }
-
-    if (overdueInsts.length > 1) {
-      const totalAllOverdue = overdueInsts.reduce((s: number, i: any) => s + Math.max(0, i.amount - (i.paidAmount || 0)), 0)
-      msg += `📊 Total de todas as parcelas em atraso: ${formatCurrency(totalAllOverdue)}\n`
-    }
-
-    msg += `\n💳 Chave Pix: ${profilePixKey || "Não cadastrada"}`
-    return msg
+    return `Cliente: ${name}\n\n────────────────\n🚨 PAGAMENTO EM ATRASO\n\n📅 Vencimento: ${formatDate(oldestOverdue.dueDate)}\n📆 Atraso: ${daysLate} dia${daysLate !== 1 ? "s" : ""}\n\n💰 Pagamento Total: ${formatCurrency(totalToPay)}\n🔄 Regularização (juros): ${formatCurrency(jurosRegularizacao)}\n\n⚠️ Atraso:\n${formatCurrency(dailyRate > 0 ? dailyRate : 15)} por dia até regularização.\n\n────────────────\n👤 Titular: ${titular}\n\n💠 Chave Pix: ${pix}`
   }
 
   const openWhatsappDialog = (loan: Loan) => {
