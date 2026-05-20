@@ -348,10 +348,10 @@ export default function SimuladorPage() {
               <Copy className="h-3.5 w-3.5" /> Copiar Texto
             </button>
             <button
-              disabled={sending || !clientPhone.trim()}
+              disabled={sending}
               onClick={async () => {
                 const phone = clientPhone.replace(/\D/g, "")
-                if (!phone) return
+                if (!phone) { alert("Informe o telefone do cliente."); return }
                 setSending(true)
                 setSendResult(null)
                 try {
@@ -368,7 +368,7 @@ export default function SimuladorPage() {
                   setTimeout(() => setSendResult(null), 3000)
                 }
               }}
-              className="flex items-center justify-center gap-2 py-2 rounded-lg bg-green-500 hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-medium transition"
+              className="flex items-center justify-center gap-2 py-2 rounded-lg bg-green-500 hover:bg-green-600 disabled:opacity-60 disabled:cursor-not-allowed text-white text-xs font-medium transition"
             >
               {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : sendResult === "ok" ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Send className="h-3.5 w-3.5" />}
               {sending ? "Enviando..." : sendResult === "ok" ? "Enviado!" : sendResult === "error" ? "Erro ao enviar" : "Enviar via WhatsApp"}
