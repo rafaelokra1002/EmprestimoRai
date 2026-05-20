@@ -3596,7 +3596,7 @@ export default function EmprestimosPage() {
                 <span className="text-sm text-gray-500 dark:text-zinc-400">Total a Receber:</span>
                 <span className="text-lg font-bold tabular-nums text-primary">{formatCurrency(createdLoanInfo.totalAmount)}</span>
               </div>
-              {createdLoanInfo.dailyLateFee > 0 && (
+              {createdLoanInfo.dailyLateFee > 0 && createdLoanInfo.installmentCount === 1 && (
                 <div className="border-t border-gray-200 dark:border-zinc-700 pt-3 space-y-1.5 text-sm">
                   <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
                     <span>⚠️</span>
@@ -3620,7 +3620,7 @@ export default function EmprestimosPage() {
                 if (!createdLoanInfo) return
                 const modalityDaysLabel = createdLoanInfo.modality === "DAILY" ? "1 dia" : createdLoanInfo.modality === "WEEKLY" ? "7 dias" : createdLoanInfo.modality === "BIWEEKLY" ? "15 dias" : "30 dias"
                 const interestPerPeriod = createdLoanInfo.profit / createdLoanInfo.installmentCount
-                const lateSection = createdLoanInfo.dailyLateFee > 0
+                const lateSection = createdLoanInfo.dailyLateFee > 0 && createdLoanInfo.installmentCount === 1
                   ? `\n\n⚠️ *Em caso de Atraso:*\n${formatCurrency(createdLoanInfo.dailyLateFee)} por dia${createdLoanInfo.penaltyFee > 0 ? ` + multa ${formatCurrency(createdLoanInfo.penaltyFee)}` : ""}\n\n🔄 *Opção de renovação*\nPague os juros (${formatCurrency(interestPerPeriod)}) e ganhe +${modalityDaysLabel}`
                   : ""
                 const text = `📋 *Relatório de Pagamento*\n\n📅 Vencimento: ${new Date(createdLoanInfo.firstInstallmentDate + "T12:00:00").toLocaleDateString("pt-BR")}\n\n💰 Valor liberado: ${formatCurrency(createdLoanInfo.amount)}\n📊 Juros: ${createdLoanInfo.interestRate}%\n👉 Total a pagar: ${formatCurrency(createdLoanInfo.totalAmount)}${lateSection}`
@@ -3636,7 +3636,7 @@ export default function EmprestimosPage() {
                 if (!createdLoanInfo) return
                 const modalityDaysLabel = createdLoanInfo.modality === "DAILY" ? "1 dia" : createdLoanInfo.modality === "WEEKLY" ? "7 dias" : createdLoanInfo.modality === "BIWEEKLY" ? "15 dias" : "30 dias"
                 const interestPerPeriod = createdLoanInfo.profit / createdLoanInfo.installmentCount
-                const lateSection = createdLoanInfo.dailyLateFee > 0
+                const lateSection = createdLoanInfo.dailyLateFee > 0 && createdLoanInfo.installmentCount === 1
                   ? `\n\n⚠️ *Em caso de Atraso:*\n${formatCurrency(createdLoanInfo.dailyLateFee)} por dia${createdLoanInfo.penaltyFee > 0 ? ` + multa ${formatCurrency(createdLoanInfo.penaltyFee)}` : ""}\n\n🔄 *Opção de renovação*\nPague os juros (${formatCurrency(interestPerPeriod)}) e ganhe +${modalityDaysLabel}`
                   : ""
                 const text = `📋 *Relatório de Pagamento*\n\n📅 Vencimento: ${new Date(createdLoanInfo.firstInstallmentDate + "T12:00:00").toLocaleDateString("pt-BR")}\n\n💰 Valor liberado: ${formatCurrency(createdLoanInfo.amount)}\n📊 Juros: ${createdLoanInfo.interestRate}%\n👉 Total a pagar: ${formatCurrency(createdLoanInfo.totalAmount)}${lateSection}`
@@ -3654,7 +3654,7 @@ export default function EmprestimosPage() {
                 const modalityDaysLabel = createdLoanInfo.modality === "DAILY" ? "1 dia" : createdLoanInfo.modality === "WEEKLY" ? "7 dias" : createdLoanInfo.modality === "BIWEEKLY" ? "15 dias" : "30 dias"
                 const interestPerPeriod = createdLoanInfo.profit / createdLoanInfo.installmentCount
                 const venc = new Date(createdLoanInfo.firstInstallmentDate + "T12:00:00").toLocaleDateString("pt-BR")
-                const lateRows = createdLoanInfo.dailyLateFee > 0
+                const lateRows = createdLoanInfo.dailyLateFee > 0 && createdLoanInfo.installmentCount === 1
                   ? `<tr><td>Em caso de Atraso:</td><td style="color:#d97706">${formatCurrency(createdLoanInfo.dailyLateFee)} por dia${createdLoanInfo.penaltyFee > 0 ? ` + multa ${formatCurrency(createdLoanInfo.penaltyFee)}` : ""}</td></tr>
                      <tr><td>Opção de renovação:</td><td>Pague os juros (${formatCurrency(interestPerPeriod)}) e ganhe +${modalityDaysLabel}</td></tr>`
                   : ""
