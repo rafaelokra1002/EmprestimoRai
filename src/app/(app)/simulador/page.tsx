@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { formatCurrency, localDateStr } from "@/lib/utils"
 import {
   Calculator, Calendar, ChevronDown, TrendingUp,
-  FileDown, GitCompareArrows, Copy, ExternalLink, Phone
+  FileDown, GitCompareArrows, Copy, Send, Phone, Loader2, CheckCircle2
 } from "lucide-react"
 
 type PaymentType = "MONTHLY" | "BIWEEKLY" | "WEEKLY" | "DAILY"
@@ -35,6 +35,8 @@ export default function SimuladorPage() {
   const [taxa, setTaxa] = useState("10")
   const [showCompare, setShowCompare] = useState(false)
   const [clientPhone, setClientPhone] = useState("")
+  const [sending, setSending] = useState(false)
+  const [sendResult, setSendResult] = useState<"ok" | "error" | null>(null)
 
   // ===== CALCULATION =====
   const result = useMemo(() => {
@@ -346,14 +348,30 @@ export default function SimuladorPage() {
               <Copy className="h-3.5 w-3.5" /> Copiar Texto
             </button>
             <button
-              onClick={() => {
+              disabled={sending || !clientPhone.trim()}
+              onClick={async () => {
                 const phone = clientPhone.replace(/\D/g, "")
-                const text = buildSimulationText()
-                window.open(`https://wa.me/${phone ? phone : ""}?text=${encodeURIComponent(text)}`, "_blank")
+                if (!phone) return
+                setSending(true)
+                setSendResult(null)
+                try {
+                  const res = await fetch("/api/whatsapp/send", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ phone, message: buildSimulationText() }),
+                  })
+                  setSendResult(res.ok ? "ok" : "error")
+                } catch {
+                  setSendResult("error")
+                } finally {
+                  setSending(false)
+                  setTimeout(() => setSendResult(null), 3000)
+                }
               }}
-              className="flex items-center justify-center gap-2 py-2 rounded-lg bg-green-500 hover:bg-green-600 text-white text-xs font-medium transition"
+              className="flex items-center justify-center gap-2 py-2 rounded-lg bg-green-500 hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-medium transition"
             >
-              <ExternalLink className="h-3.5 w-3.5" /> Enviar via WhatsApp
+              {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : sendResult === "ok" ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Send className="h-3.5 w-3.5" />}
+              {sending ? "Enviando..." : sendResult === "ok" ? "Enviado!" : sendResult === "error" ? "Erro ao enviar" : "Enviar via WhatsApp"}
             </button>
           </div>
         </div>
