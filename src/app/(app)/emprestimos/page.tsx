@@ -3596,20 +3596,6 @@ export default function EmprestimosPage() {
                 <span className="text-sm text-gray-500 dark:text-zinc-400">Total a Receber:</span>
                 <span className="text-lg font-bold tabular-nums text-primary">{formatCurrency(createdLoanInfo.totalAmount)}</span>
               </div>
-              {createdLoanInfo.dailyLateFee > 0 && createdLoanInfo.installmentCount === 1 && (
-                <div className="border-t border-gray-200 dark:border-zinc-700 pt-3 space-y-1.5 text-sm">
-                  <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
-                    <span>⚠️</span>
-                    <span className="font-medium">Em caso de Atraso:</span>
-                    <span>{formatCurrency(createdLoanInfo.dailyLateFee)} por dia{createdLoanInfo.penaltyFee > 0 ? ` + multa ${formatCurrency(createdLoanInfo.penaltyFee)}` : ""}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
-                    <span>🔄</span>
-                    <span className="font-medium">Opção de renovação:</span>
-                    <span>Pague os juros ({formatCurrency(createdLoanInfo.profit / createdLoanInfo.installmentCount)}) e ganhe +{createdLoanInfo.modality === "DAILY" ? "1 dia" : createdLoanInfo.modality === "WEEKLY" ? "7 dias" : createdLoanInfo.modality === "BIWEEKLY" ? "15 dias" : "30 dias"}</span>
-                  </div>
-                </div>
-              )}
             </div>
           )}
 
@@ -3618,12 +3604,7 @@ export default function EmprestimosPage() {
               className="w-full gap-2 bg-amber-500 hover:bg-amber-600 text-white"
               onClick={() => {
                 if (!createdLoanInfo) return
-                const modalityDaysLabel = createdLoanInfo.modality === "DAILY" ? "1 dia" : createdLoanInfo.modality === "WEEKLY" ? "7 dias" : createdLoanInfo.modality === "BIWEEKLY" ? "15 dias" : "30 dias"
-                const interestPerPeriod = createdLoanInfo.profit / createdLoanInfo.installmentCount
-                const lateSection = createdLoanInfo.dailyLateFee > 0 && createdLoanInfo.installmentCount === 1
-                  ? `\n\n⚠️ *Em caso de Atraso:*\n${formatCurrency(createdLoanInfo.dailyLateFee)} por dia${createdLoanInfo.penaltyFee > 0 ? ` + multa ${formatCurrency(createdLoanInfo.penaltyFee)}` : ""}\n\n🔄 *Opção de renovação*\nPague os juros (${formatCurrency(interestPerPeriod)}) e ganhe +${modalityDaysLabel}`
-                  : ""
-                const text = `📋 *Relatório de Pagamento*\n\n📅 Vencimento: ${new Date(createdLoanInfo.firstInstallmentDate + "T12:00:00").toLocaleDateString("pt-BR")}\n\n💰 Valor liberado: ${formatCurrency(createdLoanInfo.amount)}\n📊 Juros: ${createdLoanInfo.interestRate}%\n👉 Total a pagar: ${formatCurrency(createdLoanInfo.totalAmount)}${lateSection}`
+                const text = `📋 *Relatório de Pagamento*\n\n📅 Vencimento: ${new Date(createdLoanInfo.firstInstallmentDate + "T12:00:00").toLocaleDateString("pt-BR")}\n\n💰 Valor liberado: ${formatCurrency(createdLoanInfo.amount)}\n📊 Juros: ${createdLoanInfo.interestRate}%\n👉 Total a pagar: ${formatCurrency(createdLoanInfo.totalAmount)}`
                 navigator.clipboard.writeText(text)
                 alert("Texto copiado!")
               }}
@@ -3634,12 +3615,7 @@ export default function EmprestimosPage() {
               className="w-full gap-2 bg-amber-500 hover:bg-amber-600 text-white"
               onClick={() => {
                 if (!createdLoanInfo) return
-                const modalityDaysLabel = createdLoanInfo.modality === "DAILY" ? "1 dia" : createdLoanInfo.modality === "WEEKLY" ? "7 dias" : createdLoanInfo.modality === "BIWEEKLY" ? "15 dias" : "30 dias"
-                const interestPerPeriod = createdLoanInfo.profit / createdLoanInfo.installmentCount
-                const lateSection = createdLoanInfo.dailyLateFee > 0 && createdLoanInfo.installmentCount === 1
-                  ? `\n\n⚠️ *Em caso de Atraso:*\n${formatCurrency(createdLoanInfo.dailyLateFee)} por dia${createdLoanInfo.penaltyFee > 0 ? ` + multa ${formatCurrency(createdLoanInfo.penaltyFee)}` : ""}\n\n🔄 *Opção de renovação*\nPague os juros (${formatCurrency(interestPerPeriod)}) e ganhe +${modalityDaysLabel}`
-                  : ""
-                const text = `📋 *Relatório de Pagamento*\n\n📅 Vencimento: ${new Date(createdLoanInfo.firstInstallmentDate + "T12:00:00").toLocaleDateString("pt-BR")}\n\n💰 Valor liberado: ${formatCurrency(createdLoanInfo.amount)}\n📊 Juros: ${createdLoanInfo.interestRate}%\n👉 Total a pagar: ${formatCurrency(createdLoanInfo.totalAmount)}${lateSection}`
+                const text = `📋 *Relatório de Pagamento*\n\n📅 Vencimento: ${new Date(createdLoanInfo.firstInstallmentDate + "T12:00:00").toLocaleDateString("pt-BR")}\n\n💰 Valor liberado: ${formatCurrency(createdLoanInfo.amount)}\n📊 Juros: ${createdLoanInfo.interestRate}%\n👉 Total a pagar: ${formatCurrency(createdLoanInfo.totalAmount)}`
                 const phone = createdLoanInfo.clientPhone?.replace(/\D/g, "") || ""
                 window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank")
               }}
@@ -3651,13 +3627,7 @@ export default function EmprestimosPage() {
               className="w-full gap-2"
               onClick={() => {
                 if (!createdLoanInfo) return
-                const modalityDaysLabel = createdLoanInfo.modality === "DAILY" ? "1 dia" : createdLoanInfo.modality === "WEEKLY" ? "7 dias" : createdLoanInfo.modality === "BIWEEKLY" ? "15 dias" : "30 dias"
-                const interestPerPeriod = createdLoanInfo.profit / createdLoanInfo.installmentCount
                 const venc = new Date(createdLoanInfo.firstInstallmentDate + "T12:00:00").toLocaleDateString("pt-BR")
-                const lateRows = createdLoanInfo.dailyLateFee > 0 && createdLoanInfo.installmentCount === 1
-                  ? `<tr><td>Em caso de Atraso:</td><td style="color:#d97706">${formatCurrency(createdLoanInfo.dailyLateFee)} por dia${createdLoanInfo.penaltyFee > 0 ? ` + multa ${formatCurrency(createdLoanInfo.penaltyFee)}` : ""}</td></tr>
-                     <tr><td>Opção de renovação:</td><td>Pague os juros (${formatCurrency(interestPerPeriod)}) e ganhe +${modalityDaysLabel}</td></tr>`
-                  : ""
                 const printContent = `<html><head><title>Relatório de Pagamento</title>
                   <style>body{font-family:sans-serif;padding:40px;max-width:420px;margin:auto}
                   h2{color:#059669;text-align:center;margin-bottom:4px}p.sub{text-align:center;color:#6b7280;font-size:13px;margin-top:0}
@@ -3671,7 +3641,6 @@ export default function EmprestimosPage() {
                     <tr><td>Valor liberado:</td><td>${formatCurrency(createdLoanInfo.amount)}</td></tr>
                     <tr><td>Juros:</td><td>${createdLoanInfo.interestRate}%</td></tr>
                     <tr><td>Parcelas:</td><td>${createdLoanInfo.installmentCount}x ${formatCurrency(createdLoanInfo.installmentValue)}</td></tr>
-                    ${lateRows}
                   </table>
                   <div class="total"><span>Total a Pagar:</span><span>${formatCurrency(createdLoanInfo.totalAmount)}</span></div>
                   </body></html>`
