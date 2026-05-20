@@ -239,27 +239,21 @@ export default function SimuladorPage() {
           </div>
           <div>
             <Label className="text-xs font-semibold text-gray-600 dark:text-zinc-400">Data de Início</Label>
-            <div className="relative mt-1">
-              <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
-              <Input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="h-9 bg-gray-50 dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 pl-8 text-sm"
-              />
-            </div>
+            <Input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="mt-1 h-9 bg-gray-50 dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 text-sm"
+            />
           </div>
           <div>
             <Label className="text-xs font-semibold text-gray-600 dark:text-zinc-400">1º Vencimento</Label>
-            <div className="relative mt-1">
-              <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
-              <Input
-                type="date"
-                value={firstDueDate}
-                onChange={(e) => setFirstDueDate(e.target.value)}
-                className="h-9 bg-gray-50 dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 pl-8 text-sm"
-              />
-            </div>
+            <Input
+              type="date"
+              value={firstDueDate}
+              onChange={(e) => setFirstDueDate(e.target.value)}
+              className="mt-1 h-9 bg-gray-50 dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 text-sm"
+            />
           </div>
         </div>
 
