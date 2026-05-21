@@ -533,6 +533,18 @@ export default function ScorePage() {
             const displayLoans = sortMode === "lucro"
               ? (activeLoans.length > 0 ? activeLoans : completedLoans)
               : activeLoans
+
+            // Aggregate values across ALL loans
+            const allEmprestado = clientLoans.reduce((s, l) => s + (l.amount || 0), 0)
+            const allRecebido = clientLoans.reduce((s, l) =>
+              s + (l.payments || []).reduce((ps: number, p: any) => ps + (p.amount || 0), 0), 0)
+            const allAReceber = activeLoans.reduce((s, l) => {
+              const paidSum = (l.installments || []).filter((i: any) => i.status === "PAID").reduce((ps: number, i: any) => ps + (i.paidAmount || 0), 0)
+              return s + Math.max(0, l.totalAmount - paidSum)
+            }, 0)
+            const allLucro = clientLoans.reduce((s, l) => s + (l.profit || 0), 0)
+            const allLucroRealizado = getClientRealizedProfit(client)
+            const allCompleted = clientLoans.length > 0 && activeLoans.length === 0
             return (
               <div
                 key={client.id}
@@ -565,53 +577,30 @@ export default function ScorePage() {
                 <div className="my-3 border-t border-gray-100 dark:border-zinc-800" />
 
                 {/* Loan info or empty state */}
-                {clientLoans.length === 0 || displayLoans.length === 0 ? (
+                {clientLoans.length === 0 ? (
                   <p className="text-center text-xs text-gray-400 dark:text-zinc-500 py-2">Sem empréstimos ativos</p>
                 ) : (
-                  <>
-                    {displayLoans.slice(0, 1).map((loan) => {
-                      const isCompleted = loan.status === "COMPLETED"
-                      const remaining = loan.totalAmount - (Array.isArray(loan.installments) ? loan.installments.filter((i) => i.status === "PAID").reduce((s, i) => s + (i.paidAmount || 0), 0) : 0)
-                      const totalPaid = Array.isArray(loan.payments) ? loan.payments.reduce((sum, payment) => sum + (payment.amount || 0), 0) : 0
-                      const highlightLucro = sortMode === "lucro"
-                      // Para quitados: lucro real = tudo recebido acima do principal (inclui multas/juros extras)
-                      // Para ativos: proporcional aos pagamentos recebidos
-                      const capitalIntact = (loan.installments || []).every((i: any) => (i.paidAmount || 0) === 0)
-                      const realizedProfit = capitalIntact && totalPaid > 0
-                        ? totalPaid
-                        : calculateRealizedProfitFromPayments(loan.totalAmount, loan.profit, loan.payments || [], loan.installments || [], {
-                            principalAmount: loan.amount,
-                            interestType: undefined,
-                          })
-                      return (
-                        <div key={loan.id}>
-                          <p className="text-[10px] uppercase font-semibold text-gray-400 dark:text-zinc-500 tracking-wide">{highlightLucro ? "Lucro" : "A receber"}</p>
-                          <p className="text-xl font-bold text-gray-900 dark:text-zinc-100 mt-0.5">{formatCurrency(highlightLucro ? realizedProfit : Math.max(0, remaining))}</p>
-                          <div className="flex items-center gap-2 mt-1 text-xs text-gray-400 dark:text-zinc-500 flex-wrap">
-                            <span>Emprestado {formatCurrency(loan.amount)}</span>
-                            {!highlightLucro && (
-                              <>
-                                <span className="text-gray-300 dark:text-zinc-700">•</span>
-                                <span>Recebido {formatCurrency(totalPaid)}</span>
-                              </>
-                            )}
-                            {isCompleted && highlightLucro && (
-                              <>
-                                <span className="text-gray-300 dark:text-zinc-700">•</span>
-                                <span>Quitado</span>
-                              </>
-                            )}
-                            {!isCompleted && (
-                              <>
-                                <span className="text-gray-300 dark:text-zinc-700">•</span>
-                                <span>{highlightLucro ? "A receber" : "Lucro"} {formatCurrency(highlightLucro ? Math.max(0, remaining) : loan.profit)}</span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </>
+                  <div>
+                    <p className="text-[10px] uppercase font-semibold text-gray-400 dark:text-zinc-500 tracking-wide">
+                      {sortMode === "lucro" ? "Lucro realizado" : allCompleted ? "Total quitado" : "A receber"}
+                    </p>
+                    <p className="text-xl font-bold text-gray-900 dark:text-zinc-100 mt-0.5">
+                      {formatCurrency(sortMode === "lucro" ? allLucroRealizado : allCompleted ? allEmprestado : allAReceber)}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1 text-xs text-gray-400 dark:text-zinc-500 flex-wrap">
+                      <span>Emprestado {formatCurrency(allEmprestado)}</span>
+                      <span className="text-gray-300 dark:text-zinc-700">•</span>
+                      <span>Recebido {formatCurrency(allRecebido)}</span>
+                      <span className="text-gray-300 dark:text-zinc-700">•</span>
+                      <span>Lucro {formatCurrency(allLucro)}</span>
+                      {completedLoans.length > 0 && (
+                        <>
+                          <span className="text-gray-300 dark:text-zinc-700">•</span>
+                          <span>{completedLoans.length} quitado{completedLoans.length > 1 ? "s" : ""}</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
                 )}
 
                 {/* Extra profit tag */}

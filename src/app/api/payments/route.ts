@@ -91,27 +91,28 @@ export async function POST(request: Request) {
           })
         }
 
-        // Update client score
+        // Recompute client score from all paid installments across all loans
         const loan = await prisma.loan.findUnique({
           where: { id: loanId },
           select: { clientId: true },
         })
 
         if (loan) {
-          const isOnTime = paymentDate <= installment.dueDate
-          const scoreChange = isOnTime ? 10 : -15
-
-          const currentClient = await prisma.client.findUnique({
-            where: { id: loan.clientId },
-            select: { score: true },
+          const paidInstallments = await prisma.installment.findMany({
+            where: { loan: { clientId: loan.clientId }, status: "PAID" },
+            select: { paidDate: true, dueDate: true },
           })
-          if (currentClient) {
-            const newScore = Math.min(150, Math.max(0, currentClient.score + scoreChange))
-            await prisma.client.update({
-              where: { id: loan.clientId },
-              data: { score: newScore },
-            })
+          let newScore = 100
+          for (const inst of paidInstallments) {
+            if (inst.paidDate) {
+              newScore += new Date(inst.paidDate) <= new Date(inst.dueDate) ? 10 : -15
+            }
           }
+          newScore = Math.min(150, Math.max(0, newScore))
+          await prisma.client.update({
+            where: { id: loan.clientId },
+            data: { score: newScore },
+          })
         }
       }
     }
