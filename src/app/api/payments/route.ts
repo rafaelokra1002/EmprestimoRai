@@ -195,10 +195,10 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json()
-    const { id, date } = body
+    const { id, date, amount } = body
 
-    if (!id || !date) {
-      return NextResponse.json({ error: "ID e data são obrigatórios" }, { status: 400 })
+    if (!id || (!date && amount === undefined)) {
+      return NextResponse.json({ error: "ID e ao menos um campo para atualizar são obrigatórios" }, { status: 400 })
     }
 
     const existingPayment = await prisma.payment.findUnique({
@@ -216,11 +216,13 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "Pagamento não encontrado" }, { status: 404 })
     }
 
+    const updateData: any = {}
+    if (date) updateData.date = parsePaymentDate(date)
+    if (amount !== undefined) updateData.amount = parseFloat(amount)
+
     const updatedPayment = await prisma.payment.update({
       where: { id },
-      data: {
-        date: parsePaymentDate(date),
-      },
+      data: updateData,
     })
 
     return NextResponse.json(updatedPayment)

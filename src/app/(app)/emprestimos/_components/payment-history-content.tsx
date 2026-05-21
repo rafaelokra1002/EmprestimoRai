@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { useParams } from "next/navigation"
-import { CalendarDays, Copy, Download, Eye, FileText, Pencil, Trash2, User, X } from "lucide-react"
+import { CalendarDays, Copy, DollarSign, Download, Eye, FileText, Pencil, Trash2, User, X } from "lucide-react"
 import { formatCurrency, formatDate } from "@/lib/utils"
 import { buildLoanData, calculateEffectivePaidAmountFromPayments, calculateTotalAmountWithLateFee, normalizeInstallmentsFromPayments } from "@/lib/loan-logic"
 import { Dialog } from "@/components/ui/dialog"
@@ -365,6 +365,9 @@ export function PaymentHistoryContent({
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null)
   const [editingDate, setEditingDate] = useState("")
   const [savingEdit, setSavingEdit] = useState(false)
+  const [editingAmountPayment, setEditingAmountPayment] = useState<Payment | null>(null)
+  const [editingAmount, setEditingAmount] = useState("")
+  const [savingAmount, setSavingAmount] = useState(false)
 
   useEffect(() => {
     const fetchLoan = async () => {
@@ -495,6 +498,39 @@ export function PaymentHistoryContent({
     }
   }
 
+  const handleSaveEditAmount = async () => {
+    if (!editingAmountPayment || !editingAmount) return
+    const parsed = parseFloat(editingAmount.replace(",", "."))
+    if (isNaN(parsed) || parsed <= 0) return
+
+    setSavingAmount(true)
+    try {
+      const res = await fetch("/api/payments", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: editingAmountPayment.id, amount: parsed }),
+      })
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null)
+        alert(data?.error || "Erro ao atualizar valor do pagamento")
+        return
+      }
+
+      const updated = await res.json()
+      setLoan((current) => current ? {
+        ...current,
+        payments: current.payments.map((p) =>
+          p.id === editingAmountPayment.id ? { ...p, amount: updated.amount } : p
+        ),
+      } : current)
+      setEditingAmountPayment(null)
+      setEditingAmount("")
+    } finally {
+      setSavingAmount(false)
+    }
+  }
+
   if (loading) {
     return <div className="rounded-[28px] bg-white p-6 text-sm text-gray-500">Carregando histórico...</div>
   }
@@ -588,6 +624,14 @@ export function PaymentHistoryContent({
                     title="Editar data do pagamento"
                   >
                     <Pencil className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setEditingAmountPayment(payment); setEditingAmount(String(payment.amount)) }}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-amber-500 transition-colors hover:bg-amber-50 dark:hover:bg-amber-950/20"
+                    title="Editar valor do pagamento"
+                  >
+                    <DollarSign className="h-4 w-4" />
                   </button>
                   <button
                     type="button"
@@ -702,6 +746,34 @@ export function PaymentHistoryContent({
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => { setEditingPayment(null); setEditingDate("") }} disabled={savingEdit}>Cancelar</Button>
             <Button onClick={handleSaveEditDate} disabled={!editingDate || savingEdit}>{savingEdit ? "Salvando..." : "Salvar"}</Button>
+          </div>
+        </div>
+      </Dialog>
+
+      <Dialog
+        open={!!editingAmountPayment}
+        onClose={() => { if (!savingAmount) { setEditingAmountPayment(null); setEditingAmount("") } }}
+        title="Editar Valor do Pagamento"
+        className="max-w-md"
+      >
+        <div className="space-y-4">
+          <div>
+            <p className="text-sm text-gray-500 dark:text-zinc-400">Valor atual</p>
+            <p className="mt-1 font-semibold text-gray-900 dark:text-zinc-100">{editingAmountPayment ? formatCurrency(editingAmountPayment.amount) : ""}</p>
+          </div>
+          <div>
+            <p className="mb-2 text-sm text-gray-500 dark:text-zinc-400">Novo valor</p>
+            <Input
+              type="text"
+              inputMode="decimal"
+              placeholder="0,00"
+              value={editingAmount}
+              onChange={(e) => { const v = e.target.value; if (/^\d*[,.]?\d*$/.test(v)) setEditingAmount(v) }}
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => { setEditingAmountPayment(null); setEditingAmount("") }} disabled={savingAmount}>Cancelar</Button>
+            <Button onClick={handleSaveEditAmount} disabled={!editingAmount || savingAmount}>{savingAmount ? "Salvando..." : "Salvar"}</Button>
           </div>
         </div>
       </Dialog>
