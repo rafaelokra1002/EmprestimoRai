@@ -15,6 +15,7 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url)
     const now = new Date()
+    const showAll = searchParams.get("all") === "true"
     const filterMonth = searchParams.has("month") ? parseInt(searchParams.get("month")!) : now.getMonth()
     const filterYear = searchParams.has("year") ? parseInt(searchParams.get("year")!) : now.getFullYear()
 
@@ -28,8 +29,8 @@ export async function GET(request: Request) {
     startOfPrevWeek.setDate(startOfPrevWeek.getDate() - 7)
     const endOfPrevWeek = new Date(startOfWeek)
 
-    const startOfMonth = new Date(filterYear, filterMonth, 1)
-    const endOfMonth = new Date(filterYear, filterMonth + 1, 0, 23, 59, 59)
+    const startOfMonth = showAll ? new Date(0) : new Date(filterYear, filterMonth, 1)
+    const endOfMonth = showAll ? new Date(2100, 0, 1) : new Date(filterYear, filterMonth + 1, 0, 23, 59, 59)
     const endOfWeek = new Date(startOfWeek)
     endOfWeek.setDate(endOfWeek.getDate() + 7)
     const thirtyDaysAgo = new Date(startOfToday)
@@ -68,7 +69,7 @@ export async function GET(request: Request) {
       prisma.sale.findMany({ where: { userId }, select: { id: true } }),
       prisma.vehicle.findMany({ where: { userId }, select: { id: true } }),
       prisma.expense.aggregate({
-        where: { userId, dueDate: { gte: startOfMonth, lte: endOfMonth } },
+        where: showAll ? { userId } : { userId, dueDate: { gte: startOfMonth, lte: endOfMonth } },
         _sum: { amount: true },
       }),
     ])
