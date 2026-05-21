@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Download, HelpCircle, Calendar, RefreshCw, DollarSign, Percent, Hash, TrendingUp, Table2, Trash2 } from "lucide-react"
+import { Download, HelpCircle, Calendar, RefreshCw, DollarSign, Percent, Hash, TrendingUp, Table2, Trash2, Pencil } from "lucide-react"
+import { Dialog } from "@/components/ui/dialog"
 import { formatCurrency, formatDate, localDateStr } from "@/lib/utils"
 
 interface Loan {
@@ -48,6 +49,10 @@ export default function RecebimentosPage() {
   const [period, setPeriod] = useState<PeriodType>("today")
   const [customStart, setCustomStart] = useState(todayISO())
   const [customEnd, setCustomEnd] = useState(todayISO())
+
+  const [editingPaymentId, setEditingPaymentId] = useState<string | null>(null)
+  const [editingAmount, setEditingAmount] = useState("")
+  const [savingAmount, setSavingAmount] = useState(false)
 
   const loadData = async () => {
     setLoading(true)
@@ -185,6 +190,30 @@ export default function RecebimentosPage() {
       }
     } catch (e) {
       console.error(e)
+    }
+  }
+
+  const handleSaveEditAmount = async () => {
+    if (!editingPaymentId || !editingAmount) return
+    const parsed = parseFloat(editingAmount.replace(",", "."))
+    if (isNaN(parsed) || parsed <= 0) return
+    setSavingAmount(true)
+    try {
+      const res = await fetch("/api/payments", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: editingPaymentId, amount: parsed }),
+      })
+      if (res.ok) {
+        setEditingPaymentId(null)
+        setEditingAmount("")
+        loadData()
+      } else {
+        const data = await res.json().catch(() => null)
+        alert(data?.error || "Erro ao atualizar valor")
+      }
+    } finally {
+      setSavingAmount(false)
     }
   }
 
@@ -376,14 +405,24 @@ export default function RecebimentosPage() {
                       </span>
                     </td>
                     <td className="py-4 text-center">
-                      <button
-                        type="button"
-                        onClick={() => deletePayment(payment.id)}
-                        className="p-1.5 rounded-md text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
-                        title="Excluir pagamento"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      <div className="flex items-center justify-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => { setEditingPaymentId(payment.id); setEditingAmount(String(payment.amount)) }}
+                          className="p-1.5 rounded-md text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors"
+                          title="Editar valor"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => deletePayment(payment.id)}
+                          className="p-1.5 rounded-md text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                          title="Excluir pagamento"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 )
@@ -392,6 +431,30 @@ export default function RecebimentosPage() {
           </table>
         )}
       </div>
+
+      <Dialog
+        open={!!editingPaymentId}
+        onClose={() => { if (!savingAmount) { setEditingPaymentId(null); setEditingAmount("") } }}
+        title="Editar Valor do Pagamento"
+        className="max-w-md"
+      >
+        <div className="space-y-4">
+          <div>
+            <p className="mb-2 text-sm text-gray-500 dark:text-zinc-400">Novo valor</p>
+            <Input
+              type="text"
+              inputMode="decimal"
+              placeholder="0,00"
+              value={editingAmount}
+              onChange={(e) => { const v = e.target.value; if (/^\d*[,.]?\d*$/.test(v)) setEditingAmount(v) }}
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => { setEditingPaymentId(null); setEditingAmount("") }} disabled={savingAmount}>Cancelar</Button>
+            <Button onClick={handleSaveEditAmount} disabled={!editingAmount || savingAmount}>{savingAmount ? "Salvando..." : "Salvar"}</Button>
+          </div>
+        </div>
+      </Dialog>
     </div>
   )
 }
