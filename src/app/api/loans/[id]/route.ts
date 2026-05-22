@@ -37,7 +37,7 @@ export async function GET(
     }
 
     const loan = await prisma.loan.findFirst({
-      where: { id: params.id, userId },
+      where: { id: params.id, userId, deleted: false },
       include: {
         client: true,
         user: { select: { pixKey: true } },
@@ -87,7 +87,7 @@ export async function PUT(
       const data = loanSchema.parse(body)
 
       const existingLoan = await prisma.loan.findFirst({
-        where: { id: params.id, userId },
+        where: { id: params.id, userId, deleted: false },
         include: {
           installments: true,
           payments: true,
@@ -216,7 +216,7 @@ export async function PUT(
       })
 
       const loan = await prisma.loan.findFirst({
-        where: { id: params.id, userId },
+        where: { id: params.id, userId, deleted: false },
         include: {
           client: true,
           user: { select: { pixKey: true } },
@@ -271,7 +271,7 @@ export async function PUT(
     }
 
     const loan = await prisma.loan.findFirst({
-      where: { id: params.id, userId },
+      where: { id: params.id, userId, deleted: false },
       include: {
         client: true,
         installments: { orderBy: { number: "asc" } },
@@ -300,9 +300,18 @@ export async function DELETE(
       return NextResponse.json({ error: "Sessão inválida. Faça login novamente." }, { status: 401 })
     }
 
-    await prisma.loan.deleteMany({
-      where: { id: params.id, userId },
-    })
+    const hasPayments = await prisma.payment.count({ where: { loanId: params.id } })
+
+    if (hasPayments > 0) {
+      // Soft delete: preserve payments for recebimentos history
+      await prisma.$transaction([
+        prisma.installment.deleteMany({ where: { loanId: params.id } }),
+        prisma.loan.update({ where: { id: params.id }, data: { deleted: true } }),
+      ])
+    } else {
+      // No payments: hard delete
+      await prisma.loan.deleteMany({ where: { id: params.id, userId } })
+    }
 
     return NextResponse.json({ success: true })
   } catch (error: any) {

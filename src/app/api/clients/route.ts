@@ -41,6 +41,7 @@ export async function GET(request: Request) {
       include: {
         loans: includeInstallments
           ? {
+              where: { deleted: false },
               select: {
                 id: true,
                 amount: true,
@@ -73,7 +74,7 @@ export async function GET(request: Request) {
                 },
               },
             }
-          : { select: { id: true, amount: true, status: true } },
+          : { where: { deleted: false }, select: { id: true, amount: true, status: true } },
         documents: {
           where: { type: "SELFIE" },
           select: { fileData: true, fileType: true },

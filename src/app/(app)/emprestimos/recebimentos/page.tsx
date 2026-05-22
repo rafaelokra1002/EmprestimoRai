@@ -57,7 +57,7 @@ export default function RecebimentosPage() {
   const loadData = async () => {
     setLoading(true)
     try {
-      const res = await fetch("/api/loans")
+      const res = await fetch("/api/loans?includeDeleted=true")
       const data = await res.json()
       const list = Array.isArray(data) ? data : []
       setLoans(list)

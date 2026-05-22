@@ -6,15 +6,18 @@ import { loanSchema } from "@/lib/validations"
 import { calculateLoan, generateInstallmentDates, resolveDailyInterestAmount } from "@/lib/utils"
 import { normalizeInstallmentsFromPayments } from "@/lib/loan-logic"
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
     }
 
+    const { searchParams } = new URL(request.url)
+    const includeDeleted = searchParams.get("includeDeleted") === "true"
+
     const loans = await prisma.loan.findMany({
-      where: { userId: (session.user as any).id },
+      where: { userId: (session.user as any).id, ...(includeDeleted ? {} : { deleted: false }) },
       include: {
         client: { select: { id: true, name: true, photo: true, city: true, status: true } },
         installments: { orderBy: { number: "asc" } },

@@ -46,7 +46,7 @@ export async function GET() {
     const [clientsCountResult, loansResult] = await Promise.all([
       prisma.client.count({ where: { userId } }),
       prisma.loan.findMany({
-        where: { userId },
+        where: { userId, deleted: false },
         select: {
           amount: true,
           payments: { select: { amount: true } },

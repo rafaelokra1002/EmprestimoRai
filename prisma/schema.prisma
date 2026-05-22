@@ -145,6 +145,7 @@ model Loan {
   status               LoanStatus    @default(ACTIVE)
   notes                String?
   tags                 String[]      @default([])
+  deleted              Boolean       @default(false)
   createdAt            DateTime      @default(now())
   updatedAt            DateTime      @updatedAt
   client               Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)

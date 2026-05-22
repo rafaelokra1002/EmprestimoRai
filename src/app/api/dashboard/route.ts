@@ -38,19 +38,19 @@ export async function GET(request: Request) {
 
     const [loansResult, overdueCountResult, overdueAmountResult, dueTodayCountResult, activeClientsResult, inactiveClientsResult, totalClientsResult, salesResult, vehiclesResult, monthlyExpensesResult] = await Promise.all([
       prisma.loan.findMany({
-        where: { userId, status: "ACTIVE", client: { status: { not: "DESAPARECIDO" } } },
+        where: { userId, status: "ACTIVE", deleted: false, client: { status: { not: "DESAPARECIDO" } } },
         include: { installments: true, payments: true, client: { select: { name: true } } },
       }),
       prisma.installment.count({
         where: {
-          loan: { userId, client: { status: { not: "DESAPARECIDO" } } },
+          loan: { userId, deleted: false, client: { status: { not: "DESAPARECIDO" } } },
           status: { not: "PAID" },
           dueDate: { lt: startOfToday },
         },
       }),
       prisma.installment.aggregate({
         where: {
-          loan: { userId, client: { status: { not: "DESAPARECIDO" } } },
+          loan: { userId, deleted: false, client: { status: { not: "DESAPARECIDO" } } },
           status: { not: "PAID" },
           dueDate: { lt: startOfToday },
         },
@@ -58,7 +58,7 @@ export async function GET(request: Request) {
       }),
       prisma.installment.count({
         where: {
-          loan: { userId, client: { status: { not: "DESAPARECIDO" } } },
+          loan: { userId, deleted: false, client: { status: { not: "DESAPARECIDO" } } },
           status: "PENDING",
           dueDate: { gte: startOfToday, lt: endOfToday },
         },
