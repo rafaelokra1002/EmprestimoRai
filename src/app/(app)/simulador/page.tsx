@@ -132,10 +132,18 @@ export default function SimuladorPage() {
     d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })
 
   const buildSimulationText = () => {
-    const modeLabel = interestMode === "PER_INSTALLMENT" ? "Por Parcela" : "Tabela Price"
-    const venc = firstDueDate ? new Date(firstDueDate + "T12:00:00").toLocaleDateString("pt-BR") : "-"
-    const scheduleLines = schedule.map((i) => `  ${i.number}/${installmentCount} - ${formatDateBR(i.dueDate)} - ${formatCurrency(i.amount)}`).join("\n")
-    return `📊 *Simulação de Empréstimo*\n\n💰 Valor: ${formatCurrency(parseFloat(valor) || 0)}\n📈 Juros: ${taxa}% (${modeLabel})\n📄 Parcelas: ${installmentCount}x ${formatCurrency(result.installmentValue)}\n📅 1º Vencimento: ${venc}\n\n💵 Total de Juros: ${formatCurrency(result.totalInterest)}\n💵 *Total a Pagar: ${formatCurrency(result.totalAmount)}*\n\n📋 *Cronograma:*\n${scheduleLines}`
+    const numEmojis = ["1️⃣","2️⃣","3️⃣","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣","🔟"]
+    const fmtShort = (dateStr: string) => {
+      const d = new Date(dateStr + (dateStr.includes("T") ? "" : "T12:00:00"))
+      return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`
+    }
+    const modeLabel = interestMode === "PER_INSTALLMENT" ? "por parcela" : "tabela price"
+    const firstVenc = schedule.length > 0 ? fmtShort(schedule[0].dueDate) : "-"
+    const paymentLines = schedule.map((i, idx) => {
+      const emoji = numEmojis[idx] || `${i.number}.`
+      return `${emoji} ${fmtShort(i.dueDate)} — ${formatCurrency(i.amount)}`
+    }).join("\n")
+    return `📊 RELATÓRIO DE EMPRÉSTIMO\n\n💰 Valor: ${formatCurrency(parseFloat(valor) || 0)}\n📄 ${installmentCount}x de ${formatCurrency(result.installmentValue)}\n📈 Juros: ${taxa}% ${modeLabel}\n\n📅 1º pagamento: ${firstVenc}\n\n💵 Total de juros: ${formatCurrency(result.totalInterest)}\n💵 Total a pagar: ${formatCurrency(result.totalAmount)}\n\n______________\n📋 PAGAMENTOS\n\n${paymentLines}\n\n⚠️ Multa por atraso: R$ 15,00 ao dia.`
   }
 
   return (
