@@ -582,7 +582,7 @@ export default function ScorePage() {
                 ) : (
                   <div>
                     <p className="text-[10px] uppercase font-semibold text-gray-400 dark:text-zinc-500 tracking-wide">
-                      {sortMode === "lucro" ? "Lucro realizado" : allCompleted ? "Total quitado" : "A receber"}
+                      {sortMode === "lucro" ? "Lucro" : allCompleted ? "Total quitado" : "A receber"}
                     </p>
                     <p className="text-xl font-bold text-gray-900 dark:text-zinc-100 mt-0.5">
                       {formatCurrency(sortMode === "lucro" ? allLucroRealizado : allCompleted ? allEmprestado : allAReceber)}
