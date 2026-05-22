@@ -36,7 +36,7 @@ export async function GET(request: Request) {
     const thirtyDaysAgo = new Date(startOfToday)
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
-    const [loansResult, overdueCountResult, overdueAmountResult, dueTodayCountResult, activeClientsResult, inactiveClientsResult, totalClientsResult, salesResult, vehiclesResult, monthlyExpensesResult] = await Promise.all([
+    const [loansResult, overdueCountResult, overdueAmountResult, dueTodayCountResult, activeClientsResult, inactiveClientsResult, totalClientsResult, salesResult, vehiclesResult, monthlyExpensesResult, allLoansForInterestResult] = await Promise.all([
       prisma.loan.findMany({
         where: { userId, status: "ACTIVE", deleted: false, client: { status: { not: "DESAPARECIDO" } } },
         include: { installments: true, payments: true, client: { select: { name: true } } },
@@ -72,9 +72,14 @@ export async function GET(request: Request) {
         where: showAll ? { userId } : { userId, dueDate: { gte: startOfMonth, lte: endOfMonth } },
         _sum: { amount: true },
       }),
+      prisma.loan.findMany({
+        where: { userId, deleted: false },
+        select: { totalAmount: true, profit: true, payments: { select: { amount: true, notes: true } }, installments: { select: { paidAmount: true } } },
+      }),
     ])
 
     const loans = loansResult || []
+    const allLoansForInterest = allLoansForInterestResult || []
     const monthlyExpenses = Number(monthlyExpensesResult._sum.amount || 0)
     const overdueCount = Number(overdueCountResult || 0)
     const overdueAmount = Number(overdueAmountResult._sum.amount || 0)
@@ -267,20 +272,16 @@ export async function GET(request: Request) {
     })
 
     // Juros efetivamente recebidos neste mês
-    const monthlyReceivedInterest = loans.reduce((acc, loan) => {
+    const monthlyReceivedInterest = allLoansForInterest.reduce((acc, loan) => {
       const loanTotal = Number(loan.totalAmount || 0)
       const loanProfit = Number(loan.profit || 0)
       if (loanTotal <= 0) return acc
       const capitalIntact = loan.installments.every((i) => Number((i as any).paidAmount || 0) === 0)
       const interestRatio = loanProfit / loanTotal
-      const monthPayments = loan.payments.filter((p) => {
-        const d = new Date(p.date)
-        return d >= startOfMonth && d <= endOfMonth
-      })
       if (capitalIntact) {
-        return acc + monthPayments.reduce((sum, p) => sum + Number(p.amount), 0)
+        return acc + loan.payments.reduce((sum, p) => sum + Number(p.amount), 0)
       }
-      return acc + monthPayments.reduce((sum, p) => {
+      return acc + loan.payments.reduce((sum, p) => {
         const notes = (p.notes || "").toLowerCase()
         const isSoJuros = notes.includes("só juros") || notes.includes("so juros") || notes.includes("parcial de juros")
         return sum + (isSoJuros ? Number(p.amount) : Number(p.amount) * interestRatio)

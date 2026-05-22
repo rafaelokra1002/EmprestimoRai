@@ -374,9 +374,9 @@ export default function DashboardPage() {
           iconBgClassName="bg-primary/5 dark:bg-primary/15"
         />
         <KpiCard
-          title="Juros Recebido Mensal"
+          title="Juros Recebido Total"
           value={formatCurrency(data?.financials?.monthlyReceivedInterest || 0)}
-          subtitle={`juros recebidos em ${periodLabel}`}
+          subtitle="total de juros recebidos"
           icon={TrendingUp}
           iconClassName="text-primary"
           iconBgClassName="bg-primary/5 dark:bg-primary/15"
