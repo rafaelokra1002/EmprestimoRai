@@ -170,8 +170,6 @@ export default function DashboardPage() {
 
   const selectedMonthName = new Date(selectedYear, selectedMonth, 1).toLocaleString("pt-BR", { month: "long" })
   const periodLabel = filterActive ? selectedMonthName : "total geral"
-  const isCurrentMonth = selectedMonth === new Date().getMonth() && selectedYear === new Date().getFullYear()
-
   const prevMonth = () => {
     if (selectedMonth === 0) { setSelectedMonth(11); setSelectedYear(y => y - 1) }
     else setSelectedMonth(m => m - 1)
@@ -301,7 +299,7 @@ export default function DashboardPage() {
                 <span className="min-w-[120px] text-center text-sm font-semibold text-gray-900 dark:text-zinc-100 capitalize">
                   {selectedMonthName} {selectedYear}
                 </span>
-                <button onClick={nextMonth} disabled={isCurrentMonth} className="rounded-lg p-1.5 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                <button onClick={nextMonth} className="rounded-lg p-1.5 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors">
                   <ChevronRight className="h-4 w-4 text-gray-500 dark:text-zinc-400" />
                 </button>
               </div>
