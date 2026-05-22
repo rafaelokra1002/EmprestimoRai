@@ -368,7 +368,13 @@ export default function SimuladorPage() {
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ phone, message: buildSimulationText() }),
                   })
-                  setSendResult(res.ok ? "ok" : "error")
+                  if (!res.ok) {
+                    const data = await res.json().catch(() => ({}))
+                    alert("Erro ao enviar: " + (data?.error || "Erro desconhecido"))
+                    setSendResult("error")
+                  } else {
+                    setSendResult("ok")
+                  }
                 } catch {
                   setSendResult("error")
                 } finally {
