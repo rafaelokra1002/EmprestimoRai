@@ -133,12 +133,19 @@ export default function SimuladorPage() {
 
   const buildSimulationText = () => {
     const numEmojis = ["1️⃣","2️⃣","3️⃣","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣","🔟"]
-    const fmtShort = (dateStr: string) => {
-      const d = new Date(dateStr + (dateStr.includes("T") ? "" : "T12:00:00"))
-      return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`
-    }
-    const modeLabel = interestMode === "PER_INSTALLMENT" ? "por parcela" : "tabela price"
+    const fmtShort = (d: Date) =>
+      `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`
+    const count = Math.max(1, parseInt(installmentCount) || 1)
     const firstVenc = schedule.length > 0 ? fmtShort(schedule[0].dueDate) : "-"
+
+    if (count === 1) {
+      const fmtFull = (d: Date) =>
+        `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`
+      const venc = schedule.length > 0 ? fmtFull(schedule[0].dueDate) : "-"
+      return `📄 RELATÓRIO DE PAGAMENTO\n\n📅 Vencimento: ${venc}\n\n💰 Valor liberado: ${formatCurrency(parseFloat(valor) || 0)}\n📊 Juros: ${taxa}%\n👉 Total a pagar: ${formatCurrency(result.totalAmount)}\n\n⚠️ Multa por atraso:\nR$ 15,00 por dia.\n\n🔄 Opção de renovação\nPague os juros (${formatCurrency(result.totalInterest)})\ne receba +30 dias de prazo.`
+    }
+
+    const modeLabel = interestMode === "PER_INSTALLMENT" ? "por parcela" : "tabela price"
     const paymentLines = schedule.map((i, idx) => {
       const emoji = numEmojis[idx] || `${i.number}.`
       return `${emoji} ${fmtShort(i.dueDate)} — ${formatCurrency(i.amount)}`
