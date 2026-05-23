@@ -77,6 +77,7 @@ interface DashboardData {
     pendingInterest: number
     monthlyExpenses: number
     monthlyReceivedInterest: number
+    totalPaymentsReceived: number
   }
   charts: {
     interestTrend: { month: string; juros: number }[]
