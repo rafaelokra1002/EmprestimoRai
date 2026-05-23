@@ -129,7 +129,7 @@ export async function POST() {
       }
     }
 
-    const buffer = await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" })
+    const buffer = await zip.generateAsync({ type: "uint8array", compression: "DEFLATE" })
 
     const now = new Date()
     const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`
