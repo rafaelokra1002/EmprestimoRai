@@ -130,12 +130,13 @@ export async function POST() {
     }
 
     const buffer = await zip.generateAsync({ type: "uint8array", compression: "DEFLATE" })
+    const blob = new Blob([buffer], { type: "application/zip" })
 
     const now = new Date()
     const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`
     const filename = `backup-clientes-${dateStr}.zip`
 
-    return new NextResponse(buffer, {
+    return new NextResponse(blob, {
       headers: {
         "Content-Type": "application/zip",
         "Content-Disposition": `attachment; filename="${filename}"`,
