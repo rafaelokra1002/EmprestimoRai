@@ -129,7 +129,7 @@ export async function POST() {
       }
     }
 
-    const buffer = await zip.generateAsync({ type: "uint8array", compression: "DEFLATE" })
+    const buffer = await zip.generateAsync({ type: "arraybuffer", compression: "DEFLATE" })
     const blob = new Blob([buffer], { type: "application/zip" })
 
     const now = new Date()
