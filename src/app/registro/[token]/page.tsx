@@ -178,7 +178,7 @@ export default function RegistroPage() {
             <input
               required
               placeholder="Seu nome completo"
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
               value={form.name}
               onChange={set("name")}
             />
@@ -189,7 +189,7 @@ export default function RegistroPage() {
               <input
                 required
                 placeholder="(11) 91234-5678"
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 value={form.phone}
                 onChange={set("phone")}
               />
@@ -199,7 +199,7 @@ export default function RegistroPage() {
               <input
                 required
                 placeholder="000.000.000-00"
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 value={form.document}
                 onChange={set("document")}
               />
@@ -210,7 +210,7 @@ export default function RegistroPage() {
             <Field icon={<Instagram className="h-4 w-4" />} label="Instagram">
               <input
                 placeholder="@usuario"
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 value={form.instagram}
                 onChange={set("instagram")}
               />
@@ -222,7 +222,7 @@ export default function RegistroPage() {
                 placeholder="0,00"
                 min="0"
                 step="0.01"
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 value={form.income}
                 onChange={set("income")}
               />
@@ -231,7 +231,7 @@ export default function RegistroPage() {
 
           <Field icon={<Briefcase className="h-4 w-4" />} label="Profissão">
             <select
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+              className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
               value={form.profession}
               onChange={(e) => setForm((prev) => ({ ...prev, profession: e.target.value }))}
             >
@@ -254,7 +254,7 @@ export default function RegistroPage() {
                 <div className="relative">
                   <input
                     placeholder="00000-000"
-                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                     value={form.zipCode}
                     onChange={handleCepChange}
                     maxLength={9}
@@ -269,7 +269,7 @@ export default function RegistroPage() {
               <Field icon={null} label="Número">
                 <input
                   placeholder="Nº"
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   value={form.number}
                   onChange={set("number")}
                 />
@@ -280,7 +280,7 @@ export default function RegistroPage() {
               <Field icon={null} label="Rua">
                 <input
                   placeholder="Nome da rua"
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   value={form.address}
                   onChange={set("address")}
                 />
@@ -290,7 +290,7 @@ export default function RegistroPage() {
                 <Field icon={null} label="Bairro">
                   <input
                     placeholder="Seu bairro"
-                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                     value={form.neighborhood}
                     onChange={set("neighborhood")}
                   />
@@ -298,7 +298,7 @@ export default function RegistroPage() {
                 <Field icon={null} label="Complemento">
                   <input
                     placeholder="Apto, bloco..."
-                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                     value={form.complement}
                     onChange={set("complement")}
                   />
@@ -310,7 +310,7 @@ export default function RegistroPage() {
                   <Field icon={null} label="Cidade">
                     <input
                       placeholder="Sua cidade"
-                      className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                       value={form.city}
                       onChange={set("city")}
                     />

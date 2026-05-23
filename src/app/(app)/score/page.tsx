@@ -582,10 +582,10 @@ export default function ScorePage() {
                 ) : (
                   <div>
                     <p className="text-[10px] uppercase font-semibold text-gray-400 dark:text-zinc-500 tracking-wide">
-                      {sortMode === "lucro" ? "Lucro" : allCompleted ? "Total quitado" : "A receber"}
+                      {sortMode === "lucro" ? "Lucro" : allCompleted ? "Total quitado" : "Lucro"}
                     </p>
                     <p className="text-xl font-bold text-gray-900 dark:text-zinc-100 mt-0.5">
-                      {formatCurrency(sortMode === "lucro" ? allLucroRealizado : allCompleted ? allEmprestado : allAReceber)}
+                      {formatCurrency(sortMode === "lucro" ? allLucroRealizado : allCompleted ? allEmprestado : allLucro)}
                     </p>
                     <div className="flex items-center gap-2 mt-1 text-xs text-gray-400 dark:text-zinc-500 flex-wrap">
                       <span>Emprestado {formatCurrency(allEmprestado)}</span>
@@ -594,7 +594,7 @@ export default function ScorePage() {
                       {sortMode !== "lucro" && (
                         <>
                           <span className="text-gray-300 dark:text-zinc-700">•</span>
-                          <span>Lucro {formatCurrency(allLucro)}</span>
+                          <span>A receber {formatCurrency(allAReceber)}</span>
                         </>
                       )}
                       {completedLoans.length > 0 && (

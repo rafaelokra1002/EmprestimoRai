@@ -14,7 +14,7 @@ import { FilterDropdown } from "@/components/ui/filter-dropdown"
 import { Textarea } from "@/components/ui/textarea"
 import { Avatar } from "@/components/avatar"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Search, Pencil, Trash2, User, MapPin, FileText, Users, Camera, Upload, Eye, Image, DollarSign, LayoutGrid, Rows3, Filter, CheckCircle2, MoreVertical, UserCheck, Phone, Mail, XCircle, Share2, MessageCircle, Copy, Info } from "lucide-react"
+import { Plus, Search, Pencil, Trash2, User, MapPin, FileText, Users, Camera, Upload, Eye, Image, DollarSign, Briefcase, LayoutGrid, Rows3, Filter, CheckCircle2, MoreVertical, UserCheck, Phone, Mail, XCircle, Share2, MessageCircle, Copy, Info } from "lucide-react"
 import { useSession } from "next-auth/react"
 
 interface Client {
@@ -710,13 +710,14 @@ export default function ClientesPage() {
               ) : (
                 clients.filter(c => c.status === "INACTIVE").map((client) => (
                   <div key={client.id} className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-5 py-4">
+                    {/* Header: nome + badge + data */}
                     <div className="flex items-start justify-between gap-4 mb-3">
                       <div>
                         <div className="flex items-center gap-2">
                           <User className="h-4 w-4 text-gray-400 dark:text-zinc-500" />
                           <span className="font-semibold text-gray-900 dark:text-zinc-100">{client.name}</span>
                         </div>
-                        <p className="mt-0.5 text-xs text-gray-400 dark:text-zinc-500">
+                        <p className="mt-0.5 text-xs text-gray-400 dark:text-zinc-500 ml-6">
                           Recebido em {new Date(client.createdAt).toLocaleString("pt-BR")}
                         </p>
                       </div>
@@ -725,52 +726,67 @@ export default function ClientesPage() {
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-x-8 gap-y-1.5 mb-4 text-sm text-gray-600 dark:text-zinc-400">
-                      {client.phone && (
-                        <div className="flex items-center gap-1.5">
-                          <Phone className="h-3.5 w-3.5 shrink-0" />
-                          {client.phone}
-                        </div>
-                      )}
-                      {client.email && (
-                        <div className="flex items-center gap-1.5">
-                          <Mail className="h-3.5 w-3.5 shrink-0" />
-                          {client.email}
-                        </div>
-                      )}
-                      {client.document && (
-                        <div className="flex items-center gap-1.5">
-                          <FileText className="h-3.5 w-3.5 shrink-0" />
-                          CPF: {client.document}
-                        </div>
-                      )}
-                      {(client.address || client.city) && (
-                        <div className="flex items-center gap-1.5">
-                          <MapPin className="h-3.5 w-3.5 shrink-0" />
-                          <span className="truncate">
-                            {[client.address, client.number, client.neighborhood, client.city, client.state].filter(Boolean).join(", ")}
-                          </span>
-                        </div>
-                      )}
-                    </div>
+                    {/* Infos + botões lado a lado */}
+                    <div className="flex items-end gap-4">
+                      {/* Infos à direita alinhadas em cima dos botões */}
+                      <div className="flex flex-col gap-1.5 flex-1 text-sm text-gray-600 dark:text-zinc-400">
+                        {client.email && (
+                          <div className="flex items-center gap-1.5">
+                            <Mail className="h-3.5 w-3.5 shrink-0" />
+                            <span className="truncate">{client.email}</span>
+                          </div>
+                        )}
+                        {client.phone && (
+                          <div className="flex items-center gap-1.5">
+                            <Phone className="h-3.5 w-3.5 shrink-0" />
+                            {client.phone}
+                          </div>
+                        )}
+                        {client.document && (
+                          <div className="flex items-center gap-1.5">
+                            <FileText className="h-3.5 w-3.5 shrink-0" />
+                            CPF: {client.document}
+                          </div>
+                        )}
+                        {(client.address || client.city) && (
+                          <div className="flex items-start gap-1.5">
+                            <MapPin className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                            <span>{[client.address, client.number, client.neighborhood, client.city, client.state].filter(Boolean).join(", ")}</span>
+                          </div>
+                        )}
+                        {client.profession && (
+                          <div className="flex items-center gap-1.5">
+                            <Briefcase className="h-3.5 w-3.5 shrink-0" />
+                            {client.profession}
+                          </div>
+                        )}
+                        {client.income != null && (
+                          <div className="flex items-center gap-1.5">
+                            <DollarSign className="h-3.5 w-3.5 shrink-0" />
+                            Renda: {Number(client.income).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                          </div>
+                        )}
+                      </div>
 
-                    <div className="grid grid-cols-2 gap-3">
-                      <button
-                        onClick={() => handleAprovar(client)}
-                        disabled={aprovacaoLoading === client.id}
-                        className="flex items-center justify-center gap-2 rounded-lg bg-green-500 hover:bg-green-600 disabled:opacity-60 px-4 py-2.5 text-sm font-semibold text-white transition-colors"
-                      >
-                        <CheckCircle2 className="h-4 w-4" />
-                        {aprovacaoLoading === client.id ? "Aprovando..." : "Aprovar"}
-                      </button>
-                      <button
-                        onClick={() => { setRejeitarConfirm(client); setRejeitarMotivo("") }}
-                        disabled={aprovacaoLoading === client.id}
-                        className="flex items-center justify-center gap-2 rounded-lg bg-red-500 hover:bg-red-600 disabled:opacity-60 px-4 py-2.5 text-sm font-semibold text-white transition-colors"
-                      >
-                        <XCircle className="h-4 w-4" />
-                        Rejeitar
-                      </button>
+                      {/* Botões */}
+                      <div className="flex flex-col gap-2 shrink-0 w-36">
+                        <button
+                          onClick={() => handleAprovar(client)}
+                          disabled={aprovacaoLoading === client.id}
+                          className="flex items-center justify-center gap-2 rounded-lg bg-green-500 hover:bg-green-600 disabled:opacity-60 px-4 py-2.5 text-sm font-semibold text-white transition-colors"
+                        >
+                          <CheckCircle2 className="h-4 w-4" />
+                          {aprovacaoLoading === client.id ? "Aprovando..." : "Aprovar"}
+                        </button>
+                        <button
+                          onClick={() => { setRejeitarConfirm(client); setRejeitarMotivo("") }}
+                          disabled={aprovacaoLoading === client.id}
+                          className="flex items-center justify-center gap-2 rounded-lg bg-red-500 hover:bg-red-600 disabled:opacity-60 px-4 py-2.5 text-sm font-semibold text-white transition-colors"
+                        >
+                          <XCircle className="h-4 w-4" />
+                          Rejeitar
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))

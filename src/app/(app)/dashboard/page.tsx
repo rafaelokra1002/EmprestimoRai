@@ -374,9 +374,9 @@ export default function DashboardPage() {
           iconBgClassName="bg-primary/5 dark:bg-primary/15"
         />
         <KpiCard
-          title="Juros Recebido Total"
-          value={formatCurrency(data?.financials?.monthlyReceivedInterest || 0)}
-          subtitle="total de juros recebidos"
+          title="Histórico Total de Pagamento"
+          value={formatCurrency(data?.financials?.totalPaymentsReceived || 0)}
+          subtitle="total de pagamentos recebidos"
           icon={TrendingUp}
           iconClassName="text-primary"
           iconBgClassName="bg-primary/5 dark:bg-primary/15"
@@ -431,13 +431,29 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* Próximos Vencimentos */}
-      <div className="rounded-2xl border border-primary/20 dark:border-primary/20 bg-white dark:bg-zinc-900 p-5">
-        <div className="flex items-center gap-2 mb-4">
+      {/* Multa + Próximos Vencimentos */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-stretch">
+
+        {/* Card multa total */}
+        <div className="flex items-center gap-3 rounded-2xl border border-primary/20 bg-primary/5 dark:bg-primary/10 p-5 sm:w-72 shrink-0">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 dark:bg-primary/20">
+            <Receipt className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-gray-500 dark:text-zinc-400">Multa de Atraso</p>
+            <p className="mt-0.5 text-xl font-bold tabular-nums tracking-tight text-primary">
+              {formatCurrency(data?.totalPendingLateFees || 0)}
+            </p>
+            <p className="text-xs text-gray-400 dark:text-zinc-500">a receber</p>
+          </div>
+        </div>
+
+      <div className="flex-1 min-w-0 rounded-2xl border border-primary/20 dark:border-primary/20 bg-white dark:bg-zinc-900 p-4">
+        <div className="flex items-center gap-2 mb-3">
           <Calendar className="h-4 w-4 text-primary" />
           <h2 className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Próximos Vencimentos</h2>
         </div>
-        <div className="grid grid-cols-7 gap-2">
+        <div className="grid grid-cols-7 gap-1.5">
           {(data?.dueNextSevenDays || []).map(({ date, count, amount, items }) => {
             const d = new Date(date + "T12:00:00")
             const isToday = date === localDateStr(new Date())
@@ -504,109 +520,6 @@ export default function DashboardPage() {
           })}
         </div>
       </div>
-
-      {/* Multas de Atraso */}
-      <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5">
-        <div className="flex items-center gap-2 mb-4">
-          <Receipt className="h-4 w-4 text-primary" />
-          <h2 className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Multas de Atraso</h2>
-        </div>
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {/* Card multa total */}
-          <div className="flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 dark:bg-primary/10 p-4">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 dark:bg-primary/20">
-              <Receipt className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-gray-500 dark:text-zinc-400">Multa de Atraso a Receber</p>
-              <p className="mt-0.5 text-xl font-bold tabular-nums tracking-tight text-primary">
-                {formatCurrency(data?.totalPendingLateFees || 0)}
-              </p>
-              <p className="text-xs text-gray-400 dark:text-zinc-500">multas ainda não recebidas</p>
-            </div>
-          </div>
-
-          {/* Card em atraso por cliente */}
-          <div className="rounded-xl border border-pink-200 dark:border-pink-900/40 bg-pink-50/60 dark:bg-pink-950/10 p-4">
-            <div className="flex items-center gap-1.5 mb-2">
-              <div className="h-2.5 w-2.5 rounded-full bg-pink-400 shrink-0" />
-              <p className="text-xs font-semibold text-pink-600 dark:text-pink-400">Em atraso</p>
-            </div>
-            {(data?.overdueByLoan || []).length === 0 ? (
-              <p className="text-xs text-gray-400 dark:text-zinc-500">Nenhum em atraso</p>
-            ) : (
-              <div className="space-y-1.5 max-h-28 overflow-y-auto">
-                {(data?.overdueByLoan || []).map((item, i) => (
-                  <div key={i} className="flex items-center justify-between gap-2 text-xs">
-                    <span className="truncate text-gray-700 dark:text-zinc-300 font-medium">{item.clientName}</span>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <span className="text-gray-400 dark:text-zinc-500">{item.overdueCount}p</span>
-                      <span className="font-bold tabular-nums text-pink-600 dark:text-pink-400">{formatCurrency(item.totalCharge)}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Card data de pagamento */}
-          <div className="flex flex-col gap-2 rounded-xl border border-green-200 dark:border-green-900/40 bg-green-500/5 dark:bg-green-950/10 p-4 h-[112px]">
-            <div className="flex items-center gap-1.5 shrink-0">
-              <Clock3 className="h-4 w-4 text-green-600 dark:text-green-400" />
-              <p className="text-xs font-semibold text-gray-500 dark:text-zinc-400">Data de Pagamento</p>
-            </div>
-            {(data?.paymentsByDay || []).length === 0 ? (
-              <p className="text-xs text-gray-400 dark:text-zinc-500">Nenhuma parcela pendente</p>
-            ) : (
-              <div className="space-y-1.5 overflow-y-auto flex-1 min-h-0">
-                {(data?.paymentsByDay || []).map(({ day, amount }) => {
-                  const today = new Date().getDate()
-                  const isToday = day === today
-                  const isOverdue = day < today
-                  return (
-                    <div key={day} className="flex items-center justify-between gap-2 text-xs">
-                      <span className={`font-semibold ${isToday ? "text-primary" : isOverdue ? "text-red-500 dark:text-red-400" : "text-gray-700 dark:text-zinc-300"}`}>
-                        Dia {day}{isToday ? " (hoje)" : ""}
-                      </span>
-                      <span className={`font-bold tabular-nums ${isOverdue ? "text-red-500 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}>
-                        {formatCurrency(amount)}
-                      </span>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* Card pills por dia */}
-          <div className="rounded-xl border border-gray-100 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-800/50 p-4">
-            <p className="text-xs font-semibold text-gray-500 dark:text-zinc-400 mb-2">Parcelas por dia</p>
-            {(data?.paymentsByDay || []).length === 0 ? (
-              <p className="text-xs text-gray-400 dark:text-zinc-500">Nenhuma parcela pendente</p>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {(data?.paymentsByDay || []).map(({ day, amount }) => {
-                  const isToday = day === new Date().getDate()
-                  return (
-                    <div
-                      key={day}
-                      className={`flex shrink-0 items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-medium ${
-                        isToday
-                          ? "bg-primary text-white"
-                          : "bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300"
-                      }`}
-                    >
-                      <span className="font-bold">{day}</span>
-                      <span className={isToday ? "text-white/80" : "text-gray-500 dark:text-zinc-400"}>
-                        {formatCurrency(amount)}
-                      </span>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </div>
-        </div>
 
       </div>
 

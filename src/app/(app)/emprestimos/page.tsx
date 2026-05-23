@@ -1736,7 +1736,7 @@ export default function EmprestimosPage() {
                         {status.label}
                       </span>
                       <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/15 dark:bg-primary/20 text-primary">
-                        {MODALITY_LABELS[loan.modality] || loan.modality}
+                        {loan.installmentCount > 1 ? "PARCELADO" : MODALITY_LABELS[loan.modality] || loan.modality}
                       </span>
                     </div>
                     <div className="flex flex-wrap items-center gap-1 sm:justify-end">

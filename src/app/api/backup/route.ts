@@ -5,12 +5,12 @@ import { prisma } from "@/lib/prisma"
 import { localDateStr } from "@/lib/utils"
 import * as XLSX from "xlsx"
 
-type BackupType = "clients" | "loans" | "installment-loans" | "contracts"
+type BackupType = "clients" | "loans" | "installment-loans" | "contracts" | "desaparecido"
 
 function parseBackupType(request: Request): BackupType {
   const { searchParams } = new URL(request.url)
   const value = searchParams.get("type")
-  if (value === "clients" || value === "loans" || value === "installment-loans" || value === "contracts") {
+  if (value === "clients" || value === "loans" || value === "installment-loans" || value === "contracts" || value === "desaparecido") {
     return value
   }
   return "clients"
@@ -38,9 +38,9 @@ function buildSheetName(type: BackupType) {
 }
 
 async function buildRows(userId: string, type: BackupType) {
-  if (type === "clients") {
+  if (type === "clients" || type === "desaparecido") {
     const clients = await prisma.client.findMany({
-      where: { userId },
+      where: { userId, ...(type === "desaparecido" ? { status: "DESAPARECIDO" } : {}) },
       orderBy: { createdAt: "desc" },
     })
 

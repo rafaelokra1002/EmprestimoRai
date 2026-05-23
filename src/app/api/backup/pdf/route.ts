@@ -6,12 +6,12 @@ import { localDateStr } from "@/lib/utils"
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
 
-type BackupType = "clients" | "loans" | "installment-loans" | "contracts"
+type BackupType = "clients" | "loans" | "installment-loans" | "contracts" | "desaparecido"
 
 function parseBackupType(request: Request): BackupType {
   const { searchParams } = new URL(request.url)
   const value = searchParams.get("type")
-  if (value === "clients" || value === "loans" || value === "installment-loans" || value === "contracts") {
+  if (value === "clients" || value === "loans" || value === "installment-loans" || value === "contracts" || value === "desaparecido") {
     return value
   }
   return "clients"
@@ -32,9 +32,9 @@ function nextInstallment(installments: Array<{ dueDate: Date; status: string }>)
 }
 
 async function buildPdfTable(userId: string, type: BackupType) {
-  if (type === "clients") {
+  if (type === "clients" || type === "desaparecido") {
     const clients = await prisma.client.findMany({
-      where: { userId },
+      where: { userId, ...(type === "desaparecido" ? { status: "DESAPARECIDO" } : {}) },
       orderBy: { createdAt: "desc" },
     })
 

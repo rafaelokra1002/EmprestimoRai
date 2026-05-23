@@ -12,6 +12,8 @@ import {
   FileSpreadsheet,
   Landmark,
   Lightbulb,
+  UserX,
+  FolderArchive,
 } from "lucide-react"
 
 const backupSections = [
@@ -36,11 +38,19 @@ const backupSections = [
     icon: Landmark,
     iconClassName: "text-primary",
   },
+  {
+    key: "desaparecido",
+    title: "Desaparecidos",
+    description: "Clientes marcados como desaparecidos",
+    icon: UserX,
+    iconClassName: "text-red-500",
+  },
 ] as const
 
 export default function BackupPage() {
   const [loadingXlsx, setLoadingXlsx] = useState(false)
   const [loadingPdf, setLoadingPdf] = useState(false)
+  const [loadingZip, setLoadingZip] = useState(false)
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
 
   const handleBackup = async (key: string, label: string) => {
@@ -61,6 +71,30 @@ export default function BackupPage() {
       setMessage({ type: "error", text: err.message || "Erro ao gerar backup" })
     } finally {
       setLoadingXlsx(false)
+    }
+  }
+
+  const handleBackupZip = async () => {
+    setLoadingZip(true)
+    setMessage(null)
+    try {
+      const res = await fetch("/api/backup/zip", { method: "POST" })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || "Erro ao gerar ZIP")
+      }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `backup-clientes-${localDateStr()}.zip`
+      a.click()
+      URL.revokeObjectURL(url)
+      setMessage({ type: "success", text: "Backup em pastas (ZIP) gerado e baixado com sucesso!" })
+    } catch (err: any) {
+      setMessage({ type: "error", text: err.message || "Erro ao gerar ZIP" })
+    } finally {
+      setLoadingZip(false)
     }
   }
 
@@ -109,7 +143,7 @@ export default function BackupPage() {
         </div>
       )}
 
-      <div className="flex flex-col gap-2">
+      <div className="grid grid-cols-2 gap-3">
         {backupSections.map((section) => {
           const Icon = section.icon
           return (
@@ -127,25 +161,36 @@ export default function BackupPage() {
                 </div>
               </div>
 
-              <div className="mt-3 flex items-center gap-3">
+              <div className={`mt-3 grid gap-2 ${section.key === "clients" ? "grid-cols-3" : "grid-cols-2"}`}>
                 <button
                   type="button"
                   onClick={() => handleBackup(section.key, section.title)}
                   disabled={loadingXlsx}
-                  className="inline-flex items-center gap-2 rounded-xl bg-primary/50 px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-70"
+                  className="flex items-center justify-center gap-1.5 rounded-xl bg-primary/50 py-2 text-xs font-semibold text-white transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-70"
                 >
-                  <FileSpreadsheet className="h-4 w-4" />
-                  {loadingXlsx ? "Gerando..." : "CSV"}
+                  <FileSpreadsheet className="h-3.5 w-3.5" />
+                  {loadingXlsx ? "..." : "CSV"}
                 </button>
                 <button
                   type="button"
                   onClick={() => handleBackupPdf(section.key, section.title)}
                   disabled={loadingPdf}
-                  className="inline-flex items-center gap-2 rounded-xl bg-red-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-70"
+                  className="flex items-center justify-center gap-1.5 rounded-xl bg-red-500 py-2 text-xs font-semibold text-white transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-70"
                 >
-                  <FileText className="h-4 w-4" />
-                  {loadingPdf ? "Gerando..." : "PDF"}
+                  <FileText className="h-3.5 w-3.5" />
+                  {loadingPdf ? "..." : "PDF"}
                 </button>
+                {section.key === "clients" && (
+                  <button
+                    type="button"
+                    onClick={handleBackupZip}
+                    disabled={loadingZip}
+                    className="flex items-center justify-center gap-1.5 rounded-xl bg-amber-500 py-2 text-xs font-semibold text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    <FolderArchive className="h-3.5 w-3.5" />
+                    {loadingZip ? "..." : "ZIP"}
+                  </button>
+                )}
               </div>
             </div>
           )

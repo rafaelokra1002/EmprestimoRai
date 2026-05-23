@@ -36,7 +36,7 @@ export async function GET(request: Request) {
     const thirtyDaysAgo = new Date(startOfToday)
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
-    const [loansResult, overdueCountResult, overdueAmountResult, dueTodayCountResult, activeClientsResult, inactiveClientsResult, totalClientsResult, salesResult, vehiclesResult, monthlyExpensesResult, allLoansForInterestResult] = await Promise.all([
+    const [loansResult, overdueCountResult, overdueAmountResult, dueTodayCountResult, activeClientsResult, inactiveClientsResult, totalClientsResult, salesResult, vehiclesResult, monthlyExpensesResult, allLoansForInterestResult, totalPaymentsResult] = await Promise.all([
       prisma.loan.findMany({
         where: { userId, status: "ACTIVE", deleted: false, client: { status: { not: "DESAPARECIDO" } } },
         include: { installments: true, payments: true, client: { select: { name: true } } },
@@ -76,10 +76,15 @@ export async function GET(request: Request) {
         where: { userId, deleted: false },
         select: { totalAmount: true, profit: true, payments: { select: { amount: true, notes: true } }, installments: { select: { paidAmount: true } } },
       }),
+      prisma.payment.aggregate({
+        where: { loan: { userId, deleted: false } },
+        _sum: { amount: true },
+      }),
     ])
 
     const loans = loansResult || []
     const allLoansForInterest = allLoansForInterestResult || []
+    const totalPaymentsReceived = Number(totalPaymentsResult._sum.amount || 0)
     const monthlyExpenses = Number(monthlyExpensesResult._sum.amount || 0)
     const overdueCount = Number(overdueCountResult || 0)
     const overdueAmount = Number(overdueAmountResult._sum.amount || 0)
@@ -494,6 +499,7 @@ export async function GET(request: Request) {
         pendingInterest,
         monthlyExpenses,
         monthlyReceivedInterest,
+        totalPaymentsReceived,
       },
       charts: {
         interestTrend,
