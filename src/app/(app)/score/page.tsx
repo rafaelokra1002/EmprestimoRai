@@ -69,7 +69,7 @@ export default function ScorePage() {
         }
         return data
       })
-      .then((data) => setClients(Array.isArray(data) ? data.filter((c: Client) => c.status !== "DESAPARECIDO") : []))
+      .then((data) => setClients(Array.isArray(data) ? data.filter((c: Client) => c.status !== "DESAPARECIDO" && c.status !== "INACTIVE") : []))
       .catch((err) => setError(err?.message || "Erro inesperado"))
       .finally(() => setLoading(false))
   }, [])
