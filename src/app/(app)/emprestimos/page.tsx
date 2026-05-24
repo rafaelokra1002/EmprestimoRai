@@ -809,7 +809,8 @@ export default function EmprestimosPage() {
         return `👤 Cliente: ${name}\n\n────────────────\n📋 LEMBRETE DE PAGAMENTO\n\n📌 Parcela: ${nextInst.number}/${loan.installmentCount}\n💰 Valor: ${formatCurrency(nextInst.amount)}\n📅 Vencimento: ${formatDate(nextInst.dueDate)}\n⏳ Faltam: ${daysLeft} dia${daysLeft !== 1 ? "s" : ""}\n\n📊 STATUS DAS PARCELAS:\n${statusLines.join("\n")}\n\n────────────────\n👤 Titular: ${profileChargeName || "Titular"}\n\n💳 Chave PIX:\n${profilePixKey || "Não cadastrada"}`
       }
 
-      return `👤 Cliente: ${name}\n\n📋 Parcela\n📅 Vencimento: ${formatDate(nextInst.dueDate)}\n💰 Valor: ${formatCurrency(nextInst.amount)}\n\n💳 Chave Pix: ${profilePixKey || "Não cadastrada"}`
+      const daysLeft = Math.max(0, Math.ceil((new Date(nextInst.dueDate).getTime() - Date.now()) / 86400000))
+      return `Olá ${name}\n\n📌 LEMBRETE DE PAGAMENTO\n\n📅 Vencimento: ${formatDate(nextInst.dueDate)}\n⏳ Restam: ${daysLeft} dia${daysLeft !== 1 ? "s" : ""}\n\n💰 Valor total: ${formatCurrency(loan.totalAmount)}\n\n🔄 Renovação disponível:\nPague ${formatCurrency(loan.profit)} (juros) e receba +30 dias de prazo.\n\n─────────────────\n👤 Titular : ${profileChargeName || "Titular"}\n\n💠 Chave Pix: ${profilePixKey || "Não cadastrada"}`
     }
 
     const now = Date.now()
