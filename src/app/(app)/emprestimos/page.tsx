@@ -974,7 +974,7 @@ export default function EmprestimosPage() {
         ? `multa de ${formatCurrency(loan.dailyInterestAmount)} por dia`
         : "multa de R$ 15,00 por dia"
 
-      return `👤 Cliente: ${name}\n\n────────────────\n⚠️ VENCIMENTO HOJE\n\n📌 Parcela: ${inst.number}/${loan.installmentCount}\n💰 Valor da parcela: ${formatCurrency(inst.amount)}\n📅 Vencimento: ${formatDate(inst.dueDate)}\n\n📊 STATUS DAS PARCELAS:\n${statusLines.join("\n")}\n\n⚠️ Atraso: ${dailyFeeStr}\n\n────────────────\n👤 Titular: ${profileChargeName || "Titular"}\n\n💳 Chave PIX:\n${profilePixKey || "Não cadastrada"}`
+      return `👤 Cliente: ${name}\n\n────────────────\n📋 LEMBRETE DE PAGAMENTO\n\n📌 Parcela: ${inst.number}/${loan.installmentCount}\n💰 Valor: ${formatCurrency(inst.amount)}\n📅 Vencimento: ${formatDate(inst.dueDate)}\n⏳ Faltam: 0 dias\n\n📊 STATUS DAS PARCELAS:\n${statusLines.join("\n")}\n\n────────────────\n👤 Titular: ${profileChargeName || "Titular"}\n\n💳 Chave PIX:\n${profilePixKey || "Não cadastrada"}`
     }
 
     // Simples (não parcelado)
