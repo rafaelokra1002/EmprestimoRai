@@ -103,7 +103,7 @@ const PRESET_TEMPLATES: Record<string, { icon: string; label: string; desc: stri
       icon: "📄",
       label: "Parcelado",
       desc: "Lembrete antecipado com status de todas as parcelas",
-      content: `👤Cliente: {CLIENTE}\n\n────────────────\n📋 LEMBRETE DE PAGAMENTO\n\n📌 Parcela: {PARCELA}\n💵 Valor: {VALOR}\n📅 Vencimento: {DATA}\n⏳ Faltam: {DIAS_PARA_VENCER} dias)\n\n📊 STATUS DAS PARCELAS:\n{STATUS_PARCELAS}\n\n────────────────\n👤 Titular: {NOME_PIX}\n\n💳 Chave PIX:\n{PIX}`,
+      content: `👤 Cliente: {CLIENTE}\n\n────────────────\n📋 LEMBRETE DE PAGAMENTO\n\n📌 Parcela: {PARCELA}\n💰 Valor: {VALOR}\n📅 Vencimento: {DATA}\n⏳ Faltam: {DIAS_PARA_VENCER} dias)\n\n📊 STATUS DAS PARCELAS:\n{STATUS_PARCELAS}\n\n────────────────\n👤 Titular: {NOME_PIX}\n\n💳 Chave PIX:\n{PIX}`,
     },
   ],
 }

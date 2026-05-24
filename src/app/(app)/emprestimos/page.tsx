@@ -806,7 +806,7 @@ export default function EmprestimosPage() {
           if (isPaid) return `${emoji} ✅ ${dateStr} - Paga`
           return `${emoji} ⏳ ${dateStr} - Em Aberto`
         })
-        return `👤 Cliente: ${name}\n\n────────────────\n📋 LEMBRETE DE PAGAMENTO\n\n📌 Parcela: ${nextInst.number}/${loan.installmentCount}\n💵 Valor: ${formatCurrency(nextInst.amount)}\n📅 Vencimento: ${formatDate(nextInst.dueDate)}\n⏳ Faltam: ${daysLeft} dia${daysLeft !== 1 ? "s" : ""}\n\n📊 STATUS DAS PARCELAS:\n${statusLines.join("\n")}\n\n────────────────\n👤 Titular: ${profileChargeName || "Titular"}\n\n💳 Chave PIX: ${profilePixKey || "Não cadastrada"}`
+        return `👤 Cliente: ${name}\n\n────────────────\n📋 LEMBRETE DE PAGAMENTO\n\n📌 Parcela: ${nextInst.number}/${loan.installmentCount}\n💰 Valor: ${formatCurrency(nextInst.amount)}\n📅 Vencimento: ${formatDate(nextInst.dueDate)}\n⏳ Faltam: ${daysLeft} dia${daysLeft !== 1 ? "s" : ""}\n\n📊 STATUS DAS PARCELAS:\n${statusLines.join("\n")}\n\n────────────────\n👤 Titular: ${profileChargeName || "Titular"}\n\n💳 Chave PIX:\n${profilePixKey || "Não cadastrada"}`
       }
 
       return `👤 Cliente: ${name}\n\n📋 Parcela\n📅 Vencimento: ${formatDate(nextInst.dueDate)}\n💰 Valor: ${formatCurrency(nextInst.amount)}\n\n💳 Chave Pix: ${profilePixKey || "Não cadastrada"}`
@@ -974,7 +974,7 @@ export default function EmprestimosPage() {
         ? `multa de ${formatCurrency(loan.dailyInterestAmount)} por dia`
         : "multa de R$ 15,00 por dia"
 
-      return `👤 Cliente: ${name}\n\n────────────────\n⚠️ VENCIMENTO HOJE\n\n📌 Parcela: ${inst.number}/${loan.installmentCount}\n💵 Valor da parcela: ${formatCurrency(inst.amount)}\n📅 Vencimento: ${formatDate(inst.dueDate)}\n\n📊 STATUS DAS PARCELAS:\n${statusLines.join("\n")}\n\n⚠️ Atraso: ${dailyFeeStr}\n\n────────────────\n👤 Titular: ${profileChargeName || "Titular"}\n\n💳 Chave PIX: ${profilePixKey || "Não cadastrada"}`
+      return `👤 Cliente: ${name}\n\n────────────────\n⚠️ VENCIMENTO HOJE\n\n📌 Parcela: ${inst.number}/${loan.installmentCount}\n💰 Valor da parcela: ${formatCurrency(inst.amount)}\n📅 Vencimento: ${formatDate(inst.dueDate)}\n\n📊 STATUS DAS PARCELAS:\n${statusLines.join("\n")}\n\n⚠️ Atraso: ${dailyFeeStr}\n\n────────────────\n👤 Titular: ${profileChargeName || "Titular"}\n\n💳 Chave PIX:\n${profilePixKey || "Não cadastrada"}`
     }
 
     // Simples (não parcelado)
