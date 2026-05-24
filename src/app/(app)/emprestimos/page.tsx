@@ -899,15 +899,12 @@ export default function EmprestimosPage() {
   }
 
   const getDueTodayLoans = () => {
-    const now = new Date()
-    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`
+    const todayStr = localDateStr()
     return loans.filter(l => {
       if (l.status === "COMPLETED") return false
       return l.installments.some((i: any) => {
         if (i.status === "PAID") return false
-        const d = new Date(i.dueDate)
-        const dueStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
-        return dueStr === todayStr
+        return localDateStr(new Date(i.dueDate)) === todayStr
       })
     })
   }
@@ -989,14 +986,24 @@ export default function EmprestimosPage() {
   const sendBulkDueToday = async () => {
     const dueTodayLoans = getDueTodayLoans()
     if (dueTodayLoans.length === 0) { alert("Nenhum cliente com vencimento hoje."); return }
-    if (!confirm(`Enviar lembrete para ${new Set(dueTodayLoans.map(l => l.client.id)).size} cliente(s) com vencimento hoje?`)) return
+
+    // Group loans by client — one message per client
+    const byClient = new Map<string, Loan[]>()
+    for (const loan of dueTodayLoans) {
+      const arr = byClient.get(loan.client.id) || []
+      arr.push(loan)
+      byClient.set(loan.client.id, arr)
+    }
+
+    if (!confirm(`Enviar lembrete para ${byClient.size} cliente(s) com vencimento hoje?`)) return
     setBulkSendingDueToday(true)
     let sent = 0, failed = 0
-    const sentClients = new Set<string>()
-    for (const loan of dueTodayLoans) {
-      if (sentClients.has(loan.client.id)) continue
-      const phone = clients.find(c => c.id === loan.client.id)?.phone
-      if (!phone) { failed++; sentClients.add(loan.client.id); continue }
+
+    for (const [clientId, clientLoans] of byClient) {
+      const phone = clients.find(c => c.id === clientId)?.phone
+      if (!phone) { failed++; continue }
+      // Prefer parcelado loan for the message; fallback to first
+      const loan = clientLoans.find(l => l.installmentCount > 1) || clientLoans[0]
       try {
         const msg = buildDueTodayMessage(loan)
         const res = await fetch("/api/whatsapp/send", {
@@ -1006,12 +1013,10 @@ export default function EmprestimosPage() {
         })
         if (res.ok) { sent++ } else { failed++ }
       } catch { failed++ }
-      sentClients.add(loan.client.id)
-      // Delay between sends to avoid WhatsApp rate limiting
       await new Promise(r => setTimeout(r, 2000))
     }
     setBulkSendingDueToday(false)
-    setBulkResultDialog({ type: "vencendo hoje", sent, failed, total: sentClients.size })
+    setBulkResultDialog({ type: "vencendo hoje", sent, failed, total: byClient.size })
   }
 
   const interestPerInst = (loan: Loan) =>
