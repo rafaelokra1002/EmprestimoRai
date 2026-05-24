@@ -976,11 +976,10 @@ export default function EmprestimosPage() {
     }
 
     // Simples (não parcelado)
-    const total = todayInsts.reduce((s: number, i: any) => s + i.amount, 0)
-    const juros = loan.interestRate > 0 ? formatCurrency(total * (loan.interestRate / 100)) : "0,00"
     const vencimento = todayInsts.length > 0 ? formatDate(todayInsts[0].dueDate) : ""
+    const juros = formatCurrency(loan.profit)
 
-    return `Cliente: ${name}\n\n────────────────\n⚠️ VENCIMENTO HOJE\n\n📅 Data: ${vencimento}\n💰 Valor total: ${formatCurrency(total)}\n\n🔄 Renovação disponível:\nPague ${juros} (juros) e ganhe +30 dias de prazo.\n\n⚠️  Atraso:\nR$ 15,00 por dia até regularização.\n\n────────────────\n👤 Titular: ${profileChargeName || "Titular"}\n\n💠 Chave Pix: ${profilePixKey || "Não cadastrada"}`
+    return `Olá ${name}\n\n📌 LEMBRETE DE PAGAMENTO\n\n📅 Vencimento: ${vencimento}\n⏳ Restam: 0 dias\n\n💰 Valor total: ${formatCurrency(loan.totalAmount)}\n\n🔄 Renovação disponível:\nPague ${juros} (juros) e receba +30 dias de prazo.\n\n─────────────────\n👤 Titular : ${profileChargeName || "Titular"}\n\n💠 Chave Pix: ${profilePixKey || "Não cadastrada"}`
   }
 
   const sendBulkDueToday = async () => {
