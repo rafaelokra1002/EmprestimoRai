@@ -3343,7 +3343,9 @@ export default function EmprestimosPage() {
                         const overdueCharge = getCurrentOverdueCharge(currentLoan)
                         const hasOverdue = currentLoan.installments.some((i: any) => i.status === "PENDING" && new Date(i.dueDate) < new Date())
                         const multa = hasOverdue ? (currentLoan.penaltyFee || 0) : 0
-                        setRenegotiateAmount(currentInterest + overdueCharge + multa)
+                        // When overdue, client also pays interest for the new period being extended
+                        const newPeriodInterest = overdueCharge > 0 ? currentInterest : 0
+                        setRenegotiateAmount(currentInterest + overdueCharge + multa + newPeriodInterest)
                       }}
                       className="w-full rounded-3xl border p-5 text-left transition-colors border-gray-200 bg-white hover:bg-gray-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
                     >
