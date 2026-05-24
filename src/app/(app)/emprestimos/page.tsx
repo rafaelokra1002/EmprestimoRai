@@ -998,7 +998,7 @@ export default function EmprestimosPage() {
     setBulkSendingDueToday(true)
     let sent = 0, failed = 0
 
-    for (const [clientId, clientLoans] of byClient) {
+    for (const [clientId, clientLoans] of Array.from(byClient.entries())) {
       const phone = clients.find(c => c.id === clientId)?.phone
       if (!phone) { failed++; continue }
       // Prefer parcelado loan for the message; fallback to first
