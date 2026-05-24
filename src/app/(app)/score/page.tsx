@@ -588,7 +588,7 @@ export default function ScorePage() {
                       <p className="text-sm text-gray-400 dark:text-zinc-500 mt-0.5 italic">Sem pagamentos</p>
                     ) : (
                       <p className="text-xl font-bold text-gray-900 dark:text-zinc-100 mt-0.5">
-                        {formatCurrency(sortMode === "lucro" ? allLucroRealizado : allCompleted ? allEmprestado : allLucro)}
+                        {formatCurrency(allCompleted ? allEmprestado : allLucroRealizado)}
                       </p>
                     )}
                     <div className="flex items-center gap-2 mt-1 text-xs text-gray-400 dark:text-zinc-500 flex-wrap">
