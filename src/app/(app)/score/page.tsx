@@ -219,8 +219,7 @@ export default function ScorePage() {
   const atencaoCount = clients.filter(c => c.score >= 70 && c.score < 120).length
   const criticosCount = clients.filter(c => c.score < 70).length
   const lucroPrevisto = globalProfit
-  const lucroRealizado = clients.reduce((s, c) =>
-    s + c.loans.filter(l => l.status === "COMPLETED").reduce((ls, l) => ls + l.profit, 0), 0)
+  const lucroRealizado = clients.reduce((s, c) => s + getClientRealizedProfit(c), 0)
   const lucroExtra = clients.reduce((s, c) =>
     s + c.loans.reduce((ls, l) => {
       const installmentCount = (l.installments || []).length || 1
