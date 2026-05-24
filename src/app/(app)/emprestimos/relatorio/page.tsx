@@ -73,15 +73,19 @@ export default function RelatorioEmprestimosPage() {
   const [caixaExtra, setCaixaExtra] = useState(0)
   const [includeExpenses, setIncludeExpenses] = useState(true)
   const [updatedAt, setUpdatedAt] = useState("")
+  const [fetchError, setFetchError] = useState<string | null>(null)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
+    setFetchError(null)
     try {
       const [loansRes, expensesRes, clientsRes] = await Promise.all([
         fetch("/api/loans"),
         fetch("/api/expenses"),
         fetch("/api/clients"),
       ])
+      if (!loansRes.ok) throw new Error(`Erro ao buscar empréstimos (${loansRes.status})`)
+      if (!expensesRes.ok) throw new Error(`Erro ao buscar despesas (${expensesRes.status})`)
       const loansData = await loansRes.json()
       const expensesData = await expensesRes.json()
       const clientsData = await clientsRes.json()
@@ -89,7 +93,9 @@ export default function RelatorioEmprestimosPage() {
       setExpenses(Array.isArray(expensesData) ? expensesData : [])
       setClients(Array.isArray(clientsData) ? clientsData : [])
       setUpdatedAt(new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }))
-    } catch {}
+    } catch (err: any) {
+      setFetchError(err.message || "Erro ao carregar dados")
+    }
     setLoading(false)
   }, [])
 
@@ -133,8 +139,8 @@ export default function RelatorioEmprestimosPage() {
 
   // ===== CALCULATIONS =====
   const capitalNaRua = useMemo(() => {
-    return filteredActiveLoans.reduce((sum, l) => sum + l.amount, 0)
-  }, [filteredActiveLoans])
+    return activeLoans.reduce((sum, l) => sum + l.amount, 0)
+  }, [activeLoans])
 
   const emprestimosNoPeriodo = useMemo(() => {
     return newLoansInPeriod.reduce((sum, l) => sum + l.amount, 0)
@@ -186,30 +192,30 @@ export default function RelatorioEmprestimosPage() {
   const contasPagarCount = filteredExpenses.length
 
   const jurosAReceber = useMemo(() => {
-    return filteredActiveLoans.reduce((sum, l) => {
+    return activeLoans.reduce((sum, l) => {
       const totalInst = l.installmentCount
       if (totalInst <= 0) return sum
       const unpaidInst = l.installments.filter((i: any) => i.status !== "PAID").length
       return sum + (l.profit * unpaidInst / totalInst)
     }, 0)
-  }, [filteredActiveLoans])
+  }, [activeLoans])
 
   const totalRecebidoHistorico = useMemo(() => {
     return loans.reduce((sum, l) => sum + l.payments.reduce((s: number, p: any) => s + p.amount, 0), 0)
   }, [loans])
 
   const faltaReceber = useMemo(() => {
-    return filteredActiveLoans.reduce((sum, l) => {
+    return activeLoans.reduce((sum, l) => {
       const paid = l.payments.reduce((s: number, p: any) => s + p.amount, 0)
       return sum + Math.max(0, l.totalAmount - paid)
     }, 0)
-  }, [filteredActiveLoans])
+  }, [activeLoans])
 
   const emAtraso = useMemo(() => {
     const now = new Date()
     let total = 0
     let count = 0
-    filteredActiveLoans.forEach((l) => {
+    activeLoans.forEach((l) => {
       const hasOverdue = l.installments.some((i: any) => i.status !== "PAID" && new Date(i.dueDate) < now)
       if (hasOverdue) {
         count++
@@ -218,7 +224,7 @@ export default function RelatorioEmprestimosPage() {
       }
     })
     return { total, count }
-  }, [filteredActiveLoans])
+  }, [activeLoans])
 
   const lucroRealizado = jurosRecebidos
 
@@ -380,7 +386,8 @@ export default function RelatorioEmprestimosPage() {
           <p className="text-sm text-gray-500 dark:text-zinc-400">Acompanhe seus empréstimos em tempo real</p>
         </div>
         <div className="flex items-center gap-3 text-sm">
-          {updatedAt && <span className="text-gray-400 dark:text-zinc-500">Atualizado: {updatedAt}</span>}
+          {fetchError && <span className="text-red-500 text-xs">{fetchError}</span>}
+          {updatedAt && !fetchError && <span className="text-gray-400 dark:text-zinc-500">Atualizado: {updatedAt}</span>}
           <Button variant="outline" size="sm" className="gap-1.5">
             <Download className="h-4 w-4" /> Baixar PDF
           </Button>
