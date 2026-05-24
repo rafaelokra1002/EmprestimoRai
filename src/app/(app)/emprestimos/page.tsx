@@ -1298,9 +1298,9 @@ export default function EmprestimosPage() {
   }, [filteredLoans])
 
   const tabCounts = useMemo(() => ({
-    all: loans.length,
-    daily: loans.filter(l => l.modality === "DAILY").length,
-    price: loans.filter(l => l.interestType === "TOTAL").length,
+    all: loans.filter(l => l.client.status !== "DESAPARECIDO" && l.status !== "COMPLETED").length,
+    daily: loans.filter(l => l.modality === "DAILY" && l.status !== "COMPLETED").length,
+    price: loans.filter(l => l.interestType === "TOTAL" && l.status !== "COMPLETED").length,
     received: loans.filter(l => l.status === "COMPLETED").length,
   }), [loans])
 

@@ -14,7 +14,8 @@ interface Client {
   phone: string | null
   document: string | null
   address: string | null
-  hasActiveLoan: boolean
+  status: string
+  loans?: { id: string; status: string }[]
 }
 
 export default function ClientesInativosPage() {
@@ -26,7 +27,11 @@ export default function ClientesInativosPage() {
     fetch("/api/clients")
       .then((res) => res.json())
       .then((data) => {
-        const inactive = (data || []).filter((c: Client) => !c.hasActiveLoan)
+        const inactive = (data || []).filter((c: Client) =>
+          c.status !== "INACTIVE" &&
+          c.status !== "DESAPARECIDO" &&
+          !c.loans?.some((l) => l.status === "ACTIVE")
+        )
         setClients(inactive)
       })
       .catch(console.error)

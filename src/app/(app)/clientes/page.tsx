@@ -813,13 +813,22 @@ export default function ClientesPage() {
                       )}
                       <p className="mt-0.5 text-xs text-gray-400 dark:text-zinc-500">Revisado em {item.at}</p>
                     </div>
-                    <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${
-                      item.action === "aprovado"
-                        ? "bg-green-500 text-white"
-                        : "bg-red-500 text-white"
-                    }`}>
-                      {item.action === "aprovado" ? "Aprovado" : "Rejeitado"}
-                    </span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                        item.action === "aprovado"
+                          ? "bg-green-500 text-white"
+                          : "bg-red-500 text-white"
+                      }`}>
+                        {item.action === "aprovado" ? "Aprovado" : "Rejeitado"}
+                      </span>
+                      <button
+                        onClick={() => setAprovacaoHistorico((prev) => prev.filter((_, idx) => idx !== i))}
+                        className="rounded-lg p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                        title="Remover do histórico"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
                 ))
               )}
@@ -851,7 +860,7 @@ export default function ClientesPage() {
               options={[
                 { value: "all", label: "Todos" },
                 { value: "active", label: `Ativos (${clients.filter(c => c.status !== "DESAPARECIDO" && c.loans?.some(l => l.status === "ACTIVE")).length})` },
-                { value: "inactive", label: `Inativos (${clients.filter(c => c.status !== "DESAPARECIDO" && !c.loans?.some(l => l.status === "ACTIVE")).length})` },
+                { value: "inactive", label: `Inativos (${clients.filter(c => c.status !== "DESAPARECIDO" && c.status !== "INACTIVE" && !c.loans?.some(l => l.status === "ACTIVE")).length})` },
               ]}
               minWidthClassName="min-w-[190px]"
             />
@@ -954,7 +963,7 @@ export default function ClientesPage() {
               options={[
                 { value: "all", label: "Todos" },
                 { value: "active", label: `Ativos (${clients.filter(c => c.status !== "DESAPARECIDO" && c.loans?.some(l => l.status === "ACTIVE")).length})` },
-                { value: "inactive", label: `Inativos (${clients.filter(c => c.status !== "DESAPARECIDO" && !c.loans?.some(l => l.status === "ACTIVE")).length})` },
+                { value: "inactive", label: `Inativos (${clients.filter(c => c.status !== "DESAPARECIDO" && c.status !== "INACTIVE" && !c.loans?.some(l => l.status === "ACTIVE")).length})` },
               ]}
               minWidthClassName="min-w-[190px]"
             />
