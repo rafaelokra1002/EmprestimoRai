@@ -29,7 +29,7 @@ function fmtCurrency(value: number | null | undefined) {
     : ""
 }
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user) {
@@ -41,8 +41,11 @@ export async function POST() {
       return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 })
     }
 
+    const { searchParams } = new URL(request.url)
+    const type = searchParams.get("type") === "desaparecido" ? "desaparecido" : "clients"
+
     const clients = await prisma.client.findMany({
-      where: { userId },
+      where: { userId, ...(type === "desaparecido" ? { status: "DESAPARECIDO" } : {}) },
       include: {
         documents: true,
         loans: {
@@ -134,7 +137,7 @@ export async function POST() {
 
     const now = new Date()
     const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`
-    const filename = `backup-clientes-${dateStr}.zip`
+    const filename = `backup-${type}-${dateStr}.zip`
 
     return new NextResponse(blob, {
       headers: {

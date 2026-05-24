@@ -74,11 +74,11 @@ export default function BackupPage() {
     }
   }
 
-  const handleBackupZip = async () => {
+  const handleBackupZip = async (type: "clients" | "desaparecido" = "clients") => {
     setLoadingZip(true)
     setMessage(null)
     try {
-      const res = await fetch("/api/backup/zip", { method: "POST" })
+      const res = await fetch(`/api/backup/zip?type=${type}`, { method: "POST" })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
         throw new Error(data.error || "Erro ao gerar ZIP")
@@ -87,7 +87,7 @@ export default function BackupPage() {
       const url = URL.createObjectURL(blob)
       const a = document.createElement("a")
       a.href = url
-      a.download = `backup-clientes-${localDateStr()}.zip`
+      a.download = `backup-${type}-${localDateStr()}.zip`
       a.click()
       URL.revokeObjectURL(url)
       setMessage({ type: "success", text: "Backup em pastas (ZIP) gerado e baixado com sucesso!" })
@@ -161,7 +161,7 @@ export default function BackupPage() {
                 </div>
               </div>
 
-              <div className={`mt-3 grid gap-2 ${section.key === "clients" ? "grid-cols-3" : "grid-cols-2"}`}>
+              <div className={`mt-3 grid gap-2 ${section.key === "clients" || section.key === "desaparecido" ? "grid-cols-3" : "grid-cols-2"}`}>
                 <button
                   type="button"
                   onClick={() => handleBackup(section.key, section.title)}
@@ -180,10 +180,10 @@ export default function BackupPage() {
                   <FileText className="h-3.5 w-3.5" />
                   {loadingPdf ? "..." : "PDF"}
                 </button>
-                {section.key === "clients" && (
+                {(section.key === "clients" || section.key === "desaparecido") && (
                   <button
                     type="button"
-                    onClick={handleBackupZip}
+                    onClick={() => handleBackupZip(section.key as "clients" | "desaparecido")}
                     disabled={loadingZip}
                     className="flex items-center justify-center gap-1.5 rounded-xl bg-amber-500 py-2 text-xs font-semibold text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-70"
                   >
