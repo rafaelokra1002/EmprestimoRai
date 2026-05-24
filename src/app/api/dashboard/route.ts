@@ -123,7 +123,7 @@ export async function GET(request: Request) {
       const interestPerInst = Number(loan.profit) / installmentCount
       const monthInsts = loan.installments.filter(i => {
         const due = new Date(i.dueDate)
-        return due >= startOfMonth && due <= endOfMonth
+        return i.status !== "PAID" && due >= startOfMonth && due <= endOfMonth
       })
       return {
         total: acc.total + monthInsts.reduce((s, i) => s + Number(i.amount), 0),
