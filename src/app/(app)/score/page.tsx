@@ -138,8 +138,10 @@ export default function ScorePage() {
     const loans = Array.isArray(client.loans) ? client.loans : []
     const allInstallments = loans.flatMap((l) => Array.isArray(l.installments) ? l.installments : [])
     const now = new Date()
-    const emDia = allInstallments.filter((i) => i.status === "PAID" || (i.status === "PENDING" && new Date(i.dueDate) >= now)).length
-    const atrasados = allInstallments.filter((i) => i.status === "OVERDUE" || (i.status === "PENDING" && new Date(i.dueDate) < now)).length
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`
+    const toDateStr = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+    const emDia = allInstallments.filter((i) => i.status === "PAID" || (i.status === "PENDING" && toDateStr(new Date(i.dueDate)) >= todayStr)).length
+    const atrasados = allInstallments.filter((i) => i.status === "OVERDUE" || (i.status === "PENDING" && toDateStr(new Date(i.dueDate)) < todayStr)).length
     const totalPrincipal = loans.reduce((s, l) => s + (l.amount || 0), 0)
     const completedLoans = loans.filter((l) => l.status === "COMPLETED")
     const activeLoans = loans.filter((l) => l.status === "ACTIVE")

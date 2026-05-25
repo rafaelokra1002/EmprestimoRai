@@ -1,12 +1,13 @@
 ﻿"use client"
 
-import { useEffect, useState, useMemo, useCallback } from "react"
+import { useEffect, useState, useMemo, useCallback, useRef } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { FilterDropdown } from "@/components/ui/filter-dropdown"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { formatCurrency, formatDate, localDateStr } from "@/lib/utils"
+import { getOverdueDailyAmountBRL, buildLoanData } from "@/lib/loan-logic"
 import { useTheme } from "@/lib/theme-provider"
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
@@ -22,6 +23,11 @@ const today = () => localDateStr()
 const firstOfMonth = () => {
   const d = new Date()
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`
+}
+const lastOfMonth = () => {
+  const d = new Date()
+  const last = new Date(d.getFullYear(), d.getMonth() + 1, 0)
+  return `${last.getFullYear()}-${String(last.getMonth() + 1).padStart(2, "0")}-${String(last.getDate()).padStart(2, "0")}`
 }
 
 interface Loan {
@@ -68,12 +74,19 @@ export default function RelatorioEmprestimosPage() {
   const gridColor = isDark ? "#27272a" : "#e5e7eb"
   const axisColor = isDark ? "#71717a" : "#9ca3af"
   const [startDate, setStartDate] = useState(firstOfMonth())
-  const [endDate, setEndDate] = useState(today())
-  const [paymentFilter, setPaymentFilter] = useState<"all" | "monthly" | "price">("all")
+  const [endDate, setEndDate] = useState(lastOfMonth())
+  const autoDateSet = useRef(false)
+  const [paymentFilter, setPaymentFilter] = useState<"monthly" | "open_month">("open_month")
   const [caixaExtra, setCaixaExtra] = useState(0)
+  const [caixaInicial, setCaixaInicial] = useState(0)
   const [includeExpenses, setIncludeExpenses] = useState(true)
   const [updatedAt, setUpdatedAt] = useState("")
   const [fetchError, setFetchError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const saved = localStorage.getItem("caixaInicial")
+    if (saved) setCaixaInicial(parseFloat(saved))
+  }, [])
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -101,6 +114,30 @@ export default function RelatorioEmprestimosPage() {
 
   useEffect(() => { fetchData() }, [fetchData])
 
+  // On first load, set startDate to the first day of the month of the earliest unpaid installment
+  useEffect(() => {
+    if (autoDateSet.current || loans.length === 0) return
+    autoDateSet.current = true
+    let earliest: string | null = null
+    loans.forEach(l => {
+      if (l.status !== "ACTIVE") return
+      l.installments.forEach((i: any) => {
+        if (i.status === "PAID") return
+        const d = localDateStr(new Date(i.dueDate))
+        if (!earliest || d < earliest) earliest = d
+      })
+    })
+    if (earliest && earliest < firstOfMonth()) {
+      setStartDate(earliest.substring(0, 7) + "-01")
+    }
+  }, [loans])
+
+  const lastDayOfCurrentMonth = useMemo(() => {
+    const now = new Date()
+    const last = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+    return `${last.getFullYear()}-${String(last.getMonth() + 1).padStart(2, "0")}-${String(last.getDate()).padStart(2, "0")}`
+  }, [])
+
   // Loans created within the selected period (for "new capital deployed" metric)
   const newLoansInPeriod = useMemo(() => {
     return loans.filter((loan) => {
@@ -108,7 +145,6 @@ export default function RelatorioEmprestimosPage() {
       if (startDate && loanDate < startDate) return false
       if (endDate && loanDate > endDate) return false
       if (paymentFilter === "monthly" && loan.modality !== "MONTHLY") return false
-      if (paymentFilter === "price" && loan.modality !== "PRICE") return false
       return true
     })
   }, [loans, startDate, endDate, paymentFilter])
@@ -120,12 +156,24 @@ export default function RelatorioEmprestimosPage() {
       if (endDate && loanDate > endDate) return false
       if (loan.status !== "ACTIVE" && startDate && loanDate < startDate) return false
       if (paymentFilter === "monthly" && loan.modality !== "MONTHLY") return false
-      if (paymentFilter === "price" && loan.modality !== "PRICE") return false
       return true
     })
   }, [loans, startDate, endDate, paymentFilter])
 
-  const activeLoans = useMemo(() => loans.filter(l => l.status === "ACTIVE"), [loans])
+  const activeLoans = useMemo(() => {
+    const base = loans.filter(l => l.status === "ACTIVE")
+    const hasInstInPeriod = (l: typeof base[0]) =>
+      l.installments.some((i: any) => {
+        if (i.status === "PAID") return false
+        const d = localDateStr(new Date(i.dueDate))
+        if (startDate && d < startDate) return false
+        if (endDate && d > endDate) return false
+        return true
+      })
+    if (paymentFilter === "monthly") return base.filter(l => l.modality === "MONTHLY" && hasInstInPeriod(l))
+    return base.filter(hasInstInPeriod)
+  }, [loans, paymentFilter, startDate, endDate])
+
   const filteredActiveLoans = useMemo(() => filtered.filter(l => l.status === "ACTIVE"), [filtered])
 
   const filteredExpenses = useMemo(() => {
@@ -192,13 +240,34 @@ export default function RelatorioEmprestimosPage() {
   const contasPagarCount = filteredExpenses.length
 
   const jurosAReceber = useMemo(() => {
+    const now = new Date()
+    const todayStr = localDateStr(now)
     return activeLoans.reduce((sum, l) => {
       const totalInst = l.installmentCount
       if (totalInst <= 0) return sum
-      const unpaidInst = l.installments.filter((i: any) => i.status !== "PAID").length
-      return sum + (l.profit * unpaidInst / totalInst)
+      const unpaidInsts = l.installments.filter((i: any) => {
+        if (i.status === "PAID") return false
+        const d = localDateStr(new Date(i.dueDate))
+        if (endDate && d > endDate) return false
+        return true
+      })
+      const baseInterest = l.profit * unpaidInsts.length / totalInst
+      // multa diária acumulada para parcelas vencidas
+      const dailyRate = getOverdueDailyAmountBRL(buildLoanData({
+        amount: l.amount, interestRate: l.interestRate, interestType: l.interestType,
+        totalAmount: l.totalAmount, dailyInterestAmount: l.dailyInterestAmount || 0,
+        dueDay: l.dueDay, modality: l.modality, firstInstallmentDate: l.firstInstallmentDate,
+        installments: l.installments, payments: l.payments,
+      }))
+      const multaDiaria = unpaidInsts.reduce((acc: number, i: any) => {
+        const d = localDateStr(new Date(i.dueDate))
+        if (d >= todayStr) return acc
+        const daysOver = Math.max(0, Math.floor((now.getTime() - new Date(i.dueDate).getTime()) / 86400000))
+        return acc + dailyRate * daysOver
+      }, 0)
+      return sum + baseInterest + multaDiaria
     }, 0)
-  }, [activeLoans])
+  }, [activeLoans, endDate])
 
   const totalRecebidoHistorico = useMemo(() => {
     return loans.reduce((sum, l) => sum + l.payments.reduce((s: number, p: any) => s + p.amount, 0), 0)
@@ -213,10 +282,12 @@ export default function RelatorioEmprestimosPage() {
 
   const emAtraso = useMemo(() => {
     const now = new Date()
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`
+    const toDateStr = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
     let total = 0
     let count = 0
     activeLoans.forEach((l) => {
-      const hasOverdue = l.installments.some((i: any) => i.status !== "PAID" && new Date(i.dueDate) < now)
+      const hasOverdue = l.installments.some((i: any) => i.status !== "PAID" && toDateStr(new Date(i.dueDate)) < todayStr)
       if (hasOverdue) {
         count++
         const paid = l.payments.reduce((s: number, p: any) => s + p.amount, 0)
@@ -228,9 +299,9 @@ export default function RelatorioEmprestimosPage() {
 
   const lucroRealizado = jurosRecebidos
 
-  const saidas = emprestimosNoPeriodo + contasPagar
   const entradas = pagamentosNoPeriodo
-  const resultadoPeriodo = entradas + caixaExtra - saidas
+  const resultadoAtividade = entradas + caixaExtra - emprestimosNoPeriodo - contasPagar
+  const resultadoPeriodo = caixaInicial + resultadoAtividade  // caixa - emprestado + recebido - despesas
 
   // Contratos ativos table
   const contratosAtivos = useMemo(() => {
@@ -241,7 +312,10 @@ export default function RelatorioEmprestimosPage() {
         const nextInst = l.installments
           .filter((i: any) => i.status !== "PAID")
           .sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0]
-        const isOverdue = nextInst && new Date(nextInst.dueDate) < new Date()
+        const now = new Date()
+        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`
+        const toDateStr = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+        const isOverdue = nextInst && toDateStr(new Date(nextInst.dueDate)) < todayStr
         return {
           id: l.id,
           clientName: l.client.name,
@@ -257,6 +331,8 @@ export default function RelatorioEmprestimosPage() {
 
   const contratosEmAtraso = useMemo(() => {
     const now = new Date()
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`
+    const toDateStr = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
 
     return activeLoans
       .map((loan) => {
@@ -265,7 +341,7 @@ export default function RelatorioEmprestimosPage() {
           .filter((installment: any) => installment.status !== "PAID")
           .sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0]
 
-        if (!nextInst || new Date(nextInst.dueDate) >= now) return null
+        if (!nextInst || toDateStr(new Date(nextInst.dueDate)) >= todayStr) return null
 
         const clientPhone = clients.find((client) => client.id === loan.client.id)?.phone || null
 
@@ -375,7 +451,7 @@ export default function RelatorioEmprestimosPage() {
       </Card>
   */
 
-  const FILTER_LABELS: Record<string, string> = { all: "Todos", monthly: "Mensal", price: "Tabela Price" }
+  const FILTER_LABELS: Record<string, string> = { monthly: "Mensal", open_month: "Em aberto no mês" }
 
   return (
     <div className="space-y-6 pt-6 pb-12">
@@ -426,8 +502,8 @@ export default function RelatorioEmprestimosPage() {
             icon={<Filter className="h-4 w-4" />}
             tone="emerald"
             value={paymentFilter}
-            onChange={(value) => setPaymentFilter(value as "all" | "monthly" | "price")}
-            options={(["all", "monthly", "price"] as const).map((value) => ({ value, label: FILTER_LABELS[value] }))}
+            onChange={(value) => setPaymentFilter(value as "monthly" | "open_month")}
+            options={(["open_month", "monthly"] as const).map((value) => ({ value, label: FILTER_LABELS[value] }))}
             minWidthClassName="min-w-[180px]"
           />
           <FilterDropdown
@@ -464,6 +540,11 @@ export default function RelatorioEmprestimosPage() {
         <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">
           {resultadoPeriodo >= 0 ? "entrou mais do que saiu" : "saiu mais do que entrou"}
         </p>
+        {caixaInicial > 0 && (
+          <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">
+            Caixa inicial: {formatCurrency(caixaInicial)}
+          </p>
+        )}
       </div>
 
       {/* 3 summary boxes */}
@@ -485,8 +566,8 @@ export default function RelatorioEmprestimosPage() {
         }`}>
           <Wallet className="h-5 w-5 text-red-600 mx-auto mb-1" />
           <p className="text-xs text-gray-500 dark:text-zinc-400">Resultado</p>
-          <p className={`text-lg font-bold tabular-nums tracking-tight ${resultadoPeriodo >= 0 ? "text-primary" : "text-red-600"}`}>
-            {resultadoPeriodo < 0 ? "-" : ""}{formatCurrency(Math.abs(resultadoPeriodo))}
+          <p className={`text-lg font-bold tabular-nums tracking-tight ${resultadoAtividade >= 0 ? "text-primary" : "text-red-600"}`}>
+            {resultadoAtividade < 0 ? "-" : "+"}{formatCurrency(Math.abs(resultadoAtividade))}
           </p>
         </div>
       </div>
