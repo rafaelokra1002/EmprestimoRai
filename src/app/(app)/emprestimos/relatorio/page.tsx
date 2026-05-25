@@ -251,8 +251,8 @@ export default function RelatorioEmprestimosPage() {
       // multa diária acumulada para parcelas vencidas
       const dailyRate = getOverdueDailyAmountBRL(buildLoanData({
         amount: l.amount, interestRate: l.interestRate, interestType: l.interestType,
-        totalAmount: l.totalAmount, dailyInterestAmount: l.dailyInterestAmount || 0,
-        dueDay: l.dueDay, modality: l.modality, firstInstallmentDate: l.firstInstallmentDate,
+        totalAmount: l.totalAmount, dailyInterest: l.dailyInterest,
+        modality: l.modality, firstInstallmentDate: l.firstInstallmentDate,
         installments: l.installments, payments: l.payments,
       }))
       const multaDiaria = unpaidInsts.reduce((acc: number, i: any) => {
