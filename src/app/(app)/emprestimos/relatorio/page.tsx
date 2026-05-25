@@ -118,15 +118,11 @@ export default function RelatorioEmprestimosPage() {
   useEffect(() => {
     if (autoDateSet.current || loans.length === 0) return
     autoDateSet.current = true
-    let earliest: string | null = null
-    loans.forEach(l => {
-      if (l.status !== "ACTIVE") return
-      l.installments.forEach((i: any) => {
-        if (i.status === "PAID") return
-        const d = localDateStr(new Date(i.dueDate))
-        if (!earliest || d < earliest) earliest = d
-      })
-    })
+    const dates: string[] = loans
+      .filter(l => l.status === "ACTIVE")
+      .flatMap(l => (l.installments as any[]).filter(i => i.status !== "PAID").map(i => localDateStr(new Date(i.dueDate))))
+    dates.sort()
+    const earliest = dates[0] ?? null
     if (earliest && earliest < firstOfMonth()) {
       setStartDate(earliest.substring(0, 7) + "-01")
     }
