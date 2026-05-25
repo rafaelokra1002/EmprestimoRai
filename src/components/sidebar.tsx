@@ -211,7 +211,7 @@ export function Sidebar() {
             <span>{theme === "light" ? "Modo Escuro" : theme === "dark" ? "Modo Roxo" : "Modo Claro"}</span>
           </button>
           <button
-            onClick={() => signOut({ callbackUrl: "/login" })}
+            onClick={() => signOut({ callbackUrl: `${window.location.origin}/login` })}
             className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-red-300 hover:text-red-200 hover:bg-red-500/20 transition-all w-full"
           >
             <LogOut className="h-4 w-4 shrink-0" />
