@@ -14,7 +14,7 @@ beforeEach(() => {
 describe("GET /api/loans", () => {
   it("returns 401 when not authenticated", async () => {
     getServerSessionMock.mockResolvedValue(null)
-    const res = await GET()
+    const res = await GET(new Request("http://localhost/api/loans"))
     expect(res.status).toBe(401)
   })
 
@@ -32,7 +32,7 @@ describe("GET /api/loans", () => {
     ]
     mockPrisma.loan.findMany.mockResolvedValue(loans)
 
-    const res = await GET()
+    const res = await GET(new Request("http://localhost/api/loans"))
     expect(res.status).toBe(200)
     const data = await res.json()
     expect(data).toHaveLength(1)
@@ -43,7 +43,7 @@ describe("GET /api/loans", () => {
     getServerSessionMock.mockResolvedValue(mockSession)
     mockPrisma.loan.findMany.mockResolvedValue([])
 
-    await GET()
+    await GET(new Request("http://localhost/api/loans"))
     expect(mockPrisma.loan.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { userId: "user-test-123" },

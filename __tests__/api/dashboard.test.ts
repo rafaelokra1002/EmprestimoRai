@@ -14,7 +14,7 @@ beforeEach(() => {
 describe("GET /api/dashboard", () => {
   it("returns 401 when not authenticated", async () => {
     getServerSessionMock.mockResolvedValue(null)
-    const res = await GET()
+    const res = await GET(new Request("http://localhost/api/dashboard"))
     expect(res.status).toBe(401)
   })
 
@@ -38,7 +38,7 @@ describe("GET /api/dashboard", () => {
     mockPrisma.client.count.mockResolvedValue(10)
     mockPrisma.expense.aggregate.mockResolvedValue({ _sum: { amount: 0 } })
 
-    const res = await GET()
+    const res = await GET(new Request("http://localhost/api/dashboard?all=true"))
     expect(res.status).toBe(200)
     const data = await res.json()
     expect(data).toHaveProperty("totalToReceive")
