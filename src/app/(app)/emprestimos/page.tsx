@@ -3341,8 +3341,7 @@ export default function EmprestimosPage() {
                       onClick={() => {
                         setRenegotiateMode("full")
                         const overdueCharge = getCurrentOverdueCharge(currentLoan)
-                        // For multi-installment loans, client pre-pays next period's interest when rolling over
-                        const newPeriodInterest = (overdueCharge > 0 && currentLoan.installmentCount > 1) ? currentInterest : 0
+                        const newPeriodInterest = overdueCharge > 0 ? currentInterest : 0
                         setRenegotiateAmount(currentInterest + overdueCharge + newPeriodInterest)
                       }}
                       className="w-full rounded-3xl border p-5 text-left transition-colors border-gray-200 bg-white hover:bg-gray-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
