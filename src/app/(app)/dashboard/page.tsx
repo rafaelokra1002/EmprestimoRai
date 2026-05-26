@@ -341,10 +341,10 @@ export default function DashboardPage() {
           <div className="rounded-xl border border-amber-100 dark:border-amber-900/40 bg-amber-50/60 dark:bg-amber-950/20 p-4">
             <div className="mb-1 flex items-center gap-1.5">
               <DollarSign className="h-3.5 w-3.5 text-amber-600" />
-              <p className="text-xs text-gray-500 dark:text-zinc-400">Capital em Aberto</p>
+              <p className="text-xs text-gray-500 dark:text-zinc-400">Emprestado no Mês</p>
             </div>
             <p className="text-2xl leading-none font-semibold tabular-nums tracking-tight text-amber-600 dark:text-amber-400">{formatCurrency(data?.monthNewLoansCapital || 0)}</p>
-            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">capital ativo em {periodLabel}</p>
+            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">capital emprestado em {periodLabel}</p>
           </div>
           <div className="rounded-xl border border-violet-100 dark:border-violet-900/40 bg-violet-50/60 dark:bg-violet-950/20 p-4">
             <div className="mb-1 flex items-center gap-1.5">
