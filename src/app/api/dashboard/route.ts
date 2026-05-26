@@ -111,11 +111,18 @@ export async function GET(request: Request) {
         .reduce((s, p) => s + Number(p.amount), 0), 0)
 
     const monthNewLoansCapital = loans
-      .filter(loan => { const d = new Date((loan as any).contractDate || loan.createdAt); return d >= startOfMonth && d <= endOfMonth })
+      .filter(loan => {
+        const d = new Date((loan as any).contractDate || loan.createdAt)
+        // loans created on or before end of month and still active (capital em aberto no periodo)
+        return d <= endOfMonth && (loan.status === "ACTIVE" || loan.status === "DEFAULTED")
+      })
       .reduce((acc, loan) => acc + Number(loan.amount), 0)
 
     const monthNewLoansProfit = loans
-      .filter(loan => { const d = new Date((loan as any).contractDate || loan.createdAt); return d >= startOfMonth && d <= endOfMonth })
+      .filter(loan => {
+        const d = new Date((loan as any).contractDate || loan.createdAt)
+        return d <= endOfMonth && (loan.status === "ACTIVE" || loan.status === "DEFAULTED")
+      })
       .reduce((acc, loan) => acc + Number(loan.profit), 0)
 
     const monthInstallmentsDue = loans.reduce((acc, loan) => {
