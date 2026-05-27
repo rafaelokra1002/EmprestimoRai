@@ -163,6 +163,7 @@ export default function DespesasPage() {
       pagasCount: pagas.length,
       total: monthExpenses.reduce((s, e) => s + e.amount, 0),
       totalAno: expenses.filter((e) => new Date(e.dueDate).getFullYear() === currentYear).reduce((s, e) => s + e.amount, 0),
+      totalGeral: expenses.reduce((s, e) => s + e.amount, 0),
     }
   }, [monthExpenses, expenses, currentYear])
 
@@ -354,9 +355,9 @@ export default function DespesasPage() {
             <Scale className="h-5 w-5 text-primary" />
           </div>
           <div className="min-w-0">
-            <p className="text-xs text-gray-500 dark:text-zinc-400">Total</p>
-            <p className="text-xl font-bold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(stats.total)}</p>
-            <p className="text-xs text-gray-400 dark:text-zinc-500">{monthExpenses.length} no período</p>
+            <p className="text-xs text-gray-500 dark:text-zinc-400">Total de despesas</p>
+            <p className="text-xl font-bold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(stats.totalGeral)}</p>
+            <p className="text-xs text-gray-400 dark:text-zinc-500">{expenses.length} lançamento{expenses.length !== 1 ? "s" : ""}</p>
           </div>
           <ChevronRight className="h-4 w-4 text-gray-400 dark:text-zinc-500 ml-auto shrink-0" />
         </button>
