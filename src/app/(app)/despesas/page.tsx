@@ -164,6 +164,15 @@ export default function DespesasPage() {
       total: monthExpenses.reduce((s, e) => s + e.amount, 0),
       totalAno: expenses.filter((e) => new Date(e.dueDate).getFullYear() === currentYear).reduce((s, e) => s + e.amount, 0),
       totalGeral: expenses.reduce((s, e) => s + e.amount, 0),
+      mediaUltimos12: (() => {
+        const now = new Date()
+        const total = expenses.filter((e) => {
+          const d = new Date(e.dueDate)
+          const diff = (now.getFullYear() - d.getFullYear()) * 12 + (now.getMonth() - d.getMonth())
+          return diff >= 0 && diff < 12
+        }).reduce((s, e) => s + e.amount, 0)
+        return total / 12
+      })(),
     }
   }, [monthExpenses, expenses, currentYear])
 
@@ -320,7 +329,7 @@ export default function DespesasPage() {
       )}
 
       {/* ===== SUMMARY CARDS ===== */}
-      <div className="grid grid-cols-3 gap-3 mb-5">
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 mb-5">
         <div className="flex items-center gap-4 rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 dark:bg-primary/20">
             <TrendingUp className="h-5 w-5 text-primary" />
@@ -361,6 +370,17 @@ export default function DespesasPage() {
           </div>
           <ChevronRight className="h-4 w-4 text-gray-400 dark:text-zinc-500 ml-auto shrink-0" />
         </button>
+
+        <div className="flex items-center gap-4 rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 dark:bg-primary/20">
+            <BarChart2 className="h-5 w-5 text-primary" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs text-gray-500 dark:text-zinc-400">Média mensal</p>
+            <p className="text-xl font-bold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(stats.mediaUltimos12)}</p>
+            <p className="text-xs text-gray-400 dark:text-zinc-500">Média dos últimos 12 meses</p>
+          </div>
+        </div>
       </div>
 
       {showCharts && (
