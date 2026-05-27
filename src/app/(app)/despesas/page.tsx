@@ -15,8 +15,9 @@ import {
 import { formatCurrency, localDateStr } from "@/lib/utils"
 import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Legend,
+  AreaChart, Area, XAxis, YAxis, CartesianGrid,
 } from "recharts"
+import { useRouter } from "next/navigation"
 
 type StatusFilter = "todas" | "vence_hoje" | "pendentes" | "atrasadas" | "pagas"
 
@@ -27,6 +28,7 @@ const CATEGORIES = [
 ]
 
 export default function DespesasPage() {
+  const router = useRouter()
   const [expenses, setExpenses] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -370,57 +372,115 @@ export default function DespesasPage() {
 
       {showCharts && (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mb-5">
-          {/* Donut — categoria */}
-          <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5">
-            <h3 className="text-sm font-semibold text-gray-800 dark:text-zinc-200 mb-4">Valor gasto por categoria</h3>
+          {/* ── Donut — Valor gasto por categoria ── */}
+          <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 flex flex-col">
+            <h3 className="text-base font-bold text-gray-900 dark:text-zinc-100 mb-4">Valor gasto por categoria</h3>
             {categoryChartData.length === 0 ? (
-              <p className="text-center text-sm text-gray-400 dark:text-zinc-500 py-8">Sem dados no período</p>
+              <p className="text-center text-sm text-gray-400 dark:text-zinc-500 py-8 flex-1">Sem dados no período</p>
             ) : (
-              <div className="flex items-center gap-6">
-                <div className="w-44 h-44 shrink-0">
+              <div className="flex items-center gap-4 flex-1">
+                {/* Donut */}
+                <div className="w-48 h-48 shrink-0">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                      <Pie data={categoryChartData} dataKey="value" innerRadius="55%" outerRadius="80%" paddingAngle={2} startAngle={90} endAngle={-270}>
+                      <Pie
+                        data={categoryChartData}
+                        dataKey="value"
+                        innerRadius="42%"
+                        outerRadius="72%"
+                        paddingAngle={1}
+                        startAngle={90}
+                        endAngle={-270}
+                        labelLine={false}
+                        label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
+                          if (percent < 0.05) return null
+                          const RADIAN = Math.PI / 180
+                          const r = innerRadius + (outerRadius - innerRadius) * 0.5
+                          const x = cx + r * Math.cos(-midAngle * RADIAN)
+                          const y = cy + r * Math.sin(-midAngle * RADIAN)
+                          return (
+                            <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" fontSize={10} fontWeight={700}>
+                              {(percent * 100).toFixed(1)}%
+                            </text>
+                          )
+                        }}
+                      >
                         {categoryChartData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                       </Pie>
-                      <Tooltip formatter={(v: number) => formatCurrency(v)} />
+                      <Tooltip formatter={(v: number) => [formatCurrency(v), "Gasto"]} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
+
+                {/* Legenda */}
                 <div className="flex-1 space-y-2 min-w-0">
                   {categoryChartData.slice(0, 6).map((d) => (
                     <div key={d.name} className="flex items-center gap-2 text-xs">
-                      <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: d.color }} />
-                      <span className="truncate text-gray-700 dark:text-zinc-300 flex-1">{d.name}</span>
-                      <span className="tabular-nums text-gray-500 dark:text-zinc-400 shrink-0">{formatCurrency(d.value)}</span>
-                      <span className="tabular-nums text-gray-400 dark:text-zinc-500 shrink-0 w-10 text-right">
-                        {totalCategorySum > 0 ? ((d.value / totalCategorySum) * 100).toFixed(1) : 0}%
+                      <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: d.color }} />
+                      <span className="flex-1 truncate font-medium text-gray-700 dark:text-zinc-300">{d.name}</span>
+                      <span className="tabular-nums text-gray-600 dark:text-zinc-300 shrink-0">{formatCurrency(d.value)}</span>
+                      <span className="tabular-nums text-gray-400 dark:text-zinc-500 w-10 text-right shrink-0">
+                        {totalCategorySum > 0 ? ((d.value / totalCategorySum) * 100).toFixed(1) : "0"}%
                       </span>
                     </div>
                   ))}
                 </div>
               </div>
             )}
+            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-zinc-800">
+              <button
+                onClick={() => router.push("/emprestimos/relatorio")}
+                className="flex items-center gap-1 text-sm font-medium text-gray-600 dark:text-zinc-400 hover:text-primary dark:hover:text-primary transition-colors"
+              >
+                Ver relatório completo <span className="text-base">→</span>
+              </button>
+            </div>
           </div>
 
-          {/* Area — gastos ao longo do ano */}
-          <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5">
-            <h3 className="text-sm font-semibold text-gray-800 dark:text-zinc-200 mb-4">Gastos ao longo do ano — {currentYear}</h3>
-            <ResponsiveContainer width="100%" height={180}>
-              <AreaChart data={yearlyChartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="expGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--color-primary, #7c3aed)" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="var(--color-primary, #7c3aed)" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
-                <YAxis tickFormatter={(v) => `R$${v >= 1000 ? (v / 1000).toFixed(0) + "k" : v}`} tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} width={48} />
-                <Tooltip formatter={(v: number) => formatCurrency(v)} labelStyle={{ fontWeight: 600 }} />
-                <Area type="monotone" dataKey="total" name="Gastos" stroke="var(--color-primary, #7c3aed)" strokeWidth={2} fill="url(#expGradient)" dot={{ r: 3, fill: "var(--color-primary, #7c3aed)" }} activeDot={{ r: 5 }} />
-              </AreaChart>
-            </ResponsiveContainer>
+          {/* ── Area — Gastos ao longo do ano ── */}
+          <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-bold text-gray-900 dark:text-zinc-100">Gastos ao longo do ano</h3>
+              <span className="flex items-center gap-1 rounded-lg border border-gray-200 dark:border-zinc-700 px-3 py-1 text-xs font-medium text-gray-600 dark:text-zinc-300">
+                Valor (R$) <ChevronDown className="h-3.5 w-3.5" />
+              </span>
+            </div>
+            <div className="flex-1">
+              <ResponsiveContainer width="100%" height={200}>
+                <AreaChart data={yearlyChartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="expAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#22c55e" stopOpacity={0.25} />
+                      <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
+                  <YAxis
+                    tickFormatter={(v) => v === 0 ? "R$0" : `R$${(v / 1000).toFixed(0)} mil`}
+                    tick={{ fontSize: 11, fill: "#9ca3af" }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={58}
+                  />
+                  <Tooltip
+                    formatter={(v: number) => [formatCurrency(v), "Gastos"]}
+                    labelFormatter={(label) => `${label}/${currentYear}`}
+                    contentStyle={{ borderRadius: 8, border: "1px solid #e5e7eb", fontSize: 12, fontWeight: 600 }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="total"
+                    name="Gastos"
+                    stroke="#22c55e"
+                    strokeWidth={2}
+                    fill="url(#expAreaGrad)"
+                    dot={{ r: 4, fill: "#22c55e", strokeWidth: 0 }}
+                    activeDot={{ r: 6, fill: "#22c55e" }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
       )}
