@@ -285,6 +285,13 @@ export default function DespesasPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={(e) => { e.stopPropagation(); setShowCharts((v) => !v) }}
+            className={`flex items-center gap-1.5 rounded-lg border px-3 h-9 text-sm font-medium transition ${showCharts ? "border-primary bg-primary/10 text-primary dark:bg-primary/20" : "border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-600 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800"}`}
+          >
+            <BarChart2 className="h-4 w-4" />
+            {showCharts ? "Ocultar" : "Ver gráficos"}
+          </button>
           <Button onClick={openNewDialog} className="bg-primary text-white hover:bg-primary/90 gap-1.5">
             <Plus className="h-4 w-4" /> Nova Despesa
           </Button>
@@ -355,18 +362,6 @@ export default function DespesasPage() {
             <p className="text-xs text-gray-400 dark:text-zinc-500">{monthExpenses.length} no período</p>
           </div>
           <ChevronRight className="h-4 w-4 text-gray-400 dark:text-zinc-500 ml-auto shrink-0" />
-        </button>
-      </div>
-
-      {/* ===== CHARTS TOGGLE ===== */}
-      <div className="flex justify-end mb-2">
-        <button
-          onClick={() => setShowCharts((v) => !v)}
-          className="flex items-center gap-1.5 text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-primary dark:hover:text-primary transition-colors"
-        >
-          <BarChart2 className="h-4 w-4" />
-          {showCharts ? "Ocultar gráficos" : "Ver gráficos"}
-          {showCharts ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
         </button>
       </div>
 
