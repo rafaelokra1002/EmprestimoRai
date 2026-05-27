@@ -76,7 +76,8 @@ export default function RelatorioEmprestimosPage() {
   const [startDate, setStartDate] = useState(firstOfMonth())
   const [endDate, setEndDate] = useState(lastOfMonth())
   const autoDateSet = useRef(false)
-  const [paymentFilter, setPaymentFilter] = useState<"monthly" | "open_month">("open_month")
+  const [paymentFilter, setPaymentFilter] = useState<"all" | "monthly" | "installment">("all")
+  const [showModalityCards, setShowModalityCards] = useState(true)
   const [caixaExtra, setCaixaExtra] = useState(0)
   const [caixaInicial, setCaixaInicial] = useState(0)
   const [includeExpenses, setIncludeExpenses] = useState(true)
@@ -140,7 +141,8 @@ export default function RelatorioEmprestimosPage() {
       const loanDate = localDateStr(new Date(loan.contractDate || loan.createdAt))
       if (startDate && loanDate < startDate) return false
       if (endDate && loanDate > endDate) return false
-      if (paymentFilter === "monthly" && loan.modality !== "MONTHLY") return false
+      if (paymentFilter === "monthly" && loan.installmentCount !== 1) return false
+      if (paymentFilter === "installment" && loan.installmentCount <= 1) return false
       return true
     })
   }, [loans, startDate, endDate, paymentFilter])
@@ -151,7 +153,8 @@ export default function RelatorioEmprestimosPage() {
       const loanDate = localDateStr(new Date(loan.contractDate || loan.createdAt))
       if (endDate && loanDate > endDate) return false
       if (loan.status !== "ACTIVE" && startDate && loanDate < startDate) return false
-      if (paymentFilter === "monthly" && loan.modality !== "MONTHLY") return false
+      if (paymentFilter === "monthly" && loan.installmentCount !== 1) return false
+      if (paymentFilter === "installment" && loan.installmentCount <= 1) return false
       return true
     })
   }, [loans, startDate, endDate, paymentFilter])
@@ -166,9 +169,24 @@ export default function RelatorioEmprestimosPage() {
         if (endDate && d > endDate) return false
         return true
       })
-    if (paymentFilter === "monthly") return base.filter(l => l.modality === "MONTHLY" && hasInstInPeriod(l))
+    if (paymentFilter === "monthly") return base.filter(l => l.installmentCount === 1 && hasInstInPeriod(l))
+    if (paymentFilter === "installment") return base.filter(l => l.installmentCount > 1 && hasInstInPeriod(l))
     return base.filter(hasInstInPeriod)
   }, [loans, paymentFilter, startDate, endDate])
+
+  const modalityStats = useMemo(() => {
+    const allActive = loans.filter(l => l.status === "ACTIVE")
+    const calc = (subset: Loan[]) => ({
+      capitalNaRua: subset.reduce((s, l) => s + l.amount, 0),
+      lucro: subset.reduce((s, l) => s + l.profit, 0),
+      contratos: subset.length,
+    })
+    return {
+      all: calc(allActive),
+      installment: calc(allActive.filter(l => l.installmentCount > 1)),
+      monthly: calc(allActive.filter(l => l.installmentCount === 1)),
+    }
+  }, [loans])
 
   const filteredActiveLoans = useMemo(() => filtered.filter(l => l.status === "ACTIVE"), [filtered])
 
@@ -180,6 +198,13 @@ export default function RelatorioEmprestimosPage() {
       return true
     })
   }, [expenses, startDate, endDate])
+
+  // All loans filtered by type only (no date filter) — used for charts
+  const paymentFilteredLoans = useMemo(() => {
+    if (paymentFilter === "monthly") return loans.filter(l => l.installmentCount === 1)
+    if (paymentFilter === "installment") return loans.filter(l => l.installmentCount > 1)
+    return loans
+  }, [loans, paymentFilter])
 
   // ===== CALCULATIONS =====
   const capitalNaRua = useMemo(() => {
@@ -266,8 +291,8 @@ export default function RelatorioEmprestimosPage() {
   }, [activeLoans, endDate])
 
   const totalRecebidoHistorico = useMemo(() => {
-    return loans.reduce((sum, l) => sum + l.payments.reduce((s: number, p: any) => s + p.amount, 0), 0)
-  }, [loans])
+    return paymentFilteredLoans.reduce((sum, l) => sum + l.payments.reduce((s: number, p: any) => s + p.amount, 0), 0)
+  }, [paymentFilteredLoans])
 
   const faltaReceber = useMemo(() => {
     return activeLoans.reduce((sum, l) => {
@@ -367,7 +392,7 @@ export default function RelatorioEmprestimosPage() {
       let recebidoAcum = 0
       let lucroAcum = 0
 
-      loans.forEach((l) => {
+      paymentFilteredLoans.forEach((l) => {
         if (new Date(l.createdAt) <= endOfMonth && l.status !== "CANCELLED") {
           naRua += l.totalAmount
           l.payments.forEach((p: any) => {
@@ -384,7 +409,7 @@ export default function RelatorioEmprestimosPage() {
       months.push({ label: monthLabel, naRua: naRua - recebidoAcum, recebido: recebidoAcum, lucro: lucroAcum })
     }
     return months
-  }, [loans])
+  }, [paymentFilteredLoans])
 
   // Distribution bar chart
   const distributionData = useMemo(() => {
@@ -447,7 +472,7 @@ export default function RelatorioEmprestimosPage() {
       </Card>
   */
 
-  const FILTER_LABELS: Record<string, string> = { monthly: "Mensal", open_month: "Em aberto no mês" }
+  const FILTER_LABELS: Record<string, string> = { monthly: "Mensal", all: "Todos", installment: "Parcelado" }
 
   return (
     <div className="space-y-6 pt-6 pb-12">
@@ -491,31 +516,77 @@ export default function RelatorioEmprestimosPage() {
       </div>
 
       {/* ===== PAYMENT TYPE FILTER ===== */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-3">
-          <FilterDropdown
-            label="Filtros"
-            icon={<Filter className="h-4 w-4" />}
-            tone="emerald"
-            value={paymentFilter}
-            onChange={(value) => setPaymentFilter(value as "monthly" | "open_month")}
-            options={(["open_month", "monthly"] as const).map((value) => ({ value, label: FILTER_LABELS[value] }))}
-            minWidthClassName="min-w-[180px]"
-          />
-          <FilterDropdown
-            label="Saídas"
-            icon={<Wallet className="h-4 w-4" />}
-            tone="orange"
-            value={includeExpenses ? "with_expenses" : "without_expenses"}
-            onChange={(value) => setIncludeExpenses(value === "with_expenses")}
-            options={[
-              { value: "with_expenses", label: "Com contas a pagar" },
-              { value: "without_expenses", label: "Sem contas a pagar" },
-            ]}
-            minWidthClassName="min-w-[220px]"
-          />
-          <span className="text-sm text-primary ml-2">Na Rua: {formatCurrency(capitalNaRua)}</span>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Filter className="h-4 w-4 text-gray-500 dark:text-zinc-400" />
+            <span className="text-sm font-medium text-gray-700 dark:text-zinc-300">Tipo de Pagamento:</span>
+            <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-primary/10 text-primary">{FILTER_LABELS[paymentFilter]}</span>
+            <span className="text-sm text-primary">Na Rua: {formatCurrency(capitalNaRua)}</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <FilterDropdown
+              label="Saídas"
+              icon={<Wallet className="h-4 w-4" />}
+              tone="orange"
+              value={includeExpenses ? "with_expenses" : "without_expenses"}
+              onChange={(value) => setIncludeExpenses(value === "with_expenses")}
+              options={[
+                { value: "with_expenses", label: "Com contas a pagar" },
+                { value: "without_expenses", label: "Sem contas a pagar" },
+              ]}
+              minWidthClassName="min-w-[220px]"
+            />
+            <button
+              onClick={() => setShowModalityCards(v => !v)}
+              className="flex items-center gap-1 text-sm text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200"
+            >
+              {showModalityCards ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              {showModalityCards ? "Ocultar" : "Mostrar"}
+            </button>
+          </div>
         </div>
+
+        {showModalityCards && (
+          <div className="grid grid-cols-3 gap-3">
+            {(["all", "installment", "monthly"] as const).map((type) => {
+              const isActive = paymentFilter === type
+              const stats = modalityStats[type]
+              return (
+                <button
+                  key={type}
+                  onClick={() => setPaymentFilter(type)}
+                  className={`rounded-xl border p-4 text-left transition-colors ${
+                    isActive
+                      ? "border-primary bg-primary/5 dark:bg-primary/10"
+                      : "border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-primary/50 hover:bg-primary/5 dark:hover:bg-primary/10"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm font-semibold text-gray-800 dark:text-zinc-200">{FILTER_LABELS[type]}</span>
+                    {isActive && (
+                      <span className="text-[10px] font-bold uppercase tracking-wide rounded-full px-2 py-0.5 bg-primary text-white">Ativo</span>
+                    )}
+                  </div>
+                  <div className="space-y-1 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-500 dark:text-zinc-400">Na Rua</span>
+                      <span className="font-semibold text-primary tabular-nums">{formatCurrency(stats.capitalNaRua)}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-500 dark:text-zinc-400">Lucro</span>
+                      <span className="font-semibold text-gray-700 dark:text-zinc-300 tabular-nums">{formatCurrency(stats.lucro)}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-500 dark:text-zinc-400">Contratos</span>
+                      <span className="font-semibold text-gray-700 dark:text-zinc-300">{stats.contratos} {stats.contratos === 1 ? "ativo" : "ativos"}</span>
+                    </div>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       {/* Fluxo de caixa ocultado temporariamente. Implementacao mantida em comentario no corpo do componente para reutilizacao futura. */}
@@ -598,8 +669,8 @@ export default function RelatorioEmprestimosPage() {
               <CheckCircle2 className="h-4 w-4 text-primary" />
               <span className="text-xs text-gray-500 dark:text-zinc-400">Total Recebido</span>
             </div>
-            <p className="text-2xl font-bold tabular-nums tracking-tight text-primary">{formatCurrency(pagamentosNoPeriodo)}</p>
-            <p className="text-xs text-gray-400 dark:text-zinc-500">No período</p>
+            <p className="text-2xl font-bold tabular-nums tracking-tight text-primary">{formatCurrency(totalRecebidoHistorico)}</p>
+            <p className="text-xs text-gray-400 dark:text-zinc-500">Total histórico</p>
           </CardContent>
         </Card>
 

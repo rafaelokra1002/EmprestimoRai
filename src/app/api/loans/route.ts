@@ -17,7 +17,7 @@ export async function GET(request: Request) {
     const includeDeleted = searchParams.get("includeDeleted") === "true"
 
     const loans = await prisma.loan.findMany({
-      where: { userId: (session.user as any).id, ...(includeDeleted ? {} : { deleted: false }) },
+      where: { userId: (session.user as any).id, ...(includeDeleted ? {} : { deleted: false }), client: { status: { not: "DESAPARECIDO" } } },
       include: {
         client: { select: { id: true, name: true, photo: true, city: true, status: true } },
         installments: { orderBy: { number: "asc" } },

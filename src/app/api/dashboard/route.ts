@@ -73,11 +73,11 @@ export async function GET(request: Request) {
         _sum: { amount: true },
       }),
       prisma.loan.findMany({
-        where: { userId, deleted: false },
+        where: { userId, deleted: false, client: { status: { not: "DESAPARECIDO" } } },
         select: { totalAmount: true, profit: true, payments: { select: { amount: true, notes: true } }, installments: { select: { paidAmount: true } } },
       }),
       prisma.payment.aggregate({
-        where: { loan: { userId, deleted: false } },
+        where: { loan: { userId, deleted: false, client: { status: { not: "DESAPARECIDO" } } } },
         _sum: { amount: true },
       }),
     ])

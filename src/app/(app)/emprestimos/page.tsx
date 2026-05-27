@@ -858,6 +858,32 @@ export default function EmprestimosPage() {
     return `Cliente: ${name}\n\n────────────────\n🚨 PAGAMENTO EM ATRASO\n\n📅 Vencimento: ${formatDate(oldestOverdue.dueDate)}\n📆 Atraso: ${daysLate} dia${daysLate !== 1 ? "s" : ""}\n\n💰 Pagamento Total: ${formatCurrency(totalToPay)}\n🔄 Regularização (juros): ${formatCurrency(jurosRegularizacao)}\n\n⚠️ Atraso:\n${formatCurrency(dailyRate > 0 ? dailyRate : 15)} por dia até regularização.\n\n────────────────\n👤 Titular: ${profileChargeName || "Titular"}\n\n💠 Chave Pix: ${profilePixKey || "Não cadastrada"}`
   }
 
+  const buildLembreteSimpleMessage = (loan: Loan) => {
+    const name = loan.client.name
+    const nextInst = getNextDueInst(loan)
+    if (!nextInst) return buildDefaultWhatsappMessage(loan)
+    const daysLeft = Math.max(0, Math.ceil((new Date(nextInst.dueDate).getTime() - Date.now()) / 86400000))
+    return `Olá, ${name}\n\n📌 LEMBRETE DE PAGAMENTO\n\n📅 Vencimento: ${formatDate(nextInst.dueDate)}\n⏳ Faltam: ${daysLeft} dia${daysLeft !== 1 ? "s" : ""}\n\n💰 Valor total: ${formatCurrency(loan.totalAmount)}\n📈 Juros: ${formatCurrency(loan.profit)}\n\n🔄 Renove seu Prazo\nPague os juros e receba +30 dias.\n\n───────────────\n👤: ${profileChargeName || "Titular"}\n\n💠 Chave Pix: ${profilePixKey || "Não cadastrada"}`
+  }
+
+  const buildParcelamentoMessage = (loan: Loan) => {
+    const name = loan.client.name
+    const nextInst = getNextDueInst(loan)
+    if (!nextInst) return buildDefaultWhatsappMessage(loan)
+    const nowTs = Date.now()
+    const daysLeft = Math.max(0, Math.ceil((new Date(nextInst.dueDate).getTime() - nowTs) / 86400000))
+    const numEmojis = ["1️⃣","2️⃣","3️⃣","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣","🔟"]
+    const allInsts: any[] = [...loan.installments].sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+    const statusLines = allInsts.map((i: any, idx: number) => {
+      const isPaid = i.status === "PAID"
+      const emoji = numEmojis[idx] || `${idx + 1}.`
+      const dateStr = formatDate(i.dueDate)
+      if (isPaid) return `${emoji} ✅ ${dateStr} - Pago`
+      return `${emoji} ⏳ ${dateStr} - Em Aberto`
+    })
+    return `Parcelamento\n👤: ${name}\n\n────────────────\n📋 LEMBRETE DE PAGAMENTO\n\n📌 Parcela: ${nextInst.number}/${loan.installmentCount}\n💵 Valor: ${formatCurrency(nextInst.amount)}\n📅 Vencimento: ${formatDate(nextInst.dueDate)}\n⏳ Faltam: ${daysLeft} dia${daysLeft !== 1 ? "s" : ""}\n\n📊 STATUS DAS PARCELAS:\n${statusLines.join("\n")}\n\n────────────────\n👤 ${profileChargeName || "Titular"}\n\n💳 Chave PIX:\n${profilePixKey || "Não cadastrada"}`
+  }
+
   const openWhatsappDialog = (loan: Loan) => {
     const freshLoan = loans.find(l => l.id === loan.id) || loan
     setWhatsappLoan(freshLoan)
@@ -3840,7 +3866,33 @@ export default function EmprestimosPage() {
 
               <div>
                 <Label className="text-sm font-medium">Mensagem de Cobrança</Label>
-                <p className="text-xs text-gray-400 dark:text-zinc-500 mb-2">Edite a mensagem antes de enviar</p>
+                <div className="flex items-center gap-2 mt-1 mb-2">
+                  <span className="text-xs text-gray-400 dark:text-zinc-500">Template:</span>
+                  <button
+                    type="button"
+                    onClick={() => setWhatsappMessage(buildDefaultWhatsappMessage(whatsappLoan))}
+                    className="text-xs px-2.5 py-1 rounded-full border border-gray-300 dark:border-zinc-600 text-gray-600 dark:text-zinc-300 hover:border-primary hover:text-primary transition-colors"
+                  >
+                    Padrão
+                  </button>
+                  {whatsappLoan.installmentCount > 1 ? (
+                    <button
+                      type="button"
+                      onClick={() => setWhatsappMessage(buildParcelamentoMessage(whatsappLoan))}
+                      className="text-xs px-2.5 py-1 rounded-full border border-gray-300 dark:border-zinc-600 text-gray-600 dark:text-zinc-300 hover:border-primary hover:text-primary transition-colors"
+                    >
+                      Parcelamento
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setWhatsappMessage(buildLembreteSimpleMessage(whatsappLoan))}
+                      className="text-xs px-2.5 py-1 rounded-full border border-gray-300 dark:border-zinc-600 text-gray-600 dark:text-zinc-300 hover:border-primary hover:text-primary transition-colors"
+                    >
+                      Lembrete
+                    </button>
+                  )}
+                </div>
                 <Textarea
                   value={whatsappMessage}
                   onChange={(e) => setWhatsappMessage(e.target.value)}
