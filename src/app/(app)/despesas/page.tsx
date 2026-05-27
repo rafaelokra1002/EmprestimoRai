@@ -17,7 +17,6 @@ import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
 } from "recharts"
-import { useRouter } from "next/navigation"
 
 type StatusFilter = "todas" | "vence_hoje" | "pendentes" | "atrasadas" | "pagas"
 
@@ -28,8 +27,7 @@ const CATEGORIES = [
 ]
 
 export default function DespesasPage() {
-  const router = useRouter()
-  const [expenses, setExpenses] = useState<any[]>([])
+const [expenses, setExpenses] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [search, setSearch] = useState("")
@@ -293,6 +291,39 @@ export default function DespesasPage() {
               </div>
             )}
           </div>
+
+          {/* Filtro ano/mês compacto */}
+          <div className="flex items-center gap-1">
+            {/* Ano */}
+            <div className="flex items-center gap-0.5 rounded-full border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-1 py-0.5">
+              <button
+                onClick={() => { setCurrentYear((y) => y - 1); setShowAllMonths(false) }}
+                className="inline-flex h-5 w-5 items-center justify-center rounded-full text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800"
+              >
+                <ChevronLeft className="h-3 w-3" />
+              </button>
+              <span className="w-10 text-center text-xs font-bold text-gray-800 dark:text-zinc-200 tabular-nums">{currentYear}</span>
+              <button
+                onClick={() => { setCurrentYear((y) => y + 1); setShowAllMonths(false) }}
+                className="inline-flex h-5 w-5 items-center justify-center rounded-full text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800"
+              >
+                <ChevronRight className="h-3 w-3" />
+              </button>
+            </div>
+            {/* Mês */}
+            <button onClick={prevMonth} className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-600 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800">
+              <ChevronLeft className="h-3 w-3" />
+            </button>
+            <button
+              onClick={() => setShowAllMonths((v) => !v)}
+              className={`rounded-full border px-3 py-0.5 text-xs font-semibold transition ${showAllMonths ? "border-primary bg-primary text-white" : "border-gray-300 dark:border-zinc-600 text-gray-700 dark:text-zinc-200 hover:border-primary"}`}
+            >
+              {showAllMonths ? "Todos" : monthName}
+            </button>
+            <button onClick={nextMonth} className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-600 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800">
+              <ChevronRight className="h-3 w-3" />
+            </button>
+          </div>
         </div>
 
         <div className="flex items-center gap-2">
@@ -440,14 +471,6 @@ export default function DespesasPage() {
                 </div>
               </div>
             )}
-            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-zinc-800">
-              <button
-                onClick={() => router.push("/emprestimos/relatorio")}
-                className="flex items-center gap-1 text-sm font-medium text-gray-600 dark:text-zinc-400 hover:text-primary dark:hover:text-primary transition-colors"
-              >
-                Ver relatório completo <span className="text-base">→</span>
-              </button>
-            </div>
           </div>
 
           {/* ── Area — Gastos ao longo do ano ── */}
@@ -497,40 +520,6 @@ export default function DespesasPage() {
           </div>
         </div>
       )}
-
-      {/* ===== MONTH + YEAR NAVIGATION ===== */}
-      <div className="flex items-center justify-center gap-3 mb-5">
-        {/* Seletor de ano */}
-        <div className="flex items-center gap-1 rounded-full border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-1 py-1">
-          <button
-            onClick={() => { setCurrentYear((y) => y - 1); setShowAllMonths(false) }}
-            className="inline-flex h-6 w-6 items-center justify-center rounded-full text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800"
-          >
-            <ChevronLeft className="h-3.5 w-3.5" />
-          </button>
-          <span className="w-12 text-center text-sm font-bold text-gray-800 dark:text-zinc-200 tabular-nums">{currentYear}</span>
-          <button
-            onClick={() => { setCurrentYear((y) => y + 1); setShowAllMonths(false) }}
-            className="inline-flex h-6 w-6 items-center justify-center rounded-full text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800"
-          >
-            <ChevronRight className="h-3.5 w-3.5" />
-          </button>
-        </div>
-
-        {/* Seletor de mês */}
-        <button onClick={prevMonth} className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-600 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800">
-          <ChevronLeft className="h-4 w-4" />
-        </button>
-        <button
-          onClick={() => setShowAllMonths((v) => !v)}
-          className={`rounded-full border px-5 py-1.5 text-sm font-semibold transition ${showAllMonths ? "border-primary bg-primary text-white" : "border-gray-300 dark:border-zinc-600 text-gray-700 dark:text-zinc-200 hover:border-primary"}`}
-        >
-          {showAllMonths ? "Todos os meses" : monthName}
-        </button>
-        <button onClick={nextMonth} className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-600 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800">
-          <ChevronRight className="h-4 w-4" />
-        </button>
-      </div>
 
       {/* ===== TABLE ===== */}
       <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
