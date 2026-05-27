@@ -162,8 +162,9 @@ export default function DespesasPage() {
       pagas: pagas.reduce((s, e) => s + e.amount, 0),
       pagasCount: pagas.length,
       total: monthExpenses.reduce((s, e) => s + e.amount, 0),
+      totalAno: expenses.filter((e) => new Date(e.dueDate).getFullYear() === currentYear).reduce((s, e) => s + e.amount, 0),
     }
-  }, [monthExpenses])
+  }, [monthExpenses, expenses, currentYear])
 
   const filteredExpenses = useMemo(() => {
     let list = monthExpenses
@@ -319,20 +320,16 @@ export default function DespesasPage() {
 
       {/* ===== SUMMARY CARDS ===== */}
       <div className="grid grid-cols-3 gap-3 mb-5">
-        <button
-          onClick={() => setStatusFilter(statusFilter === "pendentes" ? "todas" : "pendentes")}
-          className={`flex items-center gap-4 rounded-2xl border p-4 text-left transition ${statusFilter === "pendentes" ? "border-primary/40 bg-primary/5 dark:bg-primary/10" : "border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-primary/30"}`}
-        >
+        <div className="flex items-center gap-4 rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 dark:bg-primary/20">
             <TrendingUp className="h-5 w-5 text-primary" />
           </div>
           <div className="min-w-0">
-            <p className="text-xs text-gray-500 dark:text-zinc-400 truncate">Despesas pendentes</p>
-            <p className="text-xl font-bold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(stats.pendentes)}</p>
-            <p className="text-xs text-gray-400 dark:text-zinc-500">{stats.pendentesCount} conta{stats.pendentesCount !== 1 ? "s" : ""}</p>
+            <p className="text-xs text-gray-500 dark:text-zinc-400 truncate">Total gasto (ano)</p>
+            <p className="text-xl font-bold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(stats.totalAno)}</p>
+            <p className="text-xs text-gray-400 dark:text-zinc-500">em {currentYear}</p>
           </div>
-          <ChevronRight className="h-4 w-4 text-gray-400 dark:text-zinc-500 ml-auto shrink-0" />
-        </button>
+        </div>
 
         <button
           onClick={() => setStatusFilter(statusFilter === "pagas" ? "todas" : "pagas")}
