@@ -477,8 +477,26 @@ export default function DespesasPage() {
         </div>
       )}
 
-      {/* ===== MONTH NAVIGATION ===== */}
-      <div className="flex items-center justify-center gap-4 mb-5">
+      {/* ===== MONTH + YEAR NAVIGATION ===== */}
+      <div className="flex items-center justify-center gap-3 mb-5">
+        {/* Seletor de ano */}
+        <div className="flex items-center gap-1 rounded-full border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-1 py-1">
+          <button
+            onClick={() => { setCurrentYear((y) => y - 1); setShowAllMonths(false) }}
+            className="inline-flex h-6 w-6 items-center justify-center rounded-full text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800"
+          >
+            <ChevronLeft className="h-3.5 w-3.5" />
+          </button>
+          <span className="w-12 text-center text-sm font-bold text-gray-800 dark:text-zinc-200 tabular-nums">{currentYear}</span>
+          <button
+            onClick={() => { setCurrentYear((y) => y + 1); setShowAllMonths(false) }}
+            className="inline-flex h-6 w-6 items-center justify-center rounded-full text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800"
+          >
+            <ChevronRight className="h-3.5 w-3.5" />
+          </button>
+        </div>
+
+        {/* Seletor de mês */}
         <button onClick={prevMonth} className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-600 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800">
           <ChevronLeft className="h-4 w-4" />
         </button>
@@ -486,7 +504,7 @@ export default function DespesasPage() {
           onClick={() => setShowAllMonths((v) => !v)}
           className={`rounded-full border px-5 py-1.5 text-sm font-semibold transition ${showAllMonths ? "border-primary bg-primary text-white" : "border-gray-300 dark:border-zinc-600 text-gray-700 dark:text-zinc-200 hover:border-primary"}`}
         >
-          {showAllMonths ? "Todos os períodos" : `${monthName} ${currentYear}`}
+          {showAllMonths ? "Todos os meses" : monthName}
         </button>
         <button onClick={nextMonth} className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-600 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800">
           <ChevronRight className="h-4 w-4" />
