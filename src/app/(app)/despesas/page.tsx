@@ -373,22 +373,22 @@ export default function DespesasPage() {
             {categoryChartData.length === 0 ? (
               <p className="text-center text-sm text-gray-400 dark:text-zinc-500 py-8 flex-1">Sem dados no período</p>
             ) : (
-              <div className="flex items-center gap-4 flex-1">
+              <div className="flex gap-6 flex-1">
                 {/* Donut */}
-                <div className="w-48 h-48 shrink-0">
+                <div style={{ width: 180, height: 180 }} className="shrink-0">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
                         data={categoryChartData}
                         dataKey="value"
-                        innerRadius="42%"
-                        outerRadius="72%"
+                        innerRadius={52}
+                        outerRadius={82}
                         paddingAngle={1}
                         startAngle={90}
                         endAngle={-270}
                         labelLine={false}
                         label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
-                          if (percent < 0.05) return null
+                          if (percent < 0.06) return null
                           const RADIAN = Math.PI / 180
                           const r = innerRadius + (outerRadius - innerRadius) * 0.5
                           const x = cx + r * Math.cos(-midAngle * RADIAN)
@@ -408,13 +408,13 @@ export default function DespesasPage() {
                 </div>
 
                 {/* Legenda */}
-                <div className="flex-1 space-y-2 min-w-0">
+                <div className="flex flex-col justify-center gap-2.5 flex-1">
                   {categoryChartData.slice(0, 6).map((d) => (
-                    <div key={d.name} className="flex items-center gap-2 text-xs">
-                      <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: d.color }} />
-                      <span className="flex-1 truncate font-medium text-gray-700 dark:text-zinc-300">{d.name}</span>
-                      <span className="tabular-nums text-gray-600 dark:text-zinc-300 shrink-0">{formatCurrency(d.value)}</span>
-                      <span className="tabular-nums text-gray-400 dark:text-zinc-500 w-10 text-right shrink-0">
+                    <div key={d.name} className="grid text-sm" style={{ gridTemplateColumns: "12px 1fr auto auto", gap: "0 10px", alignItems: "center" }}>
+                      <span className="h-3 w-3 rounded-full" style={{ backgroundColor: d.color }} />
+                      <span className="font-medium text-gray-800 dark:text-zinc-200">{d.name}</span>
+                      <span className="tabular-nums text-gray-600 dark:text-zinc-300 text-right">{formatCurrency(d.value)}</span>
+                      <span className="tabular-nums text-gray-400 dark:text-zinc-500 text-right w-12">
                         {totalCategorySum > 0 ? ((d.value / totalCategorySum) * 100).toFixed(1) : "0"}%
                       </span>
                     </div>
