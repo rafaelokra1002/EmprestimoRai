@@ -10,8 +10,13 @@ import {
   Plus, Search, ChevronLeft, ChevronRight, ChevronDown,
   CheckCircle2, Pencil, Undo2, Trash2,
   TrendingUp, TrendingDown, Scale, Package, MoreVertical,
+  BarChart2, ChevronUp,
 } from "lucide-react"
 import { formatCurrency, localDateStr } from "@/lib/utils"
+import {
+  PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Legend,
+} from "recharts"
 
 type StatusFilter = "todas" | "vence_hoje" | "pendentes" | "atrasadas" | "pagas"
 
@@ -33,6 +38,7 @@ export default function DespesasPage() {
   const [showAllMonths, setShowAllMonths] = useState(false)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [sortDateAsc, setSortDateAsc] = useState(false)
+  const [showCharts, setShowCharts] = useState(false)
 
   const [currentMonth, setCurrentMonth] = useState(() => new Date().getMonth())
   const [currentYear, setCurrentYear] = useState(() => new Date().getFullYear())
@@ -208,6 +214,38 @@ export default function DespesasPage() {
 
   const isFormValid = fDescription.trim().length >= 2
 
+  const CATEGORY_COLORS: Record<string, string> = {
+    "Aluguel": "#7c3aed", "Energia": "#f59e0b", "Água": "#3b82f6", "Internet": "#8b5cf6",
+    "Telefone/Celular": "#06b6d4", "Salários": "#10b981", "Combustível": "#f97316",
+    "Material": "#84cc16", "Marketing": "#ec4899", "Impostos": "#ef4444",
+    "SEGURO": "#a855f7", "Outros": "#71717a",
+  }
+
+  const categoryChartData = useMemo(() => {
+    const map: Record<string, number> = {}
+    for (const e of monthExpenses) {
+      map[e.category] = (map[e.category] || 0) + e.amount
+    }
+    return Object.entries(map)
+      .map(([name, value]) => ({ name, value, color: CATEGORY_COLORS[name] || "#71717a" }))
+      .sort((a, b) => b.value - a.value)
+  }, [monthExpenses])
+
+  const yearlyChartData = useMemo(() => {
+    const now = new Date()
+    const year = currentYear
+    return Array.from({ length: 12 }, (_, i) => {
+      const month = new Date(year, i)
+      const label = month.toLocaleString("pt-BR", { month: "short" }).replace(".", "")
+      const total = expenses
+        .filter((e) => { const d = new Date(e.dueDate); return d.getFullYear() === year && d.getMonth() === i })
+        .reduce((s, e) => s + e.amount, 0)
+      return { label: label.charAt(0).toUpperCase() + label.slice(1), total }
+    })
+  }, [expenses, currentYear])
+
+  const totalCategorySum = categoryChartData.reduce((s, d) => s + d.value, 0)
+
   const STATUS_FILTER_LABELS: Record<StatusFilter, string> = {
     todas: "Todas",
     vence_hoje: "Vence Hoje",
@@ -317,6 +355,75 @@ export default function DespesasPage() {
           <ChevronRight className="h-4 w-4 text-gray-400 dark:text-zinc-500 ml-auto shrink-0" />
         </button>
       </div>
+
+      {/* ===== CHARTS TOGGLE ===== */}
+      <div className="flex justify-end mb-2">
+        <button
+          onClick={() => setShowCharts((v) => !v)}
+          className="flex items-center gap-1.5 text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-primary dark:hover:text-primary transition-colors"
+        >
+          <BarChart2 className="h-4 w-4" />
+          {showCharts ? "Ocultar gráficos" : "Ver gráficos"}
+          {showCharts ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        </button>
+      </div>
+
+      {showCharts && (
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mb-5">
+          {/* Donut — categoria */}
+          <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5">
+            <h3 className="text-sm font-semibold text-gray-800 dark:text-zinc-200 mb-4">Valor gasto por categoria</h3>
+            {categoryChartData.length === 0 ? (
+              <p className="text-center text-sm text-gray-400 dark:text-zinc-500 py-8">Sem dados no período</p>
+            ) : (
+              <div className="flex items-center gap-6">
+                <div className="w-44 h-44 shrink-0">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={categoryChartData} dataKey="value" innerRadius="55%" outerRadius="80%" paddingAngle={2} startAngle={90} endAngle={-270}>
+                        {categoryChartData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                      </Pie>
+                      <Tooltip formatter={(v: number) => formatCurrency(v)} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="flex-1 space-y-2 min-w-0">
+                  {categoryChartData.slice(0, 6).map((d) => (
+                    <div key={d.name} className="flex items-center gap-2 text-xs">
+                      <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: d.color }} />
+                      <span className="truncate text-gray-700 dark:text-zinc-300 flex-1">{d.name}</span>
+                      <span className="tabular-nums text-gray-500 dark:text-zinc-400 shrink-0">{formatCurrency(d.value)}</span>
+                      <span className="tabular-nums text-gray-400 dark:text-zinc-500 shrink-0 w-10 text-right">
+                        {totalCategorySum > 0 ? ((d.value / totalCategorySum) * 100).toFixed(1) : 0}%
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Area — gastos ao longo do ano */}
+          <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5">
+            <h3 className="text-sm font-semibold text-gray-800 dark:text-zinc-200 mb-4">Gastos ao longo do ano — {currentYear}</h3>
+            <ResponsiveContainer width="100%" height={180}>
+              <AreaChart data={yearlyChartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="expGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--color-primary, #7c3aed)" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="var(--color-primary, #7c3aed)" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
+                <YAxis tickFormatter={(v) => `R$${v >= 1000 ? (v / 1000).toFixed(0) + "k" : v}`} tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} width={48} />
+                <Tooltip formatter={(v: number) => formatCurrency(v)} labelStyle={{ fontWeight: 600 }} />
+                <Area type="monotone" dataKey="total" name="Gastos" stroke="var(--color-primary, #7c3aed)" strokeWidth={2} fill="url(#expGradient)" dot={{ r: 3, fill: "var(--color-primary, #7c3aed)" }} activeDot={{ r: 5 }} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
 
       {/* ===== MONTH NAVIGATION ===== */}
       <div className="flex items-center justify-center gap-4 mb-5">
