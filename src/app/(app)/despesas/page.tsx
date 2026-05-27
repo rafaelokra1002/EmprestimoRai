@@ -339,9 +339,9 @@ export default function DespesasPage() {
             <TrendingDown className="h-5 w-5 text-primary" />
           </div>
           <div className="min-w-0">
-            <p className="text-xs text-gray-500 dark:text-zinc-400 truncate">Despesas pagas</p>
-            <p className="text-xl font-bold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(stats.pagas)}</p>
-            <p className="text-xs text-gray-400 dark:text-zinc-500">{stats.pagasCount} lançamento{stats.pagasCount !== 1 ? "s" : ""}</p>
+            <p className="text-xs text-gray-500 dark:text-zinc-400 truncate">Gastos do mês ({monthName})</p>
+            <p className="text-xl font-bold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(stats.total)}</p>
+            <p className="text-xs text-gray-400 dark:text-zinc-500">{monthExpenses.length} lançamento{monthExpenses.length !== 1 ? "s" : ""}</p>
           </div>
           <ChevronRight className="h-4 w-4 text-gray-400 dark:text-zinc-500 ml-auto shrink-0" />
         </button>
