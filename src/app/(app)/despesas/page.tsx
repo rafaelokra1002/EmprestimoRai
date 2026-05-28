@@ -44,7 +44,7 @@ const [expenses, setExpenses] = useState<any[]>([])
   const [currentYear, setCurrentYear] = useState(() => new Date().getFullYear())
 
   const [fDescription, setFDescription] = useState("")
-  const [fAmount, setFAmount] = useState("0,00")
+  const [fAmount, setFAmount] = useState("")
   const [fDueDate, setFDueDate] = useState(() => localDateStr())
   const [fCategory, setFCategory] = useState("Outros")
   const [fSupplier, setFSupplier] = useState("")
@@ -62,7 +62,7 @@ const [expenses, setExpenses] = useState<any[]>([])
   useEffect(() => { fetchExpenses() }, [])
 
   const resetForm = () => {
-    setFDescription(""); setFAmount("0,00"); setFDueDate(localDateStr())
+    setFDescription(""); setFAmount(""); setFDueDate(localDateStr())
     setFCategory("Outros"); setFSupplier(""); setFRecurring(false); setFNotes(""); setEditingId(null)
   }
 
