@@ -630,7 +630,7 @@ export default function EmprestimosPage() {
   }))
 
   const getCurrentOverdueCharge = (loan: Loan) => {
-    const now = new Date()
+    const now = new Date(); now.setHours(0, 0, 0, 0)
     const dailyRate = getOverdueDailyAmountBRL(buildLoanData({
       amount: loan.amount, interestRate: loan.interestRate, interestType: loan.interestType,
       totalAmount: loan.totalAmount, dailyInterestAmount: loan.dailyInterestAmount || 0,
@@ -640,7 +640,9 @@ export default function EmprestimosPage() {
     return loan.installments
       .filter((i: any) => i.status !== "PAID")
       .reduce((sum: number, i: any) => {
-        const daysOver = Math.max(0, Math.floor((now.getTime() - new Date(i.dueDate).getTime()) / 86400000))
+        const due = new Date(i.dueDate); due.setHours(0, 0, 0, 0)
+        if (due >= now) return sum
+        const daysOver = Math.max(0, Math.floor((now.getTime() - due.getTime()) / 86400000))
         return sum + dailyRate * daysOver
       }, 0)
   }
@@ -1047,9 +1049,22 @@ export default function EmprestimosPage() {
   const interestPerInst = (loan: Loan) =>
     Math.round((loan.profit / loan.installmentCount) * 100) / 100
 
-  // Saldo devedor usando calculateTotalAmountWithLateFee (4 camadas)
+  // Juros extras para empréstimos MENSAL (1 parcela) com múltiplos ciclos vencidos
+  const getExtraCyclesInterest = (loan: Loan) => {
+    if (loan.installmentCount !== 1) return 0
+    const overdueInst = loan.installments.find((i: any) => i.status !== "PAID")
+    if (!overdueInst) return 0
+    const now = new Date(); now.setHours(0, 0, 0, 0)
+    const due = new Date(overdueInst.dueDate); due.setHours(0, 0, 0, 0)
+    if (due >= now) return 0
+    const daysOver = Math.floor((now.getTime() - due.getTime()) / 86400000)
+    const extraCycles = Math.floor(daysOver / 30)
+    return extraCycles * interestPerInst(loan)
+  }
+
+  // Saldo devedor usando calculateTotalAmountWithLateFee (4 camadas) + juros extras de ciclos
   const getRemaining = (loan: Loan) => {
-    return calculateTotalAmountWithLateFee(buildLoanData({
+    const base = calculateTotalAmountWithLateFee(buildLoanData({
       amount: loan.amount,
       interestRate: loan.interestRate,
       interestType: loan.interestType,
@@ -1061,6 +1076,7 @@ export default function EmprestimosPage() {
       installments: loan.installments,
       payments: loan.payments,
     }))
+    return base + getExtraCyclesInterest(loan)
   }
 
   const openRenegotiateDialog = (loan: Loan) => {
@@ -1259,7 +1275,7 @@ export default function EmprestimosPage() {
         return !hasOverdue
       })
     } else if (loanFilter === "monthly") {
-      result = result.filter(l => l.modality === "MONTHLY")
+      result = result.filter(l => l.installmentCount === 1)
     } else if (loanFilter === "tagged") {
       result = result.filter(l => (l.tags || []).length > 0)
     }
@@ -1969,7 +1985,7 @@ export default function EmprestimosPage() {
                           const dueStartInst = new Date(inst.dueDate); dueStartInst.setHours(0, 0, 0, 0)
                           const instDays = Math.max(0, Math.floor((todayStartInst.getTime() - dueStartInst.getTime()) / (1000 * 60 * 60 * 24)))
                           const baseAmount = Math.max(0, inst.amount - (inst.paidAmount || 0))
-                          const payableAmount = getInstallmentPayableAmount(loan, inst)
+                          const payableAmount = getInstallmentPayableAmount(loan, inst) + getExtraCyclesInterest(loan)
                           const instPenalty = Math.max(0, Math.round((payableAmount - baseAmount) * 100) / 100)
                           return (
                             <div key={inst.id} className="space-y-1">
@@ -3367,8 +3383,13 @@ export default function EmprestimosPage() {
                       onClick={() => {
                         setRenegotiateMode("full")
                         const overdueCharge = getCurrentOverdueCharge(currentLoan)
-                        const newPeriodInterest = overdueCharge > 0 ? currentInterest : 0
-                        setRenegotiateAmount(currentInterest + overdueCharge + newPeriodInterest)
+                        if (overdueCharge > 0) {
+                          const overdueDays = getCurrentOverdueDays(currentLoan)
+                          const cyclesMissed = Math.max(1, Math.floor(overdueDays / 30))
+                          setRenegotiateAmount(currentInterest * (cyclesMissed + 1) + overdueCharge)
+                        } else {
+                          setRenegotiateAmount(currentInterest)
+                        }
                       }}
                       className="w-full rounded-3xl border p-5 text-left transition-colors border-gray-200 bg-white hover:bg-gray-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
                     >

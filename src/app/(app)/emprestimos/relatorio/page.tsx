@@ -261,7 +261,7 @@ export default function RelatorioEmprestimosPage() {
   const contasPagarCount = filteredExpenses.length
 
   const jurosAReceber = useMemo(() => {
-    const now = new Date()
+    const now = new Date(); now.setHours(0, 0, 0, 0)
     const todayStr = localDateStr(now)
     return activeLoans.reduce((sum, l) => {
       const totalInst = l.installmentCount
@@ -273,20 +273,33 @@ export default function RelatorioEmprestimosPage() {
         return true
       })
       const baseInterest = l.profit * unpaidInsts.length / totalInst
-      // multa diária acumulada para parcelas vencidas
       const dailyRate = getOverdueDailyAmountBRL(buildLoanData({
         amount: l.amount, interestRate: l.interestRate, interestType: l.interestType,
         totalAmount: l.totalAmount, dailyInterest: l.dailyInterest,
+        dailyInterestAmount: (l as any).dailyInterestAmount || 0,
         modality: l.modality, firstInstallmentDate: l.firstInstallmentDate,
         installments: l.installments, payments: l.payments,
       }))
       const multaDiaria = unpaidInsts.reduce((acc: number, i: any) => {
-        const d = localDateStr(new Date(i.dueDate))
-        if (d >= todayStr) return acc
-        const daysOver = Math.max(0, Math.floor((now.getTime() - new Date(i.dueDate).getTime()) / 86400000))
+        const due = new Date(i.dueDate); due.setHours(0, 0, 0, 0)
+        if (localDateStr(due) >= todayStr) return acc
+        const daysOver = Math.max(0, Math.floor((now.getTime() - due.getTime()) / 86400000))
         return acc + dailyRate * daysOver
       }, 0)
-      return sum + baseInterest + multaDiaria
+      // Juros extras para empréstimos mensais (1 parcela) com múltiplos ciclos vencidos
+      let extraCyclesInterest = 0
+      if (l.installmentCount === 1) {
+        const overdueInst = unpaidInsts[0]
+        if (overdueInst) {
+          const due = new Date(overdueInst.dueDate); due.setHours(0, 0, 0, 0)
+          if (due < now) {
+            const daysOver = Math.floor((now.getTime() - due.getTime()) / 86400000)
+            const extraCycles = Math.floor(daysOver / 30)
+            extraCyclesInterest = extraCycles * (l.profit / totalInst)
+          }
+        }
+      }
+      return sum + baseInterest + multaDiaria + extraCyclesInterest
     }, 0)
   }, [activeLoans, endDate])
 
@@ -303,20 +316,43 @@ export default function RelatorioEmprestimosPage() {
 
   const emAtraso = useMemo(() => {
     const now = new Date()
-    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`
-    const toDateStr = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+    const todayStr = localDateStr(now)
+    const base = loans.filter(l => l.status === "ACTIVE")
+    const typeFiltered = paymentFilter === "monthly" ? base.filter(l => l.installmentCount === 1)
+      : paymentFilter === "installment" ? base.filter(l => l.installmentCount > 1)
+      : base
     let total = 0
     let count = 0
-    activeLoans.forEach((l) => {
-      const hasOverdue = l.installments.some((i: any) => i.status !== "PAID" && toDateStr(new Date(i.dueDate)) < todayStr)
-      if (hasOverdue) {
+    typeFiltered.forEach((l) => {
+      const overdueInsts = l.installments.filter((i: any) => {
+        if (i.status === "PAID") return false
+        const d = localDateStr(new Date(i.dueDate))
+        if (d >= todayStr) return false
+        if (startDate && d < startDate) return false
+        if (endDate && d > endDate) return false
+        return true
+      })
+      if (overdueInsts.length > 0) {
         count++
-        const paid = l.payments.reduce((s: number, p: any) => s + p.amount, 0)
-        total += Math.max(0, l.totalAmount - paid)
+        const instTotal = overdueInsts.reduce((s: number, i: any) => s + Number(i.amount), 0)
+        const dailyRate = getOverdueDailyAmountBRL(buildLoanData({
+          amount: l.amount, interestRate: l.interestRate, interestType: l.interestType,
+          totalAmount: l.totalAmount, dailyInterest: l.dailyInterest,
+          dailyInterestAmount: Number((l as any).dailyInterestAmount || 0),
+          dueDay: (l as any).dueDay ?? undefined,
+          modality: l.modality, firstInstallmentDate: l.firstInstallmentDate,
+          installments: l.installments, payments: l.payments,
+        }))
+        const multas = overdueInsts.reduce((s: number, i: any) => {
+          const due = new Date(i.dueDate); due.setHours(0, 0, 0, 0)
+          const daysOver = Math.max(0, Math.floor((now.getTime() - due.getTime()) / 86400000))
+          return s + dailyRate * daysOver + Number((l as any).penaltyFee || 0)
+        }, 0)
+        total += instTotal + multas
       }
     })
     return { total, count }
-  }, [activeLoans])
+  }, [loans, paymentFilter, startDate, endDate])
 
   const lucroRealizado = jurosRecebidos
 
@@ -351,33 +387,55 @@ export default function RelatorioEmprestimosPage() {
   }, [activeLoans])
 
   const contratosEmAtraso = useMemo(() => {
-    const now = new Date()
-    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`
-    const toDateStr = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+    const todayStr = localDateStr(new Date())
+    const base = loans.filter(l => l.status === "ACTIVE")
+    const typeFiltered = paymentFilter === "monthly" ? base.filter(l => l.installmentCount === 1)
+      : paymentFilter === "installment" ? base.filter(l => l.installmentCount > 1)
+      : base
 
-    return activeLoans
+    return typeFiltered
       .map((loan) => {
-        const paid = loan.payments.reduce((sum: number, payment: any) => sum + payment.amount, 0)
-        const nextInst = loan.installments
-          .filter((installment: any) => installment.status !== "PAID")
-          .sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0]
+        const overdueInsts = loan.installments.filter((i: any) => {
+          if (i.status === "PAID") return false
+          const d = localDateStr(new Date(i.dueDate))
+          if (d >= todayStr) return false
+          if (startDate && d < startDate) return false
+          if (endDate && d > endDate) return false
+          return true
+        })
+        if (overdueInsts.length === 0) return null
 
-        if (!nextInst || toDateStr(new Date(nextInst.dueDate)) >= todayStr) return null
-
-        const clientPhone = clients.find((client) => client.id === loan.client.id)?.phone || null
+        const instTotal = overdueInsts.reduce((s: number, i: any) => s + Number(i.amount), 0)
+        const now = new Date()
+        const dailyRate = getOverdueDailyAmountBRL(buildLoanData({
+          amount: loan.amount, interestRate: loan.interestRate, interestType: loan.interestType,
+          totalAmount: loan.totalAmount, dailyInterest: loan.dailyInterest,
+          dailyInterestAmount: Number((loan as any).dailyInterestAmount || 0),
+          dueDay: (loan as any).dueDay ?? undefined,
+          modality: loan.modality, firstInstallmentDate: loan.firstInstallmentDate,
+          installments: loan.installments, payments: loan.payments,
+        }))
+        const multas = overdueInsts.reduce((s: number, i: any) => {
+          const due = new Date(i.dueDate); due.setHours(0, 0, 0, 0)
+          const daysOver = Math.max(0, Math.floor((now.getTime() - due.getTime()) / 86400000))
+          return s + dailyRate * daysOver + Number((loan as any).penaltyFee || 0)
+        }, 0)
+        const atraso = instTotal + multas
+        const firstOverdue = overdueInsts.sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0]
+        const clientPhone = clients.find((c) => c.id === loan.client.id)?.phone || null
 
         return {
           id: loan.id,
           clientName: loan.client.name,
-          atraso: Math.max(0, loan.totalAmount - paid),
+          atraso,
           emprestado: loan.amount,
-          vencimento: nextInst.dueDate,
+          vencimento: firstOverdue.dueDate,
           telefone: clientPhone,
         }
       })
       .filter((loan): loan is NonNullable<typeof loan> => loan !== null)
       .sort((a, b) => new Date(a.vencimento).getTime() - new Date(b.vencimento).getTime())
-  }, [activeLoans, clients])
+  }, [loans, paymentFilter, startDate, endDate, clients])
 
   // Monthly evolution chart data (last 6 months)
   const monthlyEvolution = useMemo(() => {
