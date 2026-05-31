@@ -432,24 +432,23 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* Multa + Próximos Vencimentos */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-stretch">
+      {/* Multa de Atraso */}
+      <div className="flex flex-col gap-4">
 
         {/* Card multa total */}
-        <div className="flex items-center gap-3 rounded-2xl border border-primary/20 bg-primary/5 dark:bg-primary/10 p-5 sm:w-72 shrink-0">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 dark:bg-primary/20">
-            <Receipt className="h-5 w-5 text-primary" />
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-gray-500 dark:text-zinc-400">Multa de Atraso</p>
-            <p className="mt-0.5 text-xl font-bold tabular-nums tracking-tight text-primary">
-              {formatCurrency(data?.totalPendingLateFees || 0)}
-            </p>
-            <p className="text-xs text-gray-400 dark:text-zinc-500">a receber</p>
-          </div>
+        <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
+          <KpiCard
+            title="Multa de Atraso"
+            value={formatCurrency(data?.totalPendingLateFees || 0)}
+            subtitle="a receber"
+            icon={Receipt}
+            iconClassName="text-primary"
+            iconBgClassName="bg-primary/5 dark:bg-primary/15"
+          />
         </div>
 
-      <div className="flex-1 min-w-0 rounded-2xl border border-primary/20 dark:border-primary/20 bg-white dark:bg-zinc-900 p-4">
+      {/* Próximos Vencimentos */}
+      <div className="rounded-2xl border border-primary/20 dark:border-primary/20 bg-white dark:bg-zinc-900 p-4">
         <div className="flex items-center gap-2 mb-3">
           <Calendar className="h-4 w-4 text-primary" />
           <h2 className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Próximos Vencimentos</h2>
@@ -522,7 +521,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      </div>
+      </div>{/* fim flex-col Multa + Próximos Vencimentos */}
 
       <div className="grid gap-4 xl:grid-cols-2">
         <Card className="h-full">

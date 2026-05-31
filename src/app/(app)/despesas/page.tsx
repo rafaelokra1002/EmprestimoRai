@@ -10,7 +10,7 @@ import {
   Plus, Search, ChevronLeft, ChevronRight, ChevronDown,
   CheckCircle2, Pencil, Undo2, Trash2,
   TrendingUp, TrendingDown, Scale, Package, MoreVertical,
-  BarChart2, ChevronUp,
+  BarChart2, ChevronUp, Settings2, Check, X,
 } from "lucide-react"
 import { formatCurrency, localDateStr } from "@/lib/utils"
 import {
@@ -20,11 +20,23 @@ import {
 
 type StatusFilter = "todas" | "vence_hoje" | "pendentes" | "atrasadas" | "pagas"
 
-const CATEGORIES = [
+const DEFAULT_CATEGORIES = [
   "Aluguel", "Energia", "Água", "Internet", "Telefone/Celular",
   "Salários", "Combustível", "Material", "Marketing",
   "Impostos", "SEGURO", "Outros",
 ]
+
+function loadCategories(): string[] {
+  try {
+    const saved = localStorage.getItem("despesas_categories")
+    if (saved) return JSON.parse(saved)
+  } catch {}
+  return DEFAULT_CATEGORIES
+}
+
+function saveCategories(cats: string[]) {
+  try { localStorage.setItem("despesas_categories", JSON.stringify(cats)) } catch {}
+}
 
 export default function DespesasPage() {
 const [expenses, setExpenses] = useState<any[]>([])
@@ -51,6 +63,36 @@ const [expenses, setExpenses] = useState<any[]>([])
   const [fRecurring, setFRecurring] = useState(false)
   const [fNotes, setFNotes] = useState("")
   const [editingId, setEditingId] = useState<string | null>(null)
+
+  const [categories, setCategories] = useState<string[]>(DEFAULT_CATEGORIES)
+  const [showCatManager, setShowCatManager] = useState(false)
+  const [newCatName, setNewCatName] = useState("")
+  const [editingCat, setEditingCat] = useState<string | null>(null)
+  const [editingCatValue, setEditingCatValue] = useState("")
+
+  useEffect(() => { setCategories(loadCategories()) }, [])
+
+  const addCategory = () => {
+    const name = newCatName.trim()
+    if (!name || categories.includes(name)) return
+    const updated = [...categories, name]
+    setCategories(updated); saveCategories(updated); setNewCatName("")
+  }
+
+  const deleteCategory = (cat: string) => {
+    const updated = categories.filter(c => c !== cat)
+    setCategories(updated); saveCategories(updated)
+    if (fCategory === cat) setFCategory(updated[0] || "")
+  }
+
+  const saveEditCategory = (oldCat: string) => {
+    const name = editingCatValue.trim()
+    if (!name || (name !== oldCat && categories.includes(name))) return
+    const updated = categories.map(c => c === oldCat ? name : c)
+    setCategories(updated); saveCategories(updated)
+    if (fCategory === oldCat) setFCategory(name)
+    setEditingCat(null); setEditingCatValue("")
+  }
 
   const fetchExpenses = async () => {
     const res = await fetch("/api/expenses")
@@ -415,6 +457,7 @@ const [expenses, setExpenses] = useState<any[]>([])
       </div>
 
       {showCharts && (
+        <div className="pt-6">
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mb-5">
           {/* ── Donut — Valor gasto por categoria ── */}
           <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 flex flex-col">
@@ -519,9 +562,11 @@ const [expenses, setExpenses] = useState<any[]>([])
             </div>
           </div>
         </div>
+        </div>
       )}
 
       {/* ===== TABLE ===== */}
+      <div className="pt-5">
       <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
         {loading ? (
           <div className="py-16 text-center text-gray-400 dark:text-zinc-500">Carregando despesas...</div>
@@ -534,14 +579,6 @@ const [expenses, setExpenses] = useState<any[]>([])
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100 dark:border-zinc-800 text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
-                <th className="px-4 py-3 w-10">
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.length === filteredExpenses.length && filteredExpenses.length > 0}
-                    onChange={toggleSelectAll}
-                    className="rounded border-gray-300 dark:border-zinc-600 accent-primary"
-                  />
-                </th>
                 <th className="px-4 py-3 font-medium text-left w-10">Sit.</th>
                 <th className="px-4 py-3 font-medium text-left cursor-pointer select-none" onClick={() => setSortDateAsc((v) => !v)}>
                   <span className="flex items-center gap-1">Data {sortDateAsc ? "↑" : "↓"}</span>
@@ -570,14 +607,6 @@ const [expenses, setExpenses] = useState<any[]>([])
                           className={`border-b border-gray-50 dark:border-zinc-800/60 transition ${isSelected ? "bg-primary/5 dark:bg-primary/10" : "hover:bg-gray-50/60 dark:hover:bg-zinc-800/40"}`}
                         >
                           <td className="px-4 py-3">
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={() => toggleSelect(exp.id)}
-                              className="rounded border-gray-300 dark:border-zinc-600 accent-primary"
-                            />
-                          </td>
-                          <td className="px-4 py-3">
                             {isPaid ? (
                               <CheckCircle2 className="h-5 w-5 text-primary" />
                             ) : isOverdue ? (
@@ -593,15 +622,20 @@ const [expenses, setExpenses] = useState<any[]>([])
                           <td className="px-4 py-3 text-gray-600 dark:text-zinc-400 whitespace-nowrap">{dateStr}</td>
                           <td className="px-4 py-3 font-medium text-gray-900 dark:text-zinc-100">{exp.description}</td>
                           <td className="px-4 py-3">
-                            <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                              isPaid
-                                ? "bg-primary/10 text-primary dark:bg-primary/20"
-                                : isOverdue
-                                  ? "bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-300"
-                                  : "bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300"
-                            }`}>
-                              {isPaid ? "Paga" : isOverdue ? "Atrasada" : exp.category}
-                            </span>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-gray-100 text-gray-700 dark:bg-zinc-800 dark:text-zinc-300">
+                                {exp.category}
+                              </span>
+                              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                                isPaid
+                                  ? "bg-primary/10 text-primary dark:bg-primary/20"
+                                  : isOverdue
+                                    ? "bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-300"
+                                    : "bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300"
+                              }`}>
+                                {isPaid ? "Paga" : isOverdue ? "Atrasada" : "Pendente"}
+                              </span>
+                            </div>
                           </td>
                           <td className="px-4 py-3 text-gray-500 dark:text-zinc-400">{exp.supplier || "—"}</td>
                           <td className="px-4 py-3 text-right font-semibold tabular-nums text-primary">{formatCurrency(exp.amount)}</td>
@@ -645,7 +679,7 @@ const [expenses, setExpenses] = useState<any[]>([])
                       )
                     })}
                     <tr key={`day-${dateStr}`} className="bg-gray-50/80 dark:bg-zinc-800/30">
-                      <td colSpan={8} className="px-4 py-2 text-xs text-gray-500 dark:text-zinc-400">
+                      <td colSpan={7} className="px-4 py-2 text-xs text-gray-500 dark:text-zinc-400">
                         Neste dia você gastou <span className="font-semibold text-gray-700 dark:text-zinc-200">{formatCurrency(dayTotal)}</span>
                       </td>
                     </tr>
@@ -655,6 +689,7 @@ const [expenses, setExpenses] = useState<any[]>([])
             </tbody>
           </table>
         )}
+      </div>
       </div>
 
       {/* ===== DIALOG ===== */}
@@ -678,11 +713,17 @@ const [expenses, setExpenses] = useState<any[]>([])
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label className="font-semibold">Categoria</Label>
-              <div className="relative mt-1">
+              <div className="flex items-center justify-between mb-1">
+                <Label className="font-semibold">Categoria</Label>
+                <button type="button" onClick={() => setShowCatManager(v => !v)}
+                  className="flex items-center gap-1 text-xs text-primary hover:underline">
+                  <Settings2 className="h-3 w-3" /> Gerenciar
+                </button>
+              </div>
+              <div className="relative">
                 <select value={fCategory} onChange={(e) => setFCategory(e.target.value)}
                   className="flex h-10 w-full appearance-none rounded-md border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 py-2 px-3 pr-8 text-sm text-gray-900 dark:text-zinc-100">
-                  {CATEGORIES.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
+                  {categories.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
                 </select>
                 <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-zinc-500" />
               </div>
@@ -692,6 +733,43 @@ const [expenses, setExpenses] = useState<any[]>([])
               <Input value={fSupplier} onChange={(e) => setFSupplier(e.target.value)} className="mt-1" placeholder="Ex: Santander, Nubank..." />
             </div>
           </div>
+
+          {showCatManager && (
+            <div className="rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800/50 p-3 space-y-2">
+              <p className="text-xs font-semibold text-gray-600 dark:text-zinc-300 mb-2">Gerenciar Categorias</p>
+              <div className="space-y-1 max-h-40 overflow-y-auto">
+                {categories.map((cat) => (
+                  <div key={cat} className="flex items-center gap-2">
+                    {editingCat === cat ? (
+                      <>
+                        <Input value={editingCatValue} onChange={e => setEditingCatValue(e.target.value)}
+                          className="h-7 text-xs flex-1" onKeyDown={e => e.key === "Enter" && saveEditCategory(cat)} />
+                        <button onClick={() => saveEditCategory(cat)} className="text-primary"><Check className="h-4 w-4" /></button>
+                        <button onClick={() => setEditingCat(null)} className="text-gray-400"><X className="h-4 w-4" /></button>
+                      </>
+                    ) : (
+                      <>
+                        <span className="flex-1 text-xs text-gray-700 dark:text-zinc-200">{cat}</span>
+                        <button onClick={() => { setEditingCat(cat); setEditingCatValue(cat) }}
+                          className="text-gray-400 hover:text-primary"><Pencil className="h-3.5 w-3.5" /></button>
+                        <button onClick={() => deleteCategory(cat)}
+                          className="text-gray-400 hover:text-red-500"><Trash2 className="h-3.5 w-3.5" /></button>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-2 pt-1 border-t border-gray-200 dark:border-zinc-700">
+                <Input value={newCatName} onChange={e => setNewCatName(e.target.value)}
+                  placeholder="Nova categoria..." className="h-7 text-xs flex-1"
+                  onKeyDown={e => e.key === "Enter" && addCategory()} />
+                <button onClick={addCategory}
+                  className="flex items-center gap-1 rounded-md bg-primary px-2 py-1 text-xs font-semibold text-white">
+                  <Plus className="h-3 w-3" /> Add
+                </button>
+              </div>
+            </div>
+          )}
 
           <label className="flex cursor-pointer items-center gap-3">
             <div onClick={() => setFRecurring(!fRecurring)}
