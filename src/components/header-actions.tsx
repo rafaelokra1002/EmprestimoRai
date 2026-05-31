@@ -1,7 +1,7 @@
 "use client"
 
 import { useTheme } from "@/lib/theme-provider"
-import { Moon, Sun, Sparkles, User, MessageCircle, Settings, LogOut, ChevronDown } from "lucide-react"
+import { Moon, Sun, Sparkles, User, Settings, LogOut, ChevronDown } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { signOut } from "next-auth/react"
 import { useRouter } from "next/navigation"
@@ -12,7 +12,6 @@ interface HeaderActionsProps {
 
 export function HeaderActions({ email }: HeaderActionsProps) {
   const { theme, toggleTheme } = useTheme()
-  const [waConnected, setWaConnected] = useState<boolean | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
@@ -25,35 +24,8 @@ export function HeaderActions({ email }: HeaderActionsProps) {
     return () => document.removeEventListener("mousedown", handleClick)
   }, [])
 
-  useEffect(() => {
-    const check = async () => {
-      try {
-        const res = await fetch("/api/whatsapp/status")
-        const data = await res.json()
-        setWaConnected(data.connected === true)
-      } catch {
-        setWaConnected(false)
-      }
-    }
-    check()
-    const interval = setInterval(check, 30000)
-    return () => clearInterval(interval)
-  }, [])
-
   return (
     <div className="flex items-center gap-3">
-      {waConnected !== null && (
-        <div className={`inline-flex h-10 items-center gap-2 rounded-xl border px-3 text-xs font-medium ${
-          waConnected
-            ? "border-green-300 dark:border-green-800 bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400"
-            : "border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400"
-        }`}>
-          <MessageCircle className="h-4 w-4" />
-          <span className={`h-2 w-2 rounded-full ${waConnected ? "bg-green-500" : "bg-red-500"}`} />
-          <span className="hidden sm:inline">{waConnected ? "WhatsApp" : "WhatsApp"}</span>
-        </div>
-      )}
-
       <button
         type="button"
         onClick={toggleTheme}
