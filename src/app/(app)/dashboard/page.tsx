@@ -365,8 +365,8 @@ export default function DashboardPage() {
               <Wallet className="h-3.5 w-3.5 text-primary" />
               <p className="text-xs text-gray-500 dark:text-zinc-400">Falta Receber</p>
             </div>
-            <p className="text-2xl leading-none font-semibold tabular-nums tracking-tight text-primary">{formatCurrency(data?.faltaReceberMes || 0)}</p>
-            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">juros + multas de {periodLabel}</p>
+            <p className="text-2xl leading-none font-semibold tabular-nums tracking-tight text-primary">{formatCurrency(data?.faltaReceber || 0)}</p>
+            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">juros + multas em aberto</p>
           </div>
         </CardContent>
       </Card>
