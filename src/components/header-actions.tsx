@@ -47,11 +47,7 @@ export function HeaderActions({ email }: HeaderActionsProps) {
         </button>
 
         {menuOpen && (
-          <div className="absolute right-0 top-full mt-1 z-50 min-w-[200px] rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-lg py-1">
-            <div className="px-4 py-2.5 border-b border-gray-100 dark:border-zinc-800">
-              <p className="text-xs text-gray-400 dark:text-zinc-500">Conectado como</p>
-              <p className="text-xs font-semibold text-gray-700 dark:text-zinc-200 truncate mt-0.5">{email || "Usuário"}</p>
-            </div>
+          <div className="absolute right-0 top-full mt-1 z-50 min-w-[180px] rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-lg py-1">
             <button
               onClick={() => { setMenuOpen(false); router.push("/configuracoes") }}
               className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
