@@ -422,7 +422,7 @@ export async function GET(request: Request) {
 
       const monthInstallments = loan.installments.filter((i) => {
         const due = new Date(i.dueDate)
-        return i.status !== "PAID" && due >= startOfMonth && due <= endOfMonth
+        return i.status !== "PAID" && due <= endOfMonth
       })
 
       const interest = monthInstallments.length * interestPerInstallment
