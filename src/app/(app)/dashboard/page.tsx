@@ -262,6 +262,12 @@ export default function DashboardPage() {
             >
               {backupLoading ? "Baixando..." : "Fazer Backup"}
             </button>
+            <button
+              onClick={() => setShowBackupAlert(false)}
+              className="ml-1 inline-flex h-7 w-7 items-center justify-center rounded-lg text-amber-500 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
           </div>
         </div>
       )}
