@@ -457,7 +457,7 @@ const [expenses, setExpenses] = useState<any[]>([])
       </div>
 
       {showCharts && (
-        <div className="pt-6">
+        <div className="pt-10">
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mb-5">
           {/* ── Donut — Valor gasto por categoria ── */}
           <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 flex flex-col">
@@ -566,7 +566,7 @@ const [expenses, setExpenses] = useState<any[]>([])
       )}
 
       {/* ===== TABLE ===== */}
-      <div className="pt-5">
+      <div className="pt-10">
       <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
         {loading ? (
           <div className="py-16 text-center text-gray-400 dark:text-zinc-500">Carregando despesas...</div>
@@ -579,15 +579,15 @@ const [expenses, setExpenses] = useState<any[]>([])
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100 dark:border-zinc-800 text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
-                <th className="px-4 py-3 font-medium text-left w-10">Sit.</th>
-                <th className="px-4 py-3 font-medium text-left cursor-pointer select-none" onClick={() => setSortDateAsc((v) => !v)}>
+                <th className="px-4 py-4 font-medium text-left w-10">Sit.</th>
+                <th className="px-4 py-4 font-medium text-left cursor-pointer select-none" onClick={() => setSortDateAsc((v) => !v)}>
                   <span className="flex items-center gap-1">Data {sortDateAsc ? "↑" : "↓"}</span>
                 </th>
-                <th className="px-4 py-3 font-medium text-left">Descrição</th>
-                <th className="px-4 py-3 font-medium text-left">Categoria</th>
-                <th className="px-4 py-3 font-medium text-left">Conta</th>
-                <th className="px-4 py-3 font-medium text-right">Valor</th>
-                <th className="px-4 py-3 font-medium text-right">Ações</th>
+                <th className="px-4 py-4 font-medium text-left">Descrição</th>
+                <th className="px-4 py-4 font-medium text-left">Categoria</th>
+                <th className="px-4 py-4 font-medium text-left">Conta</th>
+                <th className="px-4 py-4 font-medium text-right">Valor</th>
+                <th className="px-4 py-4 font-medium text-right">Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -606,7 +606,7 @@ const [expenses, setExpenses] = useState<any[]>([])
                           key={exp.id}
                           className={`border-b border-gray-50 dark:border-zinc-800/60 transition ${isSelected ? "bg-primary/5 dark:bg-primary/10" : "hover:bg-gray-50/60 dark:hover:bg-zinc-800/40"}`}
                         >
-                          <td className="px-4 py-3">
+                          <td className="px-4 py-4">
                             {isPaid ? (
                               <CheckCircle2 className="h-5 w-5 text-primary" />
                             ) : isOverdue ? (
@@ -619,9 +619,9 @@ const [expenses, setExpenses] = useState<any[]>([])
                               </span>
                             )}
                           </td>
-                          <td className="px-4 py-3 text-gray-600 dark:text-zinc-400 whitespace-nowrap">{dateStr}</td>
-                          <td className="px-4 py-3 font-medium text-gray-900 dark:text-zinc-100">{exp.description}</td>
-                          <td className="px-4 py-3">
+                          <td className="px-4 py-4 text-gray-600 dark:text-zinc-400 whitespace-nowrap">{dateStr}</td>
+                          <td className="px-4 py-4 font-medium text-gray-900 dark:text-zinc-100">{exp.description}</td>
+                          <td className="px-4 py-4">
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-gray-100 text-gray-700 dark:bg-zinc-800 dark:text-zinc-300">
                                 {exp.category}
@@ -637,9 +637,9 @@ const [expenses, setExpenses] = useState<any[]>([])
                               </span>
                             </div>
                           </td>
-                          <td className="px-4 py-3 text-gray-500 dark:text-zinc-400">{exp.supplier || "—"}</td>
-                          <td className="px-4 py-3 text-right font-semibold tabular-nums text-primary">{formatCurrency(exp.amount)}</td>
-                          <td className="px-4 py-3 text-right">
+                          <td className="px-4 py-4 text-gray-500 dark:text-zinc-400">{exp.supplier || "—"}</td>
+                          <td className="px-4 py-4 text-right font-semibold tabular-nums text-primary">{formatCurrency(exp.amount)}</td>
+                          <td className="px-4 py-4 text-right">
                             <div className="relative flex items-center justify-end">
                               <button
                                 onClick={(e) => { e.stopPropagation(); setOpenActionMenu(openActionMenu === exp.id ? null : exp.id) }}
@@ -678,11 +678,6 @@ const [expenses, setExpenses] = useState<any[]>([])
                         </tr>
                       )
                     })}
-                    <tr key={`day-${dateStr}`} className="bg-gray-50/80 dark:bg-zinc-800/30">
-                      <td colSpan={7} className="px-4 py-2 text-xs text-gray-500 dark:text-zinc-400">
-                        Neste dia você gastou <span className="font-semibold text-gray-700 dark:text-zinc-200">{formatCurrency(dayTotal)}</span>
-                      </td>
-                    </tr>
                   </>
                 )
               })}

@@ -263,10 +263,11 @@ export default function ConfiguracoesPage() {
     setSavingTemplates(true)
     setTemplateMsg("")
     try {
+      const newIds = { ...templateIds }
       for (const tab of TAB_CONFIG) {
         const content = templates[tab.key]
         if (!content.trim()) continue
-        const id = templateIds[tab.key]
+        const id = newIds[tab.key]
         if (id) {
           await fetch(`/api/templates/${id}`, {
             method: "PUT",
@@ -281,10 +282,31 @@ export default function ConfiguracoesPage() {
           })
           if (res.ok) {
             const created = await res.json()
-            setTemplateIds((prev) => ({ ...prev, [tab.key]: created.id }))
+            newIds[tab.key] = created.id
           }
         }
       }
+      setTemplateIds(newIds)
+
+      // Re-fetch to confirm what was persisted
+      const res = await fetch("/api/templates")
+      const saved = await res.json()
+      if (Array.isArray(saved)) {
+        const tMap: Record<TabKey, string> = { ATRASO: "", VENCE_HOJE: "", ANTECIPADA: "" }
+        const tIds: Record<TabKey, string | null> = { ATRASO: null, VENCE_HOJE: null, ANTECIPADA: null }
+        for (const t of saved) {
+          if (t.type === "COBRANCA" && t.name === "ATRASO") { tMap.ATRASO = t.content; tIds.ATRASO = t.id }
+          if (t.type === "COBRANCA" && t.name === "VENCE_HOJE") { tMap.VENCE_HOJE = t.content; tIds.VENCE_HOJE = t.id }
+          if (t.type === "COBRANCA" && t.name === "ANTECIPADA") { tMap.ANTECIPADA = t.content; tIds.ANTECIPADA = t.id }
+        }
+        setTemplates((prev) => ({
+          ATRASO: tMap.ATRASO || prev.ATRASO,
+          VENCE_HOJE: tMap.VENCE_HOJE || prev.VENCE_HOJE,
+          ANTECIPADA: tMap.ANTECIPADA || prev.ANTECIPADA,
+        }))
+        setTemplateIds(tIds)
+      }
+
       setTemplateMsg("Templates salvos com sucesso!")
     } catch {
       setTemplateMsg("Erro ao salvar templates")

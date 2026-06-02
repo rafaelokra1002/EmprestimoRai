@@ -95,6 +95,9 @@ export default function EmprestimosPage() {
   const [profilePhone, setProfilePhone] = useState("")
   const [profileChargeName, setProfileChargeName] = useState("")
 
+  // Templates configurados pelo usuário
+  const [savedTemplates, setSavedTemplates] = useState<Record<string, string>>({})
+
   // WhatsApp cobrança state
   const [whatsappDialog, setWhatsappDialog] = useState(false)
   const [whatsappLoan, setWhatsappLoan] = useState<Loan | null>(null)
@@ -269,12 +272,44 @@ export default function EmprestimosPage() {
 
   const fetchProfile = async () => {
     try {
-      const res = await fetch("/api/profile")
-      const data = await res.json()
+      const [profileRes, templatesRes] = await Promise.all([
+        fetch("/api/profile"),
+        fetch("/api/templates"),
+      ])
+      const data = await profileRes.json()
       setProfilePixKey(data.pixKey || "")
       setProfilePhone(data.phone || "")
       setProfileChargeName(data.chargeName || "")
+
+      const templatesData = await templatesRes.json()
+      if (Array.isArray(templatesData)) {
+        const tMap: Record<string, string> = {}
+        for (const t of templatesData) {
+          if (t.type === "COBRANCA" && t.name) tMap[t.name] = t.content
+        }
+        setSavedTemplates(tMap)
+      }
     } catch {}
+  }
+
+  // Aplica variáveis do template com dados reais do empréstimo
+  const applyTemplate = (template: string, loan: Loan) => {
+    const nextInst = loan.installments
+      .filter((i: any) => i.status !== "PAID")
+      .sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0]
+
+    const now = new Date(); now.setHours(0, 0, 0, 0)
+    const due = nextInst ? new Date(nextInst.dueDate) : null
+    if (due) due.setHours(0, 0, 0, 0)
+    const daysOverdue = due && due < now ? Math.floor((now.getTime() - due.getTime()) / 86400000) : 0
+
+    return template
+      .replace(/\{CLIENTE\}/g, loan.client.name)
+      .replace(/\{VALOR\}/g, formatCurrency(nextInst?.amount || loan.installmentValue))
+      .replace(/\{DATA\}/g, due ? formatDate(due.toISOString()) : "—")
+      .replace(/\{DIAS_ATRASO\}/g, String(daysOverdue))
+      .replace(/\{TOTAL\}/g, formatCurrency(loan.totalAmount))
+      .replace(/\{PIX\}/g, profilePixKey || "Não cadastrada")
   }
 
   useEffect(() => {
@@ -672,9 +707,19 @@ export default function EmprestimosPage() {
     return d.juros + d.multa
   }
 
+  const getInstallmentProporcional = (loan: Loan, installment: Loan["installments"][number]) => {
+    if (installment.status === "PAID") return 0
+    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0)
+    const dueStart = new Date(installment.dueDate); dueStart.setHours(0, 0, 0, 0)
+    if (dueStart >= todayStart) return 0
+    const daysOver = Math.floor((todayStart.getTime() - dueStart.getTime()) / 86400000)
+    const interestPerInst = loan.profit / loan.installmentCount
+    return Math.round((interestPerInst / 30) * daysOver * 100) / 100
+  }
+
   const getInstallmentPayableAmount = (loan: Loan, installment: Loan["installments"][number]) => {
     const baseRemaining = Math.max(0, installment.amount - (installment.paidAmount || 0))
-    return baseRemaining + getInstallmentOverdueCharge(loan, installment)
+    return baseRemaining + getInstallmentOverdueCharge(loan, installment) + getInstallmentProporcional(loan, installment)
   }
 
   const getNextDueInst = (loan: Loan) =>
@@ -889,7 +934,23 @@ export default function EmprestimosPage() {
   const openWhatsappDialog = (loan: Loan) => {
     const freshLoan = loans.find(l => l.id === loan.id) || loan
     setWhatsappLoan(freshLoan)
-    setWhatsappMessage(buildDefaultWhatsappMessage(freshLoan))
+
+    // Determina template correto baseado no status do empréstimo
+    const now = new Date(); now.setHours(0, 0, 0, 0)
+    const hasOverdue = freshLoan.installments.some((i: any) => i.status !== "PAID" && new Date(i.dueDate) < now)
+    const nextInst = freshLoan.installments
+      .filter((i: any) => i.status !== "PAID")
+      .sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0]
+    const isDueToday = nextInst && new Date(nextInst.dueDate).toDateString() === new Date().toDateString()
+
+    let templateKey = "ANTECIPADA"
+    if (hasOverdue) templateKey = "ATRASO"
+    else if (isDueToday) templateKey = "VENCE_HOJE"
+
+    const savedTemplate = savedTemplates[templateKey]
+    const msg = savedTemplate ? applyTemplate(savedTemplate, freshLoan) : buildDefaultWhatsappMessage(freshLoan)
+
+    setWhatsappMessage(msg)
     setWhatsappSent(false)
     setWhatsappDialog(true)
   }
@@ -1985,8 +2046,10 @@ export default function EmprestimosPage() {
                           const dueStartInst = new Date(inst.dueDate); dueStartInst.setHours(0, 0, 0, 0)
                           const instDays = Math.max(0, Math.floor((todayStartInst.getTime() - dueStartInst.getTime()) / (1000 * 60 * 60 * 24)))
                           const baseAmount = Math.max(0, inst.amount - (inst.paidAmount || 0))
-                          const payableAmount = getInstallmentPayableAmount(loan, inst) + getExtraCyclesInterest(loan)
-                          const instPenalty = Math.max(0, Math.round((payableAmount - baseAmount) * 100) / 100)
+                          const instOverdueCharge = getInstallmentOverdueCharge(loan, inst)
+                          const instProporcional = getInstallmentProporcional(loan, inst)
+                          const extraCycles = getExtraCyclesInterest(loan)
+                          const payableAmount = baseAmount + instOverdueCharge + instProporcional + extraCycles
                           return (
                             <div key={inst.id} className="space-y-1">
                               <div className="flex items-center justify-between">
@@ -1999,10 +2062,16 @@ export default function EmprestimosPage() {
                                 <span className="text-gray-600 dark:text-zinc-400">Vencimento: {formatDate(inst.dueDate)}</span>
                                 <span className="text-gray-700 dark:text-zinc-300 font-medium">Valor: {formatCurrency(baseAmount)}</span>
                               </div>
-                              {instPenalty > 0 && (
+                              {instProporcional > 0 && (
                                 <div className="flex items-center justify-between text-xs">
-                                  <span className="text-red-600 dark:text-red-400">Multa Aplicada:</span>
-                                  <span className="text-red-600 dark:text-red-400 font-bold">+{formatCurrency(instPenalty)}</span>
+                                  <span className="text-blue-600 dark:text-blue-400">📊 Proporcional:</span>
+                                  <span className="text-blue-600 dark:text-blue-400 font-bold">+{formatCurrency(instProporcional)}</span>
+                                </div>
+                              )}
+                              {instOverdueCharge > 0 && (
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="text-red-600 dark:text-red-400">⚠️ Multa Aplicada:</span>
+                                  <span className="text-red-600 dark:text-red-400 font-bold">+{formatCurrency(instOverdueCharge)}</span>
                                 </div>
                               )}
                               <div className="flex items-center justify-between text-xs">
@@ -2726,11 +2795,15 @@ export default function EmprestimosPage() {
           const overdueCharge = getCurrentOverdueCharge(paymentDialog)
           const overdueDays = getCurrentOverdueDays(paymentDialog)
 
-          // Quitação inteligente: calcula multa se atrasado
+          // Quitação inteligente: calcula multa + proporcional se atrasado
           const now = new Date()
           const hasOverdueInst = pendingInstallments.some((i: any) => new Date(i.dueDate) < now)
           const penalty = hasOverdueInst ? (paymentDialog.penaltyFee || 0) : 0
-          const totalWithPenalty = remaining + penalty
+          // Proporcional: (juros por parcela / 30) × dias em atraso
+          const proporcional = hasOverdueInst
+            ? Math.round((interestPerInst / 30) * overdueDays * 100) / 100
+            : 0
+          const totalWithPenalty = remaining + penalty + proporcional
 
           return (
             <div className="space-y-5">
@@ -2998,19 +3071,38 @@ export default function EmprestimosPage() {
               )}
 
               {/* Resumo Quitação Total */}
-              {paymentType === "total" && penalty > 0 && (
+              {paymentType === "total" && (
                 <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/20 p-4 space-y-2">
+                  <p className="text-xs font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-wide mb-1">Detalhamento da Quitação</p>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600 dark:text-zinc-400">Saldo Devedor:</span>
-                    <span className="font-medium text-gray-900 dark:text-zinc-100">{formatCurrency(remaining)}</span>
+                    <span className="text-gray-600 dark:text-zinc-400">Capital emprestado:</span>
+                    <span className="font-medium text-gray-900 dark:text-zinc-100">{formatCurrency(paymentDialog.amount)}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-red-500">Multa por Atraso:</span>
-                    <span className="font-bold text-red-500">+ {formatCurrency(penalty)}</span>
+                    <span className="text-gray-600 dark:text-zinc-400">Juros do contrato:</span>
+                    <span className="font-medium text-gray-900 dark:text-zinc-100">{formatCurrency(paymentDialog.profit)}</span>
                   </div>
+                  {proporcional > 0 && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-blue-600 dark:text-blue-400">📊 Proporcional ({overdueDays}d × {formatCurrency(Math.round(interestPerInst / 30 * 100) / 100)}/d):</span>
+                      <span className="font-bold text-blue-600 dark:text-blue-400">+ {formatCurrency(proporcional)}</span>
+                    </div>
+                  )}
+                  {overdueCharge > 0 && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-red-500">⚠️ Multa ({overdueDays}d × {formatCurrency(paymentDialog.dailyInterestAmount || 0)}/d):</span>
+                      <span className="font-bold text-red-500">+ {formatCurrency(overdueCharge)}</span>
+                    </div>
+                  )}
+                  {penalty > 0 && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-red-500">Multa fixa:</span>
+                      <span className="font-bold text-red-500">+ {formatCurrency(penalty)}</span>
+                    </div>
+                  )}
                   <div className="flex items-center justify-between text-sm border-t border-red-200 dark:border-red-800 pt-2">
-                    <span className="font-semibold text-gray-700 dark:text-zinc-300">Total a Cobrar:</span>
-                    <span className="text-lg font-bold text-gray-900 dark:text-zinc-100">{formatCurrency(totalWithPenalty)}</span>
+                    <span className="font-semibold text-gray-700 dark:text-zinc-300">💰 Total da Quitação:</span>
+                    <span className="text-lg font-bold text-primary">{formatCurrency(totalWithPenalty)}</span>
                   </div>
                 </div>
               )}
@@ -3386,7 +3478,8 @@ export default function EmprestimosPage() {
                         if (overdueCharge > 0) {
                           const overdueDays = getCurrentOverdueDays(currentLoan)
                           const cyclesMissed = Math.max(1, Math.floor(overdueDays / 30))
-                          setRenegotiateAmount(currentInterest * (cyclesMissed + 1) + overdueCharge)
+                          const proporcionalSoJuros = Math.round((currentInterest / 30) * overdueDays * 100) / 100
+                          setRenegotiateAmount(currentInterest * (cyclesMissed + 1) + overdueCharge + proporcionalSoJuros)
                         } else {
                           setRenegotiateAmount(currentInterest)
                         }
@@ -3438,9 +3531,41 @@ export default function EmprestimosPage() {
                       </button>
                     </div>
 
-                    <div className="rounded-2xl border border-primary/20 bg-primary/5 p-2.5 text-xs dark:border-primary/30 dark:bg-primary/10">
-                      <p className="font-semibold text-gray-900 dark:text-zinc-100">Resumo: Cliente paga <span className="text-primary">{formatCurrency(renegotiateAmount || currentInterest)}</span> de juros agora.</p>
-                      <p className="mt-0.5 text-gray-600 dark:text-zinc-300">No próximo vencimento, o valor a cobrar será: <span className="font-semibold text-primary">{formatCurrency(amountAfterInterestPayment)}</span></p>
+                    <div className="rounded-2xl border border-primary/20 bg-primary/5 p-2.5 text-xs dark:border-primary/30 dark:bg-primary/10 space-y-1">
+                      {(() => {
+                        const overdueDaysSJ = getCurrentOverdueDays(currentLoan)
+                        const overdueChargeSJ = getCurrentOverdueCharge(currentLoan)
+                        const proporcionalSJ = overdueDaysSJ > 0 ? Math.round((currentInterest / 30) * overdueDaysSJ * 100) / 100 : 0
+                        const cyclesSJ = overdueDaysSJ > 0 ? Math.max(1, Math.floor(overdueDaysSJ / 30)) : 0
+                        return (
+                          <>
+                            <p className="font-semibold text-gray-900 dark:text-zinc-100">
+                              Resumo: Cliente paga <span className="text-primary">{formatCurrency(renegotiateAmount || currentInterest)}</span> de juros agora.
+                            </p>
+                            {overdueDaysSJ > 0 && (
+                              <div className="pt-1 space-y-0.5 border-t border-primary/10">
+                                <div className="flex justify-between text-gray-600 dark:text-zinc-300">
+                                  <span>Juros ({cyclesSJ + 1} ciclo{cyclesSJ + 1 !== 1 ? "s" : ""}):</span>
+                                  <span className="font-semibold text-primary">{formatCurrency(currentInterest * (cyclesSJ + 1))}</span>
+                                </div>
+                                {proporcionalSJ > 0 && (
+                                  <div className="flex justify-between text-gray-600 dark:text-zinc-300">
+                                    <span>📊 Proporcional ({overdueDaysSJ}d):</span>
+                                    <span className="font-semibold text-blue-600 dark:text-blue-400">+{formatCurrency(proporcionalSJ)}</span>
+                                  </div>
+                                )}
+                                {overdueChargeSJ > 0 && (
+                                  <div className="flex justify-between text-gray-600 dark:text-zinc-300">
+                                    <span>⚠️ Multa ({overdueDaysSJ}d):</span>
+                                    <span className="font-semibold text-red-500">+{formatCurrency(overdueChargeSJ)}</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            <p className="mt-0.5 text-gray-600 dark:text-zinc-300">No próximo vencimento, o valor a cobrar será: <span className="font-semibold text-primary">{formatCurrency(amountAfterInterestPayment)}</span></p>
+                          </>
+                        )
+                      })()}
                     </div>
 
                     <div className="grid gap-2.5 sm:grid-cols-2">
@@ -3891,7 +4016,10 @@ export default function EmprestimosPage() {
                   <span className="text-xs text-gray-400 dark:text-zinc-500">Template:</span>
                   <button
                     type="button"
-                    onClick={() => setWhatsappMessage(buildDefaultWhatsappMessage(whatsappLoan))}
+                    onClick={() => {
+                      const t = savedTemplates["ATRASO"]
+                      setWhatsappMessage(t ? applyTemplate(t, whatsappLoan) : buildDefaultWhatsappMessage(whatsappLoan))
+                    }}
                     className="text-xs px-2.5 py-1 rounded-full border border-gray-300 dark:border-zinc-600 text-gray-600 dark:text-zinc-300 hover:border-primary hover:text-primary transition-colors"
                   >
                     Padrão
@@ -3899,7 +4027,10 @@ export default function EmprestimosPage() {
                   {whatsappLoan.installmentCount > 1 ? (
                     <button
                       type="button"
-                      onClick={() => setWhatsappMessage(buildParcelamentoMessage(whatsappLoan))}
+                      onClick={() => {
+                        const t = savedTemplates["ANTECIPADA"]
+                        setWhatsappMessage(t ? applyTemplate(t, whatsappLoan) : buildParcelamentoMessage(whatsappLoan))
+                      }}
                       className="text-xs px-2.5 py-1 rounded-full border border-gray-300 dark:border-zinc-600 text-gray-600 dark:text-zinc-300 hover:border-primary hover:text-primary transition-colors"
                     >
                       Parcelamento
@@ -3907,7 +4038,10 @@ export default function EmprestimosPage() {
                   ) : (
                     <button
                       type="button"
-                      onClick={() => setWhatsappMessage(buildLembreteSimpleMessage(whatsappLoan))}
+                      onClick={() => {
+                        const t = savedTemplates["VENCE_HOJE"]
+                        setWhatsappMessage(t ? applyTemplate(t, whatsappLoan) : buildLembreteSimpleMessage(whatsappLoan))
+                      }}
                       className="text-xs px-2.5 py-1 rounded-full border border-gray-300 dark:border-zinc-600 text-gray-600 dark:text-zinc-300 hover:border-primary hover:text-primary transition-colors"
                     >
                       Lembrete

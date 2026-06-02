@@ -4,7 +4,6 @@ import { useEffect, useState, useMemo, useCallback, useRef } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { FilterDropdown } from "@/components/ui/filter-dropdown"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { formatCurrency, formatDate, localDateStr } from "@/lib/utils"
 import { getOverdueDailyAmountBRL, buildLoanData } from "@/lib/loan-logic"
@@ -80,7 +79,6 @@ export default function RelatorioEmprestimosPage() {
   const [showModalityCards, setShowModalityCards] = useState(true)
   const [caixaExtra, setCaixaExtra] = useState(0)
   const [caixaInicial, setCaixaInicial] = useState(0)
-  const [includeExpenses, setIncludeExpenses] = useState(true)
   const [updatedAt, setUpdatedAt] = useState("")
   const [fetchError, setFetchError] = useState<string | null>(null)
 
@@ -254,9 +252,8 @@ export default function RelatorioEmprestimosPage() {
   }, [filtered, startDate, endDate])
 
   const contasPagar = useMemo(() => {
-    if (!includeExpenses) return 0
     return filteredExpenses.reduce((sum, e) => sum + e.amount, 0)
-  }, [filteredExpenses, includeExpenses])
+  }, [filteredExpenses])
 
   const contasPagarCount = filteredExpenses.length
 
@@ -583,18 +580,6 @@ export default function RelatorioEmprestimosPage() {
             <span className="text-sm text-primary">Na Rua: {formatCurrency(capitalNaRua)}</span>
           </div>
           <div className="flex items-center gap-3">
-            <FilterDropdown
-              label="Saídas"
-              icon={<Wallet className="h-4 w-4" />}
-              tone="orange"
-              value={includeExpenses ? "with_expenses" : "without_expenses"}
-              onChange={(value) => setIncludeExpenses(value === "with_expenses")}
-              options={[
-                { value: "with_expenses", label: "Com contas a pagar" },
-                { value: "without_expenses", label: "Sem contas a pagar" },
-              ]}
-              minWidthClassName="min-w-[220px]"
-            />
             <button
               onClick={() => setShowModalityCards(v => !v)}
               className="flex items-center gap-1 text-sm text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200"

@@ -17,7 +17,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="min-h-screen bg-transparent">
       <Sidebar />
       <div className="lg:pl-64 flex flex-col min-h-screen">
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-end border-b border-gray-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 backdrop-blur px-6 sm:px-10">
+        <header className="sticky top-0 z-30 flex h-20 items-center justify-end border-b border-gray-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 backdrop-blur px-8 sm:px-12">
           <HeaderActions email={email} />
         </header>
         <main className="flex-1">
