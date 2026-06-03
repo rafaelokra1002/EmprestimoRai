@@ -101,7 +101,14 @@ export async function GET(request: Request) {
     const sales = salesResult || []
     const vehicles = vehiclesResult || []
 
-    const totalPrincipal = loans.reduce((acc, loan) => acc + Number(loan.amount || 0), 0)
+    const totalPrincipal = showAll
+      ? loans.reduce((acc, loan) => acc + Number(loan.amount || 0), 0)
+      : loans
+          .filter(loan => {
+            const d = new Date((loan as any).contractDate || loan.createdAt)
+            return d >= startOfMonth && d <= endOfMonth
+          })
+          .reduce((acc, loan) => acc + Number(loan.amount || 0), 0)
     const totalToReceive = loans.reduce((acc, loan) => acc + Number(loan.totalAmount || 0), 0)
     const totalReceived = loans.reduce(
       (acc, loan) =>

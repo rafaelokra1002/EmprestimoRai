@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Loader2, User, Building2, Phone, ExternalLink, Info, MessageCircle, Settings2, Lock, Eye, Shield, Cog, Users, RotateCcw, Save, ChevronDown, Palette, Check } from "lucide-react"
+import { Loader2, User, Building2, Phone, ExternalLink, Info, MessageCircle, Settings2, Lock, Eye, Shield, Cog, Users, RotateCcw, Save, ChevronDown, Palette, Check, Wifi, WifiOff, RefreshCw, Unlink, CheckCircle2 } from "lucide-react"
 import { useTheme } from "@/lib/theme-provider"
 import { ACCENT_PRESETS } from "@/lib/accent-color"
 
@@ -115,13 +115,20 @@ const AVAILABLE_VARIABLES = [
   "{ASSINATURA}", "{FECHAMENTO}",
 ]
 
-type TabKey = "ATRASO" | "VENCE_HOJE" | "ANTECIPADA"
+type BaseTabKey = "ATRASO" | "VENCE_HOJE" | "ANTECIPADA"
+type TabKey = BaseTabKey | "ATRASO_PARCELADO" | "VENCE_HOJE_PARCELADO" | "ANTECIPADA_PARCELADO"
 
-const TAB_CONFIG: { key: TabKey; label: string; color: string }[] = [
+const TAB_CONFIG: { key: BaseTabKey; label: string; color: string }[] = [
   { key: "ATRASO", label: "Atraso", color: "bg-red-50 dark:bg-red-950/300" },
   { key: "VENCE_HOJE", label: "Vence Hoje", color: "bg-yellow-50 dark:bg-yellow-950/300" },
   { key: "ANTECIPADA", label: "Antecipada", color: "bg-primary/5 dark:bg-primary/150" },
 ]
+
+const PARCELADO_DEFAULTS: Record<BaseTabKey, string> = {
+  ATRASO: PRESET_TEMPLATES.ATRASO[1].content,
+  VENCE_HOJE: PRESET_TEMPLATES.VENCE_HOJE[1].content,
+  ANTECIPADA: PRESET_TEMPLATES.ANTECIPADA[1].content,
+}
 
 /* ─── Custom Preset Dropdown with icons + descriptions ─── */
 function PresetDropdown({ presets, onSelect }: { presets: { icon: string; label: string; desc: string; content: string }[]; onSelect: (label: string) => void }) {
@@ -174,6 +181,49 @@ export default function ConfiguracoesPage() {
   const [message, setMessage] = useState("")
   const [templateMsg, setTemplateMsg] = useState("")
 
+  // WhatsApp connection state
+  const [waStatus, setWaStatus] = useState<any>(null)
+  const [waLoading, setWaLoading] = useState(true)
+  const [waReconnecting, setWaReconnecting] = useState(false)
+  const [waDisconnecting, setWaDisconnecting] = useState(false)
+  const [waNotifyClients, setWaNotifyClients] = useState(true)
+
+  const fetchWaStatus = async () => {
+    try {
+      const res = await fetch("/api/whatsapp/status")
+      const data = await res.json()
+      setWaStatus(data)
+    } catch { setWaStatus({ connected: false }) }
+    setWaLoading(false)
+  }
+
+  useEffect(() => {
+    fetchWaStatus()
+    const interval = setInterval(fetchWaStatus, 15000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const handleWaRecriar = async () => {
+    setWaReconnecting(true)
+    try {
+      await fetch("/api/whatsapp/disconnect", { method: "POST" })
+      await new Promise(r => setTimeout(r, 1000))
+      await fetch("/api/whatsapp/connect", { method: "POST" })
+      await fetchWaStatus()
+    } catch {}
+    setWaReconnecting(false)
+  }
+
+  const handleWaDesconectar = async () => {
+    if (!confirm("Deseja desconectar o WhatsApp?")) return
+    setWaDisconnecting(true)
+    try {
+      await fetch("/api/whatsapp/disconnect", { method: "POST" })
+      await fetchWaStatus()
+    } catch {}
+    setWaDisconnecting(false)
+  }
+
   // Profile form
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
@@ -181,16 +231,24 @@ export default function ConfiguracoesPage() {
   const [companyName, setCompanyName] = useState("")
 
   // Template state
-  const [activeTab, setActiveTab] = useState<TabKey>("ATRASO")
+  const [activeTab, setActiveTab] = useState<BaseTabKey>("ATRASO")
+  const [isParcelado, setIsParcelado] = useState(false)
+  const activeKey: TabKey = isParcelado ? `${activeTab}_PARCELADO` as TabKey : activeTab
   const [templates, setTemplates] = useState<Record<TabKey, string>>({
     ATRASO: DEFAULT_TEMPLATES.ATRASO,
     VENCE_HOJE: DEFAULT_TEMPLATES.VENCE_HOJE,
     ANTECIPADA: DEFAULT_TEMPLATES.ANTECIPADA,
+    ATRASO_PARCELADO: PARCELADO_DEFAULTS.ATRASO,
+    VENCE_HOJE_PARCELADO: PARCELADO_DEFAULTS.VENCE_HOJE,
+    ANTECIPADA_PARCELADO: PARCELADO_DEFAULTS.ANTECIPADA,
   })
   const [templateIds, setTemplateIds] = useState<Record<TabKey, string | null>>({
     ATRASO: null,
     VENCE_HOJE: null,
     ANTECIPADA: null,
+    ATRASO_PARCELADO: null,
+    VENCE_HOJE_PARCELADO: null,
+    ANTECIPADA_PARCELADO: null,
   })
 
   useEffect(() => {
@@ -211,27 +269,20 @@ export default function ConfiguracoesPage() {
         }
 
         if (Array.isArray(templatesData)) {
-          const tMap: Record<TabKey, string> = { ATRASO: "", VENCE_HOJE: "", ANTECIPADA: "" }
-          const tIds: Record<TabKey, string | null> = { ATRASO: null, VENCE_HOJE: null, ANTECIPADA: null }
+          const ALL_KEYS: TabKey[] = ["ATRASO", "VENCE_HOJE", "ANTECIPADA", "ATRASO_PARCELADO", "VENCE_HOJE_PARCELADO", "ANTECIPADA_PARCELADO"]
+          const tMap: Record<TabKey, string> = { ATRASO: "", VENCE_HOJE: "", ANTECIPADA: "", ATRASO_PARCELADO: "", VENCE_HOJE_PARCELADO: "", ANTECIPADA_PARCELADO: "" }
+          const tIds: Record<TabKey, string | null> = { ATRASO: null, VENCE_HOJE: null, ANTECIPADA: null, ATRASO_PARCELADO: null, VENCE_HOJE_PARCELADO: null, ANTECIPADA_PARCELADO: null }
           for (const t of templatesData) {
-            if (t.type === "COBRANCA" && t.name === "ATRASO") { tMap.ATRASO = t.content; tIds.ATRASO = t.id }
-            if (t.type === "COBRANCA" && t.name === "VENCE_HOJE") { tMap.VENCE_HOJE = t.content; tIds.VENCE_HOJE = t.id }
-            if (t.type === "COBRANCA" && t.name === "ANTECIPADA") { tMap.ANTECIPADA = t.content; tIds.ANTECIPADA = t.id }
-            // Also try by type alone as fallback
-            if (t.type === "LEMBRETE" && !tMap.VENCE_HOJE) { tMap.VENCE_HOJE = t.content; tIds.VENCE_HOJE = t.id }
-            if (t.type === "CONFIRMACAO" && !tMap.ANTECIPADA) { tMap.ANTECIPADA = t.content; tIds.ANTECIPADA = t.id }
+            if (t.type === "COBRANCA" && ALL_KEYS.includes(t.name as TabKey) && !tIds[t.name as TabKey]) {
+              tMap[t.name as TabKey] = t.content
+              tIds[t.name as TabKey] = t.id
+            }
           }
-          // If ATRASO is still empty, try to load first COBRANCA
-          if (!tMap.ATRASO) {
-            const first = templatesData.find((t: any) => t.type === "COBRANCA")
-            if (first) { tMap.ATRASO = first.content; tIds.ATRASO = first.id }
-          }
-          // Only override defaults if we actually have saved content
-          setTemplates((prev) => ({
-            ATRASO: tMap.ATRASO || prev.ATRASO,
-            VENCE_HOJE: tMap.VENCE_HOJE || prev.VENCE_HOJE,
-            ANTECIPADA: tMap.ANTECIPADA || prev.ANTECIPADA,
-          }))
+          setTemplates((prev) => {
+            const next = { ...prev }
+            for (const k of ALL_KEYS) { if (tMap[k]) next[k] = tMap[k] }
+            return next
+          })
           setTemplateIds(tIds)
         }
       } catch { }
@@ -263,47 +314,48 @@ export default function ConfiguracoesPage() {
     setSavingTemplates(true)
     setTemplateMsg("")
     try {
+      const ALL_KEYS: TabKey[] = ["ATRASO", "VENCE_HOJE", "ANTECIPADA", "ATRASO_PARCELADO", "VENCE_HOJE_PARCELADO", "ANTECIPADA_PARCELADO"]
       const newIds = { ...templateIds }
-      for (const tab of TAB_CONFIG) {
-        const content = templates[tab.key]
+      for (const key of ALL_KEYS) {
+        const content = templates[key]
         if (!content.trim()) continue
-        const id = newIds[tab.key]
+        const id = newIds[key]
         if (id) {
           await fetch(`/api/templates/${id}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name: tab.key, content, type: "COBRANCA" }),
+            body: JSON.stringify({ name: key, content, type: "COBRANCA" }),
           })
         } else {
           const res = await fetch("/api/templates", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name: tab.key, content, type: "COBRANCA" }),
+            body: JSON.stringify({ name: key, content, type: "COBRANCA" }),
           })
           if (res.ok) {
             const created = await res.json()
-            newIds[tab.key] = created.id
+            newIds[key] = created.id
           }
         }
       }
-      setTemplateIds(newIds)
-
       // Re-fetch to confirm what was persisted
       const res = await fetch("/api/templates")
       const saved = await res.json()
       if (Array.isArray(saved)) {
-        const tMap: Record<TabKey, string> = { ATRASO: "", VENCE_HOJE: "", ANTECIPADA: "" }
-        const tIds: Record<TabKey, string | null> = { ATRASO: null, VENCE_HOJE: null, ANTECIPADA: null }
+        const ALL_KEYS: TabKey[] = ["ATRASO", "VENCE_HOJE", "ANTECIPADA", "ATRASO_PARCELADO", "VENCE_HOJE_PARCELADO", "ANTECIPADA_PARCELADO"]
+        const tMap: Record<TabKey, string> = { ATRASO: "", VENCE_HOJE: "", ANTECIPADA: "", ATRASO_PARCELADO: "", VENCE_HOJE_PARCELADO: "", ANTECIPADA_PARCELADO: "" }
+        const tIds: Record<TabKey, string | null> = { ATRASO: null, VENCE_HOJE: null, ANTECIPADA: null, ATRASO_PARCELADO: null, VENCE_HOJE_PARCELADO: null, ANTECIPADA_PARCELADO: null }
         for (const t of saved) {
-          if (t.type === "COBRANCA" && t.name === "ATRASO") { tMap.ATRASO = t.content; tIds.ATRASO = t.id }
-          if (t.type === "COBRANCA" && t.name === "VENCE_HOJE") { tMap.VENCE_HOJE = t.content; tIds.VENCE_HOJE = t.id }
-          if (t.type === "COBRANCA" && t.name === "ANTECIPADA") { tMap.ANTECIPADA = t.content; tIds.ANTECIPADA = t.id }
+          if (t.type === "COBRANCA" && ALL_KEYS.includes(t.name as TabKey) && !tIds[t.name as TabKey]) {
+            tMap[t.name as TabKey] = t.content
+            tIds[t.name as TabKey] = t.id
+          }
         }
-        setTemplates((prev) => ({
-          ATRASO: tMap.ATRASO || prev.ATRASO,
-          VENCE_HOJE: tMap.VENCE_HOJE || prev.VENCE_HOJE,
-          ANTECIPADA: tMap.ANTECIPADA || prev.ANTECIPADA,
-        }))
+        setTemplates((prev) => {
+          const next = { ...prev }
+          for (const k of ALL_KEYS) { if (tMap[k]) next[k] = tMap[k] }
+          return next
+        })
         setTemplateIds(tIds)
       }
 
@@ -320,11 +372,15 @@ export default function ConfiguracoesPage() {
       ATRASO: DEFAULT_TEMPLATES.ATRASO,
       VENCE_HOJE: DEFAULT_TEMPLATES.VENCE_HOJE,
       ANTECIPADA: DEFAULT_TEMPLATES.ANTECIPADA,
+      ATRASO_PARCELADO: PARCELADO_DEFAULTS.ATRASO,
+      VENCE_HOJE_PARCELADO: PARCELADO_DEFAULTS.VENCE_HOJE,
+      ANTECIPADA_PARCELADO: PARCELADO_DEFAULTS.ANTECIPADA,
     })
   }
 
   const handleResetCurrent = () => {
-    setTemplates((prev) => ({ ...prev, [activeTab]: DEFAULT_TEMPLATES[activeTab] }))
+    const defaultContent = isParcelado ? PARCELADO_DEFAULTS[activeTab] : DEFAULT_TEMPLATES[activeTab]
+    setTemplates((prev) => ({ ...prev, [activeKey]: defaultContent }))
   }
 
   const handleSelectPreset = (value: string) => {
@@ -332,7 +388,7 @@ export default function ConfiguracoesPage() {
     const presets = PRESET_TEMPLATES[activeTab]
     const found = presets?.find((p) => p.label === value)
     if (found) {
-      setTemplates((prev) => ({ ...prev, [activeTab]: found.content }))
+      setTemplates((prev) => ({ ...prev, [activeKey]: found.content }))
     }
   }
 
@@ -497,33 +553,106 @@ export default function ConfiguracoesPage() {
       </button>
 
       {/* ═══════════════════════════ WHATSAPP PARA CLIENTES ═══════════════════════════ */}
-      <div className="bg-gray-50 dark:bg-zinc-800/60 border border-gray-200 dark:border-zinc-800 rounded-2xl p-6 space-y-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-primary/5 dark:bg-primary/150/10 flex items-center justify-center">
-            <MessageCircle className="h-5 w-5 text-primary" />
+      <div className="bg-gray-50 dark:bg-zinc-800/60 border border-gray-200 dark:border-zinc-800 rounded-2xl overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 dark:border-zinc-800">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-500">
+              <MessageCircle className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-gray-900 dark:text-zinc-100">WhatsApp para Clientes</h2>
+              <p className="text-xs text-gray-400 dark:text-zinc-500">Envie mensagens diretamente aos seus clientes pelo seu WhatsApp</p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-lg font-bold text-gray-900 dark:text-zinc-100">WhatsApp para Clientes</h2>
-            <p className="text-xs text-gray-400 dark:text-zinc-500">Envie mensagens diretamente aos seus clientes pelo seu WhatsApp</p>
-          </div>
+          {!waLoading && (
+            <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${
+              waStatus?.connected
+                ? "border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400"
+                : "border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400"
+            }`}>
+              {waStatus?.connected ? <><span>✓</span> Conectado</> : <><WifiOff className="h-3 w-3" /> Desconectado</>}
+            </span>
+          )}
         </div>
 
-        <div className="bg-gray-100 dark:bg-zinc-800/60 border border-gray-300 dark:border-zinc-700/40 rounded-xl p-4 flex items-start gap-3">
-          <Info className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-          <div>
-            <p className="text-sm font-semibold text-primary">Esta funcionalidade foi movida</p>
-            <p className="text-xs text-gray-500 dark:text-zinc-400 mt-1">
-              A conexão e configuração do WhatsApp para enviar mensagens aos seus clientes agora está disponível na página <span className="font-bold text-gray-700 dark:text-zinc-300">Meu Perfil</span>.
-            </p>
-            <button
-              onClick={() => router.push("/perfil")}
-              className="mt-3 flex items-center gap-2 bg-primary hover:bg-primary/90 text-white text-sm font-semibold px-4 py-2 rounded-lg transition"
-            >
-              <ExternalLink className="h-4 w-4" />
-              Ir para Meu Perfil
-            </button>
-          </div>
+        {/* Status box */}
+        <div className="px-6 py-5">
+          {waLoading ? (
+            <div className="rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800/50 p-4 text-sm text-gray-400 dark:text-zinc-500">
+              Verificando conexão...
+            </div>
+          ) : waStatus?.connected ? (
+            <div className="rounded-xl border border-green-200 dark:border-green-800/60 bg-green-50 dark:bg-green-950/20 p-4 space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-green-500">
+                  <CheckCircle2 className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-green-700 dark:text-green-400">WhatsApp Conectado</p>
+                  {(waStatus?.phone || waStatus?.number) && (
+                    <p className="text-xs text-green-600 dark:text-green-500">Número: {waStatus.phone || waStatus.number}</p>
+                  )}
+                </div>
+              </div>
+              <div className="rounded-lg border border-green-200 dark:border-green-800/50 px-3 py-2">
+                <span className="flex items-center gap-2 text-xs text-green-600 dark:text-green-400">
+                  <Wifi className="h-3.5 w-3.5 shrink-0" />
+                  Conexão persistente ativa — permanece conectado mesmo com navegador fechado
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-xl border border-red-200 dark:border-red-800/60 bg-red-50 dark:bg-red-950/20 p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/40">
+                  <WifiOff className="h-5 w-5 text-red-500" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-red-600 dark:text-red-400">WhatsApp Desconectado</p>
+                  <p className="text-xs text-red-500">Use "Recriar Instância" para conectar.</p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
+
+        {/* Toggle */}
+        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 dark:border-zinc-800">
+          <div>
+            <p className="text-sm font-semibold text-gray-800 dark:text-zinc-200">Enviar para clientes</p>
+            <p className="text-xs text-gray-500 dark:text-zinc-400">Permite enviar cobranças e comprovantes</p>
+          </div>
+          <button
+            onClick={() => setWaNotifyClients(v => !v)}
+            className={`relative h-6 w-11 rounded-full transition-colors ${waNotifyClients ? "bg-green-500" : "bg-gray-200 dark:bg-zinc-700"}`}
+          >
+            <div className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${waNotifyClients ? "translate-x-5" : "translate-x-0.5"}`} />
+          </button>
+        </div>
+
+        {/* Buttons */}
+        <div className="grid grid-cols-2 gap-3 px-6 pb-4">
+          <button
+            onClick={handleWaRecriar}
+            disabled={waReconnecting}
+            className="flex items-center justify-center gap-2 rounded-xl border border-amber-400 dark:border-amber-600 px-4 py-3 text-sm font-semibold text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/20 transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`h-4 w-4 ${waReconnecting ? "animate-spin" : ""}`} />
+            {waReconnecting ? "Reconectando..." : "Recriar Instância"}
+          </button>
+          <button
+            onClick={handleWaDesconectar}
+            disabled={waDisconnecting || !waStatus?.connected}
+            className="flex items-center justify-center gap-2 rounded-xl border border-red-300 dark:border-red-700 px-4 py-3 text-sm font-semibold text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors disabled:opacity-40"
+          >
+            <Unlink className="h-4 w-4" />
+            {waDisconnecting ? "Desconectando..." : "Desconectar"}
+          </button>
+        </div>
+        <p className="px-6 pb-5 text-center text-xs text-gray-400 dark:text-zinc-500">
+          Se sua conexão estiver instável ou desconectando, use "Recriar Instância" para gerar uma nova conexão.
+        </p>
       </div>
 
       {/* ═══════════════════════════ MENSAGEM DE COBRANÇA ═══════════════════════════ */}
@@ -572,8 +701,8 @@ export default function ConfiguracoesPage() {
         {/* ─── Textarea ─── */}
         <div className="relative">
           <textarea
-            value={templates[activeTab]}
-            onChange={(e) => setTemplates((prev) => ({ ...prev, [activeTab]: e.target.value }))}
+            value={templates[activeKey]}
+            onChange={(e) => setTemplates((prev) => ({ ...prev, [activeKey]: e.target.value }))}
             rows={14}
             className="w-full bg-gray-100 dark:bg-zinc-800/40 border border-gray-300 dark:border-zinc-700/40 rounded-xl px-4 py-4 text-gray-800 dark:text-zinc-200 text-sm font-mono leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-primary/40"
           />

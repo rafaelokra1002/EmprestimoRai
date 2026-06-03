@@ -177,12 +177,20 @@ export function getInterestPerPeriod(
  */
 export function getNextDueDate(dueDay: number, fromDate: Date = new Date()): Date {
   const now = new Date(fromDate)
-  let targetMonth = now.getMonth() + 1
+  let targetMonth = now.getMonth()
   let targetYear = now.getFullYear()
 
-  if (targetMonth > 11) {
-    targetMonth = 0
-    targetYear++
+  // Check if dueDay still hasn't passed in the current month
+  const lastDayOfCurrentMonth = new Date(targetYear, targetMonth + 1, 0).getDate()
+  const actualDayCurrentMonth = Math.min(dueDay, lastDayOfCurrentMonth)
+
+  if (now.getDate() >= actualDayCurrentMonth) {
+    // Due day already passed this month, move to next month
+    targetMonth++
+    if (targetMonth > 11) {
+      targetMonth = 0
+      targetYear++
+    }
   }
 
   const lastDayOfMonth = new Date(targetYear, targetMonth + 1, 0).getDate()

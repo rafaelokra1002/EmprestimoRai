@@ -510,7 +510,9 @@ export default function EmprestimosPage() {
     const pendingInst = loan.installments.find((i: any) => i.status !== "PAID")
     if (pendingInst) {
       setSelectedInstallmentIds([pendingInst.id])
-      setPayAmount(getInstallmentPayableAmount(loan, pendingInst))
+      const base = getInstallmentPayableAmount(loan, pendingInst)
+      const prop = loan.installmentCount === 1 ? getInstallmentProporcional(loan, pendingInst) : 0
+      setPayAmount(base + prop)
     }
     // Pre-fill next month due date
     const nextMonth = new Date()
@@ -719,7 +721,7 @@ export default function EmprestimosPage() {
 
   const getInstallmentPayableAmount = (loan: Loan, installment: Loan["installments"][number]) => {
     const baseRemaining = Math.max(0, installment.amount - (installment.paidAmount || 0))
-    return baseRemaining + getInstallmentOverdueCharge(loan, installment) + getInstallmentProporcional(loan, installment)
+    return baseRemaining + getInstallmentOverdueCharge(loan, installment)
   }
 
   const getNextDueInst = (loan: Loan) =>
@@ -943,11 +945,15 @@ export default function EmprestimosPage() {
       .sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0]
     const isDueToday = nextInst && new Date(nextInst.dueDate).toDateString() === new Date().toDateString()
 
+    const isParcelado = freshLoan.installmentCount > 1
     let templateKey = "ANTECIPADA"
     if (hasOverdue) templateKey = "ATRASO"
     else if (isDueToday) templateKey = "VENCE_HOJE"
 
-    const savedTemplate = savedTemplates[templateKey]
+    const parceladoKey = `${templateKey}_PARCELADO`
+    const savedTemplate = (isParcelado && savedTemplates[parceladoKey])
+      ? savedTemplates[parceladoKey]
+      : savedTemplates[templateKey]
     const msg = savedTemplate ? applyTemplate(savedTemplate, freshLoan) : buildDefaultWhatsappMessage(freshLoan)
 
     setWhatsappMessage(msg)
@@ -1996,11 +2002,18 @@ export default function EmprestimosPage() {
                     const jurosPago = intPerInst > 0 ? totalPartialPaid % intPerInst : 0
                     const jurosPendente = intPerInst > 0 ? intPerInst - jurosPago : 0
                     const hasPartialInterest = jurosPago > 0
+                    const overdueMonths = Math.floor(getCurrentOverdueDays(loan) / 30)
+                    const jurosMultiplier = overdueMonths >= 1 ? overdueMonths : 0
                     return (
                       <div className="mx-4 mt-2 px-3 py-2 rounded-lg bg-gray-50 dark:bg-zinc-800/60 space-y-1">
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-gray-500 dark:text-zinc-400">Só Juros (por parcela):</span>
-                          <span className="text-sm font-semibold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(intPerInst)}</span>
+                          <span className="text-sm font-semibold tabular-nums text-gray-900 dark:text-zinc-100">
+                            {jurosMultiplier >= 2 && (
+                              <span className="mr-1 text-orange-500 dark:text-orange-400">{jurosMultiplier}x</span>
+                            )}
+                            {formatCurrency(intPerInst)}
+                          </span>
                         </div>
                         {hasPartialInterest && (
                           <>
@@ -2047,9 +2060,8 @@ export default function EmprestimosPage() {
                           const instDays = Math.max(0, Math.floor((todayStartInst.getTime() - dueStartInst.getTime()) / (1000 * 60 * 60 * 24)))
                           const baseAmount = Math.max(0, inst.amount - (inst.paidAmount || 0))
                           const instOverdueCharge = getInstallmentOverdueCharge(loan, inst)
-                          const instProporcional = getInstallmentProporcional(loan, inst)
                           const extraCycles = getExtraCyclesInterest(loan)
-                          const payableAmount = baseAmount + instOverdueCharge + instProporcional + extraCycles
+                          const payableAmount = baseAmount + instOverdueCharge + extraCycles
                           return (
                             <div key={inst.id} className="space-y-1">
                               <div className="flex items-center justify-between">
@@ -2062,12 +2074,6 @@ export default function EmprestimosPage() {
                                 <span className="text-gray-600 dark:text-zinc-400">Vencimento: {formatDate(inst.dueDate)}</span>
                                 <span className="text-gray-700 dark:text-zinc-300 font-medium">Valor: {formatCurrency(baseAmount)}</span>
                               </div>
-                              {instProporcional > 0 && (
-                                <div className="flex items-center justify-between text-xs">
-                                  <span className="text-blue-600 dark:text-blue-400">📊 Proporcional:</span>
-                                  <span className="text-blue-600 dark:text-blue-400 font-bold">+{formatCurrency(instProporcional)}</span>
-                                </div>
-                              )}
                               {instOverdueCharge > 0 && (
                                 <div className="flex items-center justify-between text-xs">
                                   <span className="text-red-600 dark:text-red-400">⚠️ Multa Aplicada:</span>
@@ -2803,7 +2809,10 @@ export default function EmprestimosPage() {
           const proporcional = hasOverdueInst
             ? Math.round((interestPerInst / 30) * overdueDays * 100) / 100
             : 0
-          const totalWithPenalty = remaining + penalty + proporcional
+          const unpaidBase = paymentDialog.installments
+            .filter((i: any) => i.status !== "PAID")
+            .reduce((s: number, i: any) => s + Math.max(0, i.amount - (i.paidAmount || 0)), 0)
+          const totalWithPenalty = unpaidBase + proporcional + overdueCharge + penalty
 
           return (
             <div className="space-y-5">
@@ -2888,6 +2897,10 @@ export default function EmprestimosPage() {
                       todayDate.setHours(0, 0, 0, 0)
                       const instOverdue = instDueDate.getTime() < todayDate.getTime()
                       const payableAmount = getInstallmentPayableAmount(paymentDialog, inst)
+                      const instProporcional = (paymentDialog.installmentCount === 1 && instOverdue)
+                        ? getInstallmentProporcional(paymentDialog, inst)
+                        : 0
+                      const displayPayable = payableAmount + instProporcional
                       const baseAmount = Math.max(0, inst.amount - (inst.paidAmount || 0))
                       const overdueDetails = getInstallmentOverdueDetails(paymentDialog, inst)
                       return (
@@ -2904,7 +2917,13 @@ export default function EmprestimosPage() {
                             setSelectedInstallmentIds(newIds)
                             const total = paymentDialog.installments
                               .filter((i: any) => newIds.includes(i.id))
-                              .reduce((sum: number, installment: any) => sum + getInstallmentPayableAmount(paymentDialog, installment), 0)
+                              .reduce((sum: number, installment: any) => {
+                                const base = getInstallmentPayableAmount(paymentDialog, installment)
+                                const prop = (paymentDialog.installmentCount === 1 && new Date(installment.dueDate) < new Date())
+                                  ? getInstallmentProporcional(paymentDialog, installment)
+                                  : 0
+                                return sum + base + prop
+                              }, 0)
                             setPayAmount(total)
                           }}
                           className={`group w-full rounded-2xl border p-3 transition-colors text-left ${
@@ -2942,6 +2961,9 @@ export default function EmprestimosPage() {
                               {instOverdue && overdueDetails.multa > 0 && (
                                 <p className="mt-0.5 text-xs font-medium text-red-500">+{formatCurrency(overdueDetails.multa)} multa</p>
                               )}
+                              {instProporcional > 0 && (
+                                <p className={`mt-0.5 text-xs font-medium ${isSelected ? "text-white/80" : "text-blue-500 dark:text-blue-400"}`}>+{formatCurrency(instProporcional)} proporcional</p>
+                              )}
                               <p className={`mt-0.5 text-[1.05rem] font-semibold leading-none ${
                                 isSelected
                                   ? "text-white"
@@ -2949,7 +2971,7 @@ export default function EmprestimosPage() {
                                     ? "text-red-600 dark:text-red-400 group-hover:text-green-700 dark:group-hover:text-green-400"
                                     : "text-gray-900 dark:text-zinc-100 group-hover:text-green-700 dark:group-hover:text-green-400"
                               }`}>
-                                {formatCurrency(payableAmount)}
+                                {formatCurrency(displayPayable)}
                               </p>
                             </div>
                           </div>
@@ -3477,9 +3499,8 @@ export default function EmprestimosPage() {
                         const overdueCharge = getCurrentOverdueCharge(currentLoan)
                         if (overdueCharge > 0) {
                           const overdueDays = getCurrentOverdueDays(currentLoan)
-                          const cyclesMissed = Math.max(1, Math.floor(overdueDays / 30))
-                          const proporcionalSoJuros = Math.round((currentInterest / 30) * overdueDays * 100) / 100
-                          setRenegotiateAmount(currentInterest * (cyclesMissed + 1) + overdueCharge + proporcionalSoJuros)
+                          const cyclesMissed = Math.max(0, Math.floor(overdueDays / 30))
+                          setRenegotiateAmount(currentInterest * (cyclesMissed + 1) + overdueCharge)
                         } else {
                           setRenegotiateAmount(currentInterest)
                         }
@@ -3535,8 +3556,7 @@ export default function EmprestimosPage() {
                       {(() => {
                         const overdueDaysSJ = getCurrentOverdueDays(currentLoan)
                         const overdueChargeSJ = getCurrentOverdueCharge(currentLoan)
-                        const proporcionalSJ = overdueDaysSJ > 0 ? Math.round((currentInterest / 30) * overdueDaysSJ * 100) / 100 : 0
-                        const cyclesSJ = overdueDaysSJ > 0 ? Math.max(1, Math.floor(overdueDaysSJ / 30)) : 0
+                        const cyclesSJ = overdueDaysSJ > 0 ? Math.max(0, Math.floor(overdueDaysSJ / 30)) : 0
                         return (
                           <>
                             <p className="font-semibold text-gray-900 dark:text-zinc-100">
@@ -3548,12 +3568,6 @@ export default function EmprestimosPage() {
                                   <span>Juros ({cyclesSJ + 1} ciclo{cyclesSJ + 1 !== 1 ? "s" : ""}):</span>
                                   <span className="font-semibold text-primary">{formatCurrency(currentInterest * (cyclesSJ + 1))}</span>
                                 </div>
-                                {proporcionalSJ > 0 && (
-                                  <div className="flex justify-between text-gray-600 dark:text-zinc-300">
-                                    <span>📊 Proporcional ({overdueDaysSJ}d):</span>
-                                    <span className="font-semibold text-blue-600 dark:text-blue-400">+{formatCurrency(proporcionalSJ)}</span>
-                                  </div>
-                                )}
                                 {overdueChargeSJ > 0 && (
                                   <div className="flex justify-between text-gray-600 dark:text-zinc-300">
                                     <span>⚠️ Multa ({overdueDaysSJ}d):</span>
@@ -4017,7 +4031,8 @@ export default function EmprestimosPage() {
                   <button
                     type="button"
                     onClick={() => {
-                      const t = savedTemplates["ATRASO"]
+                      const isP = whatsappLoan.installmentCount > 1
+                      const t = (isP && savedTemplates["ATRASO_PARCELADO"]) ? savedTemplates["ATRASO_PARCELADO"] : savedTemplates["ATRASO"]
                       setWhatsappMessage(t ? applyTemplate(t, whatsappLoan) : buildDefaultWhatsappMessage(whatsappLoan))
                     }}
                     className="text-xs px-2.5 py-1 rounded-full border border-gray-300 dark:border-zinc-600 text-gray-600 dark:text-zinc-300 hover:border-primary hover:text-primary transition-colors"
@@ -4028,7 +4043,7 @@ export default function EmprestimosPage() {
                     <button
                       type="button"
                       onClick={() => {
-                        const t = savedTemplates["ANTECIPADA"]
+                        const t = savedTemplates["ANTECIPADA_PARCELADO"] || savedTemplates["ANTECIPADA"]
                         setWhatsappMessage(t ? applyTemplate(t, whatsappLoan) : buildParcelamentoMessage(whatsappLoan))
                       }}
                       className="text-xs px-2.5 py-1 rounded-full border border-gray-300 dark:border-zinc-600 text-gray-600 dark:text-zinc-300 hover:border-primary hover:text-primary transition-colors"
