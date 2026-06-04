@@ -912,7 +912,7 @@ export default function EmprestimosPage() {
     const nextInst = getNextDueInst(loan)
     if (!nextInst) return buildDefaultWhatsappMessage(loan)
     const daysLeft = Math.max(0, Math.ceil((new Date(nextInst.dueDate).getTime() - Date.now()) / 86400000))
-    return `Olá, ${name}\n\n📌 LEMBRETE DE PAGAMENTO\n\n📅 Vencimento: ${formatDate(nextInst.dueDate)}\n⏳ Faltam: ${daysLeft} dia${daysLeft !== 1 ? "s" : ""}\n\n💰 Valor total: ${formatCurrency(loan.totalAmount)}\n📈 Juros: ${formatCurrency(loan.profit)}\n\n🔄 Renove seu Prazo\nPague os juros e receba +30 dias.\n\n───────────────\n👤: ${profileChargeName || "Titular"}\n\n💠 Chave Pix: ${profilePixKey || "Não cadastrada"}`
+    return `Olá, ${name}\n\n📌 LEMBRETE DE PAGAMENTO\n\n📅 Vencimento: ${formatDate(nextInst.dueDate)}\n⏳ Faltam: ${daysLeft} dia${daysLeft !== 1 ? "s" : ""}\n\n💰 Valor total: ${formatCurrency(loan.totalAmount)}\n📈 Juros: ${formatCurrency(loan.profit)}\n\n🔄 Renove seu Prazo\nPague os juros e receba +30 dias.\n\n───────────────\n👤 ${profileChargeName || "Titular"}\n\n💠 Chave Pix: ${profilePixKey || "Não cadastrada"}`
   }
 
   const buildParcelamentoMessage = (loan: Loan) => {
@@ -1026,7 +1026,7 @@ export default function EmprestimosPage() {
       } catch { failed++ }
       sentClients.add(loan.client.id)
       // Delay between sends to avoid WhatsApp rate limiting
-      await new Promise(r => setTimeout(r, 2000))
+      await new Promise(r => setTimeout(r, 60000))
     }
     setBulkSendingOverdue(false)
     setBulkResultDialog({ type: "atrasados", sent, failed, total: sentClients.size })
@@ -1074,7 +1074,7 @@ export default function EmprestimosPage() {
     const vencimento = todayInsts.length > 0 ? formatDate(todayInsts[0].dueDate) : ""
     const juros = formatCurrency(loan.profit)
 
-    return `Olá ${name}\n\n📌 LEMBRETE DE PAGAMENTO\n\n📅 Vencimento: ${vencimento}\n⏳ Restam: 0 dias\n\n💰 Valor total: ${formatCurrency(loan.totalAmount)}\n\n🔄 Renovação disponível:\nPague ${juros} (juros) e receba +30 dias de prazo.\n\n─────────────────\n👤 Titular : ${profileChargeName || "Titular"}\n\n💠 Chave Pix: ${profilePixKey || "Não cadastrada"}`
+    return `👤 ${loan.client.name}\n\n───────────────\n\n🟡 VENCIMENTO HOJE\n\n📅 Data: ${vencimento}\n\n💰 Valor total: ${formatCurrency(loan.totalAmount)}\n📈 Juros: ${juros}\n\n🔄 Renove seu prazo\nPague apenas os juros e receba +30 dias para pagamento.\n\n⚠️ Em caso de atraso:\nSerá cobrado R$ 15,00 por dia.\n\n───────────────\n\n👤 ${profileChargeName || "Titular"}\n\n💠 Chave Pix: ${profilePixKey || "Não cadastrada"}`
   }
 
   const sendBulkDueToday = async () => {
@@ -1107,7 +1107,7 @@ export default function EmprestimosPage() {
         })
         if (res.ok) { sent++ } else { failed++ }
       } catch { failed++ }
-      await new Promise(r => setTimeout(r, 2000))
+      await new Promise(r => setTimeout(r, 60000))
     }
     setBulkSendingDueToday(false)
     setBulkResultDialog({ type: "vencendo hoje", sent, failed, total: byClient.size })
@@ -2010,7 +2010,7 @@ export default function EmprestimosPage() {
                           <span className="text-xs text-gray-500 dark:text-zinc-400">Só Juros (por parcela):</span>
                           <span className="text-sm font-semibold tabular-nums text-gray-900 dark:text-zinc-100">
                             {jurosMultiplier >= 2 && (
-                              <span className="mr-1 text-[10px] font-medium text-orange-500 dark:text-orange-400">{jurosMultiplier}x</span>
+                              <span className="mr-1 relative -top-0.5 text-[9px] font-medium text-orange-500 dark:text-orange-400">{jurosMultiplier}x</span>
                             )}
                             {formatCurrency(intPerInst)}
                           </span>

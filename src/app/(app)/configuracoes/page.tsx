@@ -26,22 +26,26 @@ R$ 15,00 por dia até regularização.
 👤 Titular: {NOME_PIX}
 
 💠 Chave Pix: {PIX}`,
-  VENCE_HOJE: `Cliente: {CLIENTE}
+  VENCE_HOJE: `👤 {CLIENTE}
 
-────────────────
-⚠️ VENCIMENTO HOJE
+───────────────
+
+🟡 VENCIMENTO HOJE
 
 📅 Data: {DATA}
+
 💰 Valor total: {TOTAL}
+📈 Juros: {JUROS}
 
-🔄 Renovação disponível:
-Pague {JUROS} (juros) e ganhe +30 dias de prazo.
+🔄 Renove seu prazo
+Pague apenas os juros e receba +30 dias para pagamento.
 
-⚠️  Atraso:
-R$ 15,00 por dia até regularização.
+⚠️ Em caso de atraso:
+Será cobrado R$ 15,00 por dia.
 
-────────────────
-👤 Titular: {NOME_PIX}
+───────────────
+
+👤 {NOME_PIX}
 
 💠 Chave Pix: {PIX}`,
   ANTECIPADA: `Olá {CLIENTE}
