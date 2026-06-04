@@ -2010,7 +2010,7 @@ export default function EmprestimosPage() {
                           <span className="text-xs text-gray-500 dark:text-zinc-400">Só Juros (por parcela):</span>
                           <span className="text-sm font-semibold tabular-nums text-gray-900 dark:text-zinc-100">
                             {jurosMultiplier >= 2 && (
-                              <span className="mr-1 text-orange-500 dark:text-orange-400">{jurosMultiplier}x</span>
+                              <span className="mr-1 text-[10px] font-medium text-orange-500 dark:text-orange-400">{jurosMultiplier}x</span>
                             )}
                             {formatCurrency(intPerInst)}
                           </span>

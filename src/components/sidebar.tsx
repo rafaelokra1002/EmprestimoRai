@@ -32,6 +32,7 @@ import {
   XCircle,
   MapPin,
   HardDrive,
+  GraduationCap,
 } from "lucide-react"
 import { useState } from "react"
 
@@ -50,7 +51,6 @@ const highlightItem = {
 const menuItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/clientes", label: "Clientes", icon: Users },
-  { href: "/clientes/desaparecido", label: "Desaparecido", icon: XCircle },
   { href: "/score", label: "Score de Clientes", icon: Star },
   { href: "/emprestimos", label: "Empréstimos", icon: Banknote },
   { href: "/emprestimos/relatorio", label: "Relatório Empréstimos", icon: FileText },
@@ -59,6 +59,8 @@ const menuItems = [
   { href: "/contas", label: "Caixa", icon: CreditCard },
   { href: "/despesas", label: "Despesas", icon: Receipt },
   { href: "/backup", label: "Backup", icon: HardDrive },
+  { href: "/clientes/desaparecido", label: "Desaparecido", icon: XCircle },
+  { href: "/aulas", label: "Aulas", icon: GraduationCap },
   { href: "/configuracoes", label: "Configurações", icon: Settings },
 ]
 
@@ -134,7 +136,7 @@ export function Sidebar() {
             })}
 
             {/* Highlighted item */}
-            {(() => {
+            {highlightItem && (() => {
               const isActive = pathname === highlightItem.href || pathname?.startsWith(highlightItem.href + "/")
               return (
                 <Link
