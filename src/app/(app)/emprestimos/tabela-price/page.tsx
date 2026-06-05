@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Calculator, Calendar, Download, HelpCircle, Plus, Table2, User, Wallet, DollarSign, TrendingUp } from "lucide-react"
+import { Dialog } from "@/components/ui/dialog"
+import { Calculator, Calendar, Download, HelpCircle, Plus, Table2, User, Wallet, DollarSign, TrendingUp, X, MessageCircle, Send, Loader2, CheckCircle2, Copy, ExternalLink, FileText } from "lucide-react"
 import { formatCurrency, generateInstallmentDates, localDateStr } from "@/lib/utils"
 
 interface Client {
@@ -50,6 +51,15 @@ export default function TabelaPricePage() {
   const [clients, setClients] = useState<Client[]>([])
   const [allLoansCount, setAllLoansCount] = useState(0)
   const [receivedCount, setReceivedCount] = useState(0)
+  const [priceLoans, setPriceLoans] = useState<any[]>([])
+  const [successDialog, setSuccessDialog] = useState(false)
+  const [createdInfo, setCreatedInfo] = useState<{
+    clientName: string; clientPhone: string | null
+    amount: number; interestRate: number; installmentCount: number
+    installmentValue: number; totalAmount: number; totalInterest: number
+    firstInstallmentDate: string; modality: string
+    table: { n: number; payment: number; amort: number; interest: number; balance: number; date: string }[]
+  } | null>(null)
 
   const [clientId, setClientId] = useState("")
   const [amount, setAmount] = useState<number>(0)
@@ -60,6 +70,34 @@ export default function TabelaPricePage() {
   const [firstInstallmentDate, setFirstInstallmentDate] = useState(today())
   const [notes, setNotes] = useState("")
   const [loading, setLoading] = useState(false)
+
+  // Card suspenso
+  type RowDetail = { n: number; payment: number; amort: number; interest: number; balance: number; date: string }
+  const [selectedRow, setSelectedRow] = useState<RowDetail | null>(null)
+  const [waSending, setWaSending] = useState(false)
+  const [waSent, setWaSent] = useState(false)
+
+  const selectedClient = clients.find(c => c.id === clientId) || null
+
+  const buildRowMessage = (row: RowDetail) => {
+    const clientName = selectedClient?.name || "Cliente"
+    const dateStr = row.date ? new Date(row.date + "T12:00:00").toLocaleDateString("pt-BR") : "—"
+    return `📋 Tabela Price — Parcela ${row.n}/${installments}\n\n👤 ${clientName}\n\n💰 Valor da Parcela: ${formatCurrency(row.payment)}\n📉 Amortização: ${formatCurrency(row.amort)}\n📈 Juros: ${formatCurrency(row.interest)}\n💼 Saldo após: ${formatCurrency(row.balance)}\n📅 Vencimento: ${dateStr}`
+  }
+
+  const sendWhatsapp = async () => {
+    if (!selectedRow || !selectedClient?.phone) return
+    setWaSending(true)
+    try {
+      await fetch("/api/whatsapp/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: selectedClient.phone, message: buildRowMessage(selectedRow) }),
+      })
+      setWaSent(true)
+    } catch {}
+    setWaSending(false)
+  }
 
   const preview = useMemo(() => calcPrice(amount, monthlyRate, installments), [amount, monthlyRate, installments])
 
@@ -91,18 +129,18 @@ export default function TabelaPricePage() {
     return rows
   }, [amount, monthlyRate, installments, preview.installmentValue, installmentDates])
 
-  useEffect(() => {
-    const load = async () => {
-      const [clientsRes, loansRes] = await Promise.all([fetch("/api/clients"), fetch("/api/loans")])
-      const clientsData = await clientsRes.json()
-      const loansData = await loansRes.json()
-      const loans = Array.isArray(loansData) ? loansData : []
-      setClients(Array.isArray(clientsData) ? clientsData : [])
-      setAllLoansCount(loans.length)
-      setReceivedCount(loans.filter((l: any) => l.status === "COMPLETED").length)
-    }
-    load()
-  }, [])
+  const loadData = async () => {
+    const [clientsRes, loansRes] = await Promise.all([fetch("/api/clients"), fetch("/api/loans")])
+    const clientsData = await clientsRes.json()
+    const loansData = await loansRes.json()
+    const loans = Array.isArray(loansData) ? loansData : []
+    setClients(Array.isArray(clientsData) ? clientsData : [])
+    setAllLoansCount(loans.length)
+    setReceivedCount(loans.filter((l: any) => l.status === "COMPLETED").length)
+    setPriceLoans(loans.filter((l: any) => l.interestType === "FIXED_AMOUNT"))
+  }
+
+  useEffect(() => { loadData() }, [])
 
   const handleCreate = async () => {
     if (!clientId) return alert("Selecione o cliente")
@@ -135,8 +173,22 @@ export default function TabelaPricePage() {
         return
       }
 
-      alert("Empréstimo Price criado com sucesso")
-      router.push("/emprestimos")
+      setCreatedInfo({
+        clientName: selectedClient?.name || "Cliente",
+        clientPhone: selectedClient?.phone || null,
+        amount,
+        interestRate: monthlyRate,
+        installmentCount: installments,
+        installmentValue: preview.installmentValue,
+        totalAmount: preview.totalAmount,
+        totalInterest: preview.totalInterest,
+        firstInstallmentDate,
+        modality,
+        table: amortizationTable,
+      })
+      setSuccessDialog(true)
+      setAmount(0); setMonthlyRate(0); setInstallments(1); setClientId(""); setNotes("")
+      await loadData()
     } finally {
       setLoading(false)
     }
@@ -259,33 +311,34 @@ export default function TabelaPricePage() {
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-gray-500 dark:text-zinc-400 border-b border-gray-200 dark:border-zinc-800">
-                  <th className="pb-3 font-medium">#</th>
-                  <th className="pb-3 font-medium text-center">Parcela</th>
-                  <th className="pb-3 font-medium text-center">Amortização</th>
-                  <th className="pb-3 font-medium text-center">Juros</th>
-                  <th className="pb-3 font-medium text-center">Saldo</th>
-                  <th className="pb-3 font-medium text-right">Vencimento</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-zinc-800">
-                {amortizationTable.map((row) => (
-                  <tr key={row.n} className="text-sm">
-                    <td className="py-3 text-blue-600 font-medium">{row.n}</td>
-                    <td className="py-3 text-center font-medium text-gray-900 dark:text-zinc-100">{formatCurrency(row.payment)}</td>
-                    <td className="py-3 text-center text-blue-600 font-medium">{formatCurrency(row.amort)}</td>
-                    <td className="py-3 text-center text-orange-600 font-medium">{formatCurrency(row.interest)}</td>
-                    <td className="py-3 text-center text-gray-700 dark:text-zinc-300">{formatCurrency(row.balance)}</td>
-                    <td className="py-3 text-right text-gray-500 dark:text-zinc-400">
-                      {row.date ? new Date(row.date + "T12:00:00").toLocaleDateString("pt-BR") : "—"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-zinc-800">
+            <div className="grid grid-cols-3 px-4 py-2 bg-gray-100 dark:bg-zinc-800/60 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-zinc-400">
+              <span>Parcela</span>
+              <span className="text-center">Vencimento</span>
+              <span className="text-right">Valor</span>
+            </div>
+            <div className="divide-y divide-gray-100 dark:divide-zinc-800">
+              {amortizationTable.map((row) => (
+                <div
+                  key={row.n}
+                  onClick={() => { setSelectedRow(row); setWaSent(false) }}
+                  className="grid grid-cols-3 items-center px-4 py-3 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-white text-xs font-bold shrink-0">
+                      {row.n}
+                    </span>
+                    <span className="text-sm text-gray-500 dark:text-zinc-400">/{installments}</span>
+                  </div>
+                  <span className="text-center text-sm text-gray-700 dark:text-zinc-300">
+                    {row.date ? new Date(row.date + "T12:00:00").toLocaleDateString("pt-BR") : "—"}
+                  </span>
+                  <span className="text-right text-sm font-semibold text-primary">
+                    {formatCurrency(row.payment)}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Totais */}
@@ -309,6 +362,151 @@ export default function TabelaPricePage() {
             </Button>
           </div>
         </div>
+      )}
+      {/* Dialog de sucesso */}
+      <Dialog open={successDialog} onClose={() => setSuccessDialog(false)} className="max-w-md">
+        <div className="space-y-5">
+          <div className="text-center">
+            <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 dark:bg-primary/20">
+              <CheckCircle2 className="h-6 w-6 text-primary" />
+            </div>
+            <h2 className="text-lg font-bold text-primary">Empréstimo Criado!</h2>
+            <p className="text-sm text-gray-500 dark:text-zinc-400">Deseja enviar comprovante ao cliente?</p>
+          </div>
+
+          {createdInfo && (
+            <div className="rounded-lg border border-gray-200 dark:border-zinc-700 p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <User className="h-4 w-4 text-gray-400" />
+                <span className="font-bold text-gray-900 dark:text-zinc-100">{createdInfo.clientName}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-gray-600 dark:text-zinc-300">
+                <div className="flex items-center gap-1.5"><DollarSign className="h-3.5 w-3.5 text-gray-400" /> Valor: {formatCurrency(createdInfo.amount)}</div>
+                <div className="flex items-center gap-1.5"><span className="text-gray-400 text-xs font-bold">%</span> Taxa: {createdInfo.interestRate}%/mês</div>
+                <div className="flex items-center gap-1.5"><FileText className="h-3.5 w-3.5 text-gray-400" /> {createdInfo.installmentCount}x {formatCurrency(createdInfo.installmentValue)}</div>
+                <div className="flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5 text-gray-400" /> Venc: {new Date(createdInfo.firstInstallmentDate + "T12:00:00").toLocaleDateString("pt-BR")}</div>
+              </div>
+              <div className="flex items-center justify-between border-t border-gray-200 dark:border-zinc-700 pt-3">
+                <span className="text-sm text-gray-500 dark:text-zinc-400">Total a Receber:</span>
+                <span className="text-lg font-bold tabular-nums text-primary">{formatCurrency(createdInfo.totalAmount)}</span>
+              </div>
+              <div className="text-xs text-gray-400 dark:text-zinc-500 flex justify-between border-t border-gray-100 dark:border-zinc-800 pt-2">
+                <span>Juros Total (Price):</span>
+                <span className="font-medium text-orange-500">{formatCurrency(createdInfo.totalInterest)}</span>
+              </div>
+
+              {/* Tabela de parcelas */}
+              <div className="border-t border-gray-100 dark:border-zinc-800 pt-2">
+                <p className="text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wide mb-2">Parcelas</p>
+                <div className="rounded-lg overflow-hidden border border-gray-100 dark:border-zinc-800">
+                  <div className="grid grid-cols-3 px-3 py-1.5 bg-gray-100 dark:bg-zinc-800/60 text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-zinc-500">
+                    <span>Parcela</span><span className="text-center">Vencimento</span><span className="text-right">Valor</span>
+                  </div>
+                  <div className="divide-y divide-gray-100 dark:divide-zinc-800 max-h-48 overflow-y-auto">
+                    {createdInfo.table.map((row) => (
+                      <div key={row.n} className="grid grid-cols-3 items-center px-3 py-2">
+                        <div className="flex items-center gap-1.5">
+                          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-white text-[10px] font-bold shrink-0">{row.n}</span>
+                          <span className="text-xs text-gray-400 dark:text-zinc-500">/{createdInfo.installmentCount}</span>
+                        </div>
+                        <span className="text-center text-xs text-gray-600 dark:text-zinc-300">
+                          {row.date ? new Date(row.date + "T12:00:00").toLocaleDateString("pt-BR") : "—"}
+                        </span>
+                        <span className="text-right text-xs font-semibold text-primary">{formatCurrency(row.payment)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Button className="w-full gap-2 bg-amber-500 hover:bg-amber-600 text-white" onClick={() => {
+              if (!createdInfo) return
+              const text = `📋 *Empréstimo Price — Relatório*\n\n👤 ${createdInfo.clientName}\n\n💰 Capital: ${formatCurrency(createdInfo.amount)}\n📊 Taxa: ${createdInfo.interestRate}% ao mês\n📅 1ª Parcela: ${new Date(createdInfo.firstInstallmentDate + "T12:00:00").toLocaleDateString("pt-BR")}\n\n🔢 *${createdInfo.installmentCount} parcelas de ${formatCurrency(createdInfo.installmentValue)}*\n💵 Total a pagar: ${formatCurrency(createdInfo.totalAmount)}\n📈 Juros: ${formatCurrency(createdInfo.totalInterest)}`
+              navigator.clipboard.writeText(text).then(() => alert("Texto copiado!"))
+            }}>
+              <Copy className="h-4 w-4" /> Copiar Texto
+            </Button>
+            <Button className="w-full gap-2 bg-amber-500 hover:bg-amber-600 text-white" onClick={() => {
+              if (!createdInfo) return
+              const text = `📋 *Empréstimo Price — Relatório*\n\n👤 ${createdInfo.clientName}\n\n💰 Capital: ${formatCurrency(createdInfo.amount)}\n📊 Taxa: ${createdInfo.interestRate}% ao mês\n📅 1ª Parcela: ${new Date(createdInfo.firstInstallmentDate + "T12:00:00").toLocaleDateString("pt-BR")}\n\n🔢 *${createdInfo.installmentCount} parcelas de ${formatCurrency(createdInfo.installmentValue)}*\n💵 Total a pagar: ${formatCurrency(createdInfo.totalAmount)}\n📈 Juros: ${formatCurrency(createdInfo.totalInterest)}`
+              const phone = createdInfo.clientPhone?.replace(/\D/g, "") || ""
+              window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank")
+            }}>
+              <ExternalLink className="h-4 w-4" /> Enviar para Cliente
+            </Button>
+          </div>
+        </div>
+      </Dialog>
+
+
+      {/* Card suspenso */}
+      {selectedRow && (
+        <>
+          <div className="fixed inset-0 bg-black/40 z-40" onClick={() => setSelectedRow(null)} />
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-sm mx-auto px-4">
+            <div className="rounded-2xl border border-blue-200 dark:border-blue-800 bg-white dark:bg-zinc-900 shadow-2xl p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Table2 className="h-4 w-4 text-blue-600" />
+                  <p className="font-bold text-gray-900 dark:text-zinc-100">Parcela {selectedRow.n}/{installments}</p>
+                </div>
+                <button onClick={() => setSelectedRow(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-zinc-200">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {selectedClient && (
+                <p className="text-sm text-gray-500 dark:text-zinc-400 flex items-center gap-1">
+                  <User className="h-3.5 w-3.5" /> {selectedClient.name}
+                </p>
+              )}
+
+              <div className="rounded-xl bg-gray-50 dark:bg-zinc-800/60 p-3 space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-500 dark:text-zinc-400">Valor da Parcela</span>
+                  <span className="font-semibold text-gray-900 dark:text-zinc-100">{formatCurrency(selectedRow.payment)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500 dark:text-zinc-400">Amortização</span>
+                  <span className="font-semibold text-blue-600">{formatCurrency(selectedRow.amort)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500 dark:text-zinc-400">Juros</span>
+                  <span className="font-semibold text-orange-500">{formatCurrency(selectedRow.interest)}</span>
+                </div>
+                <div className="flex justify-between border-t border-gray-200 dark:border-zinc-700 pt-2">
+                  <span className="text-gray-500 dark:text-zinc-400">Saldo após</span>
+                  <span className="font-semibold text-gray-900 dark:text-zinc-100">{formatCurrency(selectedRow.balance)}</span>
+                </div>
+                {selectedRow.date && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500 dark:text-zinc-400">Vencimento</span>
+                    <span className="font-semibold text-gray-900 dark:text-zinc-100">
+                      {new Date(selectedRow.date + "T12:00:00").toLocaleDateString("pt-BR")}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {selectedClient?.phone ? (
+                <button
+                  onClick={sendWhatsapp}
+                  disabled={waSending || waSent}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-green-500 hover:bg-green-600 disabled:opacity-60 text-white font-semibold py-3 transition-colors text-sm"
+                >
+                  {waSending ? <Loader2 className="h-4 w-4 animate-spin" /> : waSent ? "✓ Enviado!" : <><MessageCircle className="h-4 w-4" /> Enviar via WhatsApp</>}
+                </button>
+              ) : (
+                <p className="text-center text-xs text-gray-400 dark:text-zinc-500">
+                  {selectedClient ? "Cliente sem telefone cadastrado" : "Selecione um cliente para enviar"}
+                </p>
+              )}
+            </div>
+          </div>
+        </>
       )}
     </div>
   )

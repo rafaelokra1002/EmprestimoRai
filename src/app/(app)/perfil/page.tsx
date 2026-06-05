@@ -308,7 +308,7 @@ export default function PerfilPage() {
         </div>
       )}
 
-      <Card className="overflow-hidden rounded-[22px] border border-primary/20 bg-white shadow-[0_18px_40px_-28px_rgba(16,185,129,0.45)] dark:border-primary/20 dark:bg-zinc-900">
+      <Card className="overflow-hidden rounded-xl border border-primary/20 bg-white shadow-[0_18px_40px_-28px_rgba(16,185,129,0.45)] dark:border-primary/20 dark:bg-zinc-900">
         <div className="h-20 bg-gradient-to-r from-emerald-600 via-emerald-600 to-green-600 sm:h-24" />
         <CardContent className="relative -mt-8 px-5 pb-5 sm:px-7 sm:pb-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">

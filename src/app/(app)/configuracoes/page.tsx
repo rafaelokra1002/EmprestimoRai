@@ -38,7 +38,7 @@ R$ 15,00 por dia até regularização.
 📈 Juros: {JUROS}
 
 🔄 Renove seu prazo
-Pague apenas os juros e receba +30 dias para pagamento.
+Pague apenas os juros e tenha mais 30 dias para quitar o valor total.
 
 ⚠️ Em caso de atraso:
 Será cobrado R$ 15,00 por dia.
@@ -122,10 +122,10 @@ const AVAILABLE_VARIABLES = [
 type BaseTabKey = "ATRASO" | "VENCE_HOJE" | "ANTECIPADA"
 type TabKey = BaseTabKey | "ATRASO_PARCELADO" | "VENCE_HOJE_PARCELADO" | "ANTECIPADA_PARCELADO"
 
-const TAB_CONFIG: { key: BaseTabKey; label: string; color: string }[] = [
-  { key: "ATRASO", label: "Atraso", color: "bg-red-50 dark:bg-red-950/300" },
-  { key: "VENCE_HOJE", label: "Vence Hoje", color: "bg-yellow-50 dark:bg-yellow-950/300" },
-  { key: "ANTECIPADA", label: "Antecipada", color: "bg-primary/5 dark:bg-primary/150" },
+const TAB_CONFIG: { key: BaseTabKey; label: string; dot: string }[] = [
+  { key: "ATRASO", label: "Atraso", dot: "bg-red-500" },
+  { key: "VENCE_HOJE", label: "Vence Hoje", dot: "bg-yellow-400" },
+  { key: "ANTECIPADA", label: "Antecipada", dot: "bg-green-500" },
 ]
 
 const PARCELADO_DEFAULTS: Record<BaseTabKey, string> = {
@@ -405,7 +405,7 @@ export default function ConfiguracoesPage() {
   }
 
   return (
-    <div className="max-w-3xl space-y-6 pt-6 pb-10">
+    <div className="max-w-2xl space-y-6 pt-6 pb-10">
       {/* ─── Header ─── */}
       <div className="flex flex-col items-start gap-3">
         <div>
@@ -679,21 +679,39 @@ export default function ConfiguracoesPage() {
         )}
 
         {/* ─── Tabs: Atraso / Vence Hoje / Antecipada ─── */}
-        <div className="flex items-center bg-gray-100 dark:bg-zinc-800/60 border border-gray-300 dark:border-zinc-700/40 rounded-xl overflow-hidden">
-          {TAB_CONFIG.map((tab) => (
+        <div className="flex items-center bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-xl overflow-hidden">
+          {TAB_CONFIG.map((tab, idx) => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition ${
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition ${
+                idx !== 0 ? "border-l border-gray-200 dark:border-zinc-700" : ""
+              } ${
                 activeTab === tab.key
-                  ? "bg-gray-200 dark:bg-zinc-700/80 text-gray-900 dark:text-zinc-100"
-                  : "text-gray-500 dark:text-zinc-400 hover:bg-gray-200 dark:hover:bg-zinc-700 dark:bg-zinc-700/30"
+                  ? "text-gray-900 dark:text-zinc-100"
+                  : "text-gray-400 dark:text-zinc-500 hover:text-gray-700 dark:hover:text-zinc-300"
               }`}
             >
-              <span className={`w-2.5 h-2.5 rounded-full ${tab.color}`} />
+              <span className={`w-2.5 h-2.5 rounded-full ${tab.dot}`} />
               {tab.label}
             </button>
           ))}
+        </div>
+
+        {/* ─── Toggle Simples / Parcelado ─── */}
+        <div className="flex items-center gap-1 self-start bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-xl p-1">
+          <button
+            onClick={() => setIsParcelado(false)}
+            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition ${!isParcelado ? "bg-gray-100 dark:bg-zinc-700 text-gray-900 dark:text-zinc-100 shadow-sm" : "text-gray-400 dark:text-zinc-500"}`}
+          >
+            Simples
+          </button>
+          <button
+            onClick={() => setIsParcelado(true)}
+            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition ${isParcelado ? "bg-gray-100 dark:bg-zinc-700 text-gray-900 dark:text-zinc-100 shadow-sm" : "text-gray-400 dark:text-zinc-500"}`}
+          >
+            Parcelado
+          </button>
         </div>
 
         {/* ─── Template pronto dropdown ─── */}

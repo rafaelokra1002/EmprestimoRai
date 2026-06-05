@@ -912,7 +912,7 @@ export default function EmprestimosPage() {
     const nextInst = getNextDueInst(loan)
     if (!nextInst) return buildDefaultWhatsappMessage(loan)
     const daysLeft = Math.max(0, Math.ceil((new Date(nextInst.dueDate).getTime() - Date.now()) / 86400000))
-    return `Olá, ${name}\n\n📌 LEMBRETE DE PAGAMENTO\n\n📅 Vencimento: ${formatDate(nextInst.dueDate)}\n⏳ Faltam: ${daysLeft} dia${daysLeft !== 1 ? "s" : ""}\n\n💰 Valor total: ${formatCurrency(loan.totalAmount)}\n📈 Juros: ${formatCurrency(loan.profit)}\n\n🔄 Renove seu Prazo\nPague os juros e receba +30 dias.\n\n───────────────\n👤 ${profileChargeName || "Titular"}\n\n💠 Chave Pix: ${profilePixKey || "Não cadastrada"}`
+    return `Olá, ${name}\n\n📌 LEMBRETE DE PAGAMENTO\n\n📅 Vencimento: ${formatDate(nextInst.dueDate)}\n⏳ Faltam: ${daysLeft} dia${daysLeft !== 1 ? "s" : ""}\n\n💰 Valor total: ${formatCurrency(loan.totalAmount)}\n📈 Juros: ${formatCurrency(loan.profit)}\n\n🔄 Renove seu Prazo\nPague apenas os juros e tenha mais 30 dias para quitar o valor total.\n\n───────────────\n👤 ${profileChargeName || "Titular"}\n\n💠 Chave Pix: ${profilePixKey || "Não cadastrada"}`
   }
 
   const buildParcelamentoMessage = (loan: Loan) => {
@@ -1074,7 +1074,7 @@ export default function EmprestimosPage() {
     const vencimento = todayInsts.length > 0 ? formatDate(todayInsts[0].dueDate) : ""
     const juros = formatCurrency(loan.profit)
 
-    return `👤 ${loan.client.name}\n\n───────────────\n\n🟡 VENCIMENTO HOJE\n\n📅 Data: ${vencimento}\n\n💰 Valor total: ${formatCurrency(loan.totalAmount)}\n📈 Juros: ${juros}\n\n🔄 Renove seu prazo\nPague apenas os juros e receba +30 dias para pagamento.\n\n⚠️ Em caso de atraso:\nSerá cobrado R$ 15,00 por dia.\n\n───────────────\n\n👤 ${profileChargeName || "Titular"}\n\n💠 Chave Pix: ${profilePixKey || "Não cadastrada"}`
+    return `👤 ${loan.client.name}\n\n───────────────\n\n🟡 VENCIMENTO HOJE\n\n📅 Data: ${vencimento}\n\n💰 Valor total: ${formatCurrency(loan.totalAmount)}\n📈 Juros: ${juros}\n\n🔄 Renove seu prazo\nPague apenas os juros e tenha mais 30 dias para quitar o valor total.\n\n⚠️ Em caso de atraso:\nSerá cobrado R$ 15,00 por dia.\n\n───────────────\n\n👤 ${profileChargeName || "Titular"}\n\n💠 Chave Pix: ${profilePixKey || "Não cadastrada"}`
   }
 
   const sendBulkDueToday = async () => {
@@ -2009,8 +2009,8 @@ export default function EmprestimosPage() {
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-gray-500 dark:text-zinc-400">Só Juros (por parcela):</span>
                           <span className="text-sm font-semibold tabular-nums text-gray-900 dark:text-zinc-100">
-                            {jurosMultiplier >= 2 && (
-                              <span className="mr-1 relative -top-0.5 text-[9px] font-medium text-orange-500 dark:text-orange-400">{jurosMultiplier}x</span>
+                            {jurosMultiplier >= 1 && (
+                              <span className="mr-1 relative -top-0.5 text-[9px] font-medium text-orange-500 dark:text-orange-400">{jurosMultiplier + 1}x</span>
                             )}
                             {formatCurrency(intPerInst)}
                           </span>
@@ -2076,7 +2076,7 @@ export default function EmprestimosPage() {
                               </div>
                               {instOverdueCharge > 0 && (
                                 <div className="flex items-center justify-between text-xs">
-                                  <span className="text-red-600 dark:text-red-400">⚠️ Multa Aplicada:</span>
+                                  <span className="text-red-600 dark:text-red-400">Multa Aplicada:</span>
                                   <span className="text-red-600 dark:text-red-400 font-bold">+{formatCurrency(instOverdueCharge)}</span>
                                 </div>
                               )}
@@ -2801,18 +2801,58 @@ export default function EmprestimosPage() {
           const overdueCharge = getCurrentOverdueCharge(paymentDialog)
           const overdueDays = getCurrentOverdueDays(paymentDialog)
 
-          // Quitação inteligente: calcula multa + proporcional se atrasado
           const now = new Date()
           const hasOverdueInst = pendingInstallments.some((i: any) => new Date(i.dueDate) < now)
           const penalty = hasOverdueInst ? (paymentDialog.penaltyFee || 0) : 0
-          // Proporcional: (juros por parcela / 30) × dias em atraso
-          const proporcional = hasOverdueInst
-            ? Math.round((interestPerInst / 30) * overdueDays * 100) / 100
-            : 0
+
+          // Só juros payments para determinar início do ciclo atual
+          const soJurosPaymentsList = [...paymentDialog.payments]
+            .filter((p: any) => {
+              const notes = (p.notes || "").toLowerCase()
+              return notes.includes("parcial de juros") || notes.includes("só juros")
+            })
+            .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+          const hasSoJuros = soJurosPaymentsList.length > 0 && paymentDialog.installmentCount === 1
+
+          const paidPrincipal = paymentDialog.payments
+            .filter((p: any) => {
+              const notes = (p.notes || "").toLowerCase()
+              return !notes.includes("parcial de juros") && !notes.includes("só juros")
+            })
+            .reduce((s: number, p: any) => s + p.amount, 0)
+
           const unpaidBase = paymentDialog.installments
             .filter((i: any) => i.status !== "PAID")
             .reduce((s: number, i: any) => s + Math.max(0, i.amount - (i.paidAmount || 0)), 0)
-          const totalWithPenalty = unpaidBase + proporcional + overdueCharge + penalty
+
+          // Cálculo proporcional
+          let proporcional: number
+          let proporcionalDays: number
+          let proporcionalCycles: number
+          let displayBase: number
+
+          if (hasSoJuros) {
+            // Ciclo começa na data do último pagamento de juros
+            const cycleStart = new Date(soJurosPaymentsList[0].date)
+            cycleStart.setHours(0, 0, 0, 0)
+            const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0)
+            const daysFromCycle = Math.max(0, Math.floor((todayStart.getTime() - cycleStart.getTime()) / 86400000))
+            proporcionalCycles = Math.floor(daysFromCycle / 30)
+            proporcionalDays = daysFromCycle % 30
+            proporcional = Math.round(
+              (proporcionalCycles * interestPerInst + proporcionalDays * interestPerInst / 30) * 100
+            ) / 100
+            displayBase = Math.max(0, paymentDialog.amount - paidPrincipal)
+          } else {
+            proporcionalCycles = 0
+            proporcionalDays = overdueDays
+            proporcional = hasOverdueInst
+              ? Math.round((interestPerInst / 30) * overdueDays * 100) / 100
+              : 0
+            displayBase = unpaidBase
+          }
+
+          const totalWithPenalty = displayBase + proporcional + overdueCharge + penalty
 
           return (
             <div className="space-y-5">
@@ -3097,14 +3137,28 @@ export default function EmprestimosPage() {
                 <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/20 p-4 space-y-2">
                   <p className="text-xs font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-wide mb-1">Detalhamento da Quitação</p>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600 dark:text-zinc-400">Capital emprestado:</span>
-                    <span className="font-medium text-gray-900 dark:text-zinc-100">{formatCurrency(paymentDialog.amount)}</span>
+                    <span className="text-gray-600 dark:text-zinc-400">Capital:</span>
+                    <span className="font-medium text-gray-900 dark:text-zinc-100">{formatCurrency(displayBase)}</span>
                   </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600 dark:text-zinc-400">Juros do contrato:</span>
-                    <span className="font-medium text-gray-900 dark:text-zinc-100">{formatCurrency(paymentDialog.profit)}</span>
-                  </div>
-                  {proporcional > 0 && (
+                  {!hasSoJuros && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600 dark:text-zinc-400">Juros do contrato:</span>
+                      <span className="font-medium text-gray-900 dark:text-zinc-100">{formatCurrency(paymentDialog.profit)}</span>
+                    </div>
+                  )}
+                  {hasSoJuros && proporcionalCycles > 0 && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-blue-600 dark:text-blue-400">📊 Juros ({proporcionalCycles} ciclo{proporcionalCycles !== 1 ? "s" : ""}):</span>
+                      <span className="font-bold text-blue-600 dark:text-blue-400">+ {formatCurrency(proporcionalCycles * interestPerInst)}</span>
+                    </div>
+                  )}
+                  {proporcional > 0 && proporcionalDays > 0 && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-blue-600 dark:text-blue-400">📊 Proporcional ({proporcionalDays}d × {formatCurrency(Math.round(interestPerInst / 30 * 100) / 100)}/d):</span>
+                      <span className="font-bold text-blue-600 dark:text-blue-400">+ {formatCurrency(Math.round(proporcionalDays * interestPerInst / 30 * 100) / 100)}</span>
+                    </div>
+                  )}
+                  {!hasSoJuros && proporcional > 0 && proporcionalDays === 0 && (
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-blue-600 dark:text-blue-400">📊 Proporcional ({overdueDays}d × {formatCurrency(Math.round(interestPerInst / 30 * 100) / 100)}/d):</span>
                       <span className="font-bold text-blue-600 dark:text-blue-400">+ {formatCurrency(proporcional)}</span>
@@ -3112,7 +3166,7 @@ export default function EmprestimosPage() {
                   )}
                   {overdueCharge > 0 && (
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-red-500">⚠️ Multa ({overdueDays}d × {formatCurrency(paymentDialog.dailyInterestAmount || 0)}/d):</span>
+                      <span className="text-red-500">Multa ({overdueDays}d × {formatCurrency(paymentDialog.dailyInterestAmount || 0)}/d):</span>
                       <span className="font-bold text-red-500">+ {formatCurrency(overdueCharge)}</span>
                     </div>
                   )}
@@ -3570,7 +3624,7 @@ export default function EmprestimosPage() {
                                 </div>
                                 {overdueChargeSJ > 0 && (
                                   <div className="flex justify-between text-gray-600 dark:text-zinc-300">
-                                    <span>⚠️ Multa ({overdueDaysSJ}d):</span>
+                                    <span>Multa ({overdueDaysSJ}d):</span>
                                     <span className="font-semibold text-red-500">+{formatCurrency(overdueChargeSJ)}</span>
                                   </div>
                                 )}

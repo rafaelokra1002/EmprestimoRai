@@ -180,7 +180,12 @@ export async function GET(request: Request) {
       loan.installments.filter((inst) => inst.status !== "PAID" && new Date(inst.dueDate) < thirtyDaysAgo).map((inst) => Number(inst.amount || 0))
     ).reduce((s, a) => s + a, 0)
 
-    const capitalOnStreet = Math.max(totalToReceive - totalReceived, 0)
+    const capitalOnStreet = loans.reduce((acc, loan) => {
+      const firstInst = [...loan.installments].sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0]
+      if (!firstInst || new Date(firstInst.dueDate) > startOfToday) return acc
+      const loanPaid = loan.payments.reduce((s: number, p: any) => s + Number(p.amount || 0), 0)
+      return acc + Math.max(0, Number(loan.totalAmount || 0) - loanPaid)
+    }, 0)
     const totalProfit = loans.reduce((acc, loan) => acc + Number(loan.profit || 0), 0)
 
     const pendingInterest = totalProfit

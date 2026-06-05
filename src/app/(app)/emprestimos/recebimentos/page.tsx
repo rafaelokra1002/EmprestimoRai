@@ -217,25 +217,44 @@ export default function RecebimentosPage() {
     }
   }
 
-  const exportCsv = () => {
-    const header = ["Data", "Cliente", "Valor", "Principal", "Juros", "Observações"]
-    const lines = paymentsInRange.map((p) => [
-      formatDate(p.date),
-      p.clientName,
-      p.amount.toFixed(2).replace(".", ","),
-      p.principal.toFixed(2).replace(".", ","),
-      p.interest.toFixed(2).replace(".", ","),
-      (p.notes || "").replace(/;/g, ","),
-    ].join(";"))
+  const exportPdf = async () => {
+    const { default: jsPDF } = await import("jspdf")
+    const { default: autoTable } = await import("jspdf-autotable")
 
-    const csv = [header.join(";"), ...lines].join("\n")
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = `recebimentos-${todayISO()}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
+    const doc = new jsPDF({ orientation: "landscape" })
+    doc.setFontSize(14)
+    doc.text("Relatório de Recebimentos", 14, 16)
+    doc.setFontSize(10)
+    doc.text(`Gerado em: ${formatDate(todayISO())}`, 14, 23)
+
+    const totAmt = paymentsInRange.reduce((s, p) => s + p.amount, 0)
+    const totPrincipal = paymentsInRange.reduce((s, p) => s + p.principal, 0)
+    const totInterest = paymentsInRange.reduce((s, p) => s + p.interest, 0)
+
+    autoTable(doc, {
+      startY: 28,
+      head: [["Data", "Cliente", "Valor", "Principal", "Juros", "Observações"]],
+      body: paymentsInRange.map((p) => [
+        formatDate(p.date),
+        p.clientName,
+        `R$ ${p.amount.toFixed(2).replace(".", ",")}`,
+        `R$ ${p.principal.toFixed(2).replace(".", ",")}`,
+        `R$ ${p.interest.toFixed(2).replace(".", ",")}`,
+        p.notes || "",
+      ]),
+      foot: [[
+        "Total", "",
+        `R$ ${totAmt.toFixed(2).replace(".", ",")}`,
+        `R$ ${totPrincipal.toFixed(2).replace(".", ",")}`,
+        `R$ ${totInterest.toFixed(2).replace(".", ",")}`,
+        "",
+      ]],
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [41, 128, 185] },
+      footStyles: { fillColor: [220, 220, 220], textColor: [0, 0, 0], fontStyle: "bold" },
+    })
+
+    doc.save(`recebimentos-${todayISO()}.pdf`)
   }
 
   return (
@@ -249,7 +268,7 @@ export default function RecebimentosPage() {
           <Button variant="outline" className="gap-2" onClick={() => window.open("https://pt.wikipedia.org/wiki/Juros", "_blank")}>
             <HelpCircle className="h-4 w-4" /> Tutorial
           </Button>
-          <Button variant="outline" className="gap-2" onClick={exportCsv}>
+          <Button variant="outline" className="gap-2" onClick={exportPdf}>
             <Download className="h-4 w-4" /> Baixar Relatório
           </Button>
         </div>
@@ -270,7 +289,7 @@ export default function RecebimentosPage() {
           <button type="button" onClick={() => setPeriod("custom")} className={`px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1 ${period === "custom" ? "bg-primary text-white" : "bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-700 dark:text-zinc-300"}`}><Calendar className="h-3.5 w-3.5" /> Período</button>
         </div>
         <div className="flex items-center gap-2">
-          <button type="button" onClick={exportCsv} className="p-2 rounded-md border border-gray-300 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 dark:bg-zinc-800" title="Exportar CSV">
+          <button type="button" onClick={exportPdf} className="p-2 rounded-md border border-gray-300 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 dark:bg-zinc-800" title="Exportar CSV">
             <Download className="h-4 w-4" />
           </button>
           <button type="button" onClick={loadData} className="p-2 rounded-md border border-gray-300 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 dark:bg-zinc-800" title="Atualizar">

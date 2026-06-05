@@ -343,23 +343,6 @@ export default function CalendarioPage() {
                     {day}
                   </span>
 
-                  {/* Client names for pending entries */}
-                  {pendingClients.length > 0 && (
-                    <div className="mt-0.5 space-y-0.5">
-                      {pendingClients.slice(0, 2).map((name, idx) => (
-                        <p key={idx} className={`text-[9px] leading-tight truncate max-w-full ${
-                          hasDueToday ? "text-amber-600 dark:text-amber-400" : "text-blue-600 dark:text-blue-400"
-                        }`}>
-                          {name}
-                        </p>
-                      ))}
-                      {pendingClients.length > 2 && (
-                        <p className="text-[9px] leading-tight text-gray-400 dark:text-zinc-500">
-                          +{pendingClients.length - 2}
-                        </p>
-                      )}
-                    </div>
-                  )}
 
                   {/* Count dots */}
                   {(overdueCount > 0 || dueTodayCount > 0 || pendingFutureCount > 0) && (
