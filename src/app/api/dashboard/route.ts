@@ -221,6 +221,20 @@ export async function GET(request: Request) {
         }, 0)
     }, 0)
 
+    // Juros extras de ciclos adicionais para empréstimos mensais (1 parcela) em atraso >= 30 dias
+    const totalExtraCyclesInterest = loans.reduce((acc, loan) => {
+      if (loan.installmentCount !== 1) return acc
+      const overdueInst = loan.installments.find(i => i.status !== "PAID")
+      if (!overdueInst) return acc
+      const due = new Date(overdueInst.dueDate); due.setHours(0, 0, 0, 0)
+      if (due >= startOfToday) return acc
+      const daysOver = Math.floor((startOfToday.getTime() - due.getTime()) / 86400000)
+      const extraCycles = Math.floor(daysOver / 30)
+      if (extraCycles <= 0) return acc
+      const interestPerInst = Number(loan.profit || 0) / Math.max(1, loan.installmentCount)
+      return acc + extraCycles * interestPerInst
+    }, 0)
+
     // Valores diários em atraso por empréstimo
     const overdueByLoan = loans
       .map((loan) => {
@@ -495,7 +509,7 @@ export async function GET(request: Request) {
       monthInstallmentsDue,
       totalProfit,
       overdueCount,
-      overdueAmount,
+      overdueAmount: overdueAmount + totalPendingLateFees + totalExtraCyclesInterest,
       inactiveClients,
       activeClients,
       monthlyData,

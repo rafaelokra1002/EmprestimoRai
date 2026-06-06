@@ -594,12 +594,8 @@ export default function ScorePage() {
                       <span>Emprestado {formatCurrency(allEmprestado)}</span>
                       <span className="text-gray-300 dark:text-zinc-700">•</span>
                       <span>Recebido {formatCurrency(allRecebido)}</span>
-                      {sortMode !== "lucro" && (
-                        <>
-                          <span className="text-gray-300 dark:text-zinc-700">•</span>
-                          <span>A receber {formatCurrency(allAReceber)}</span>
-                        </>
-                      )}
+                      <span className="text-gray-300 dark:text-zinc-700">•</span>
+                      <span>A receber {formatCurrency(allAReceber)}</span>
                       {completedLoans.length > 0 && (
                         <>
                           <span className="text-gray-300 dark:text-zinc-700">•</span>

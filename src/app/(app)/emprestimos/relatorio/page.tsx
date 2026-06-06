@@ -172,10 +172,16 @@ export default function RelatorioEmprestimosPage() {
     return base.filter(hasInstInPeriod)
   }, [loans, paymentFilter, startDate, endDate])
 
+  const remainingCapital = (l: Loan) => {
+    if (l.installmentCount <= 0) return l.amount
+    const paidInsts = l.installments.filter((i: any) => i.status === "PAID").length
+    return l.amount * (l.installmentCount - paidInsts) / l.installmentCount
+  }
+
   const modalityStats = useMemo(() => {
     const allActive = loans.filter(l => l.status === "ACTIVE")
     const calc = (subset: Loan[]) => ({
-      capitalNaRua: subset.reduce((s, l) => s + l.amount, 0),
+      capitalNaRua: subset.reduce((s, l) => s + remainingCapital(l), 0),
       lucro: subset.reduce((s, l) => s + l.profit, 0),
       contratos: subset.length,
     })
@@ -206,8 +212,12 @@ export default function RelatorioEmprestimosPage() {
 
   // ===== CALCULATIONS =====
   const capitalNaRua = useMemo(() => {
-    return activeLoans.reduce((sum, l) => sum + l.amount, 0)
-  }, [activeLoans])
+    const base = loans.filter(l => l.status === "ACTIVE")
+    const typeFiltered = paymentFilter === "monthly" ? base.filter(l => l.installmentCount === 1)
+      : paymentFilter === "installment" ? base.filter(l => l.installmentCount > 1)
+      : base
+    return typeFiltered.reduce((sum, l) => sum + remainingCapital(l), 0)
+  }, [loans, paymentFilter])
 
   const emprestimosNoPeriodo = useMemo(() => {
     return newLoansInPeriod.reduce((sum, l) => sum + l.amount, 0)
@@ -236,17 +246,39 @@ export default function RelatorioEmprestimosPage() {
       })
       if (periodPayments.length === 0) return total
 
-      // If all installments have paidAmount=0, capital never decreased — all payments are interest
       const capitalIntact = l.installments.every((i: any) => (i.paidAmount || 0) === 0)
       if (capitalIntact) {
         return total + periodPayments.reduce((s: number, p: any) => s + Number(p.amount), 0)
       }
 
       const interestRatio = l.totalAmount > 0 ? l.profit / l.totalAmount : 0
+      const dailyRate = getOverdueDailyAmountBRL(buildLoanData({
+        amount: l.amount, interestRate: l.interestRate, interestType: l.interestType,
+        totalAmount: l.totalAmount, dailyInterest: l.dailyInterest,
+        dailyInterestAmount: Number((l as any).dailyInterestAmount || 0),
+        modality: l.modality, firstInstallmentDate: l.firstInstallmentDate,
+        installments: l.installments, payments: l.payments,
+      }))
+
       return total + periodPayments.reduce((s: number, p: any) => {
         const notes = (p.notes || "").toLowerCase()
         const isSoJuros = notes.includes("só juros") || notes.includes("so juros") || notes.includes("parcial de juros")
-        return s + (isSoJuros ? Number(p.amount) : Number(p.amount) * interestRatio)
+        if (isSoJuros) return s + Number(p.amount)
+
+        // Subtract multa from payment amount before applying ratio to avoid inflating interest
+        const payDate = new Date(p.date); payDate.setHours(0, 0, 0, 0)
+        const multaForPayment = l.installments.reduce((acc: number, i: any) => {
+          if (!i.paidDate) return acc
+          const paid = new Date(i.paidDate); paid.setHours(0, 0, 0, 0)
+          if (paid.getTime() !== payDate.getTime()) return acc
+          const due = new Date(i.dueDate); due.setHours(0, 0, 0, 0)
+          if (paid <= due) return acc
+          const daysOver = Math.max(0, Math.floor((paid.getTime() - due.getTime()) / 86400000))
+          return acc + dailyRate * daysOver + Number((l as any).penaltyFee || 0)
+        }, 0)
+
+        const baseAmount = Math.max(0, Number(p.amount) - multaForPayment)
+        return s + baseAmount * interestRatio
       }, 0)
     }, 0)
   }, [filtered, startDate, endDate])
@@ -351,7 +383,33 @@ export default function RelatorioEmprestimosPage() {
     return { total, count }
   }, [loans, paymentFilter, startDate, endDate])
 
-  const lucroRealizado = jurosRecebidos
+  const jurosMultaRecebidos = useMemo(() => {
+    return filtered.reduce((total, l) => {
+      const dailyRate = getOverdueDailyAmountBRL(buildLoanData({
+        amount: l.amount, interestRate: l.interestRate, interestType: l.interestType,
+        totalAmount: l.totalAmount, dailyInterest: l.dailyInterest,
+        dailyInterestAmount: Number((l as any).dailyInterestAmount || 0),
+        modality: l.modality, firstInstallmentDate: l.firstInstallmentDate,
+        installments: l.installments, payments: l.payments,
+      }))
+      if (dailyRate <= 0 && !((l as any).penaltyFee > 0)) return total
+
+      const multa = l.installments.reduce((s: number, i: any) => {
+        if (i.status !== "PAID" || !i.paidDate) return s
+        const due = new Date(i.dueDate); due.setHours(0, 0, 0, 0)
+        const paid = new Date(i.paidDate); paid.setHours(0, 0, 0, 0)
+        if (paid <= due) return s
+        const paidStr = localDateStr(paid)
+        if (startDate && paidStr < startDate) return s
+        if (endDate && paidStr > endDate) return s
+        const daysOver = Math.max(0, Math.floor((paid.getTime() - due.getTime()) / 86400000))
+        return s + dailyRate * daysOver + Number((l as any).penaltyFee || 0)
+      }, 0)
+      return total + multa
+    }, 0)
+  }, [filtered, startDate, endDate])
+
+  const lucroRealizado = jurosRecebidos + jurosMultaRecebidos
 
   const entradas = pagamentosNoPeriodo
   const resultadoAtividade = entradas + caixaExtra - emprestimosNoPeriodo - contasPagar
@@ -746,7 +804,10 @@ export default function RelatorioEmprestimosPage() {
               <span className="text-xs text-gray-500 dark:text-zinc-400">Lucro Realizado</span>
             </div>
             <p className="text-2xl font-bold tabular-nums tracking-tight text-purple-600">{formatCurrency(lucroRealizado)}</p>
-            <p className="text-xs text-gray-400 dark:text-zinc-500">Juros recebidos no período</p>
+            <p className="text-xs text-gray-400 dark:text-zinc-500">Juros: {formatCurrency(jurosRecebidos)}</p>
+            {jurosMultaRecebidos > 0 && (
+              <p className="text-xs text-orange-500">Multa: {formatCurrency(jurosMultaRecebidos)}</p>
+            )}
           </CardContent>
         </Card>
       </div>

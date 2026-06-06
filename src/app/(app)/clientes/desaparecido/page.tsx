@@ -332,6 +332,7 @@ export default function ClientesDesaparecidosPage() {
 
     return clients
       .filter((client) => client.status !== "DESAPARECIDO")
+      .filter((client) => (client.loans || []).some((loan) => loan.status === "ACTIVE"))
       .filter((client) => {
         return (
           client.name.toLowerCase().includes(term) ||
@@ -340,16 +341,7 @@ export default function ClientesDesaparecidosPage() {
           client.city?.toLowerCase().includes(term)
         )
       })
-      .sort((left, right) => {
-        const leftHasActiveLoan = (left.loans || []).some((loan) => loan.status === "ACTIVE")
-        const rightHasActiveLoan = (right.loans || []).some((loan) => loan.status === "ACTIVE")
-
-        if (leftHasActiveLoan === rightHasActiveLoan) {
-          return left.name.localeCompare(right.name)
-        }
-
-        return leftHasActiveLoan ? -1 : 1
-      })
+      .sort((left, right) => left.name.localeCompare(right.name))
   }, [clients, pickerSearch])
 
   const markAsDisappeared = async (clientId: string) => {
@@ -1440,7 +1432,7 @@ export default function ClientesDesaparecidosPage() {
       >
         <div className="space-y-4">
           <p className="text-sm text-gray-500 dark:text-zinc-400">
-            Busque um cliente já cadastrado e marque-o como desaparecido. Clientes com empréstimos ativos aparecem primeiro.
+            Busque um cliente com contrato ativo e marque-o como desaparecido.
           </p>
 
           <div className="relative">

@@ -747,6 +747,8 @@ export default function EmprestimosPage() {
     const result: { id: string; name: string; photo: string | null }[] = []
     for (const l of loans) {
       if (l.status === "COMPLETED") continue
+      const st = getLoanStatusInfo(l)
+      if (st.label === "Atrasado" || st.label === "Inadimplente") continue
       const due = l.installments.some((i: any) => {
         if (i.status === "PAID") return false
         const d = new Date(i.dueDate)
@@ -997,6 +999,8 @@ export default function EmprestimosPage() {
     const todayStr = localDateStr()
     return loans.filter(l => {
       if (l.status === "COMPLETED") return false
+      const st = getLoanStatusInfo(l)
+      if (st.label === "Atrasado" || st.label === "Inadimplente") return false
       return l.installments.some((i: any) => {
         if (i.status === "PAID") return false
         return localDateStr(new Date(i.dueDate)) === todayStr
@@ -3019,6 +3023,49 @@ export default function EmprestimosPage() {
                       )
                     })}
                   </div>
+
+                  {/* Breakdown Principal + Juros das parcelas selecionadas */}
+                  {selectedInstallmentIds.length > 0 && (() => {
+                    const principalPerInst = paymentDialog.installmentCount > 0
+                      ? paymentDialog.amount / paymentDialog.installmentCount
+                      : 0
+                    const selInsts = pendingInstallments.filter((i: any) => selectedInstallmentIds.includes(i.id))
+                    if (selInsts.length === 0) return null
+
+                    if (selInsts.length === 1) {
+                      const inst = selInsts[0]
+                      const jurosPerInst = Math.max(0, inst.amount - principalPerInst)
+                      return (
+                        <div className="mt-2">
+                          <div className="rounded-lg border border-green-200 dark:border-green-800/50 bg-green-50 dark:bg-green-950/20 px-3 py-2">
+                            <p className="text-sm font-semibold text-gray-800 dark:text-zinc-200">
+                              Parcela {inst.number}: {formatCurrency(inst.amount)}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">
+                              Principal: {formatCurrency(principalPerInst)} + Juros: {formatCurrency(jurosPerInst)}
+                            </p>
+                          </div>
+                        </div>
+                      )
+                    }
+
+                    const totalPrincipal = principalPerInst * selInsts.length
+                    const totalJuros = selInsts.reduce((s: number, i: any) => s + Math.max(0, i.amount - principalPerInst), 0)
+                    const totalValue = selInsts.reduce((s: number, i: any) => s + i.amount, 0)
+                    return (
+                      <div className="mt-2">
+                        <div className="rounded-lg border border-green-200 dark:border-green-800/50 bg-green-50 dark:bg-green-950/20 px-3 py-2">
+                          <p className="text-sm font-semibold text-gray-800 dark:text-zinc-200">
+                            {selInsts.length} Parcelas selecionadas: {formatCurrency(totalValue)}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">
+                            Principal: {formatCurrency(totalPrincipal)} + Juros: {formatCurrency(totalJuros)}
+                          </p>
+                        </div>
+                      </div>
+                    )
+                  })()}
+
                   {selectedInstallmentIds.length > 1 && (
                     <>
                       <div className="mt-3 rounded-lg border border-yellow-300 dark:border-yellow-700/50 bg-yellow-50 dark:bg-yellow-950/20 px-3 py-2.5 text-sm">
