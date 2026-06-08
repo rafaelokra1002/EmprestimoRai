@@ -64,6 +64,7 @@ interface Expense {
 
 export default function RelatorioEmprestimosPage() {
   const [loans, setLoans] = useState<Loan[]>([])
+  const [deletedLoans, setDeletedLoans] = useState<Loan[]>([])
   const [clients, setClients] = useState<Array<{ id: string; phone: string | null }>>([])
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [loading, setLoading] = useState(true)
@@ -91,17 +92,20 @@ export default function RelatorioEmprestimosPage() {
     setLoading(true)
     setFetchError(null)
     try {
-      const [loansRes, expensesRes, clientsRes] = await Promise.all([
+      const [loansRes, allLoansRes, expensesRes, clientsRes] = await Promise.all([
         fetch("/api/loans"),
+        fetch("/api/loans?includeDeleted=true"),
         fetch("/api/expenses"),
         fetch("/api/clients"),
       ])
       if (!loansRes.ok) throw new Error(`Erro ao buscar empréstimos (${loansRes.status})`)
       if (!expensesRes.ok) throw new Error(`Erro ao buscar despesas (${expensesRes.status})`)
       const loansData = await loansRes.json()
+      const allLoansData = await allLoansRes.json()
       const expensesData = await expensesRes.json()
       const clientsData = await clientsRes.json()
       setLoans(Array.isArray(loansData) ? loansData : [])
+      setDeletedLoans(Array.isArray(allLoansData) ? allLoansData.filter((l: any) => l.deleted === true) : [])
       setExpenses(Array.isArray(expensesData) ? expensesData : [])
       setClients(Array.isArray(clientsData) ? clientsData : [])
       setUpdatedAt(new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }))
@@ -409,7 +413,19 @@ export default function RelatorioEmprestimosPage() {
     }, 0)
   }, [filtered, startDate, endDate])
 
-  const lucroRealizado = jurosRecebidos + jurosMultaRecebidos
+  // Payments from soft-deleted loans (installments deleted but payments preserved)
+  const deletedLoansLucro = useMemo(() => {
+    return deletedLoans.reduce((total, l) => {
+      return total + l.payments.reduce((s: number, p: any) => {
+        const payDate = localDateStr(new Date(p.date))
+        if (startDate && payDate < startDate) return s
+        if (endDate && payDate > endDate) return s
+        return s + Number(p.amount)
+      }, 0)
+    }, 0)
+  }, [deletedLoans, startDate, endDate])
+
+  const lucroRealizado = jurosRecebidos + jurosMultaRecebidos + deletedLoansLucro
 
   const entradas = pagamentosNoPeriodo
   const resultadoAtividade = entradas + caixaExtra - emprestimosNoPeriodo - contasPagar
@@ -804,10 +820,6 @@ export default function RelatorioEmprestimosPage() {
               <span className="text-xs text-gray-500 dark:text-zinc-400">Lucro Realizado</span>
             </div>
             <p className="text-2xl font-bold tabular-nums tracking-tight text-purple-600">{formatCurrency(lucroRealizado)}</p>
-            <p className="text-xs text-gray-400 dark:text-zinc-500">Juros: {formatCurrency(jurosRecebidos)}</p>
-            {jurosMultaRecebidos > 0 && (
-              <p className="text-xs text-orange-500">Multa: {formatCurrency(jurosMultaRecebidos)}</p>
-            )}
           </CardContent>
         </Card>
       </div>

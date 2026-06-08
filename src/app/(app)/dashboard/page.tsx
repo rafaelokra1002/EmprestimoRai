@@ -1,16 +1,17 @@
-﻿"use client"
+"use client"
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   AlertTriangle,
-  ArrowUpRight,
   Calendar,
   ChevronLeft,
   ChevronRight,
   Clock3,
   DollarSign,
+  Filter,
+  Percent,
+  Plus,
   Receipt,
   Shield,
   ShieldAlert,
@@ -19,21 +20,18 @@ import {
   Users,
   Wallet,
   X,
-  type LucideIcon,
 } from "lucide-react"
 import { formatCurrency, localDateStr } from "@/lib/utils"
 import { useTheme } from "@/lib/theme-provider"
 import {
   BarChart,
   Bar,
-  Legend,
   XAxis,
-  YAxis,
-  CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
+  LabelList,
 } from "recharts"
 
 interface DashboardData {
@@ -99,44 +97,43 @@ interface DashboardData {
   updatedAt?: string
 }
 
-function KpiCard({
-  title,
-  value,
-  subtitle,
-  icon: Icon,
-  iconClassName,
-  iconBgClassName,
-}: {
-  title: string
-  value: string
-  subtitle: string
-  icon: LucideIcon
-  iconClassName?: string
-  iconBgClassName?: string
-}) {
+// ── Area Sparkline (full-width, bottom of Row-1 cards) ───────────────────────
+function AreaSparkline({ values, color, gradientId }: { values: number[]; color: string; gradientId: string }) {
+  if (!values || values.length < 2) return <div className="h-16" />
+  const chartData = values.map(v => ({ v }))
   return (
-    <Card className="h-full border-primary/30 dark:border-primary/20">
-      <CardContent className="p-5">
-        <div className={`rounded-lg ${iconBgClassName || "bg-primary/5 dark:bg-primary/15"} p-2 w-fit mb-3`}>
-          <Icon className={`h-5 w-5 ${iconClassName || "text-primary"}`} />
-        </div>
-        <p className="text-xs text-gray-500 dark:text-zinc-400">{title}</p>
-        <p className="mt-1 text-2xl leading-none font-medium tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{value}</p>
-        <p className="mt-1 text-xs font-medium text-gray-400 dark:text-zinc-500">{subtitle}</p>
-      </CardContent>
-    </Card>
+    <ResponsiveContainer width="100%" height="100%">
+      <AreaChart data={chartData} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
+        <defs>
+          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor={color} stopOpacity={0.25} />
+            <stop offset="95%" stopColor={color} stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <Area type="monotone" dataKey="v" stroke={color} strokeWidth={2} fill={`url(#${gradientId})`} dot={false} />
+      </AreaChart>
+    </ResponsiveContainer>
   )
 }
 
+// ── Delta ─────────────────────────────────────────────────────────────────────
+function Delta({ pct }: { pct: number | undefined }) {
+  if (pct === undefined || pct === null) return null
+  const up = pct >= 0
+  return (
+    <p className={`mt-1.5 text-xs font-medium flex items-center gap-0.5 ${up ? "text-green-500" : "text-red-500"}`}>
+      {up ? "↑" : "↓"} {Math.abs(pct).toFixed(2)}%{" "}
+      <span className="text-gray-400 dark:text-zinc-500 font-normal">vs mês anterior</span>
+    </p>
+  )
+}
 
 export default function DashboardPage() {
   const router = useRouter()
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
-  const [showInstallBanner, setShowInstallBanner] = useState(true)
   const [showBackupAlert, setShowBackupAlert] = useState(false)
   const [backupLoading, setBackupLoading] = useState(false)
-  const [hoveredDueDate, setHoveredDueDate] = useState<string | null>(null)
   const [filterActive, setFilterActive] = useState(false)
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth())
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
@@ -151,7 +148,6 @@ export default function DashboardPage() {
     color: isDark ? "#f4f4f5" : "#374151",
   }
   const axisColor = isDark ? "#71717a" : "#6b7280"
-  const gridColor = isDark ? "#27272a" : "#e5e7eb"
 
   useEffect(() => {
     setLoading(true)
@@ -171,6 +167,8 @@ export default function DashboardPage() {
 
   const selectedMonthName = new Date(selectedYear, selectedMonth, 1).toLocaleString("pt-BR", { month: "long" })
   const periodLabel = filterActive ? selectedMonthName : "total geral"
+  const currentMonthName = new Date().toLocaleString("pt-BR", { month: "long" })
+  const faltaReceberMonthLabel = filterActive ? selectedMonthName : currentMonthName
   const prevMonth = () => {
     if (selectedMonth === 0) { setSelectedMonth(11); setSelectedYear(y => y - 1) }
     else setSelectedMonth(m => m - 1)
@@ -179,6 +177,7 @@ export default function DashboardPage() {
     if (selectedMonth === 11) { setSelectedMonth(0); setSelectedYear(y => y + 1) }
     else setSelectedMonth(m => m + 1)
   }
+
 
   useEffect(() => {
     const last = localStorage.getItem("backup-alert-dismissed")
@@ -216,29 +215,29 @@ export default function DashboardPage() {
     )
   }
 
-  const healthScore = data?.operationHealth?.score || 0
-  const collectionRate = data?.operationHealth?.collectionRate || 0
-  const defaultRate = data?.operationHealth?.defaultRate || 0
-  const monthlyInterest = data?.charts?.interestTrend || []
-  const interestChartData = monthlyInterest.map((item, index) => {
-    const accumulated = monthlyInterest
-      .slice(0, index + 1)
-      .reduce((sum, current) => sum + (current.juros || 0), 0)
-    return {
-      month: item.month,
-      jurosMes: item.juros,
-      jurosAcumulado: accumulated,
-    }
-  })
+  // Greeting
+  const hour = new Date().getHours()
+  const greeting = hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite"
+  const greetingEmoji = hour < 12 ? "☀️" : hour < 18 ? "👋" : "🌙"
+
+  // Today's date
+  const todayFormatted = new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })
+
+  // Sparkline data
+  const sparkRecebido = (data?.monthlyData || []).map(d => d.recebido)
+  const sparkEmprestado = (data?.monthlyData || []).map(d => d.emprestado)
+  const sparkJuros = (data?.charts?.interestTrend || []).map(d => d.juros)
+
+  // Mini bar chart data for "Recebido no Mês"
+  const paymentsBardData = (data?.paymentsByDay || []).slice(-7).map(d => ({ v: d.amount }))
+
+  // Mini bar chart data for "Saiu"
+  const saiuBarData = (data?.monthlyData || []).slice(-2)
 
   return (
     <div className="space-y-5 pt-6">
-<div className="flex flex-col gap-1">
-        <h1 className="text-xl font-bold text-gray-900 dark:text-zinc-100">Dashboard</h1>
-        <p className="text-sm text-gray-500 dark:text-zinc-400">Visão geral do seu sistema financeiro</p>
-      </div>
 
-      {/* Backup Alert */}
+      {/* ── Backup Alert ───────────────────────────────────────────────────── */}
       {showBackupAlert && (
         <div className="flex items-center gap-4 rounded-xl border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/20 p-4">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/40">
@@ -272,417 +271,364 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Install Banner */}
-      {showInstallBanner && (
-        <div className="relative rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-5 flex items-center gap-4">
-          <div className="h-10 w-10 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center shrink-0">
-            <ArrowUpRight className="h-5 w-5 text-gray-500 dark:text-zinc-400" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Instale o SP Cobrança Fácil no seu celular</p>
-            <p className="text-xs text-gray-500 dark:text-zinc-400">Tenha acesso rápido direto da tela inicial, funciona offline e como um app nativo!</p>
-          </div>
-          <button className="shrink-0 inline-flex items-center gap-1 rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-4 py-2 text-sm font-medium text-gray-700 dark:text-zinc-200 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors">
-            Ver instruções
-          </button>
-          <button onClick={() => setShowInstallBanner(false)} className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 dark:text-zinc-500 dark:hover:text-zinc-300">
-            <X className="h-4 w-4" />
-          </button>
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-0.5">
+          <h1 className="text-xl font-bold text-gray-900 dark:text-zinc-100">
+            {greeting}! {greetingEmoji}
+          </h1>
+          <p className="text-sm text-gray-500 dark:text-zinc-400">Aqui está o resumo da sua gestão financeira.</p>
         </div>
-      )}
 
-      {/* Month filter */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-500 dark:text-zinc-400">
-          {filterActive ? "Filtrando por mês" : "Exibindo todos os meses"}
-        </p>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Date pill */}
+          <div className="flex items-center gap-1.5 rounded-full border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-zinc-300">
+            <Calendar className="h-3.5 w-3.5 text-gray-400 dark:text-zinc-500" />
+            {todayFormatted}
+          </div>
+
+          {/* Novo Contrato */}
+          <button
+            onClick={() => router.push("/emprestimos")}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-primary/90 transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+            Novo Contrato
+          </button>
+
+          {/* Relatórios */}
+          <button
+            onClick={() => router.push("/emprestimos/relatorio")}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
+          >
+            Relatórios
+          </button>
+
+          {/* Filter */}
           {filterActive ? (
-            <>
-              <div className="flex items-center gap-1 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-1 py-1">
-                <button onClick={prevMonth} className="rounded-lg p-1.5 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors">
-                  <ChevronLeft className="h-4 w-4 text-gray-500 dark:text-zinc-400" />
-                </button>
-                <span className="min-w-[120px] text-center text-sm font-semibold text-gray-900 dark:text-zinc-100 capitalize">
-                  {selectedMonthName} {selectedYear}
-                </span>
-                <button onClick={nextMonth} className="rounded-lg p-1.5 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors">
-                  <ChevronRight className="h-4 w-4 text-gray-500 dark:text-zinc-400" />
-                </button>
-              </div>
+            <div className="flex items-center gap-1 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-1 py-1">
+              <button onClick={prevMonth} className="rounded-lg p-1.5 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors">
+                <ChevronLeft className="h-4 w-4 text-gray-500 dark:text-zinc-400" />
+              </button>
+              <span className="min-w-[120px] text-center text-sm font-semibold text-gray-900 dark:text-zinc-100 capitalize">
+                {selectedMonthName} {selectedYear}
+              </span>
+              <button onClick={nextMonth} className="rounded-lg p-1.5 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors">
+                <ChevronRight className="h-4 w-4 text-gray-500 dark:text-zinc-400" />
+              </button>
               <button
                 onClick={() => setFilterActive(false)}
-                className="rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-xs font-medium text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+                className="ml-1 rounded-lg p-1.5 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
               >
-                Ver todos
+                <X className="h-4 w-4 text-gray-500 dark:text-zinc-400" />
               </button>
-            </>
+            </div>
           ) : (
             <button
               onClick={() => { setSelectedMonth(new Date().getMonth()); setSelectedYear(new Date().getFullYear()); setFilterActive(true) }}
-              className="flex items-center gap-1.5 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-xs font-medium text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
             >
-              <Calendar className="h-3.5 w-3.5" /> Filtrar por mês
+              <Filter className="h-3.5 w-3.5" />
+              Filtrar
+              <ChevronLeft className="h-3.5 w-3.5 rotate-[-90deg]" />
             </button>
           )}
         </div>
       </div>
 
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-zinc-100">
-            <TrendingUp className="h-5 w-5 text-primary" />
-            Visão Geral
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-4">
-          <div className="rounded-xl border border-emerald-100 dark:border-emerald-900/40 bg-emerald-50/60 dark:bg-emerald-950/20 p-4">
-            <div className="mb-1 flex items-center gap-1.5">
-              <Receipt className="h-3.5 w-3.5 text-emerald-600" />
-              <p className="text-xs text-gray-500 dark:text-zinc-400">Total a Receber</p>
-            </div>
-            <p className="text-2xl leading-none font-semibold tabular-nums tracking-tight text-emerald-600 dark:text-emerald-400">{formatCurrency(data?.monthInstallmentsDue?.total || 0)}</p>
-            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">parcelas com venc. em {periodLabel}</p>
-          </div>
-          <div className="rounded-xl border border-amber-100 dark:border-amber-900/40 bg-amber-50/60 dark:bg-amber-950/20 p-4">
-            <div className="mb-1 flex items-center gap-1.5">
-              <DollarSign className="h-3.5 w-3.5 text-amber-600" />
-              <p className="text-xs text-gray-500 dark:text-zinc-400">Capital na Rua</p>
-            </div>
-            <p className="text-2xl leading-none font-semibold tabular-nums tracking-tight text-amber-600 dark:text-amber-400">{formatCurrency(data?.totalPrincipal || 0)}</p>
-            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">capital ativo em contratos</p>
-          </div>
-          <div className="rounded-xl border border-violet-100 dark:border-violet-900/40 bg-violet-50/60 dark:bg-violet-950/20 p-4">
-            <div className="mb-1 flex items-center gap-1.5">
-              <Clock3 className="h-3.5 w-3.5 text-violet-500" />
-              <p className="text-xs text-gray-500 dark:text-zinc-400">Juros do Mês</p>
-            </div>
-            <p className="text-2xl leading-none font-semibold tabular-nums tracking-tight text-violet-600 dark:text-violet-400">{formatCurrency(data?.monthInstallmentsDue?.interest || 0)}</p>
-            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">juros das parcelas de {periodLabel}</p>
-          </div>
-          <div className="rounded-xl border border-primary/20 dark:border-primary/20 bg-primary/5 dark:bg-primary/10 p-4">
-            <div className="mb-1 flex items-center gap-1.5">
-              <Wallet className="h-3.5 w-3.5 text-primary" />
-              <p className="text-xs text-gray-500 dark:text-zinc-400">Falta Receber</p>
-            </div>
-            <p className="text-2xl leading-none font-semibold tabular-nums tracking-tight text-primary">{formatCurrency(data?.faltaReceberMes || 0)}</p>
-            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">juros + multas até {periodLabel}</p>
-          </div>
-        </CardContent>
-      </Card>
-
+      {/* ── Row 1 — 4 colored KPI cards ────────────────────────────────────── */}
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
-        <KpiCard
-          title="Recebido no Mês"
-          value={formatCurrency(data?.monthReceived || 0)}
-          subtitle={`pagamentos recebidos em ${periodLabel}`}
-          icon={Receipt}
-          iconClassName="text-primary"
-          iconBgClassName="bg-primary/5 dark:bg-primary/15"
-        />
-        <KpiCard
-          title="Histórico Total de Pagamento"
-          value={formatCurrency(data?.financials?.totalPaymentsReceived || 0)}
-          subtitle="total de pagamentos recebidos"
-          icon={TrendingUp}
-          iconClassName="text-primary"
-          iconBgClassName="bg-primary/5 dark:bg-primary/15"
-        />
-        <KpiCard
-          title="Gasto Mensal"
-          value={formatCurrency(data?.financials?.monthlyExpenses || 0)}
-          subtitle={`despesas de ${periodLabel}`}
-          icon={Receipt}
-          iconClassName="text-red-500"
-          iconBgClassName="bg-red-50 dark:bg-red-950/30"
-        />
-        <KpiCard
-          title="Clientes"
-          value={`${data?.counters?.totalClients || 0}`}
-          subtitle="cadastrados"
-          icon={Users}
-          iconClassName="text-primary"
-          iconBgClassName="bg-primary/5 dark:bg-primary/15"
-        />
-        <KpiCard
-          title="Contrato Ativo"
-          value={`${data?.counters?.activeLoans || 0}`}
-          subtitle="contratos ativos"
-          icon={Shield}
-          iconClassName="text-blue-600"
-          iconBgClassName="bg-blue-50 dark:bg-blue-950/20"
-        />
-        <KpiCard
-          title="Vencendo Hoje"
-          value={formatCurrency(data?.weeklySummary?.dueTodayAmount || 0)}
-          subtitle={`${data?.weeklySummary?.dueTodayClients || 0} cliente(s)`}
-          icon={Clock3}
-          iconClassName="text-orange-600"
-          iconBgClassName="bg-orange-50 dark:bg-orange-950/20"
-        />
-        <KpiCard
-          title="Em Atraso"
-          value={formatCurrency(data?.overdueAmount || 0)}
-          subtitle={`${data?.overdueCount || 0} parcela(s) vencida(s)`}
-          icon={Clock3}
-          iconClassName="text-red-500"
-          iconBgClassName="bg-red-50 dark:bg-red-950/30"
-        />
-        <KpiCard
-          title="Clientes Inativos"
-          value={`${data?.inactiveClients || 0}`}
-          subtitle="sem empréstimo ativo"
-          icon={Users}
-          iconClassName="text-gray-500"
-          iconBgClassName="bg-gray-100 dark:bg-zinc-800"
-        />
-      </div>
 
-      {/* Multa de Atraso */}
-      <div className="flex flex-col gap-4">
-
-        {/* Card multa total */}
-        <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
-          <KpiCard
-            title="Multa de Atraso"
-            value={formatCurrency(data?.totalPendingLateFees || 0)}
-            subtitle="a receber"
-            icon={Receipt}
-            iconClassName="text-primary"
-            iconBgClassName="bg-primary/5 dark:bg-primary/15"
-          />
-        </div>
-
-      {/* Próximos Vencimentos */}
-      <div className="rounded-2xl border border-primary/20 dark:border-primary/20 bg-white dark:bg-zinc-900 p-4">
-        <div className="flex items-center gap-2 mb-3">
-          <Calendar className="h-4 w-4 text-primary" />
-          <h2 className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Próximos Vencimentos</h2>
-        </div>
-        <div className="grid grid-cols-7 gap-1.5">
-          {(data?.dueNextSevenDays || []).map(({ date, count, amount, items }) => {
-            const d = new Date(date + "T12:00:00")
-            const isToday = date === localDateStr(new Date())
-            const isHovered = hoveredDueDate === date
-            const dayName = d.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", "")
-            const dayNum = d.getDate()
-            return (
-              <div
-                key={date}
-                className="relative"
-                onMouseEnter={() => setHoveredDueDate(date)}
-                onMouseLeave={() => setHoveredDueDate(null)}
-              >
-                <div
-                  className={`flex flex-col items-center justify-center rounded-xl border py-3 gap-0.5 transition-all cursor-default ${
-                    isToday
-                      ? "border-primary bg-primary text-white"
-                      : count > 0
-                      ? "border-primary/30 bg-primary/5 dark:bg-primary/10 text-gray-800 dark:text-zinc-100"
-                      : "border-gray-100 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-800/50 text-gray-400 dark:text-zinc-500"
-                  } ${isHovered && count > 0 ? "shadow-md scale-105" : ""}`}
-                >
-                  <span className={`text-[11px] font-medium capitalize ${isToday ? "text-white/80" : "text-gray-400 dark:text-zinc-500"}`}>
-                    {dayName.charAt(0).toUpperCase() + dayName.slice(1)}
-                  </span>
-                  <span className="text-xl font-bold leading-tight">{dayNum}</span>
-                  {count > 0 && (
-                    <span className={`mt-0.5 text-[10px] font-semibold ${isToday ? "text-white/80" : "text-primary"}`}>
-                      {count} parc.
-                    </span>
-                  )}
-                </div>
-
-                {/* Popover */}
-                {isHovered && count > 0 && (
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 w-64 rounded-xl border border-primary/20 bg-white dark:bg-zinc-900 shadow-xl animate-in fade-in zoom-in-95 duration-150">
-                    <div className="flex items-center justify-between px-3 py-2.5 border-b border-primary/10">
-                      <p className="text-xs font-semibold text-primary capitalize">
-                        {d.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "short" })}
-                      </p>
-                      <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-                        {formatCurrency(amount)}
-                      </span>
-                    </div>
-                    <div className="p-2 space-y-1 max-h-52 overflow-y-auto">
-                      {items.map((item, i) => (
-                        <div
-                          key={i}
-                          onClick={() => router.push(`/emprestimos/${item.loanId}`)}
-                          className="flex items-center justify-between rounded-lg px-2.5 py-2 cursor-pointer hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors"
-                        >
-                          <div className="min-w-0">
-                            <p className="text-xs font-semibold text-gray-800 dark:text-zinc-100 truncate">{item.clientName}</p>
-                            <p className="text-[10px] text-gray-400 dark:text-zinc-500">Parcela {item.installmentNumber}/{item.installmentCount}</p>
-                          </div>
-                          <span className="ml-2 shrink-0 text-xs font-bold text-primary">{formatCurrency(item.amount)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+        {/* Total a Receber */}
+        <div className="rounded-xl border border-green-100 dark:border-green-900/30 bg-white dark:bg-zinc-900 overflow-hidden">
+          <div className="p-4 pb-2">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="rounded-xl bg-green-100 dark:bg-green-950/50 p-2">
+                <Receipt className="h-5 w-5 text-green-500" />
               </div>
-            )
-          })}
+              <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Total a Receber</p>
+            </div>
+            <p className="text-3xl font-bold tabular-nums tracking-tight text-green-500">
+              {formatCurrency(data?.monthInstallmentsDue?.total || 0)}
+            </p>
+            <p className="mt-1.5 text-xs text-gray-400 dark:text-zinc-500">
+              parcelas com venc. em {periodLabel}
+            </p>
+            <Delta pct={data?.weeklySummary?.deltas?.receivedPct} />
+          </div>
+          <div className="h-14">
+            <AreaSparkline values={sparkRecebido} color="#22c55e" gradientId="grad-recebido" />
+          </div>
+        </div>
+
+        {/* Capital na Rua */}
+        <div className="rounded-xl border border-orange-100 dark:border-orange-900/30 bg-white dark:bg-zinc-900 overflow-hidden">
+          <div className="p-4 pb-2">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="rounded-xl bg-orange-100 dark:bg-orange-950/50 p-2">
+                <DollarSign className="h-5 w-5 text-orange-500" />
+              </div>
+              <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Capital na Rua</p>
+            </div>
+            <p className="text-3xl font-bold tabular-nums tracking-tight text-orange-500">
+              {formatCurrency(data?.totalPrincipal || 0)}
+            </p>
+            <p className="mt-1.5 text-xs text-gray-400 dark:text-zinc-500">
+              capital ativo em contratos
+            </p>
+          </div>
+          <div className="h-14">
+            <AreaSparkline values={sparkEmprestado} color="#f97316" gradientId="grad-capital" />
+          </div>
+        </div>
+
+        {/* Juros do Mês */}
+        <div className="rounded-xl border border-violet-100 dark:border-violet-900/30 bg-white dark:bg-zinc-900 overflow-hidden">
+          <div className="p-4 pb-2">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="rounded-xl bg-violet-100 dark:bg-violet-950/50 p-2">
+                <Percent className="h-5 w-5 text-violet-600" />
+              </div>
+              <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Juros do Mês</p>
+            </div>
+            <p className="text-3xl font-bold tabular-nums tracking-tight text-violet-600">
+              {formatCurrency(data?.monthInstallmentsDue?.interest || 0)}
+            </p>
+            <p className="mt-1.5 text-xs text-gray-400 dark:text-zinc-500">
+              juros das parcelas de {periodLabel}
+            </p>
+          </div>
+          <div className="h-14">
+            <AreaSparkline values={sparkJuros} color="#7c3aed" gradientId="grad-juros" />
+          </div>
+        </div>
+
+        {/* Falta Receber */}
+        <div className="rounded-xl border border-green-200 dark:border-green-900/30 bg-green-50 dark:bg-green-950/20 overflow-hidden relative">
+          <div className="p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="rounded-xl bg-green-100 dark:bg-green-950/50 p-2">
+                <Wallet className="h-5 w-5 text-green-500" />
+              </div>
+              <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Falta Receber</p>
+            </div>
+            <p className="text-3xl font-bold tabular-nums tracking-tight text-green-500">
+              {formatCurrency(data?.faltaReceberMes || 0)}
+            </p>
+            <p className="mt-1.5 text-xs text-gray-400 dark:text-zinc-500">
+              juros + multas de {faltaReceberMonthLabel}
+            </p>
+          </div>
         </div>
       </div>
 
-      </div>{/* fim flex-col Multa + Próximos Vencimentos */}
+      {/* ── Row 2 — 4 white cards ──────────────────────────────────────────── */}
+      <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
 
-      <div className="grid gap-4 xl:grid-cols-2">
-        <Card className="h-full">
-          <CardHeader>
-            <CardTitle>Evolução Financeira (Últimos 6 meses)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px]">
+        {/* Recebido no Mês */}
+        <div className="rounded-xl border border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="rounded-xl bg-green-100 dark:bg-green-950/40 p-2">
+              <Receipt className="h-4 w-4 text-green-500" />
+            </div>
+            <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Recebido no Mês</p>
+          </div>
+          <p className="text-2xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">
+            {formatCurrency(data?.monthReceived || 0)}
+          </p>
+          <Delta pct={data?.weeklySummary?.deltas?.receivedPct} />
+          <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">
+            pagamentos recebidos em {periodLabel}
+          </p>
+          {paymentsBardData.length > 0 && (
+            <div className="mt-3 h-10">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data?.monthlyData || []}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
-                  <XAxis dataKey="month" stroke={axisColor} />
-                  <YAxis stroke={axisColor} tickFormatter={(value) => `R$${value}`} />
-                  <Legend wrapperStyle={{ color: isDark ? "#d4d4d8" : "#374151", fontSize: 12 }} />
-                  <Tooltip
-                    contentStyle={tooltipStyle}
-                    labelStyle={{ color: isDark ? "#d4d4d8" : "#374151" }}
-                    formatter={(value: number) => [formatCurrency(value)]}
-                  />
-                  <Bar dataKey="emprestado" fill="#f59e0b" name="Emprestado" radius={[4, 4, 0, 0]} maxBarSize={42} />
-                  <Bar dataKey="recebido" fill="#22c55e" name="Recebido" radius={[4, 4, 0, 0]} maxBarSize={42} />
+                <BarChart data={paymentsBardData} barSize={6} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+                  <Bar dataKey="v" fill="#22c55e" radius={[2, 2, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card className="h-full">
-          <CardHeader>
-            <CardTitle>Tendência de Juros Recebidos</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={interestChartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
-                  <XAxis dataKey="month" stroke={axisColor} />
-                  <YAxis stroke={axisColor} tickFormatter={(value) => `R$${value}`} />
-                  <Legend wrapperStyle={{ color: isDark ? "#d4d4d8" : "#374151", fontSize: 12 }} />
-                  <Line
-                    type="monotone"
-                    dataKey="jurosMes"
-                    stroke="#f59e0b"
-                    name="Juros no Mês"
-                    strokeWidth={3}
-                    dot={{ r: 3, fill: "#f59e0b", stroke: "#f59e0b" }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="jurosAcumulado"
-                    stroke="#22c55e"
-                    name="Juros Acumulado"
-                    strokeWidth={3}
-                    dot={{ r: 4, fill: "#22c55e", stroke: "#22c55e" }}
-                  />
-                  <Tooltip
-                    contentStyle={tooltipStyle}
-                    formatter={(value: number) => [formatCurrency(value)]}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-4 xl:grid-cols-2">
-        <Card className="h-full">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <span className="inline-flex h-20 w-20 items-center justify-center rounded-full border-4 border-amber-300 text-3xl font-semibold tabular-nums text-amber-500">
-                {healthScore}
-              </span>
-              <div>
-                <p>Saúde da Operação</p>
-                <p className="mt-1 inline-flex rounded-full bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 text-xs text-amber-700">Atenção</p>
-              </div>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            <div className="h-3 overflow-hidden rounded-full bg-gray-200 dark:bg-zinc-700">
-              <div className="h-full bg-primary" style={{ width: `${Math.min(100, healthScore)}%` }} />
-            </div>
-            <p className="text-sm text-gray-500 dark:text-zinc-400">Baseado em taxa de recebimento, inadimplência e margem de lucro</p>
-
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-3">
-                <p className="text-xs text-gray-500 dark:text-zinc-400">Taxa de Recebimento</p>
-                <p className="mt-1 text-xl leading-none font-bold tabular-nums tracking-tight text-red-500">{collectionRate.toFixed(1)}%</p>
-              </div>
-              <div className="rounded-lg border border-primary/30 dark:border-primary/30 bg-primary/5 dark:bg-primary/15 p-3">
-                <p className="text-xs text-gray-500 dark:text-zinc-400">Inadimplência</p>
-                <p className="mt-1 text-xl leading-none font-bold tabular-nums tracking-tight text-primary">{defaultRate.toFixed(1)}%</p>
-              </div>
-              <div className="rounded-lg border border-primary/30 dark:border-primary/30 bg-primary/5 dark:bg-primary/15 p-3">
-                <p className="text-xs text-gray-500 dark:text-zinc-400">Recebido</p>
-                <p className="mt-1 text-xl leading-none font-bold tabular-nums tracking-tight text-primary">{formatCurrency(data?.totalReceived || 0)}</p>
-              </div>
-              <div className="rounded-lg border border-primary/30 dark:border-primary/30 bg-primary/5 dark:bg-primary/15 p-3">
-                <p className="text-xs text-gray-500 dark:text-zinc-400">Em Atraso</p>
-                <p className="mt-1 text-xl leading-none font-bold tabular-nums tracking-tight text-primary">{data?.overdueCount || 0}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="h-full rounded-xl border border-primary/30 dark:border-primary/20 bg-primary/5 dark:bg-zinc-900 overflow-hidden">
-          {/* Header */}
-          <div className="flex items-center gap-2 px-5 py-4 border-b border-primary/20 dark:border-primary/15">
-            <AlertTriangle className="h-4 w-4 text-primary" />
-            <span className="text-sm font-bold text-primary">Precisa de Atenção</span>
-          </div>
-
-          {/* Items */}
-          <div className="divide-y divide-primary/10 dark:divide-primary/10">
-            {/* Vencem esta semana */}
-            <div className="flex items-center gap-4 px-5 py-4 bg-primary/5 dark:bg-primary/10">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/15 dark:bg-primary/20">
-                <Calendar className="h-4 w-4 text-primary" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-bold text-primary">
-                  {data?.dueThisWeekCount ?? 0} Vencem esta semana
-                </p>
-                <p className="text-xs text-primary/70 dark:text-primary/60">
-                  {formatCurrency(data?.dueThisWeekAmount ?? 0)} – empréstimos
-                </p>
-              </div>
-            </div>
-
-            {/* Atrasados +30 dias */}
-            <div className="flex items-center gap-4 px-5 py-4 bg-red-50 dark:bg-red-950/20">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-100 dark:bg-red-900/30">
-                <UserX className="h-4 w-4 text-red-600 dark:text-red-400" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-bold text-red-700 dark:text-red-400">
-                  {data?.overdue30DaysCount ?? 0} Atrasados há +30 dias
-                </p>
-                <p className="text-xs text-red-500 dark:text-red-500">
-                  {formatCurrency(data?.overdue30DaysAmount ?? 0)} – clientes inadimplentes
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Rodapé – tudo em ordem */}
-          {(data?.dueThisWeekCount ?? 0) === 0 && (data?.overdue30DaysCount ?? 0) === 0 && (
-            <div className="flex items-center gap-2 px-5 py-4">
-              <Shield className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium text-primary">Tudo em ordem!</span>
-            </div>
           )}
         </div>
+
+        {/* Histórico de Pagamento */}
+        <div className="rounded-xl border border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="rounded-xl bg-green-100 dark:bg-green-950/40 p-2">
+              <TrendingUp className="h-4 w-4 text-green-500" />
+            </div>
+            <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Histórico de Pagamento</p>
+          </div>
+          <p className="text-2xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">
+            {formatCurrency(data?.financials?.totalPaymentsReceived || 0)}
+          </p>
+          <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">
+            total de pagamentos recebidos
+          </p>
+        </div>
+
+        {/* Gasto Mensal */}
+        <div className="rounded-xl border border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="rounded-xl bg-red-100 dark:bg-red-950/40 p-2">
+              <Receipt className="h-4 w-4 text-red-500" />
+            </div>
+            <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Gasto Mensal</p>
+          </div>
+          <p className="text-2xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">
+            {formatCurrency(data?.financials?.monthlyExpenses || 0)}
+          </p>
+          <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">despesas de {periodLabel}</p>
+        </div>
+
+        {/* Clientes */}
+        <div className="rounded-xl border border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="rounded-xl bg-green-100 dark:bg-green-950/40 p-2">
+              <Users className="h-4 w-4 text-green-500" />
+            </div>
+            <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Clientes</p>
+          </div>
+          <p className="text-3xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">
+            {data?.counters?.totalClients || 0}
+          </p>
+          <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">cadastrados</p>
+        </div>
       </div>
+
+      {/* ── Row 3 — 4 white cards ──────────────────────────────────────────── */}
+      <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
+
+        {/* Contrato Ativo */}
+        <div className="rounded-xl border border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="rounded-xl bg-blue-100 dark:bg-blue-950/40 p-2">
+              <Shield className="h-4 w-4 text-blue-600" />
+            </div>
+            <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Contrato Ativo</p>
+          </div>
+          <p className="text-3xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">
+            {data?.counters?.activeLoans || 0}
+          </p>
+          <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">contratos ativos</p>
+        </div>
+
+        {/* Vencendo Hoje */}
+        <div className="rounded-xl border border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="rounded-xl bg-orange-100 dark:bg-orange-950/40 p-2">
+              <Clock3 className="h-4 w-4 text-orange-500" />
+            </div>
+            <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Vencendo Hoje</p>
+          </div>
+          <p className="text-2xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">
+            {formatCurrency(data?.weeklySummary?.dueTodayAmount || 0)}
+          </p>
+          <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">
+            {data?.weeklySummary?.dueTodayClients || 0} cliente(s)
+          </p>
+        </div>
+
+        {/* Em Atraso */}
+        <div className="rounded-xl border border-red-100 dark:border-red-900/30 bg-white dark:bg-zinc-900 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="rounded-xl bg-red-100 dark:bg-red-950/40 p-2">
+              <AlertTriangle className="h-4 w-4 text-red-500" />
+            </div>
+            <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Em Atraso</p>
+          </div>
+          <p className="text-2xl font-bold tabular-nums tracking-tight text-red-500">
+            {formatCurrency(data?.overdueAmount || 0)}
+          </p>
+          <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">
+            {data?.overdueCount || 0} parcela(s) vencida(s)
+          </p>
+        </div>
+
+        {/* Clientes Inativos */}
+        <div className="rounded-xl border border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="rounded-xl bg-gray-100 dark:bg-zinc-800 p-2">
+              <UserX className="h-4 w-4 text-gray-500" />
+            </div>
+            <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Clientes Inativos</p>
+          </div>
+          <p className="text-3xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">
+            {data?.inactiveClients || 0}
+          </p>
+          <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">sem empréstimo ativo</p>
+        </div>
+      </div>
+
+      {/* ── Row 4 — 2 cards side by side ───────────────────────────────────── */}
+      <div className="grid gap-4 sm:grid-cols-2">
+
+        {/* Multa de Atraso */}
+        <div className="rounded-xl border border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="rounded-xl bg-primary/10 dark:bg-primary/20 p-2">
+              <Calendar className="h-4 w-4 text-primary" />
+            </div>
+            <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Multa de Atraso</p>
+          </div>
+          <p className="text-3xl font-bold tabular-nums tracking-tight text-green-500">
+            {formatCurrency(data?.totalPendingLateFees || 0)}
+          </p>
+          <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">a receber</p>
+          {/* Decorative % badge */}
+          <div className="absolute right-4 bottom-4">
+            <div className="flex items-center justify-center rounded-full bg-green-100 dark:bg-green-950/40 h-16 w-16">
+              <Percent className="h-9 w-9 text-green-500" />
+            </div>
+          </div>
+        </div>
+
+        {/* Saiu — Empréstimos Concedidos */}
+        <div className="rounded-xl border border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="rounded-xl bg-green-100 dark:bg-green-950/40 p-2">
+                  <TrendingUp className="h-4 w-4 text-green-500" />
+                </div>
+                <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Saiu (Empréstimos Concedidos)</p>
+              </div>
+              <p className="text-3xl font-bold tabular-nums tracking-tight text-green-500">
+                {formatCurrency(data?.monthNewLoansCapital || 0)}
+              </p>
+              <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">total emprestado neste mês</p>
+              <Delta pct={data?.weeklySummary?.deltas?.contractsPct} />
+            </div>
+            {saiuBarData.length > 0 && (
+              <div className="h-24 w-44 shrink-0">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={saiuBarData} barSize={32} margin={{ top: 20, right: 4, bottom: 0, left: 4 }}>
+                    <XAxis
+                      dataKey="month"
+                      tick={{ fontSize: 10, fill: axisColor }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <Tooltip
+                      contentStyle={tooltipStyle}
+                      formatter={(value: number) => [formatCurrency(value), "Emprestado"]}
+                    />
+                    <Bar dataKey="emprestado" fill="#22c55e" radius={[4, 4, 0, 0]}>
+                      <LabelList
+                        dataKey="emprestado"
+                        position="top"
+                        formatter={(v: number) => formatCurrency(v)}
+                        style={{ fontSize: 8, fill: axisColor }}
+                      />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
     </div>
   )
 }

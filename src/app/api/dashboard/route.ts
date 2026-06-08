@@ -31,6 +31,10 @@ export async function GET(request: Request) {
 
     const startOfMonth = showAll ? new Date(0) : new Date(filterYear, filterMonth, 1)
     const endOfMonth = showAll ? new Date(2100, 0, 1) : new Date(filterYear, filterMonth + 1, 0, 23, 59, 59)
+    // faltaReceberMes sempre usa mês atual (sem filtro) ou mês selecionado (com filtro)
+    const faltaReceberEndOfMonth = showAll
+      ? new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
+      : new Date(filterYear, filterMonth + 1, 0, 23, 59, 59)
     const endOfWeek = new Date(startOfWeek)
     endOfWeek.setDate(endOfWeek.getDate() + 7)
     const thirtyDaysAgo = new Date(startOfToday)
@@ -448,7 +452,7 @@ export async function GET(request: Request) {
 
       const monthInstallments = loan.installments.filter((i) => {
         const due = new Date(i.dueDate)
-        return i.status !== "PAID" && due <= endOfMonth
+        return i.status !== "PAID" && due <= faltaReceberEndOfMonth
       })
 
       const interest = monthInstallments.length * interestPerInstallment

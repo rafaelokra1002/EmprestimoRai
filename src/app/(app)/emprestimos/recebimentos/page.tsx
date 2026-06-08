@@ -132,14 +132,23 @@ export default function RecebimentosPage() {
           if (match) installmentInfo = `Parcela ${match[1]}`
         }
 
-        // For "Só Juros" payments, entire amount is interest, no principal reduction
+        // For "Só Juros" payments, base is interest; any excess = daily late fee
         let principal: number
         let interest: number
         let pureInterest: number
+        let soJurosDailyFee = 0
         if (type === "Só Juros") {
           principal = 0
+          const dailyFeeMatch = n.match(/\[dailyFee:([\d.]+)\]/)
+          if (dailyFeeMatch) {
+            soJurosDailyFee = parseFloat(dailyFeeMatch[1])
+          } else {
+            // Fallback: excess above base interest per installment = daily late fee portion
+            const baseInterest = Math.round((loan.profit / Math.max(1, loan.installmentCount)) * 100) / 100
+            soJurosDailyFee = Math.max(0, Math.round((payment.amount - baseInterest) * 100) / 100)
+          }
+          pureInterest = Math.max(0, Math.round((payment.amount - soJurosDailyFee) * 100) / 100)
           interest = payment.amount
-          pureInterest = payment.amount
         } else {
           const numInstallments = Math.max(1, loan.installmentCount || 1)
           principal = Math.round((loan.amount / numInstallments) * 100) / 100
@@ -157,7 +166,7 @@ export default function RecebimentosPage() {
           interest,
           pureInterest,
           lateFee: type === "Só Juros" ? 0 : (n.match(/\[lateFee:([\d.]+)\]/) ? parseFloat(n.match(/\[lateFee:([\d.]+)\]/)![1]) : 0),
-          dailyFee: type === "Só Juros" ? 0 : (n.match(/\[dailyFee:([\d.]+)\]/) ? parseFloat(n.match(/\[dailyFee:([\d.]+)\]/)![1]) : 0),
+          dailyFee: type === "Só Juros" ? soJurosDailyFee : (n.match(/\[dailyFee:([\d.]+)\]/) ? parseFloat(n.match(/\[dailyFee:([\d.]+)\]/)![1]) : 0),
           notes: payment.notes || null,
           type,
           installmentInfo,
@@ -393,19 +402,10 @@ export default function RecebimentosPage() {
                                     <span className="font-medium text-gray-900 dark:text-zinc-100">{formatCurrency(payment.pureInterest)}</span>
                                   </div>
                                 )}
-                                {hasSplitFees ? (
-                                  <>
-                                    {payment.dailyFee > 0 && (
-                                      <div className="flex justify-between gap-6">
-                                        <span className="text-gray-500 dark:text-zinc-400">Multa diária</span>
-                                        <span className="font-medium text-red-500 dark:text-red-400">{formatCurrency(payment.dailyFee)}</span>
-                                      </div>
-                                    )}
-                                  </>
-                                ) : combinedLateFee > 0.01 && (
+                                {(hasSplitFees ? payment.dailyFee : combinedLateFee) > 0.01 && (
                                   <div className="flex justify-between gap-6">
-                                    <span className="text-gray-500 dark:text-zinc-400">Multa/Atraso</span>
-                                    <span className="font-medium text-red-500 dark:text-red-400">{formatCurrency(combinedLateFee)}</span>
+                                    <span className="text-red-500 dark:text-red-400">Multa/Atraso</span>
+                                    <span className="font-medium text-red-500 dark:text-red-400">{formatCurrency(hasSplitFees ? payment.dailyFee : combinedLateFee)}</span>
                                   </div>
                                 )}
                                 <div className="pt-1.5 border-t border-gray-100 dark:border-zinc-700 flex justify-between gap-6">

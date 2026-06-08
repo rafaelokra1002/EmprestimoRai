@@ -121,6 +121,7 @@ export default function EmprestimosPage() {
     date: string
     isCompleted: boolean
     remainingBalance: number
+    composition: { capital: number; juros: number; jurosAtraso: number; multa: number } | null
   } | null>(null)
 
   // Payment dialog state
@@ -442,6 +443,12 @@ export default function EmprestimosPage() {
       : `${firstIdx + 1}-${firstIdx + installmentIds.length}/${allInsts.length}`
 
     const alreadyPaid = loan.payments.reduce((s: number, p: any) => s + p.amount, 0)
+    const principalPerInst = loan.installmentCount > 0 ? loan.amount / loan.installmentCount : loan.amount
+    const jurosPerInst = loan.installmentCount > 0 ? loan.profit / loan.installmentCount : loan.profit
+    const instCount = installmentIds.length || 1
+    const compCapital = Math.round(principalPerInst * instCount * 100) / 100
+    const compJuros = Math.round(jurosPerInst * instCount * 100) / 100
+    const compMulta = Math.max(0, Math.round((totalPaid - compCapital - compJuros) * 100) / 100)
     setPaymentReceiptInfo({
       type: "Empréstimo",
       clientName: loan.client.name,
@@ -451,6 +458,7 @@ export default function EmprestimosPage() {
       date: new Date(dateStr.includes("T") ? dateStr : dateStr + "T12:00:00").toLocaleDateString("pt-BR"),
       isCompleted: willBeCompleted,
       remainingBalance: Math.max(0, loan.totalAmount - alreadyPaid - totalPaid),
+      composition: { capital: compCapital, juros: compJuros, jurosAtraso: 0, multa: compMulta },
     })
     setPaymentReceiptDialog(true)
   }
@@ -1071,7 +1079,7 @@ export default function EmprestimosPage() {
         ? `multa de ${formatCurrency(loan.dailyInterestAmount)} por dia`
         : "multa de R$ 15,00 por dia"
 
-      return `👤 Cliente: ${name}\n\n────────────────\n📋 LEMBRETE DE PAGAMENTO\n\n📌 Parcela: ${inst.number}/${loan.installmentCount}\n💰 Valor: ${formatCurrency(inst.amount)}\n📅 Vencimento: ${formatDate(inst.dueDate)}\n⏳ Faltam: 0 dias\n\n📊 STATUS DAS PARCELAS:\n${statusLines.join("\n")}\n\n────────────────\n👤 Titular: ${profileChargeName || "Titular"}\n\n💳 Chave PIX:\n${profilePixKey || "Não cadastrada"}`
+      return `👤 Cliente: ${name}\n\n────────────────\n⚠️ VENCIMENTO HOJE\n\n📌 Parcela: ${inst.number}/${loan.installmentCount}\n💵 Valor da parcela: ${formatCurrency(inst.amount)}\n📅 Vencimento: ${formatDate(inst.dueDate)}\n\n📊 STATUS DAS PARCELAS:\n${statusLines.join("\n")}\n\n⚠️ Atraso: ${dailyFeeStr}\n\n────────────────\n👤 Titular: ${profileChargeName || "Titular"}\n\n💳 Chave PIX:\n${profilePixKey || "Não cadastrada"}`
     }
 
     // Simples (não parcelado)
@@ -1196,7 +1204,24 @@ export default function EmprestimosPage() {
     const cyclePaid = intAmount > 0 ? totalPartialPaid % intAmount : 0
     const pendingInterest = intAmount > 0 ? Math.max(intAmount - cyclePaid, 0) : 0
 
-    setRenegotiateAmount(pendingInterest || intAmount)
+    // Add accrued daily late fee to default amount
+    let accruedDailyFee = 0
+    if (nextInst) {
+      const due = new Date(nextInst.dueDate); due.setHours(0, 0, 0, 0)
+      const nowDay = new Date(); nowDay.setHours(0, 0, 0, 0)
+      const daysOver = Math.max(0, Math.floor((nowDay.getTime() - due.getTime()) / 86400000))
+      if (daysOver > 0) {
+        const dailyRate = getOverdueDailyAmountBRL(buildLoanData({
+          amount: loan.amount, interestRate: loan.interestRate, interestType: loan.interestType,
+          totalAmount: loan.totalAmount, dailyInterestAmount: loan.dailyInterestAmount || 0,
+          dueDay: loan.dueDay, modality: loan.modality, firstInstallmentDate: loan.firstInstallmentDate,
+          installments: loan.installments, payments: loan.payments,
+        }))
+        accruedDailyFee = Math.round(dailyRate * daysOver * 100) / 100
+      }
+    }
+
+    setRenegotiateAmount(Math.round(((pendingInterest || intAmount) + accruedDailyFee) * 100) / 100)
 
     if (nextInst) {
       setRenegotiateInstallmentId(nextInst.id)
@@ -1260,6 +1285,9 @@ export default function EmprestimosPage() {
         }
       }
 
+      // Compute daily late fee portion to store in notes for receipt breakdown
+      const dailyFeeInPayment = Math.max(0, Math.round((amount - intAmount) * 100) / 100)
+
       const res = await fetch("/api/payments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1269,7 +1297,7 @@ export default function EmprestimosPage() {
           amount,
           date: renegotiateDate || today(),
           newDueDate: sendNewDueDate,
-          notes: (renegotiateNotes ? renegotiateNotes + " | " : "") + (renegotiateMode === "full" ? "Pagamento só juros" : "Pagamento parcial de juros"),
+          notes: (renegotiateNotes ? renegotiateNotes + " | " : "") + (renegotiateMode === "full" ? "Pagamento só juros" : "Pagamento parcial de juros") + (dailyFeeInPayment > 0 ? ` [dailyFee:${dailyFeeInPayment.toFixed(2)}]` : ""),
         }),
       })
       setRenegotiateDialog(null)
@@ -1283,6 +1311,28 @@ export default function EmprestimosPage() {
         const willBeCompleted = (paidCount + 1) >= allInsts.length
         const dateStr = receiptDate
         const alreadyPaid = receiptLoan.payments.reduce((s: number, p: any) => s + p.amount, 0)
+
+        // Split: excess above base interest = daily late fees paid; fallback = compute from overdue days
+        const jurosBase = Math.min(receiptAmount, intAmount)
+        let jurosAtraso = Math.max(0, Math.round((receiptAmount - intAmount) * 100) / 100)
+        if (jurosAtraso === 0) {
+          const targetInst = allInsts.find((i: any) => i.id === targetInstId)
+          if (targetInst) {
+            const due = new Date(targetInst.dueDate); due.setHours(0, 0, 0, 0)
+            const payDay = new Date(dateStr.includes("T") ? dateStr : dateStr + "T12:00:00"); payDay.setHours(0, 0, 0, 0)
+            const daysOver = Math.max(0, Math.floor((payDay.getTime() - due.getTime()) / 86400000))
+            if (daysOver > 0) {
+              const dailyRate = getOverdueDailyAmountBRL(buildLoanData({
+                amount: receiptLoan.amount, interestRate: receiptLoan.interestRate, interestType: receiptLoan.interestType,
+                totalAmount: receiptLoan.totalAmount, dailyInterestAmount: receiptLoan.dailyInterestAmount || 0,
+                dueDay: receiptLoan.dueDay, modality: receiptLoan.modality, firstInstallmentDate: receiptLoan.firstInstallmentDate,
+                installments: receiptLoan.installments, payments: receiptLoan.payments,
+              }))
+              jurosAtraso = Math.round(dailyRate * daysOver * 100) / 100
+            }
+          }
+        }
+
         const info = {
           type: receiptMode === "full" ? "Só Juros" : "Pagamento Parcial de Juros",
           clientName: receiptLoan.client.name,
@@ -1292,6 +1342,7 @@ export default function EmprestimosPage() {
           date: new Date(dateStr.includes("T") ? dateStr : dateStr + "T12:00:00").toLocaleDateString("pt-BR"),
           isCompleted: false,
           remainingBalance: receiptLoan.totalAmount,
+          composition: { capital: 0, juros: jurosBase, jurosAtraso, multa: 0 },
         }
         setPaymentReceiptInfo(info)
         setPaymentReceiptDialog(true)
@@ -3067,25 +3118,15 @@ export default function EmprestimosPage() {
                   })()}
 
                   {selectedInstallmentIds.length > 1 && (
-                    <>
-                      <div className="mt-3 rounded-lg border border-yellow-300 dark:border-yellow-700/50 bg-yellow-50 dark:bg-yellow-950/20 px-3 py-2.5 text-sm">
-                        <p className="font-semibold text-yellow-800 dark:text-yellow-300 flex items-center gap-1.5">
-                          <span>⚠</span>
-                          Atenção: Você selecionou {selectedInstallmentIds.length} parcelas
-                        </p>
-                        <p className="mt-0.5 text-xs text-yellow-700 dark:text-yellow-400">
-                          O valor total será de {formatCurrency(payAmount)}
-                        </p>
-                      </div>
-                      <div className="mt-3 rounded-lg bg-gray-100 dark:bg-zinc-800/60 px-3 py-2.5 text-sm">
-                        <p className="font-semibold text-gray-900 dark:text-zinc-100">
-                          {selectedInstallmentIds.length} Parcelas selecionadas: <span className="text-primary">{formatCurrency(payAmount)}</span>
-                        </p>
-                        <p className="mt-0.5 text-xs text-gray-500 dark:text-zinc-400">
-                          Principal: {formatCurrency(principalPerInst * selectedInstallmentIds.length)} + Juros: {formatCurrency(interestPerInst * selectedInstallmentIds.length)}
-                        </p>
-                      </div>
-                    </>
+                    <div className="mt-3 rounded-lg border border-yellow-300 dark:border-yellow-700/50 bg-yellow-50 dark:bg-yellow-950/20 px-3 py-2.5 text-sm">
+                      <p className="font-semibold text-yellow-800 dark:text-yellow-300 flex items-center gap-1.5">
+                        <span>⚠</span>
+                        Atenção: Você selecionou {selectedInstallmentIds.length} parcelas
+                      </p>
+                      <p className="mt-0.5 text-xs text-yellow-700 dark:text-yellow-400">
+                        O valor total será de {formatCurrency(payAmount)}
+                      </p>
+                    </div>
                   )}
                 </div>
               )}
@@ -3409,6 +3450,20 @@ export default function EmprestimosPage() {
 
                         const alreadyPaid = receiptLoan.payments.reduce((s: number, p: any) => s + p.amount, 0)
                         const isTotal = paymentType === "total" || paymentType === "discount"
+                        const principalPerInstR = receiptLoan.installmentCount > 0 ? receiptLoan.amount / receiptLoan.installmentCount : receiptLoan.amount
+                        const jurosPerInstR = receiptLoan.installmentCount > 0 ? receiptLoan.profit / receiptLoan.installmentCount : receiptLoan.profit
+                        let compR: { capital: number; juros: number; jurosAtraso: number; multa: number } | null = null
+                        if (isTotal) {
+                          const unpaidCount = receiptLoan.installments.filter((i: any) => i.status !== "PAID").length || 1
+                          const c = Math.round(principalPerInstR * unpaidCount * 100) / 100
+                          const j = Math.round(jurosPerInstR * unpaidCount * 100) / 100
+                          compR = { capital: c, juros: j, jurosAtraso: 0, multa: Math.max(0, Math.round((receiptAmount - c - j) * 100) / 100) }
+                        } else if (paymentType === "installment") {
+                          const cnt = receiptInstIds.length || 1
+                          const c = Math.round(principalPerInstR * cnt * 100) / 100
+                          const j = Math.round(jurosPerInstR * cnt * 100) / 100
+                          compR = { capital: c, juros: j, jurosAtraso: 0, multa: Math.max(0, Math.round((receiptAmount - c - j) * 100) / 100) }
+                        }
                         const info = {
                           type: "Empréstimo",
                           clientName: receiptLoan.client.name,
@@ -3418,6 +3473,7 @@ export default function EmprestimosPage() {
                           date: new Date(dateStr.includes("T") ? dateStr : dateStr + "T12:00:00").toLocaleDateString("pt-BR"),
                           isCompleted: willBeCompleted,
                           remainingBalance: isTotal ? 0 : Math.max(0, receiptLoan.totalAmount - alreadyPaid - receiptAmount),
+                          composition: compR,
                         }
                         setPaymentReceiptInfo(info)
                         setPaymentReceiptDialog(true)
@@ -4012,6 +4068,36 @@ export default function EmprestimosPage() {
               </div>
             </div>
 
+            {paymentReceiptInfo.composition && (
+              <div className="rounded-lg border border-gray-200 dark:border-zinc-700 overflow-hidden">
+                <div className="px-3 py-2 bg-gray-100 dark:bg-zinc-800 border-b border-gray-200 dark:border-zinc-700">
+                  <p className="text-xs font-bold text-center text-gray-600 dark:text-zinc-300 tracking-widest">COMPOSIÇÃO</p>
+                </div>
+                <div className="px-3 py-2.5 space-y-1.5 bg-white dark:bg-zinc-900">
+                  {paymentReceiptInfo.composition.capital > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500 dark:text-zinc-400">Capital</span>
+                      <span className="font-medium text-gray-900 dark:text-zinc-100">{formatCurrency(paymentReceiptInfo.composition.capital)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500 dark:text-zinc-400">Juros</span>
+                    <span className="font-medium text-gray-900 dark:text-zinc-100">{formatCurrency(paymentReceiptInfo.composition.juros)}</span>
+                  </div>
+                  {(paymentReceiptInfo.composition.jurosAtraso + paymentReceiptInfo.composition.multa) > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-red-500">Multa/Atraso</span>
+                      <span className="font-medium text-red-500">{formatCurrency(paymentReceiptInfo.composition.jurosAtraso + paymentReceiptInfo.composition.multa)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-sm border-t border-gray-100 dark:border-zinc-800 pt-1.5">
+                    <span className="font-semibold text-gray-700 dark:text-zinc-300">Total</span>
+                    <span className="font-bold text-green-500">{formatCurrency(paymentReceiptInfo.amount)}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {paymentReceiptInfo.isCompleted && (
               <div className="flex items-center justify-center gap-2 rounded-lg bg-primary/15 dark:bg-primary/20 py-2.5 px-4">
                 <CheckCircle2 className="h-5 w-5 text-primary" />
@@ -4019,26 +4105,17 @@ export default function EmprestimosPage() {
               </div>
             )}
 
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <Button
                 className="gap-1.5 bg-primary hover:bg-primary/90 text-white"
                 onClick={() => {
                   const text = `📋 *Comprovante de Pagamento*\n\n📌 Tipo: ${paymentReceiptInfo.type}\n👤 Cliente: ${paymentReceiptInfo.clientName}\n📄 Parcela: ${paymentReceiptInfo.installmentLabel}\n💰 Valor Pago: ${formatCurrency(paymentReceiptInfo.amount)}\n📅 Data: ${paymentReceiptInfo.date}\n💵 Saldo Restante: ${formatCurrency(paymentReceiptInfo.remainingBalance)}${paymentReceiptInfo.isCompleted ? "\n\n✅ *Contrato Quitado!*" : ""}`
-                  navigator.clipboard.writeText(text)
-                  alert("Copiado!")
-                }}
-              >
-                <Copy className="h-4 w-4" /> Copiar
-              </Button>
-              <Button
-                className="gap-1.5 bg-primary hover:bg-primary/90 text-white"
-                onClick={() => {
-                  const text = `📋 *Comprovante de Pagamento*\n\n📌 Tipo: ${paymentReceiptInfo.type}\n👤 Cliente: ${paymentReceiptInfo.clientName}\n📄 Parcela: ${paymentReceiptInfo.installmentLabel}\n💰 Valor Pago: ${formatCurrency(paymentReceiptInfo.amount)}\n📅 Data: ${paymentReceiptInfo.date}\n💵 Saldo Restante: ${formatCurrency(paymentReceiptInfo.remainingBalance)}${paymentReceiptInfo.isCompleted ? "\n\n✅ *Contrato Quitado!*" : ""}`
-                  const phone = profilePhone?.replace(/\D/g, "") || ""
+                  const phone = paymentReceiptInfo.clientPhone?.replace(/\D/g, "") || ""
+                  if (!phone) return alert("Cliente sem telefone cadastrado")
                   window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank")
                 }}
               >
-                <Send className="h-4 w-4" /> Para Mim
+                <Send className="h-4 w-4" /> Para Cliente
               </Button>
               <Button
                 className="gap-1.5 bg-primary/80 hover:bg-primary/70 text-white"

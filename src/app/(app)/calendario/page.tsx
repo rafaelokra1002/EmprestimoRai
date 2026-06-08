@@ -269,9 +269,9 @@ export default function CalendarioPage() {
       </div>
 
       {/* ===== CALENDAR + SIDE PANEL ===== */}
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-stretch">
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
         {/* Calendar */}
-        <Card className="border-gray-200 dark:border-zinc-800 flex-1 min-w-0">
+        <Card className="border-gray-200 dark:border-zinc-800 flex-1 min-w-0 overflow-hidden">
           <CardContent className="p-6">
           {/* Month nav */}
           <div className="flex items-center justify-between mb-6">
@@ -293,90 +293,93 @@ export default function CalendarioPage() {
           </div>
 
           {/* Week headers */}
-          <div className="grid grid-cols-7">
+          <div className="grid gap-1.5 mb-2" style={{ gridTemplateColumns: "repeat(7, 1fr)" }}>
             {weekDays.map((day) => (
-              <div key={day} className="text-center text-xs text-gray-400 dark:text-zinc-500 py-3 font-medium border-b border-gray-200 dark:border-zinc-800">
+              <div key={day} className="text-center text-xs text-gray-400 dark:text-zinc-500 py-2 font-medium">
                 {day}
               </div>
             ))}
           </div>
 
           {/* Day cells */}
-          <div className="grid grid-cols-7">
-            {/* Empty cells before 1st */}
-            {Array.from({ length: firstDayOfWeek }).map((_, i) => (
-              <div key={`empty-${i}`} className="border-b border-r border-gray-200 dark:border-zinc-800/50 min-h-[80px]" />
-            ))}
+          {(() => {
+            const prevMonthDays = new Date(year, month, 0).getDate()
+            const totalCells = firstDayOfWeek + daysInMonth
+            const trailingCells = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7)
+            const todayKey = localDateStr()
 
-            {Array.from({ length: daysInMonth }).map((_, i) => {
-              const day = i + 1
-              const dayEntries = getEntriesForDay(day)
-              const isToday = day === todayDate.getDate() && month === todayDate.getMonth() && year === todayDate.getFullYear()
-              const isSelected = day === selectedDay
-              const todayKey = localDateStr()
-              const overdueCount = dayEntries.filter(e => e.status === "OVERDUE").length
-              const dueTodayCount = dayEntries.filter(e => e.status === "PENDING" && localDateStr(e.dueDate) === todayKey).length
-              const pendingFutureCount = dayEntries.filter(e => e.status === "PENDING" && localDateStr(e.dueDate) > todayKey).length
-              const hasOverdue = overdueCount > 0
-              const hasDueToday = dueTodayCount > 0
-              const pendingClients = Array.from(
-                new Map(
-                  dayEntries
-                    .filter(e => e.status === "PENDING")
-                    .map(e => [e.clientId, e.clientName])
-                ).values()
-              )
-
-              return (
-                <button
-                  key={day}
-                  onClick={() => setSelectedDay(day)}
-                  className={`relative min-h-[80px] p-2 text-left transition-all border-b border-r border-gray-200 dark:border-zinc-800/50 hover:bg-gray-100 dark:hover:bg-zinc-800 ${
-                    isToday ? "bg-primary/5 dark:bg-primary/10 ring-2 ring-primary ring-inset rounded-lg z-10"
-                    : isSelected ? "bg-gray-100 dark:bg-zinc-800/40"
-                    : "dark:bg-zinc-800/30"
-                  }`}
-                >
-                  <span className={`text-sm ${
-                    isToday ? "text-primary font-bold" : "text-gray-700 dark:text-zinc-300"
-                  }`}>
-                    {day}
-                  </span>
-
-
-                  {/* Count dots */}
-                  {(overdueCount > 0 || dueTodayCount > 0 || pendingFutureCount > 0) && (
-                    <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 flex items-center gap-1">
-                      {overdueCount > 0 && (
-                        <span className="flex items-center justify-center h-5 w-5 rounded-full bg-red-500 text-white text-[10px] font-bold shadow-sm">
-                          {overdueCount}
-                        </span>
-                      )}
-                      {dueTodayCount > 0 && (
-                        <span className="flex items-center justify-center h-5 w-5 rounded-full bg-amber-500 text-white text-[10px] font-bold shadow-sm">
-                          {dueTodayCount}
-                        </span>
-                      )}
-                      {pendingFutureCount > 0 && (
-                        <span className="flex items-center justify-center h-5 w-5 rounded-full bg-blue-500 text-white text-[10px] font-bold shadow-sm">
-                          {pendingFutureCount}
-                        </span>
-                      )}
+            return (
+              <div className="grid gap-1.5" style={{ gridTemplateColumns: "repeat(7, 1fr)" }}>
+                {/* Prev month trailing days */}
+                {Array.from({ length: firstDayOfWeek }).map((_, i) => {
+                  const d = prevMonthDays - firstDayOfWeek + 1 + i
+                  return (
+                    <div key={`prev-${i}`} className="aspect-square rounded-xl border border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-800/20 p-2">
+                      <span className="text-sm text-gray-300 dark:text-zinc-700">{d}</span>
                     </div>
-                  )}
-                </button>
-              )
-            })}
+                  )
+                })}
 
-            {/* Fill remaining cells to complete last row */}
-            {(() => {
-              const totalCells = firstDayOfWeek + daysInMonth
-              const remaining = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7)
-              return Array.from({ length: remaining }).map((_, i) => (
-                <div key={`trail-${i}`} className="border-b border-r border-gray-200 dark:border-zinc-800/50 min-h-[80px]" />
-              ))
-            })()}
-          </div>
+                {/* Current month days */}
+                {Array.from({ length: daysInMonth }).map((_, i) => {
+                  const day = i + 1
+                  const dayEntries = getEntriesForDay(day)
+                  const isToday = day === todayDate.getDate() && month === todayDate.getMonth() && year === todayDate.getFullYear()
+                  const isSelected = day === selectedDay
+                  const overdueCount = dayEntries.filter(e => e.status === "OVERDUE").length
+                  const dueTodayCount = dayEntries.filter(e => e.status === "PENDING" && localDateStr(e.dueDate) === todayKey).length
+                  const pendingFutureCount = dayEntries.filter(e => e.status === "PENDING" && localDateStr(e.dueDate) > todayKey).length
+
+                  return (
+                    <button
+                      key={day}
+                      onClick={() => setSelectedDay(day)}
+                      className={`relative aspect-square w-full rounded-xl p-2 text-left transition-all
+                        ${isToday
+                          ? "border-2 border-green-600 shadow-[inset_0_0_0_4px_white,inset_0_0_0_5px_#16a34a] dark:shadow-[inset_0_0_0_4px_#18181b,inset_0_0_0_5px_#16a34a] bg-white dark:bg-zinc-900"
+                          : isSelected
+                          ? "border border-primary/40 bg-primary/5 dark:bg-primary/10 dark:border-primary/30"
+                          : "border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:border-gray-300 dark:hover:border-zinc-600 hover:bg-gray-50 dark:hover:bg-zinc-800/50"
+                        }`}
+                    >
+                      <span className={`text-sm font-medium ${
+                        isToday ? "text-green-500 dark:text-green-400 font-bold" : "text-gray-700 dark:text-zinc-300"
+                      }`}>
+                        {day}
+                      </span>
+
+                      {(overdueCount > 0 || dueTodayCount > 0 || pendingFutureCount > 0) && (
+                        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1">
+                          {overdueCount > 0 && (
+                            <span className="flex items-center justify-center h-5 w-5 rounded-full bg-red-500 text-white text-[10px] font-bold shadow-sm">
+                              {overdueCount}
+                            </span>
+                          )}
+                          {dueTodayCount > 0 && (
+                            <span className="flex items-center justify-center h-5 w-5 rounded-full bg-amber-500 text-white text-[10px] font-bold shadow-sm">
+                              {dueTodayCount}
+                            </span>
+                          )}
+                          {pendingFutureCount > 0 && (
+                            <span className="flex items-center justify-center h-5 w-5 rounded-full bg-blue-500 text-white text-[10px] font-bold shadow-sm">
+                              {pendingFutureCount}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </button>
+                  )
+                })}
+
+                {/* Next month leading days */}
+                {Array.from({ length: trailingCells }).map((_, i) => (
+                  <div key={`next-${i}`} className="aspect-square rounded-xl border border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-800/20 p-2">
+                    <span className="text-sm text-gray-300 dark:text-zinc-700">{i + 1}</span>
+                  </div>
+                ))}
+              </div>
+            )
+          })()}
 
           {/* Legend */}
           <div className="flex items-center justify-center gap-6 mt-5 text-xs text-gray-500 dark:text-zinc-400">

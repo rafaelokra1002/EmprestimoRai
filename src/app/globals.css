@@ -64,11 +64,15 @@
   * {
     @apply border-border;
   }
+  html {
+    font-size: 14px;
+  }
   body {
     color: hsl(var(--foreground));
     background: hsl(var(--background));
     @apply antialiased font-sans dark:text-zinc-100 dark:bg-zinc-950;
     font-feature-settings: "tnum" 1, "lnum" 1;
+    font-weight: 400;
   }
 }
 
