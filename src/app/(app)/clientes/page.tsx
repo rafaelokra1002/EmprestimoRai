@@ -583,11 +583,40 @@ export default function ClientesPage() {
   return (
     <div className="space-y-4 pt-6">
       {/* Title + actions */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">Clientes</h1>
-          <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">Gerencie seus clientes</p>
-          <div className="mt-3 inline-flex items-center rounded-lg border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-1">
+      <div className="space-y-5">
+        {/* Linha 1: título + botões de ação */}
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">Clientes</h1>
+            <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">Gerencie seus clientes</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => router.push("/emprestimos?novo=true")}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-primary/40 bg-white px-4 text-sm font-semibold text-primary transition hover:bg-primary/5 dark:bg-zinc-900 dark:border-primary/30 dark:text-primary dark:hover:bg-primary/10 h-10 whitespace-nowrap"
+            >
+              <DollarSign className="h-4 w-4" />
+              Criar Empréstimo
+            </button>
+            <button
+              type="button"
+              onClick={() => setShareModalOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-blue-300 bg-white px-4 text-sm font-semibold text-blue-600 transition hover:bg-blue-50 dark:bg-zinc-900 dark:border-blue-700 dark:text-blue-400 dark:hover:bg-zinc-800 h-10 whitespace-nowrap"
+            >
+              <Share2 className="h-4 w-4" />
+              Compartilhar Cadastro
+            </button>
+            <Button onClick={() => openNewClient()} className="bg-primary hover:bg-primary/90 text-white gap-2 whitespace-nowrap h-10 px-4 text-sm">
+              <Plus className="h-4 w-4" />
+              Novo Cliente
+            </Button>
+          </div>
+        </div>
+
+        {/* Linha 2: tabs à esquerda + toggle à direita */}
+        <div className="flex items-center justify-between">
+          <div className="inline-flex items-center rounded-lg border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-1">
             <button
               type="button"
               onClick={() => setClientesView("clientes")}
@@ -617,30 +646,6 @@ export default function ClientesPage() {
                 </span>
               )}
             </button>
-          </div>
-        </div>
-        <div className="flex flex-col items-end gap-2">
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => router.push("/emprestimos?novo=true")}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-primary/40 bg-white px-4 text-sm font-semibold text-primary transition hover:bg-primary/5 dark:bg-zinc-900 dark:border-primary/30 dark:text-primary dark:hover:bg-primary/10 h-10 whitespace-nowrap"
-            >
-              <DollarSign className="h-4 w-4" />
-              Criar Empréstimo
-            </button>
-            <button
-              type="button"
-              onClick={() => setShareModalOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-blue-300 bg-white px-4 text-sm font-semibold text-blue-600 transition hover:bg-blue-50 dark:bg-zinc-900 dark:border-blue-700 dark:text-blue-400 dark:hover:bg-zinc-800 h-10 whitespace-nowrap"
-            >
-              <Share2 className="h-4 w-4" />
-              Compartilhar Cadastro
-            </button>
-            <Button onClick={() => openNewClient()} className="bg-primary hover:bg-primary/90 text-white gap-2 whitespace-nowrap h-10 px-4 text-sm">
-              <Plus className="h-4 w-4" />
-              Novo Cliente
-            </Button>
           </div>
           <div className="flex items-center rounded-lg border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-1">
             <button
@@ -869,6 +874,7 @@ export default function ClientesPage() {
               {filtered.length} clientes
             </div>
           </div>
+          <div className="h-3" />
           <Table>
             <TableHeader>
               <TableRow>

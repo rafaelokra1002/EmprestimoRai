@@ -456,12 +456,15 @@ export async function GET(request: Request) {
       })
 
       const interest = monthInstallments.length * interestPerInstallment
+      const todayUTCStr = now.toISOString().slice(0, 10)
       const lateFees = monthInstallments
-        .filter((i) => new Date(i.dueDate) < startOfToday)
+        .filter((i) => new Date(i.dueDate).toISOString().slice(0, 10) < todayUTCStr)
         .reduce((sum, i) => {
-          const due = new Date(i.dueDate); due.setHours(0, 0, 0, 0)
-          const daysOver = Math.max(0, Math.floor((startOfToday.getTime() - due.getTime()) / 86400000))
-          return sum + dailyRate * daysOver + Number(loan.penaltyFee || 0)
+          const dueUTCStr = new Date(i.dueDate).toISOString().slice(0, 10)
+          const daysOver = Math.max(0, Math.floor(
+            (new Date(todayUTCStr).getTime() - new Date(dueUTCStr).getTime()) / 86400000
+          ))
+          return sum + dailyRate * daysOver + (daysOver > 0 ? Number(loan.penaltyFee || 0) : 0)
         }, 0)
 
       return acc + interest + lateFees

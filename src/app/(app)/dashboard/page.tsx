@@ -27,11 +27,16 @@ import {
   BarChart,
   Bar,
   XAxis,
+  YAxis,
   Tooltip,
   ResponsiveContainer,
   AreaChart,
   Area,
   LabelList,
+  LineChart,
+  Line,
+  CartesianGrid,
+  Legend,
 } from "recharts"
 
 interface DashboardData {
@@ -148,6 +153,7 @@ export default function DashboardPage() {
     color: isDark ? "#f4f4f5" : "#374151",
   }
   const axisColor = isDark ? "#71717a" : "#6b7280"
+  const gridColor = isDark ? "#3f3f46" : "#e5e7eb"
 
   useEffect(() => {
     setLoading(true)
@@ -227,6 +233,16 @@ export default function DashboardPage() {
   const sparkRecebido = (data?.monthlyData || []).map(d => d.recebido)
   const sparkEmprestado = (data?.monthlyData || []).map(d => d.emprestado)
   const sparkJuros = (data?.charts?.interestTrend || []).map(d => d.juros)
+
+  // Charts data
+  const healthScore = data?.operationHealth?.score || 0
+  const collectionRate = data?.operationHealth?.collectionRate || 0
+  const defaultRate = data?.operationHealth?.defaultRate || 0
+  const monthlyInterest = data?.charts?.interestTrend || []
+  const interestChartData = monthlyInterest.map((item, index) => {
+    const accumulated = monthlyInterest.slice(0, index + 1).reduce((sum, c) => sum + (c.juros || 0), 0)
+    return { month: item.month, jurosMes: item.juros, jurosAcumulado: accumulated }
+  })
 
   // Mini bar chart data for "Recebido no Mês"
   const paymentsBardData = (data?.paymentsByDay || []).slice(-7).map(d => ({ v: d.amount }))
@@ -340,8 +356,8 @@ export default function DashboardPage() {
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
 
         {/* Total a Receber */}
-        <div className="rounded-xl border border-green-100 dark:border-green-900/30 bg-white dark:bg-zinc-900 overflow-hidden">
-          <div className="p-4 pb-2">
+        <div className="rounded-xl border border-green-100 dark:border-green-900/30 bg-white dark:bg-zinc-900 overflow-hidden flex flex-col">
+          <div className="p-4 pb-2 flex-1">
             <div className="flex items-center gap-2 mb-3">
               <div className="rounded-xl bg-green-100 dark:bg-green-950/50 p-2">
                 <Receipt className="h-5 w-5 text-green-500" />
@@ -362,8 +378,8 @@ export default function DashboardPage() {
         </div>
 
         {/* Capital na Rua */}
-        <div className="rounded-xl border border-orange-100 dark:border-orange-900/30 bg-white dark:bg-zinc-900 overflow-hidden">
-          <div className="p-4 pb-2">
+        <div className="rounded-xl border border-orange-100 dark:border-orange-900/30 bg-white dark:bg-zinc-900 overflow-hidden flex flex-col">
+          <div className="p-4 pb-2 flex-1">
             <div className="flex items-center gap-2 mb-3">
               <div className="rounded-xl bg-orange-100 dark:bg-orange-950/50 p-2">
                 <DollarSign className="h-5 w-5 text-orange-500" />
@@ -383,8 +399,8 @@ export default function DashboardPage() {
         </div>
 
         {/* Juros do Mês */}
-        <div className="rounded-xl border border-violet-100 dark:border-violet-900/30 bg-white dark:bg-zinc-900 overflow-hidden">
-          <div className="p-4 pb-2">
+        <div className="rounded-xl border border-violet-100 dark:border-violet-900/30 bg-white dark:bg-zinc-900 overflow-hidden flex flex-col">
+          <div className="p-4 pb-2 flex-1">
             <div className="flex items-center gap-2 mb-3">
               <div className="rounded-xl bg-violet-100 dark:bg-violet-950/50 p-2">
                 <Percent className="h-5 w-5 text-violet-600" />
@@ -626,6 +642,113 @@ export default function DashboardPage() {
               </div>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* ── Gráficos ────────────────────────────────────────────────────────── */}
+      <div className="grid gap-4 xl:grid-cols-2">
+        <div className="rounded-xl border border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5">
+          <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200 mb-4">Evolução Financeira (Últimos 6 meses)</p>
+          <div className="h-[280px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={data?.monthlyData || []}>
+                <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+                <XAxis dataKey="month" stroke={axisColor} tick={{ fontSize: 11 }} />
+                <YAxis stroke={axisColor} tick={{ fontSize: 11 }} tickFormatter={(v) => `R$${v}`} />
+                <Legend wrapperStyle={{ color: isDark ? "#d4d4d8" : "#374151", fontSize: 11 }} />
+                <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => [formatCurrency(v)]} />
+                <Bar dataKey="emprestado" fill="#f59e0b" name="Emprestado" radius={[4,4,0,0]} maxBarSize={40} />
+                <Bar dataKey="recebido" fill="#22c55e" name="Recebido" radius={[4,4,0,0]} maxBarSize={40} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5">
+          <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200 mb-4">Tendência de Juros Recebidos</p>
+          <div className="h-[280px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={interestChartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+                <XAxis dataKey="month" stroke={axisColor} tick={{ fontSize: 11 }} />
+                <YAxis stroke={axisColor} tick={{ fontSize: 11 }} tickFormatter={(v) => `R$${v}`} />
+                <Legend wrapperStyle={{ color: isDark ? "#d4d4d8" : "#374151", fontSize: 11 }} />
+                <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => [formatCurrency(v)]} />
+                <Line type="monotone" dataKey="jurosMes" stroke="#f59e0b" name="Juros no Mês" strokeWidth={2} dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="jurosAcumulado" stroke="#22c55e" name="Juros Acumulado" strokeWidth={2} dot={{ r: 3 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Saúde da Operação + Precisa de Atenção ───────────────────────────── */}
+      <div className="grid gap-4 xl:grid-cols-2">
+        <div className="rounded-xl border border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 space-y-4">
+          <div className="flex items-center gap-4">
+            <span className="inline-flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-4 border-amber-300 text-2xl font-bold tabular-nums text-amber-500">
+              {healthScore}
+            </span>
+            <div>
+              <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Saúde da Operação</p>
+              <span className="mt-1 inline-flex rounded-full bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 text-xs text-amber-700 dark:text-amber-400">Atenção</span>
+            </div>
+          </div>
+          <div className="h-2.5 overflow-hidden rounded-full bg-gray-200 dark:bg-zinc-700">
+            <div className="h-full bg-primary transition-all" style={{ width: `${Math.min(100, healthScore)}%` }} />
+          </div>
+          <p className="text-xs text-gray-500 dark:text-zinc-400">Baseado em taxa de recebimento, inadimplência e margem de lucro</p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-3">
+              <p className="text-xs text-gray-500 dark:text-zinc-400">Taxa de Recebimento</p>
+              <p className="mt-1 text-xl font-bold tabular-nums text-red-500">{collectionRate.toFixed(1)}%</p>
+            </div>
+            <div className="rounded-lg border border-primary/30 bg-primary/5 dark:bg-primary/15 p-3">
+              <p className="text-xs text-gray-500 dark:text-zinc-400">Inadimplência</p>
+              <p className="mt-1 text-xl font-bold tabular-nums text-primary">{defaultRate.toFixed(1)}%</p>
+            </div>
+            <div className="rounded-lg border border-primary/30 bg-primary/5 dark:bg-primary/15 p-3">
+              <p className="text-xs text-gray-500 dark:text-zinc-400">Recebido</p>
+              <p className="mt-1 text-xl font-bold tabular-nums text-primary">{formatCurrency(data?.totalReceived || 0)}</p>
+            </div>
+            <div className="rounded-lg border border-primary/30 bg-primary/5 dark:bg-primary/15 p-3">
+              <p className="text-xs text-gray-500 dark:text-zinc-400">Em Atraso</p>
+              <p className="mt-1 text-xl font-bold tabular-nums text-primary">{data?.overdueCount || 0}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-primary/30 dark:border-primary/20 bg-primary/5 dark:bg-zinc-900 overflow-hidden">
+          <div className="flex items-center gap-2 px-5 py-4 border-b border-primary/20">
+            <AlertTriangle className="h-4 w-4 text-primary" />
+            <span className="text-sm font-bold text-primary">Precisa de Atenção</span>
+          </div>
+          <div className="divide-y divide-primary/10">
+            <div className="flex items-center gap-4 px-5 py-4 bg-primary/5 dark:bg-primary/10">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/15 dark:bg-primary/20">
+                <Calendar className="h-4 w-4 text-primary" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold text-primary">{data?.dueThisWeekCount ?? 0} Vencem esta semana</p>
+                <p className="text-xs text-primary/70">{formatCurrency(data?.dueThisWeekAmount ?? 0)} – empréstimos</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4 px-5 py-4 bg-red-50 dark:bg-red-950/20">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-100 dark:bg-red-900/30">
+                <UserX className="h-4 w-4 text-red-600 dark:text-red-400" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold text-red-700 dark:text-red-400">{data?.overdue30DaysCount ?? 0} Atrasados há +30 dias</p>
+                <p className="text-xs text-red-500">{formatCurrency(data?.overdue30DaysAmount ?? 0)} – clientes inadimplentes</p>
+              </div>
+            </div>
+          </div>
+          {(data?.dueThisWeekCount ?? 0) === 0 && (data?.overdue30DaysCount ?? 0) === 0 && (
+            <div className="flex items-center gap-2 px-5 py-4">
+              <Shield className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium text-primary">Tudo em ordem!</span>
+            </div>
+          )}
         </div>
       </div>
 
