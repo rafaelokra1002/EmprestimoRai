@@ -16,30 +16,29 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const now = new Date()
     const showAll = searchParams.get("all") === "true"
-    const filterMonth = searchParams.has("month") ? parseInt(searchParams.get("month")!) : now.getUTCMonth()
-    const filterYear = searchParams.has("year") ? parseInt(searchParams.get("year")!) : now.getUTCFullYear()
+    const filterMonth = searchParams.has("month") ? parseInt(searchParams.get("month")!) : now.getMonth()
+    const filterYear = searchParams.has("year") ? parseInt(searchParams.get("year")!) : now.getFullYear()
 
-    // Todas as datas usam UTC para ser consistentes com dueDates salvas como meia-noite UTC
-    const startOfToday = new Date(now); startOfToday.setUTCHours(0, 0, 0, 0)
-    const endOfToday = new Date(now); endOfToday.setUTCHours(0, 0, 0, 0); endOfToday.setUTCDate(endOfToday.getUTCDate() + 1)
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
     const startOfWeek = new Date(startOfToday)
-    const day = startOfWeek.getUTCDay()
+    const day = startOfWeek.getDay()
     const diffToMonday = day === 0 ? 6 : day - 1
-    startOfWeek.setUTCDate(startOfWeek.getUTCDate() - diffToMonday)
+    startOfWeek.setDate(startOfWeek.getDate() - diffToMonday)
     const startOfPrevWeek = new Date(startOfWeek)
-    startOfPrevWeek.setUTCDate(startOfPrevWeek.getUTCDate() - 7)
+    startOfPrevWeek.setDate(startOfPrevWeek.getDate() - 7)
     const endOfPrevWeek = new Date(startOfWeek)
 
-    const startOfMonth = showAll ? new Date(0) : new Date(Date.UTC(filterYear, filterMonth, 1))
-    const endOfMonth = showAll ? new Date(2100, 0, 1) : new Date(Date.UTC(filterYear, filterMonth + 1, 0, 23, 59, 59))
+    const startOfMonth = showAll ? new Date(0) : new Date(filterYear, filterMonth, 1)
+    const endOfMonth = showAll ? new Date(2100, 0, 1) : new Date(filterYear, filterMonth + 1, 0, 23, 59, 59)
     // faltaReceberMes sempre usa mês atual (sem filtro) ou mês selecionado (com filtro)
     const faltaReceberEndOfMonth = showAll
-      ? new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 59, 59))
-      : new Date(Date.UTC(filterYear, filterMonth + 1, 0, 23, 59, 59))
+      ? new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
+      : new Date(filterYear, filterMonth + 1, 0, 23, 59, 59)
     const endOfWeek = new Date(startOfWeek)
-    endOfWeek.setUTCDate(endOfWeek.getUTCDate() + 7)
+    endOfWeek.setDate(endOfWeek.getDate() + 7)
     const thirtyDaysAgo = new Date(startOfToday)
-    thirtyDaysAgo.setUTCDate(thirtyDaysAgo.getUTCDate() - 30)
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
     const [loansResult, overdueCountResult, overdueAmountResult, dueTodayCountResult, activeClientsResult, inactiveClientsResult, totalClientsResult, salesResult, vehiclesResult, monthlyExpensesResult, allLoansForInterestResult, totalPaymentsResult] = await Promise.all([
       prisma.loan.findMany({
@@ -220,7 +219,7 @@ export async function GET(request: Request) {
       return acc + loan.installments
         .filter((i) => i.status !== "PAID" && new Date(i.dueDate) < startOfToday)
         .reduce((sum, i) => {
-          const due = new Date(i.dueDate); due.setUTCHours(0, 0, 0, 0)
+          const due = new Date(i.dueDate); due.setHours(0, 0, 0, 0)
           const daysOver = Math.max(0, Math.floor((startOfToday.getTime() - due.getTime()) / 86400000))
           return sum + dailyRate * daysOver + Number(loan.penaltyFee || 0)
         }, 0)
@@ -231,7 +230,7 @@ export async function GET(request: Request) {
       if (loan.installmentCount !== 1) return acc
       const overdueInst = loan.installments.find(i => i.status !== "PAID")
       if (!overdueInst) return acc
-      const due = new Date(overdueInst.dueDate); due.setUTCHours(0, 0, 0, 0)
+      const due = new Date(overdueInst.dueDate); due.setHours(0, 0, 0, 0)
       if (due >= startOfToday) return acc
       const daysOver = Math.floor((startOfToday.getTime() - due.getTime()) / 86400000)
       const extraCycles = Math.floor(daysOver / 30)
@@ -268,7 +267,7 @@ export async function GET(request: Request) {
         )
         if (overdueInstallments.length === 0) return null
         const totalCharge = overdueInstallments.reduce((sum, i) => {
-          const due = new Date(i.dueDate); due.setUTCHours(0, 0, 0, 0)
+          const due = new Date(i.dueDate); due.setHours(0, 0, 0, 0)
           const daysOver = Math.max(0, Math.floor((startOfToday.getTime() - due.getTime()) / 86400000))
           return sum + dailyRate * daysOver + Number(loan.penaltyFee || 0)
         }, 0)
@@ -298,10 +297,10 @@ export async function GET(request: Request) {
     // Próximos 7 dias com vencimentos
     const dueNextSevenDays = Array.from({ length: 7 }, (_, i) => {
       const d = new Date(startOfToday)
-      d.setUTCDate(d.getUTCDate() + i)
+      d.setDate(d.getDate() + i)
       const dateStr = d.toISOString().slice(0, 10)
-      const dayStart = new Date(d); dayStart.setUTCHours(0, 0, 0, 0)
-      const dayEnd = new Date(d); dayEnd.setUTCHours(0, 0, 0, 0); dayEnd.setUTCDate(dayEnd.getUTCDate() + 1)
+      const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+      const dayEnd = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)
       const items = loans.flatMap((loan) =>
         loan.installments
           .filter((inst) => {
@@ -451,9 +450,13 @@ export async function GET(request: Request) {
       })
       const dailyRate = getOverdueDailyAmountBRL(loanData)
 
-      const todayStr = now.toISOString().slice(0, 10)
-      const monthStartStr = startOfMonth.toISOString().slice(0, 10)
-      const monthEndStr = faltaReceberEndOfMonth.toISOString().slice(0, 10)
+      // Subtrai 3h para obter hora local Brasil (UTC-3) e evitar cruzamento da meia-noite UTC
+      const nowBrazil = new Date(now.getTime() - 3 * 60 * 60 * 1000)
+      const todayStr = nowBrazil.toISOString().slice(0, 10)
+      const mStart = filterMonth + 1
+      const monthStartStr = showAll ? "0000-01-01" : `${filterYear}-${String(mStart).padStart(2, "0")}-01`
+      const lastDay = new Date(Date.UTC(filterYear, filterMonth + 1, 0)).getUTCDate()
+      const monthEndStr = showAll ? "2100-12-31" : `${filterYear}-${String(mStart).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`
       const monthInstallments = loan.installments.filter((i) => {
         const d = new Date(i.dueDate).toISOString().slice(0, 10)
         return i.status !== "PAID" && d >= monthStartStr && d <= monthEndStr
