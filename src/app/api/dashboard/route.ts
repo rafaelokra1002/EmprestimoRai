@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { buildLoanData, getOverdueDailyAmountBRL } from "@/lib/loan-logic"
+import { localDateStr } from "@/lib/utils"
 
 export async function GET(request: Request) {
   try {
@@ -450,19 +451,21 @@ export async function GET(request: Request) {
       })
       const dailyRate = getOverdueDailyAmountBRL(loanData)
 
+      const todayStr = localDateStr()
+      const monthStartStr = localDateStr(startOfMonth)
+      const monthEndStr = localDateStr(faltaReceberEndOfMonth)
       const monthInstallments = loan.installments.filter((i) => {
-        const due = new Date(i.dueDate)
-        return i.status !== "PAID" && due <= faltaReceberEndOfMonth
+        const d = localDateStr(new Date(i.dueDate))
+        return i.status !== "PAID" && d >= monthStartStr && d <= monthEndStr
       })
 
       const interest = monthInstallments.length * interestPerInstallment
-      const todayUTCStr = now.toISOString().slice(0, 10)
       const lateFees = monthInstallments
-        .filter((i) => new Date(i.dueDate).toISOString().slice(0, 10) < todayUTCStr)
+        .filter((i) => localDateStr(new Date(i.dueDate)) < todayStr)
         .reduce((sum, i) => {
-          const dueUTCStr = new Date(i.dueDate).toISOString().slice(0, 10)
+          const dueStr = localDateStr(new Date(i.dueDate))
           const daysOver = Math.max(0, Math.floor(
-            (new Date(todayUTCStr).getTime() - new Date(dueUTCStr).getTime()) / 86400000
+            (new Date(todayStr + "T12:00:00").getTime() - new Date(dueStr + "T12:00:00").getTime()) / 86400000
           ))
           return sum + dailyRate * daysOver + (daysOver > 0 ? Number(loan.penaltyFee || 0) : 0)
         }, 0)
