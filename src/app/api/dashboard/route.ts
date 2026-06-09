@@ -16,29 +16,35 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const now = new Date()
     const showAll = searchParams.get("all") === "true"
-    const filterMonth = searchParams.has("month") ? parseInt(searchParams.get("month")!) : now.getMonth()
-    const filterYear = searchParams.has("year") ? parseInt(searchParams.get("year")!) : now.getFullYear()
 
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
-    const startOfWeek = new Date(startOfToday)
-    const day = startOfWeek.getDay()
+    // Fuso Brasil = UTC-3: "hoje" no Brasil pode ser D-1 em UTC (ex: 23h BR = 02h UTC próximo dia)
+    const nowBR = new Date(now.getTime() - 3 * 60 * 60 * 1000)
+    const bY = nowBR.getUTCFullYear(), bM = nowBR.getUTCMonth(), bD = nowBR.getUTCDate()
+
+    const filterMonth = searchParams.has("month") ? parseInt(searchParams.get("month")!) : bM
+    const filterYear  = searchParams.has("year")  ? parseInt(searchParams.get("year")!)  : bY
+
+    // Limites de "hoje" em UTC representando meia-noite do Brasil (UTC-3 → +3h)
+    const startOfToday = new Date(Date.UTC(bY, bM, bD, 3, 0, 0))
+    const endOfToday   = new Date(Date.UTC(bY, bM, bD + 1, 3, 0, 0))
+    const startOfWeek  = new Date(startOfToday)
+    const day = startOfWeek.getUTCDay()
     const diffToMonday = day === 0 ? 6 : day - 1
-    startOfWeek.setDate(startOfWeek.getDate() - diffToMonday)
+    startOfWeek.setUTCDate(startOfWeek.getUTCDate() - diffToMonday)
     const startOfPrevWeek = new Date(startOfWeek)
-    startOfPrevWeek.setDate(startOfPrevWeek.getDate() - 7)
+    startOfPrevWeek.setUTCDate(startOfPrevWeek.getUTCDate() - 7)
     const endOfPrevWeek = new Date(startOfWeek)
 
     const startOfMonth = showAll ? new Date(0) : new Date(filterYear, filterMonth, 1)
     const endOfMonth = showAll ? new Date(2100, 0, 1) : new Date(filterYear, filterMonth + 1, 0, 23, 59, 59)
     // faltaReceberMes sempre usa mês atual (sem filtro) ou mês selecionado (com filtro)
     const faltaReceberEndOfMonth = showAll
-      ? new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
+      ? new Date(bY, bM + 1, 0, 23, 59, 59)
       : new Date(filterYear, filterMonth + 1, 0, 23, 59, 59)
     const endOfWeek = new Date(startOfWeek)
-    endOfWeek.setDate(endOfWeek.getDate() + 7)
+    endOfWeek.setUTCDate(endOfWeek.getUTCDate() + 7)
     const thirtyDaysAgo = new Date(startOfToday)
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+    thirtyDaysAgo.setUTCDate(thirtyDaysAgo.getUTCDate() - 30)
 
     const [loansResult, overdueCountResult, overdueAmountResult, dueTodayCountResult, activeClientsResult, inactiveClientsResult, totalClientsResult, salesResult, vehiclesResult, monthlyExpensesResult, allLoansForInterestResult, totalPaymentsResult] = await Promise.all([
       prisma.loan.findMany({
