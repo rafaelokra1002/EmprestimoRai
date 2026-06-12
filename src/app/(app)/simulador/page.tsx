@@ -11,7 +11,7 @@ import {
 } from "lucide-react"
 
 type PaymentType = "MONTHLY" | "BIWEEKLY" | "WEEKLY" | "DAILY"
-type InterestMode = "PER_INSTALLMENT" | "PRICE"
+type InterestMode = "PER_INSTALLMENT" | "PRICE" | "AVISTA_30"
 
 interface Installment {
   number: number
@@ -48,11 +48,12 @@ export default function SimuladorPage() {
     let totalAmount = 0
     let installmentValue = 0
 
-    if (interestMode === "PER_INSTALLMENT") {
+    if (interestMode === "PER_INSTALLMENT" || interestMode === "AVISTA_30") {
       // Interest applied per installment: total = principal * (1 + rate * count)
-      totalInterest = amount * rate * count
+      const effectiveCount = interestMode === "AVISTA_30" ? 1 : count
+      totalInterest = amount * rate * effectiveCount
       totalAmount = amount + totalInterest
-      installmentValue = totalAmount / count
+      installmentValue = totalAmount / effectiveCount
     } else {
       // Tabela Price (French amortization): PMT = PV * i / (1 - (1+i)^-n)
       if (rate === 0) {
@@ -125,6 +126,7 @@ export default function SimuladorPage() {
   const interestOptions: { value: InterestMode; label: string }[] = [
     { value: "PER_INSTALLMENT", label: "Por Parcela" },
     { value: "PRICE", label: "Tabela Price" },
+    { value: "AVISTA_30", label: "À Vista 30 dias" },
   ]
 
 
@@ -145,7 +147,7 @@ export default function SimuladorPage() {
       return `📄 RELATÓRIO DE PAGAMENTO\n\n📅 Vencimento: ${venc}\n\n💰 Valor liberado: ${formatCurrency(parseFloat(valor) || 0)}\n📊 Juros: ${taxa}%\n👉 Total a pagar: ${formatCurrency(result.totalAmount)}\n\n⚠️ Multa por atraso:\nR$ 15,00 por dia.\n\n🔄 Opção de renovação\nPague os juros (${formatCurrency(result.totalInterest)})\ne receba +30 dias de prazo.`
     }
 
-    const modeLabel = interestMode === "PER_INSTALLMENT" ? "por parcela" : "tabela price"
+    const modeLabel = interestMode === "PER_INSTALLMENT" ? "por parcela" : interestMode === "AVISTA_30" ? "à vista 30 dias" : "tabela price"
     const paymentLines = schedule.map((i, idx) => {
       const emoji = numEmojis[idx] || `${i.number}.`
       return `${emoji} ${fmtShort(i.dueDate)} — ${formatCurrency(i.amount)}`
@@ -188,7 +190,18 @@ export default function SimuladorPage() {
             <div className="relative mt-1">
               <select
                 value={interestMode}
-                onChange={(e) => setInterestMode(e.target.value as InterestMode)}
+                onChange={(e) => {
+                  const mode = e.target.value as InterestMode
+                  setInterestMode(mode)
+                  if (mode === "AVISTA_30") {
+                    setInstallmentCount("1")
+                    if (startDate) {
+                      const d = new Date(startDate + "T12:00:00")
+                      d.setDate(d.getDate() + 30)
+                      setFirstDueDate(localDateStr(d))
+                    }
+                  }
+                }}
                 className="flex h-9 w-full rounded-lg border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 px-3 py-1.5 text-sm text-gray-900 dark:text-zinc-100 appearance-none pr-8"
               >
                 {interestOptions.map((o) => (
@@ -203,9 +216,10 @@ export default function SimuladorPage() {
             <Input
               type="text"
               inputMode="numeric"
-              value={installmentCount}
+              value={interestMode === "AVISTA_30" ? "1" : installmentCount}
+              disabled={interestMode === "AVISTA_30"}
               onChange={(e) => { const v = e.target.value; if (/^\d*$/.test(v)) setInstallmentCount(v) }}
-              className="mt-1 h-9 bg-gray-50 dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 text-sm"
+              className="mt-1 h-9 bg-gray-50 dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
         </div>

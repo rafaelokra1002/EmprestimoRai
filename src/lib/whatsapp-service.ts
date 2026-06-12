@@ -221,6 +221,14 @@ export const whatsappService = {
     if (wa.connectionState === "open" && wa.sock) {
       return { connected: true, state: "open" }
     }
+
+    // Auto-reconnect if credentials exist but no active connection
+    const authDir = getAuthDir(userId)
+    if (!wa.connecting && !wa.sock && fs.existsSync(path.join(authDir, "creds.json"))) {
+      wa.reconnectAttempts = 0
+      startSocket(userId).catch(() => {})
+    }
+
     if (wa.connecting) {
       return { connected: false, state: "connecting", qrCode: wa.currentQr || undefined }
     }

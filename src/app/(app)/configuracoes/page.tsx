@@ -533,17 +533,16 @@ export default function ConfiguracoesPage() {
         )}
 
         {/* ─── Tabs: Atraso / Vence Hoje / Antecipada ─── */}
-        <div className="flex items-center bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-xl overflow-hidden">
-          {TAB_CONFIG.map((tab, idx) => (
+        <div className="flex gap-2">
+          {TAB_CONFIG.map((tab) => (
             <button
               key={tab.key}
+              type="button"
               onClick={() => setActiveTab(tab.key)}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition ${
-                idx !== 0 ? "border-l border-gray-200 dark:border-zinc-700" : ""
-              } ${
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold rounded-xl border transition-all ${
                 activeTab === tab.key
-                  ? "text-gray-900 dark:text-zinc-100"
-                  : "text-gray-400 dark:text-zinc-500 hover:text-gray-700 dark:hover:text-zinc-300"
+                  ? "bg-primary/10 border-primary/40 text-primary"
+                  : "bg-white dark:bg-zinc-800/60 border-gray-200 dark:border-zinc-700 text-gray-400 dark:text-zinc-500 hover:text-gray-700 dark:hover:text-zinc-300"
               }`}
             >
               <span className={`w-2.5 h-2.5 rounded-full ${tab.dot}`} />
@@ -555,12 +554,14 @@ export default function ConfiguracoesPage() {
         {/* ─── Toggle Simples / Parcelado ─── */}
         <div className="flex items-center gap-1 self-start bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-xl p-1">
           <button
+            type="button"
             onClick={() => setIsParcelado(false)}
             className={`px-4 py-1.5 rounded-lg text-sm font-medium transition ${!isParcelado ? "bg-gray-100 dark:bg-zinc-700 text-gray-900 dark:text-zinc-100 shadow-sm" : "text-gray-400 dark:text-zinc-500"}`}
           >
             Simples
           </button>
           <button
+            type="button"
             onClick={() => setIsParcelado(true)}
             className={`px-4 py-1.5 rounded-lg text-sm font-medium transition ${isParcelado ? "bg-gray-100 dark:bg-zinc-700 text-gray-900 dark:text-zinc-100 shadow-sm" : "text-gray-400 dark:text-zinc-500"}`}
           >

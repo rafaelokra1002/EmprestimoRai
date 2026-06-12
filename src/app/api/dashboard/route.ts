@@ -46,7 +46,7 @@ export async function GET(request: Request) {
     const thirtyDaysAgo = new Date(startOfToday)
     thirtyDaysAgo.setUTCDate(thirtyDaysAgo.getUTCDate() - 30)
 
-    const [loansResult, overdueCountResult, overdueAmountResult, dueTodayCountResult, activeClientsResult, inactiveClientsResult, totalClientsResult, salesResult, vehiclesResult, monthlyExpensesResult, allLoansForInterestResult, totalPaymentsResult] = await Promise.all([
+    const [loansResult, overdueCountResult, overdueAmountResult, dueTodayCountResult, activeClientsResult, inactiveClientsResult, totalClientsResult, salesResult, vehiclesResult, monthlyExpensesResult, allLoansForInterestResult, totalPaymentsResult, allPaymentsMonthResult] = await Promise.all([
       prisma.loan.findMany({
         where: { userId, status: "ACTIVE", deleted: false, client: { status: { not: "DESAPARECIDO" } } },
         include: { installments: true, payments: true, client: { select: { name: true } } },
@@ -96,6 +96,11 @@ export async function GET(request: Request) {
         where: { loan: { userId, deleted: false, client: { status: { not: "DESAPARECIDO" } } } },
         _sum: { amount: true },
       }),
+      // Inclui pagamentos de empréstimos excluídos para não perder valores já recebidos
+      prisma.payment.aggregate({
+        where: { loan: { userId }, date: { gte: startOfMonth, lte: endOfMonth } },
+        _sum: { amount: true },
+      }),
     ])
 
     const loans = loansResult || []
@@ -127,11 +132,8 @@ export async function GET(request: Request) {
       0
     )
 
-    // Métricas do mês selecionado
-    const monthReceived = loans.reduce((acc, loan) =>
-      acc + loan.payments
-        .filter(p => { const d = new Date(p.date); return d >= startOfMonth && d <= endOfMonth })
-        .reduce((s, p) => s + Number(p.amount), 0), 0)
+    // Métricas do mês selecionado — inclui pagamentos de empréstimos excluídos
+    const monthReceived = Number(allPaymentsMonthResult._sum.amount || 0)
 
     const monthNewLoansCapital = loans
       .filter(loan => {

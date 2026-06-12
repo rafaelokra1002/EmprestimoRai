@@ -290,9 +290,7 @@ export default function DashboardPage() {
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col gap-0.5">
-          <h1 className="text-xl font-bold text-gray-900 dark:text-zinc-100">
-            {greeting}! {greetingEmoji}
-          </h1>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-zinc-100">Dashboard</h1>
           <p className="text-sm text-gray-500 dark:text-zinc-400">Aqui está o resumo da sua gestão financeira.</p>
         </div>
 

@@ -567,7 +567,7 @@ const [expenses, setExpenses] = useState<any[]>([])
 
       {/* ===== TABLE ===== */}
       <div className="pt-10">
-      <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
+      <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
         {loading ? (
           <div className="py-16 text-center text-gray-400 dark:text-zinc-500">Carregando despesas...</div>
         ) : filteredExpenses.length === 0 ? (

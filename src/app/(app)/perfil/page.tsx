@@ -251,9 +251,9 @@ export default function PerfilPage() {
 
   useEffect(() => {
     fetchWaStatus()
-    const interval = setInterval(fetchWaStatus, 15000)
+    const interval = setInterval(fetchWaStatus, waStatus?.connected ? 15000 : 4000)
     return () => clearInterval(interval)
-  }, [])
+  }, [waStatus?.connected])
 
   const handleWaRecriar = async () => {
     setWaReconnecting(true)
@@ -527,9 +527,15 @@ export default function PerfilPage() {
             <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${
               waStatus?.connected
                 ? "border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400"
+                : waStatus?.state === "connecting"
+                ? "border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400"
                 : "border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400"
             }`}>
-              {waStatus?.connected ? <><span>✓</span> Conectado</> : <><WifiOff className="h-3 w-3" /> Desconectado</>}
+              {waStatus?.connected
+                ? <><span>✓</span> Conectado</>
+                : waStatus?.state === "connecting"
+                ? <><Loader2 className="h-3 w-3 animate-spin" /> Reconectando...</>
+                : <><WifiOff className="h-3 w-3" /> Desconectado</>}
             </span>
           )}
         </div>
@@ -560,6 +566,18 @@ export default function PerfilPage() {
                 </span>
               </div>
             </div>
+          ) : waStatus?.state === "connecting" ? (
+            <div className="rounded-xl border border-amber-200 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-950/20 p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/40">
+                  <Loader2 className="h-5 w-5 text-amber-500 animate-spin" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-amber-600 dark:text-amber-400">Reconectando...</p>
+                  <p className="text-xs text-amber-500">Aguarde, restaurando conexão automaticamente.</p>
+                </div>
+              </div>
+            </div>
           ) : (
             <div className="rounded-xl border border-red-200 dark:border-red-800/60 bg-red-50 dark:bg-red-950/20 p-4">
               <div className="flex items-center gap-3">
@@ -568,7 +586,7 @@ export default function PerfilPage() {
                 </div>
                 <div>
                   <p className="text-sm font-bold text-red-600 dark:text-red-400">WhatsApp Desconectado</p>
-                  <p className="text-xs text-red-500">Use "Recriar Instância" para conectar.</p>
+                  <p className="text-xs text-red-500">Clique em "Conectar WhatsApp" para escanear o QR Code.</p>
                 </div>
               </div>
             </div>
@@ -591,6 +609,16 @@ export default function PerfilPage() {
 
         {/* Buttons */}
         <div className="grid grid-cols-2 gap-3 px-6 pb-4">
+          {!waStatus?.connected && waStatus?.state !== "connecting" && (
+            <button
+              onClick={startWhatsappConnection}
+              disabled={whatsappBusy}
+              className="col-span-2 flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-primary/90 transition-colors disabled:opacity-50"
+            >
+              <Wifi className="h-4 w-4" />
+              Conectar WhatsApp
+            </button>
+          )}
           <button
             onClick={handleWaRecriar}
             disabled={waReconnecting}
@@ -656,7 +684,7 @@ export default function PerfilPage() {
             )}
           </div>
 
-          <div className="rounded-xl border border-amber-500/30 bg-amber-50 dark:bg-amber-950/300/10 p-3 text-sm text-amber-300">
+          <div className="rounded-xl border border-amber-800/40 bg-amber-950/40 p-3 text-sm text-amber-600/70">
             <p className="flex items-start gap-2"><AlertTriangle className="mt-0.5 h-4 w-4" /> Importante: Se você tiver outras sessões do WhatsApp Web ativas, feche-as primeiro para evitar desconexões.</p>
           </div>
 
