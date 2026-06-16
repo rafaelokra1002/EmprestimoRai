@@ -80,6 +80,7 @@ interface ClientDoc {
 
 interface ClientLoanAmount {
   amount: number
+  status?: string
   client: {
     id: string
   }
@@ -213,8 +214,9 @@ export default function ClientesPage() {
 
     const list = Array.isArray(clientsData) ? clientsData : []
     const visibleClients = list.filter((client) => client.status !== "DESAPARECIDO")
+    // Valor atual = soma apenas dos empréstimos ATIVOS (na rua), não o histórico todo
     const loanAmountMap = (Array.isArray(loansData) ? loansData : []).reduce<Record<string, number>>((acc, loan: ClientLoanAmount) => {
-      if (!loan?.client?.id) return acc
+      if (!loan?.client?.id || loan.status !== "ACTIVE") return acc
       acc[loan.client.id] = (acc[loan.client.id] || 0) + loan.amount
       return acc
     }, {})

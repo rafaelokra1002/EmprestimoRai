@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import {
   Plus, Trash2, Search, ChevronDown, DollarSign, AlertTriangle,
   CheckCircle2, CreditCard, Pencil, Undo2, Copy,
-  Package, TrendingUp, ArrowDownCircle, Receipt, Landmark,
+  Package, TrendingUp, Receipt, Landmark,
 } from "lucide-react"
 import { formatCurrency, localDateStr } from "@/lib/utils"
 
@@ -245,8 +245,9 @@ export default function ContasPage() {
 
   const isFormValid = fDescription.trim().length >= 2
 
+  // Despesas não entram no caixa (ficam só na aba Despesas)
   const saldoAtualEmCaixa = caixaInicial !== null
-    ? caixaInicial - (dashboardData?.capitalOnStreet || 0) + (dashboardData?.totalReceived || 0) - stats.pagasTotal
+    ? caixaInicial - (dashboardData?.capitalOnStreet || 0) + (dashboardData?.totalReceived || 0)
     : null
 
   const caixaKpis = [
@@ -263,13 +264,6 @@ export default function ContasPage() {
       icon: DollarSign,
       iconClassName: "text-primary/40",
       iconBgClassName: "bg-primary/15",
-    },
-    {
-      title: "Saídas do Mês",
-      value: formatCurrency(stats.pagasTotal),
-      icon: ArrowDownCircle,
-      iconClassName: "text-amber-200",
-      iconBgClassName: "bg-amber-400/15",
     },
     {
       title: "Juros Recebidos",
@@ -357,10 +351,6 @@ export default function ContasPage() {
                       <div className="flex items-center justify-between gap-3">
                         <span className="text-gray-500 dark:text-zinc-400">Entradas (parcelas pagas)</span>
                         <span className="font-semibold text-gray-900 dark:text-zinc-100 tabular-nums">+ {formatCurrency(dashboardData?.totalReceived || 0)}</span>
-                      </div>
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="text-gray-500 dark:text-zinc-400">Saídas (despesas do mês)</span>
-                        <span className="font-semibold text-red-600 dark:text-red-400 tabular-nums">− {formatCurrency(stats.pagasTotal)}</span>
                       </div>
                       <div className="flex items-center justify-between gap-3 border-t border-gray-200 pt-3 dark:border-zinc-800">
                         <span className="font-semibold text-gray-900 dark:text-zinc-100">Saldo</span>

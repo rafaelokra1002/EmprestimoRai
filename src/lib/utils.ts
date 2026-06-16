@@ -27,6 +27,68 @@ export function formatDate(date: Date | string): string {
   return new Intl.DateTimeFormat("pt-BR").format(new Date(date))
 }
 
+// Monta o texto do relatório do empréstimo enviado ao cliente (WhatsApp),
+// incluindo o que já foi pago (parcelas/juros) quando houver.
+export function buildLoanReportMessage(
+  loan: {
+    amount: number
+    interestRate: number
+    totalAmount: number
+    installmentCount: number
+    firstInstallmentDate?: string
+    installments: { number: number; dueDate: string | Date; status: string; amount: number; paidAmount: number }[]
+    payments: { amount: number; date: string | Date; notes?: string | null }[]
+  },
+  clientName: string,
+  remaining: number
+): string {
+  const insts = [...(loan.installments || [])].sort((a, b) => a.number - b.number)
+  const paid = (loan.payments || []).reduce((s, p) => s + Number(p.amount || 0), 0)
+  const isParcelado = loan.installmentCount > 1
+
+  const lines: string[] = ["📋 *Relatório do Empréstimo*", ""]
+  lines.push(`👤 Cliente: ${clientName}`)
+  lines.push(`💰 Valor emprestado: ${formatCurrency(loan.amount)}`)
+  lines.push(`📊 Juros: ${loan.interestRate}%`)
+  if (isParcelado) {
+    const instValue = insts[0]?.amount ?? loan.totalAmount / loan.installmentCount
+    lines.push(`📦 Parcelas: ${loan.installmentCount}x ${formatCurrency(instValue)}`)
+  } else {
+    const dueDate = insts[0]?.dueDate || loan.firstInstallmentDate
+    if (dueDate) lines.push(`📅 Vencimento: ${formatDate(dueDate)}`)
+  }
+  lines.push(`👉 Total a pagar: ${formatCurrency(loan.totalAmount)}`)
+
+  if (paid > 0) {
+    lines.push("", `💵 Já pago: ${formatCurrency(paid)}`)
+    lines.push(`📌 Saldo restante: ${formatCurrency(Math.max(0, remaining))}`)
+  }
+
+  if (isParcelado) {
+    lines.push("", "*Situação das parcelas:*")
+    for (const i of insts) {
+      const isPaid = i.status === "PAID"
+      const isPartial = !isPaid && Number(i.paidAmount || 0) > 0
+      const icon = isPaid ? "✅" : isPartial ? "🟡" : "⏳"
+      const statusTxt = isPaid
+        ? "Paga"
+        : isPartial
+          ? `Parcial (pago ${formatCurrency(Number(i.paidAmount || 0))})`
+          : "Pendente"
+      lines.push(`${icon} ${i.number}/${loan.installmentCount} • ${formatDate(i.dueDate)} • ${formatCurrency(i.amount)} — ${statusTxt}`)
+    }
+  } else {
+    const interestPaid = (loan.payments || [])
+      .filter((p) => (p.notes || "").toLowerCase().includes("juros"))
+      .reduce((s, p) => s + Number(p.amount || 0), 0)
+    if (interestPaid > 0) {
+      lines.push("", `💳 Juros já pago: ${formatCurrency(interestPaid)}`)
+    }
+  }
+
+  return lines.join("\n")
+}
+
 export function getInitials(name: string): string {
   return name
     .split(" ")

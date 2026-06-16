@@ -9,7 +9,6 @@ import {
   FileText,
   DollarSign,
   Users,
-  FileSpreadsheet,
   Landmark,
   Lightbulb,
   UserX,
@@ -48,31 +47,9 @@ const backupSections = [
 ] as const
 
 export default function BackupPage() {
-  const [loadingXlsx, setLoadingXlsx] = useState(false)
   const [loadingPdf, setLoadingPdf] = useState(false)
   const [loadingZip, setLoadingZip] = useState(false)
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
-
-  const handleBackup = async (key: string, label: string) => {
-    setLoadingXlsx(true)
-    setMessage(null)
-    try {
-      const res = await fetch(`/api/backup?type=${encodeURIComponent(key)}`, { method: "POST" })
-      if (!res.ok) throw new Error("Erro ao gerar backup")
-      const blob = await res.blob()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement("a")
-      a.href = url
-      a.download = `backup-${label.toLowerCase().replace(/\s+/g, "-")}-${localDateStr()}.xlsx`
-      a.click()
-      URL.revokeObjectURL(url)
-      setMessage({ type: "success", text: `Backup Excel de ${label} gerado e baixado com sucesso!` })
-    } catch (err: any) {
-      setMessage({ type: "error", text: err.message || "Erro ao gerar backup" })
-    } finally {
-      setLoadingXlsx(false)
-    }
-  }
 
   const handleBackupZip = async (type: "clients" | "desaparecido" = "clients") => {
     setLoadingZip(true)
@@ -129,7 +106,7 @@ export default function BackupPage() {
           <Download className="h-6 w-6 text-primary" />
         </div>
         <h1 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-zinc-100">Backup de Dados</h1>
-        <p className="mt-2 text-lg text-gray-500 dark:text-zinc-400">Exporte seus dados em CSV ou PDF para manter um backup seguro.</p>
+        <p className="mt-2 text-lg text-gray-500 dark:text-zinc-400">Exporte seus dados em PDF para manter um backup seguro.</p>
       </div>
 
       {message && (
@@ -161,16 +138,7 @@ export default function BackupPage() {
                 </div>
               </div>
 
-              <div className={`mt-3 grid gap-2 ${section.key === "clients" || section.key === "desaparecido" ? "grid-cols-3" : "grid-cols-2"}`}>
-                <button
-                  type="button"
-                  onClick={() => handleBackup(section.key, section.title)}
-                  disabled={loadingXlsx}
-                  className="flex items-center justify-center gap-1.5 rounded-xl bg-primary/50 py-2 text-xs font-semibold text-white transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-70"
-                >
-                  <FileSpreadsheet className="h-3.5 w-3.5" />
-                  {loadingXlsx ? "..." : "CSV"}
-                </button>
+              <div className={`mt-3 grid gap-2 ${section.key === "clients" || section.key === "desaparecido" ? "grid-cols-2" : "grid-cols-1"}`}>
                 <button
                   type="button"
                   onClick={() => handleBackupPdf(section.key, section.title)}
@@ -203,7 +171,7 @@ export default function BackupPage() {
           <div>
             <p className="text-sm font-medium text-yellow-800 dark:text-yellow-400">Dica</p>
             <p className="text-sm text-yellow-700 dark:text-yellow-500 mt-1">
-              Use o formato CSV para abrir no Excel ou Google Sheets. O PDF e para visualizacao e impressao.
+              Use o PDF para visualizacao e impressao dos seus dados.
             </p>
           </div>
         </div>

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { formatCurrency, formatDate, localDateStr } from "@/lib/utils"
-import { getOverdueDailyAmountBRL, buildLoanData } from "@/lib/loan-logic"
+import { getOverdueDailyAmountBRL, buildLoanData, calculateTotalAmountWithLateFee } from "@/lib/loan-logic"
 import { useTheme } from "@/lib/theme-provider"
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
@@ -182,6 +182,32 @@ export default function RelatorioEmprestimosPage() {
     return l.amount * (l.installmentCount - paidInsts) / l.installmentCount
   }
 
+  // Juros extras de ciclos para MENSAL (1 parcela) em atraso > 30 dias
+  const getExtraCyclesInterest = (l: Loan) => {
+    if (l.installmentCount !== 1) return 0
+    const overdueInst = l.installments.find((i: any) => i.status !== "PAID")
+    if (!overdueInst) return 0
+    const now = new Date(); now.setHours(0, 0, 0, 0)
+    const due = new Date(overdueInst.dueDate); due.setHours(0, 0, 0, 0)
+    if (due >= now) return 0
+    const daysOver = Math.floor((now.getTime() - due.getTime()) / 86400000)
+    const extraCycles = Math.floor(daysOver / 30)
+    return extraCycles * (l.profit / Math.max(1, l.installmentCount))
+  }
+
+  // Saldo devedor (total a receber − pago + multas de atraso), igual às outras telas
+  const getRemaining = (l: Loan) => {
+    const base = calculateTotalAmountWithLateFee(buildLoanData({
+      amount: l.amount, interestRate: l.interestRate, interestType: l.interestType,
+      totalAmount: l.totalAmount, dailyInterest: l.dailyInterest,
+      dailyInterestAmount: Number((l as any).dailyInterestAmount || 0),
+      dueDay: (l as any).dueDay ?? undefined,
+      modality: l.modality, firstInstallmentDate: l.firstInstallmentDate,
+      installments: l.installments, payments: l.payments,
+    }))
+    return base + getExtraCyclesInterest(l)
+  }
+
   const modalityStats = useMemo(() => {
     const allActive = loans.filter(l => l.status === "ACTIVE")
     const calc = (subset: Loan[]) => ({
@@ -195,8 +221,6 @@ export default function RelatorioEmprestimosPage() {
       monthly: calc(allActive.filter(l => l.installmentCount === 1)),
     }
   }, [loans])
-
-  const filteredActiveLoans = useMemo(() => filtered.filter(l => l.status === "ACTIVE"), [filtered])
 
   const filteredExpenses = useMemo(() => {
     return expenses.filter((e) => {
@@ -215,13 +239,11 @@ export default function RelatorioEmprestimosPage() {
   }, [loans, paymentFilter])
 
   // ===== CALCULATIONS =====
+  // Respeita o período do filtro: usa os ativos com VENCIMENTO dentro do período
+  // (mesma base dos demais cards do relatório), não todos os ativos.
   const capitalNaRua = useMemo(() => {
-    const base = loans.filter(l => l.status === "ACTIVE")
-    const typeFiltered = paymentFilter === "monthly" ? base.filter(l => l.installmentCount === 1)
-      : paymentFilter === "installment" ? base.filter(l => l.installmentCount > 1)
-      : base
-    return typeFiltered.reduce((sum, l) => sum + remainingCapital(l), 0)
-  }, [loans, paymentFilter])
+    return activeLoans.reduce((sum, l) => sum + remainingCapital(l), 0)
+  }, [activeLoans])
 
   const emprestimosNoPeriodo = useMemo(() => {
     return newLoansInPeriod.reduce((sum, l) => sum + l.amount, 0)
@@ -340,12 +362,14 @@ export default function RelatorioEmprestimosPage() {
     return paymentFilteredLoans.reduce((sum, l) => sum + l.payments.reduce((s: number, p: any) => s + p.amount, 0), 0)
   }, [paymentFilteredLoans])
 
+  // Saldo restante: saldo devedor (com multas) de TODOS os ativos, ignorando o período
   const faltaReceber = useMemo(() => {
-    return activeLoans.reduce((sum, l) => {
-      const paid = l.payments.reduce((s: number, p: any) => s + p.amount, 0)
-      return sum + Math.max(0, l.totalAmount - paid)
-    }, 0)
-  }, [activeLoans])
+    const base = loans.filter(l => l.status === "ACTIVE")
+    const typeFiltered = paymentFilter === "monthly" ? base.filter(l => l.installmentCount === 1)
+      : paymentFilter === "installment" ? base.filter(l => l.installmentCount > 1)
+      : base
+    return typeFiltered.reduce((sum, l) => sum + getRemaining(l), 0)
+  }, [loans, paymentFilter])
 
   const emAtraso = useMemo(() => {
     const now = new Date()
@@ -428,8 +452,9 @@ export default function RelatorioEmprestimosPage() {
   const lucroRealizado = jurosRecebidos + jurosMultaRecebidos + deletedLoansLucro
 
   const entradas = pagamentosNoPeriodo
-  const resultadoAtividade = entradas + caixaExtra - emprestimosNoPeriodo - contasPagar
-  const resultadoPeriodo = caixaInicial + resultadoAtividade  // caixa - emprestado + recebido - despesas
+  // Despesas NÃO entram em nenhum cálculo (ficam só na aba Despesas)
+  const resultadoAtividade = entradas + caixaExtra - emprestimosNoPeriodo
+  const resultadoPeriodo = caixaInicial + resultadoAtividade  // caixa inicial + recebido - emprestado
 
   // Contratos ativos table
   const contratosAtivos = useMemo(() => {
@@ -765,7 +790,7 @@ export default function RelatorioEmprestimosPage() {
               <span className="text-xs text-gray-500 dark:text-zinc-400">Capital na Rua</span>
             </div>
             <p className="text-2xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(capitalNaRua)}</p>
-            <p className="text-xs text-gray-400 dark:text-zinc-500">{filteredActiveLoans.length} contratos no período</p>
+            <p className="text-xs text-gray-400 dark:text-zinc-500">{activeLoans.length} contratos no período</p>
           </CardContent>
         </Card>
 
@@ -798,7 +823,7 @@ export default function RelatorioEmprestimosPage() {
               <span className="text-xs text-gray-500 dark:text-zinc-400">Falta Receber</span>
             </div>
             <p className="text-2xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(faltaReceber)}</p>
-            <p className="text-xs text-gray-400 dark:text-zinc-500">No período</p>
+            <p className="text-xs text-gray-400 dark:text-zinc-500">Saldo restante</p>
           </CardContent>
         </Card>
 

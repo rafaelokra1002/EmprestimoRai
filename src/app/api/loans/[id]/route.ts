@@ -98,9 +98,13 @@ export async function PUT(
         return NextResponse.json({ error: "Empréstimo não encontrado" }, { status: 404 })
       }
 
-      const hasPayments = existingLoan.payments.length > 0 || existingLoan.installments.some((i) => i.paidAmount > 0)
-      if (hasPayments) {
-        // Allow metadata + date updates even when loan has payments
+      // Só bloqueia a edição completa (recalc de valor/juros) quando o PRINCIPAL já foi
+      // amortizado (alguma parcela com paidAmount > 0). Empréstimo "Só Juros" tem pagamento
+      // de juros mas paidAmount = 0 nas parcelas → segue para a edição completa abaixo,
+      // recalculando valor/juros e preservando os vencimentos atuais.
+      const hasPrincipalPaid = existingLoan.installments.some((i) => i.paidAmount > 0)
+      if (hasPrincipalPaid) {
+        // Allow metadata + date updates even when loan has principal paid
         const allowedUpdate: Record<string, any> = {}
         if (Array.isArray(body.tags)) {
           allowedUpdate.tags = body.tags.filter((t: unknown) => typeof t === "string" && (t as string).trim())
@@ -173,6 +177,13 @@ export async function PUT(
           data.skipSunday,
           data.skipHolidays
         )
+      }
+
+      // Só Juros (tem pagamento de juros, principal não amortizado): mantém os vencimentos
+      // já renovados em vez de voltar ao cronograma original.
+      if (existingLoan.payments.length > 0) {
+        const existingDueByNumber = new Map(existingLoan.installments.map((i) => [i.number, i.dueDate]))
+        installmentDates = installmentDates.map((d, idx) => existingDueByNumber.get(idx + 1) ?? d)
       }
 
       await prisma.$transaction(async (tx) => {

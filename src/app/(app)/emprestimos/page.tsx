@@ -11,13 +11,13 @@ import { Avatar } from "@/components/avatar"
 import {
   Plus, Trash2, DollarSign, Search, Clock, Pencil, FolderOpen,
   LayoutGrid, List, Filter, ChevronDown, Receipt, Calendar, Eye, FileText, RotateCcw,
-  Copy, ExternalLink, Download, CheckCircle2, User, Lock, TrendingUp, ArrowRight, MoreHorizontal, Check, Tag, X,
+  ExternalLink, Download, CheckCircle2, User, Lock, TrendingUp, ArrowRight, MoreHorizontal, Check, Tag, X,
   MessageCircle, Send, Loader2
 } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import { LoanRenegotiationContent } from "./_components/loan-renegotiation-content"
 import { ComprovanteContent } from "./_components/comprovante-content"
-import { formatCurrency, formatDate, calculateLoan, generateInstallmentDates, resolveDailyInterestAmount, localDateStr } from "@/lib/utils"
+import { formatCurrency, formatDate, calculateLoan, generateInstallmentDates, resolveDailyInterestAmount, localDateStr, buildLoanReportMessage } from "@/lib/utils"
 import { buildLoanData, calculateEffectivePaidAmountFromPayments, calculateOverdueInterest, calculateRealizedProfitFromPayments, calculateTotalAmountWithLateFee, getDaysOverdue, getNextDueDate, getOverdueDailyAmountBRL, getPaidExcludingInterest } from "@/lib/loan-logic"
 
 interface Loan {
@@ -519,8 +519,7 @@ export default function EmprestimosPage() {
     if (pendingInst) {
       setSelectedInstallmentIds([pendingInst.id])
       const base = getInstallmentPayableAmount(loan, pendingInst)
-      const prop = loan.installmentCount === 1 ? getInstallmentProporcional(loan, pendingInst) : 0
-      setPayAmount(base + prop)
+      setPayAmount(base)
     }
     // Pre-fill next month due date
     const nextMonth = new Date()
@@ -715,16 +714,6 @@ export default function EmprestimosPage() {
   const getInstallmentOverdueCharge = (loan: Loan, installment: Loan["installments"][number]) => {
     const d = getInstallmentOverdueDetails(loan, installment)
     return d.juros + d.multa
-  }
-
-  const getInstallmentProporcional = (loan: Loan, installment: Loan["installments"][number]) => {
-    if (installment.status === "PAID") return 0
-    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0)
-    const dueStart = new Date(installment.dueDate); dueStart.setHours(0, 0, 0, 0)
-    if (dueStart >= todayStart) return 0
-    const daysOver = Math.floor((todayStart.getTime() - dueStart.getTime()) / 86400000)
-    const interestPerInst = loan.profit / loan.installmentCount
-    return Math.round((interestPerInst / 30) * daysOver * 100) / 100
   }
 
   const getInstallmentPayableAmount = (loan: Loan, installment: Loan["installments"][number]) => {
@@ -2158,13 +2147,25 @@ export default function EmprestimosPage() {
                           </Button>
                       </div>
                     )}
-                    <div className="grid w-full min-w-0 grid-cols-[minmax(0,2.2fr)_minmax(0,2.8fr)_repeat(4,minmax(0,1fr))] gap-1.5 pb-1">
+                    <div className="grid w-full min-w-0 gap-1.5 pb-1 grid-cols-[minmax(0,2fr)_minmax(0,2fr)_repeat(5,minmax(0,1fr))]">
                       <Button size="sm" onClick={() => openPaymentDialog(loan)} className="min-w-0 h-10 px-2 text-xs border border-primary/15 bg-primary/10 font-medium text-primary shadow-none transition-colors hover:bg-primary/15 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20 sm:text-sm">
                         <Receipt className="mr-1 h-4 w-4 shrink-0" /> <span className="truncate">Pagar</span>
                       </Button>
                       <Button size="sm" onClick={() => openInterestRenegotiateDialog(loan)} className="min-w-0 h-10 px-2 text-xs border border-primary/15 bg-primary/10 font-medium text-primary shadow-none transition-colors hover:bg-primary/15 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20 sm:text-sm">
                         <DollarSign className="mr-1 h-4 w-4 shrink-0" /> <span className="truncate">Pagar Juros</span>
                       </Button>
+                      <button
+                        onClick={() => {
+                          const phone = (getClientPhone(loan) || "").replace(/\D/g, "")
+                          if (!phone) { alert("Cliente sem telefone cadastrado"); return }
+                          const text = buildLoanReportMessage(loan, loan.client.name, getRemaining(loan))
+                          window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank")
+                        }}
+                        className="flex min-w-0 w-full items-center justify-center rounded-xl bg-green-50 p-2 text-green-700 transition-colors hover:bg-green-100 dark:bg-green-950/30 dark:text-green-400 dark:hover:bg-green-900/40"
+                        title="Enviar relatório ao cliente"
+                      >
+                        <Send className="h-4 w-4" />
+                      </button>
                       <button className="flex min-w-0 w-full items-center justify-center rounded-2xl border border-violet-100 bg-violet-50/80 p-2 text-primary shadow-sm transition-colors hover:bg-violet-100 dark:border-violet-900/40 dark:bg-violet-950/30 dark:text-primary dark:hover:bg-violet-900/40" onClick={() => router.push(`/emprestimos/${loan.id}`)} title="Histórico">
                         <RotateCcw className="h-4 w-4" />
                       </button>
@@ -2880,9 +2881,8 @@ export default function EmprestimosPage() {
             .filter((i: any) => i.status !== "PAID")
             .reduce((s: number, i: any) => s + Math.max(0, i.amount - (i.paidAmount || 0)), 0)
 
-          // Cálculo proporcional
+          // Juros por ciclos completos da renovação Só Juros (proporcional por dias removido)
           let proporcional: number
-          let proporcionalDays: number
           let proporcionalCycles: number
           let displayBase: number
 
@@ -2893,17 +2893,11 @@ export default function EmprestimosPage() {
             const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0)
             const daysFromCycle = Math.max(0, Math.floor((todayStart.getTime() - cycleStart.getTime()) / 86400000))
             proporcionalCycles = Math.floor(daysFromCycle / 30)
-            proporcionalDays = daysFromCycle % 30
-            proporcional = Math.round(
-              (proporcionalCycles * interestPerInst + proporcionalDays * interestPerInst / 30) * 100
-            ) / 100
+            proporcional = Math.round(proporcionalCycles * interestPerInst * 100) / 100
             displayBase = Math.max(0, paymentDialog.amount - paidPrincipal)
           } else {
             proporcionalCycles = 0
-            proporcionalDays = overdueDays
-            proporcional = hasOverdueInst
-              ? Math.round((interestPerInst / 30) * overdueDays * 100) / 100
-              : 0
+            proporcional = 0
             displayBase = unpaidBase
           }
 
@@ -2992,10 +2986,7 @@ export default function EmprestimosPage() {
                       todayDate.setHours(0, 0, 0, 0)
                       const instOverdue = instDueDate.getTime() < todayDate.getTime()
                       const payableAmount = getInstallmentPayableAmount(paymentDialog, inst)
-                      const instProporcional = (paymentDialog.installmentCount === 1 && instOverdue)
-                        ? getInstallmentProporcional(paymentDialog, inst)
-                        : 0
-                      const displayPayable = payableAmount + instProporcional
+                      const displayPayable = payableAmount
                       const baseAmount = Math.max(0, inst.amount - (inst.paidAmount || 0))
                       const overdueDetails = getInstallmentOverdueDetails(paymentDialog, inst)
                       return (
@@ -3014,10 +3005,7 @@ export default function EmprestimosPage() {
                               .filter((i: any) => newIds.includes(i.id))
                               .reduce((sum: number, installment: any) => {
                                 const base = getInstallmentPayableAmount(paymentDialog, installment)
-                                const prop = (paymentDialog.installmentCount === 1 && new Date(installment.dueDate) < new Date())
-                                  ? getInstallmentProporcional(paymentDialog, installment)
-                                  : 0
-                                return sum + base + prop
+                                return sum + base
                               }, 0)
                             setPayAmount(total)
                           }}
@@ -3055,9 +3043,6 @@ export default function EmprestimosPage() {
                               )}
                               {instOverdue && overdueDetails.multa > 0 && (
                                 <p className="mt-0.5 text-xs font-medium text-red-500">+{formatCurrency(overdueDetails.multa)} multa</p>
-                              )}
-                              {instProporcional > 0 && (
-                                <p className={`mt-0.5 text-xs font-medium ${isSelected ? "text-white/80" : "text-blue-500 dark:text-blue-400"}`}>+{formatCurrency(instProporcional)} proporcional</p>
                               )}
                               <p className={`mt-0.5 text-[1.05rem] font-semibold leading-none ${
                                 isSelected
@@ -3238,18 +3223,6 @@ export default function EmprestimosPage() {
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-blue-600 dark:text-blue-400">📊 Juros ({proporcionalCycles} ciclo{proporcionalCycles !== 1 ? "s" : ""}):</span>
                       <span className="font-bold text-blue-600 dark:text-blue-400">+ {formatCurrency(proporcionalCycles * interestPerInst)}</span>
-                    </div>
-                  )}
-                  {proporcional > 0 && proporcionalDays > 0 && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-blue-600 dark:text-blue-400">📊 Proporcional ({proporcionalDays}d × {formatCurrency(Math.round(interestPerInst / 30 * 100) / 100)}/d):</span>
-                      <span className="font-bold text-blue-600 dark:text-blue-400">+ {formatCurrency(Math.round(proporcionalDays * interestPerInst / 30 * 100) / 100)}</span>
-                    </div>
-                  )}
-                  {!hasSoJuros && proporcional > 0 && proporcionalDays === 0 && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-blue-600 dark:text-blue-400">📊 Proporcional ({overdueDays}d × {formatCurrency(Math.round(interestPerInst / 30 * 100) / 100)}/d):</span>
-                      <span className="font-bold text-blue-600 dark:text-blue-400">+ {formatCurrency(proporcional)}</span>
                     </div>
                   )}
                   {overdueCharge > 0 && (
@@ -3970,26 +3943,11 @@ export default function EmprestimosPage() {
                   ? `\n\n⚠️ *Em caso de Atraso:*\n${formatCurrency(createdLoanInfo.dailyLateFee)} por dia${createdLoanInfo.penaltyFee > 0 ? ` + multa ${formatCurrency(createdLoanInfo.penaltyFee)}` : ""}\n\n🔄 *Opção de renovação*\nPague os juros (${formatCurrency(createdLoanInfo.profit)}) e ganhe +${modalityLabel}`
                   : ""
                 const text = `📋 *Relatório de Pagamento*\n\n📅 Vencimento: ${new Date(createdLoanInfo.firstInstallmentDate + "T12:00:00").toLocaleDateString("pt-BR")}\n\n💰 Valor liberado: ${formatCurrency(createdLoanInfo.amount)}\n📊 Juros: ${createdLoanInfo.interestRate}%\n👉 Total a pagar: ${formatCurrency(createdLoanInfo.totalAmount)}${lateSection}`
-                navigator.clipboard.writeText(text)
-                alert("Texto copiado!")
-              }}
-            >
-              <Copy className="h-4 w-4" /> Copiar Texto
-            </Button>
-            <Button
-              className="w-full gap-2 bg-amber-500 hover:bg-amber-600 text-white"
-              onClick={() => {
-                if (!createdLoanInfo) return
-                const modalityLabel = createdLoanInfo.modality === "DAILY" ? "1 dia" : createdLoanInfo.modality === "WEEKLY" ? "7 dias" : createdLoanInfo.modality === "BIWEEKLY" ? "15 dias" : "30 dias"
-                const lateSection = createdLoanInfo.dailyLateFee > 0 && createdLoanInfo.installmentCount === 1
-                  ? `\n\n⚠️ *Em caso de Atraso:*\n${formatCurrency(createdLoanInfo.dailyLateFee)} por dia${createdLoanInfo.penaltyFee > 0 ? ` + multa ${formatCurrency(createdLoanInfo.penaltyFee)}` : ""}\n\n🔄 *Opção de renovação*\nPague os juros (${formatCurrency(createdLoanInfo.profit)}) e ganhe +${modalityLabel}`
-                  : ""
-                const text = `📋 *Relatório de Pagamento*\n\n📅 Vencimento: ${new Date(createdLoanInfo.firstInstallmentDate + "T12:00:00").toLocaleDateString("pt-BR")}\n\n💰 Valor liberado: ${formatCurrency(createdLoanInfo.amount)}\n📊 Juros: ${createdLoanInfo.interestRate}%\n👉 Total a pagar: ${formatCurrency(createdLoanInfo.totalAmount)}${lateSection}`
                 const phone = createdLoanInfo.clientPhone?.replace(/\D/g, "") || ""
                 window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank")
               }}
             >
-              <ExternalLink className="h-4 w-4" /> Enviar via WhatsApp
+              <ExternalLink className="h-4 w-4" /> Enviar para cliente
             </Button>
             <Button
               variant="outline"

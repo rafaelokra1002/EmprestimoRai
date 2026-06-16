@@ -12,7 +12,7 @@ import { ArrowLeft, Calendar, Check, CheckCircle2, Clock, Copy, DollarSign, Down
 import { Textarea } from "@/components/ui/textarea"
 import { LoanRenegotiationContent } from "../../_components/loan-renegotiation-content"
 import { ComprovanteContent } from "../../_components/comprovante-content"
-import { formatCurrency, formatDate, localDateStr } from "@/lib/utils"
+import { formatCurrency, formatDate, localDateStr, buildLoanReportMessage } from "@/lib/utils"
 import { buildLoanData, calculateEffectivePaidAmountFromPayments, calculateRealizedProfitFromPayments, calculateTotalAmountWithLateFee, calculateOverdueInterest, getDaysOverdue, getNextDueDate as getNextDueDateFn, getOverdueDailyAmountBRL, getPaidExcludingInterest } from "@/lib/loan-logic"
 
 interface Loan {
@@ -1163,13 +1163,25 @@ export default function ClienteEmprestimosPage() {
 
                 {/* Ações */}
                 <div className="px-4 pt-3 pb-4 mt-2 border-t border-gray-100 dark:border-zinc-800 space-y-3">
-                  <div className="grid w-full min-w-0 grid-cols-[minmax(0,2.2fr)_minmax(0,2.8fr)_repeat(4,minmax(0,1fr))] gap-1.5 pb-1">
+                  <div className="grid w-full min-w-0 gap-1.5 pb-1 grid-cols-[minmax(0,2fr)_minmax(0,2fr)_repeat(5,minmax(0,1fr))]">
                     <Button size="sm" onClick={() => openPaymentDialog(loan)} className="min-w-0 h-10 px-2 text-xs border border-primary/15 bg-primary/10 font-medium text-primary shadow-none transition-colors hover:bg-primary/15 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20 sm:text-sm">
                       <Receipt className="mr-1 h-4 w-4 shrink-0" /> <span className="truncate">Pagar</span>
                     </Button>
                     <Button size="sm" onClick={() => openInterestRenegotiateDialog(loan)} className="min-w-0 h-10 px-2 text-xs border border-primary/15 bg-primary/10 font-medium text-primary shadow-none transition-colors hover:bg-primary/15 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20 sm:text-sm">
                       <DollarSign className="mr-1 h-4 w-4 shrink-0" /> <span className="truncate">Pagar Juros</span>
                     </Button>
+                    <button
+                      onClick={() => {
+                        const phone = (clientPhone || "").replace(/\D/g, "")
+                        if (!phone) { alert("Cliente sem telefone cadastrado"); return }
+                        const text = buildLoanReportMessage(loan, clientName, remaining)
+                        window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank")
+                      }}
+                      className="flex min-w-0 w-full items-center justify-center rounded-xl bg-green-50 p-2 text-green-700 transition-colors hover:bg-green-100 dark:bg-green-950/30 dark:text-green-400 dark:hover:bg-green-900/40"
+                      title="Enviar relatório ao cliente"
+                    >
+                      <Send className="h-4 w-4" />
+                    </button>
                     <button className="flex min-w-0 w-full items-center justify-center rounded-2xl border border-violet-100 bg-violet-50/80 p-2 text-primary shadow-sm transition-colors hover:bg-violet-100 dark:border-violet-900/40 dark:bg-violet-950/30 dark:text-primary dark:hover:bg-violet-900/40" onClick={() => router.push(`/emprestimos/${loan.id}`)} title="Histórico">
                       <RotateCcw className="h-4 w-4" />
                     </button>

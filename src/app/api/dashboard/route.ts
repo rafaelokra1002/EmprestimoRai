@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
+import { prisma, withRetry } from "@/lib/prisma"
 import { buildLoanData, getOverdueDailyAmountBRL } from "@/lib/loan-logic"
+
+// Dashboard reflete dados financeiros em tempo real: nunca servir resposta em cache
+export const dynamic = "force-dynamic"
+export const revalidate = 0
 
 export async function GET(request: Request) {
   try {
@@ -46,7 +50,7 @@ export async function GET(request: Request) {
     const thirtyDaysAgo = new Date(startOfToday)
     thirtyDaysAgo.setUTCDate(thirtyDaysAgo.getUTCDate() - 30)
 
-    const [loansResult, overdueCountResult, overdueAmountResult, dueTodayCountResult, activeClientsResult, inactiveClientsResult, totalClientsResult, salesResult, vehiclesResult, monthlyExpensesResult, allLoansForInterestResult, totalPaymentsResult, allPaymentsMonthResult] = await Promise.all([
+    const [loansResult, overdueCountResult, overdueAmountResult, dueTodayCountResult, activeClientsResult, inactiveClientsResult, totalClientsResult, salesResult, vehiclesResult, monthlyExpensesResult, allLoansForInterestResult, totalPaymentsResult, allPaymentsMonthResult] = await withRetry(() => Promise.all([
       prisma.loan.findMany({
         where: { userId, status: "ACTIVE", deleted: false, client: { status: { not: "DESAPARECIDO" } } },
         include: { installments: true, payments: true, client: { select: { name: true } } },
@@ -90,18 +94,24 @@ export async function GET(request: Request) {
       }),
       prisma.loan.findMany({
         where: { userId, deleted: false, client: { status: { not: "DESAPARECIDO" } } },
-        select: { totalAmount: true, profit: true, payments: { select: { amount: true, notes: true } }, installments: { select: { paidAmount: true } } },
+        select: { amount: true, totalAmount: true, profit: true, status: true, createdAt: true, contractDate: true, payments: { select: { amount: true, notes: true } }, installments: { select: { paidAmount: true } } },
       }),
       prisma.payment.aggregate({
         where: { loan: { userId, deleted: false, client: { status: { not: "DESAPARECIDO" } } } },
         _sum: { amount: true },
       }),
-      // Inclui pagamentos de empréstimos excluídos para não perder valores já recebidos
+      // Inclui pagamentos de empréstimos excluídos; sempre usa o mês atual (ou selecionado), ignorando showAll
       prisma.payment.aggregate({
-        where: { loan: { userId }, date: { gte: startOfMonth, lte: endOfMonth } },
+        where: {
+          loan: { userId },
+          date: {
+            gte: new Date(filterYear, filterMonth, 1),
+            lte: new Date(filterYear, filterMonth + 1, 0, 23, 59, 59),
+          },
+        },
         _sum: { amount: true },
       }),
-    ])
+    ]))
 
     const loans = loansResult || []
     const allLoansForInterest = allLoansForInterestResult || []
@@ -135,19 +145,26 @@ export async function GET(request: Request) {
     // Métricas do mês selecionado — inclui pagamentos de empréstimos excluídos
     const monthReceived = Number(allPaymentsMonthResult._sum.amount || 0)
 
-    const monthNewLoansCapital = loans
-      .filter(loan => {
-        const d = new Date((loan as any).contractDate || loan.createdAt)
-        return d >= startOfMonth && d <= endOfMonth
-      })
-      .reduce((acc, loan) => acc + Number(loan.amount), 0)
-
-    const monthNewLoansProfit = loans
-      .filter(loan => {
-        const d = new Date((loan as any).contractDate || loan.createdAt)
-        return d >= startOfMonth && d <= endOfMonth
-      })
-      .reduce((acc, loan) => acc + Number(loan.profit), 0)
+    // Card "Saiu (Empréstimos Concedidos)": total emprestado no mês ATUAL (ou no mês
+    // selecionado, se houver filtro), pela DATA DE CADASTRO (createdAt). Inclui empréstimos
+    // quitados (COMPLETED) — por isso usa allLoansForInterest, não loans (só ACTIVE) — para
+    // não abater quando há pagamento. Também calcula o mês anterior, para o "vs mês anterior".
+    const saiuYear = showAll ? bY : filterYear
+    const saiuMonth = showAll ? bM : filterMonth
+    const saiuMonthStart = new Date(saiuYear, saiuMonth, 1)
+    const saiuMonthEnd = new Date(saiuYear, saiuMonth + 1, 0, 23, 59, 59)
+    const saiuPrevStart = new Date(saiuYear, saiuMonth - 1, 1)
+    const saiuPrevEnd = new Date(saiuYear, saiuMonth, 0, 23, 59, 59)
+    const inRange = (loan: any, start: Date, end: Date) => {
+      const d = new Date(loan.createdAt)
+      return d >= start && d <= end
+    }
+    const loansInMonth = allLoansForInterest.filter((l: any) => inRange(l, saiuMonthStart, saiuMonthEnd))
+    const monthNewLoansCapital = loansInMonth.reduce((acc, loan: any) => acc + Number(loan.amount), 0)
+    const monthNewLoansProfit = loansInMonth.reduce((acc, loan: any) => acc + Number(loan.profit), 0)
+    const prevMonthNewLoansCapital = allLoansForInterest
+      .filter((l: any) => inRange(l, saiuPrevStart, saiuPrevEnd))
+      .reduce((acc, loan: any) => acc + Number(loan.amount), 0)
 
     const monthInstallmentsDue = loans.reduce((acc, loan) => {
       const installmentCount = loan.installments.length || 1
@@ -192,11 +209,23 @@ export async function GET(request: Request) {
       loan.installments.filter((inst) => inst.status !== "PAID" && new Date(inst.dueDate) < thirtyDaysAgo).map((inst) => Number(inst.amount || 0))
     ).reduce((s, a) => s + a, 0)
 
+    const todayDateStr = nowBR.toISOString().slice(0, 10)
     const capitalOnStreet = loans.reduce((acc, loan) => {
-      const firstInst = [...loan.installments].sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0]
-      if (!firstInst || new Date(firstInst.dueDate) > startOfToday) return acc
-      const loanPaid = loan.payments.reduce((s: number, p: any) => s + Number(p.amount || 0), 0)
-      return acc + Math.max(0, Number(loan.totalAmount || 0) - loanPaid)
+      const sortedInsts = [...loan.installments].sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+      const firstInst = sortedInsts[0]
+      // Inclui o empréstimo se a 1ª parcela vence hoje ou antes (compara só data, sem hora)
+      if (!firstInst || new Date(firstInst.dueDate).toISOString().slice(0, 10) > todayDateStr) return acc
+      const principal = Number(loan.amount || 0)
+      const instCount = loan.installments.length || 1
+      const principalPerInst = principal / instCount
+      // Usa paidAmount/status das parcelas (atualizado no ato do pagamento, não depende de loan.payments)
+      const capitalRepaid = loan.installments.reduce((s, i) => {
+        if (i.status === "PAID") return s + principalPerInst
+        const partial = Number((i as any).paidAmount || 0)
+        if (partial > 0 && Number(i.amount) > 0) return s + (partial / Number(i.amount)) * principalPerInst
+        return s
+      }, 0)
+      return acc + Math.max(0, principal - capitalRepaid)
     }, 0)
     const totalProfit = loans.reduce((acc, loan) => acc + Number(loan.profit || 0), 0)
 
@@ -388,12 +417,15 @@ export async function GET(request: Request) {
       }
     })
 
-    loans.forEach((loan) => {
+    // "Emprestado" inclui todos os empréstimos (mesmo quitados), pela data de cadastro
+    allLoansForInterest.forEach((loan: any) => {
       const idx = 5 - (currentMonthKey - monthKey(new Date(loan.createdAt)))
       if (idx >= 0 && idx < 6) {
         monthlyData[idx].emprestado += Number(loan.amount || 0)
       }
+    })
 
+    loans.forEach((loan) => {
       loan.payments.forEach((payment) => {
         const paymentIdx = 5 - (currentMonthKey - monthKey(new Date(payment.date)))
         if (paymentIdx >= 0 && paymentIdx < 6) {
@@ -527,6 +559,7 @@ export async function GET(request: Request) {
       monthReceived,
       monthNewLoansCapital,
       monthNewLoansProfit,
+      monthNewLoansCapitalPct: toPercentDelta(monthNewLoansCapital, prevMonthNewLoansCapital),
       monthInstallmentsDue,
       totalProfit,
       overdueCount,

@@ -49,6 +49,7 @@ interface DashboardData {
   monthReceived: number
   monthNewLoansCapital: number
   monthNewLoansProfit: number
+  monthNewLoansCapitalPct: number
   monthInstallmentsDue: { total: number; interest: number; capital: number }
   totalProfit: number
   overdueCount: number
@@ -155,12 +156,11 @@ export default function DashboardPage() {
   const axisColor = isDark ? "#71717a" : "#6b7280"
   const gridColor = isDark ? "#3f3f46" : "#e5e7eb"
 
-  useEffect(() => {
-    setLoading(true)
+  const fetchDashboard = () => {
     const url = filterActive
       ? `/api/dashboard?month=${selectedMonth}&year=${selectedYear}`
       : `/api/dashboard?all=true`
-    fetch(url)
+    fetch(url, { cache: "no-store" })
       .then((res) => res.json())
       .then((dashboardData) => {
         if (dashboardData && !dashboardData.error) {
@@ -169,6 +169,23 @@ export default function DashboardPage() {
       })
       .catch(console.error)
       .finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    setLoading(true)
+    fetchDashboard()
+
+    // Recarrega quando o usuário volta para esta aba (ex: após registrar pagamento)
+    const onVisible = () => { if (document.visibilityState === "visible") fetchDashboard() }
+    document.addEventListener("visibilitychange", onVisible)
+
+    // Refresh automático a cada 60 segundos
+    const interval = setInterval(fetchDashboard, 60000)
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible)
+      clearInterval(interval)
+    }
   }, [selectedMonth, selectedYear, filterActive])
 
   const selectedMonthName = new Date(selectedYear, selectedMonth, 1).toLocaleString("pt-BR", { month: "long" })
@@ -385,7 +402,7 @@ export default function DashboardPage() {
               <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Capital na Rua</p>
             </div>
             <p className="text-3xl font-bold tabular-nums tracking-tight text-orange-500">
-              {formatCurrency(data?.totalPrincipal || 0)}
+              {formatCurrency(data?.capitalOnStreet || 0)}
             </p>
             <p className="mt-1.5 text-xs text-gray-400 dark:text-zinc-500">
               capital ativo em contratos
@@ -481,7 +498,7 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        {/* Gasto Mensal */}
+        {/* Gasto Mensal — apenas informativo, não entra em nenhum cálculo */}
         <div className="rounded-xl border border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
           <div className="flex items-center gap-2 mb-2">
             <div className="rounded-xl bg-red-100 dark:bg-red-950/40 p-2">
@@ -611,7 +628,7 @@ export default function DashboardPage() {
                 {formatCurrency(data?.monthNewLoansCapital || 0)}
               </p>
               <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">total emprestado neste mês</p>
-              <Delta pct={data?.weeklySummary?.deltas?.contractsPct} />
+              <Delta pct={data?.monthNewLoansCapitalPct} />
             </div>
             {saiuBarData.length > 0 && (
               <div className="h-24 w-44 shrink-0">
