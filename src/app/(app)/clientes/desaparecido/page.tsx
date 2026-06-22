@@ -1083,7 +1083,7 @@ export default function ClientesDesaparecidosPage() {
 
                 <div className="px-4 pb-3">
                   <div className={`${remainingBg} rounded-lg px-4 py-3 text-center`}>
-                    <p className={`text-lg font-bold tabular-nums tracking-tight ${remainingColor}`}>{formatCurrency(outstandingBalance)}</p>
+                    <p className={`text-lg font-semibold tabular-nums tracking-tight ${remainingColor}`}>{formatCurrency(outstandingBalance)}</p>
                     <p className="text-[11px] text-gray-400 dark:text-zinc-500 mt-0.5">restante a receber</p>
                   </div>
                 </div>

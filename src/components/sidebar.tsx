@@ -6,9 +6,11 @@ import { signOut } from "next-auth/react"
 import { cn } from "@/lib/utils"
 import { useTheme } from "@/lib/theme-provider"
 import {
-  LayoutDashboard,
+  LayoutGrid,
+  Award,
+  DollarSign,
+  Download,
   Users,
-  Star,
   Banknote,
   FileText,
   Calendar,
@@ -31,7 +33,6 @@ import {
   CheckCircle,
   XCircle,
   MapPin,
-  HardDrive,
   GraduationCap,
 } from "lucide-react"
 import { useState } from "react"
@@ -49,16 +50,16 @@ const highlightItem = {
 }
 
 const menuItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutGrid },
   { href: "/clientes", label: "Clientes", icon: Users },
-  { href: "/score", label: "Score de Clientes", icon: Star },
-  { href: "/emprestimos", label: "Empréstimos", icon: Banknote },
-  { href: "/emprestimos/relatorio", label: "Relatório Empréstimos", icon: FileText },
+  { href: "/score", label: "Score de Clientes", icon: Award },
+  { href: "/emprestimos", label: "Empréstimos", icon: DollarSign },
+  { href: "/emprestimos/relatorio", label: "Relatório Empréstimos", icon: BarChart3 },
   { href: "/calendario", label: "Calendário de Cobranças", icon: Calendar },
   { href: "/simulador", label: "Simulador", icon: Calculator },
   { href: "/contas", label: "Caixa", icon: CreditCard },
   { href: "/despesas", label: "Despesas", icon: Receipt },
-  { href: "/backup", label: "Backup", icon: HardDrive },
+  { href: "/backup", label: "Backup", icon: Download },
   { href: "/clientes/desaparecido", label: "Desaparecido", icon: XCircle },
   { href: "/aulas", label: "Aulas", icon: GraduationCap },
   { href: "/configuracoes", label: "Configurações", icon: Settings },
@@ -76,7 +77,7 @@ export function Sidebar() {
       {/* Mobile toggle */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        style={{ background: "var(--sidebar-via)" }}
+        style={{ background: theme === "dark" ? "linear-gradient(180deg, #27272a 0%, #1c1c1f 100%)" : "var(--sidebar-via)" }}
         className="fixed top-4 left-4 z-50 rounded-md border border-white/20 p-2 text-white shadow-lg shadow-black/30 lg:hidden"
       >
         {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -96,7 +97,7 @@ export function Sidebar() {
           "fixed top-0 left-0 z-40 flex h-full w-64 flex-col overflow-y-auto transition-transform duration-300 ease-in-out",
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
-        style={{ background: "var(--sidebar-via)" }}
+        style={{ background: theme === "dark" ? "linear-gradient(180deg, #27272a 0%, #1c1c1f 100%)" : "var(--sidebar-via)" }}
       >
         <div className="flex items-center gap-2 border-b border-white/10 p-6">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/16 ring-1 ring-white/10">
@@ -125,7 +126,7 @@ export function Sidebar() {
                       : "bg-white/8 text-white/90 hover:bg-white/12"
                   )}
                 >
-                  <item.icon className="h-5 w-5 shrink-0" />
+                  <item.icon className="h-6 w-6 shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-sm leading-tight">{item.label}</p>
                     <p className={cn("text-[11px] leading-tight", isActive ? "text-white/70" : "text-violet-200")}>{item.subtitle}</p>
@@ -149,7 +150,7 @@ export function Sidebar() {
                       : "bg-amber-400/20 border-amber-400/50 text-white hover:bg-amber-400/30"
                   )}
                 >
-                  <highlightItem.icon className={cn("h-5 w-5 shrink-0", isActive ? "text-white" : "text-amber-300")} />
+                  <highlightItem.icon className={cn("h-6 w-6 shrink-0", isActive ? "text-white" : "text-amber-300")} />
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-sm leading-tight">{highlightItem.label}</p>
                     <p className={cn("text-[11px] leading-tight", isActive ? "text-white/70" : "text-violet-200")}>{highlightItem.subtitle}</p>
@@ -169,7 +170,7 @@ export function Sidebar() {
               ? pathname === "/clientes"
               : pathname === item.href || pathname?.startsWith(item.href + "/")
             const className = cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
+              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-[15px] font-normal transition-all",
               isActive
                 ? "bg-white/18 text-white shadow-sm ring-1 ring-white/10"
                 : "text-violet-50/90 hover:bg-white/10 hover:text-white"
@@ -183,7 +184,7 @@ export function Sidebar() {
                   onClick={() => setIsOpen(false)}
                   className={className}
                 >
-                  <item.icon className="h-4 w-4 shrink-0" />
+                  <item.icon className="h-6 w-6 shrink-0" />
                   <span className="truncate">{item.label}</span>
                 </a>
               )

@@ -292,19 +292,19 @@ export default function SimuladorPage() {
         <div className="grid grid-cols-4 gap-2 pt-1">
           <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
             <p className="text-[11px] text-amber-600 font-medium">Valor da Parcela</p>
-            <p className="text-lg font-bold tabular-nums tracking-tight text-primary mt-0.5">{formatCurrency(result.installmentValue)}</p>
+            <p className="text-lg font-medium tabular-nums tracking-tight text-primary mt-0.5">{formatCurrency(result.installmentValue)}</p>
           </div>
           <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
             <p className="text-[11px] text-amber-600 font-medium">Total de Juros</p>
-            <p className="text-lg font-bold tabular-nums tracking-tight text-primary mt-0.5">{formatCurrency(result.totalInterest)}</p>
+            <p className="text-lg font-medium tabular-nums tracking-tight text-primary mt-0.5">{formatCurrency(result.totalInterest)}</p>
           </div>
           <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
             <p className="text-[11px] text-amber-600 font-medium">Total a Receber</p>
-            <p className="text-lg font-bold tabular-nums tracking-tight text-primary mt-0.5">{formatCurrency(result.totalAmount)}</p>
+            <p className="text-lg font-medium tabular-nums tracking-tight text-primary mt-0.5">{formatCurrency(result.totalAmount)}</p>
           </div>
           <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
             <p className="text-[11px] text-amber-600 font-medium">Taxa Efetiva Total</p>
-            <p className="text-lg font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100 mt-0.5">{result.effectiveRate.toFixed(1)}%</p>
+            <p className="text-lg font-medium tabular-nums tracking-tight text-gray-900 dark:text-zinc-100 mt-0.5">{result.effectiveRate.toFixed(1)}%</p>
           </div>
         </div>
 
@@ -473,7 +473,7 @@ export default function SimuladorPage() {
                   <span className="text-xs text-gray-400 dark:text-zinc-500">/{installmentCount}</span>
                 </div>
                 <span className="text-xs text-gray-700 dark:text-zinc-300">{formatDateBR(inst.dueDate)}</span>
-                <span className="text-xs font-semibold text-primary text-right">
+                <span className="text-xs font-medium text-primary text-right">
                   {formatCurrency(inst.amount)}
                 </span>
               </div>

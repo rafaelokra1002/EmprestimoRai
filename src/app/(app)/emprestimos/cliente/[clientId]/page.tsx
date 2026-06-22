@@ -1068,19 +1068,19 @@ export default function ClienteEmprestimosPage() {
                 <div className="mx-4 grid grid-cols-2 gap-px bg-gray-100 dark:bg-zinc-800 rounded-lg overflow-hidden border border-gray-100 dark:border-zinc-800">
                   <div className={`${cellBg} px-3 py-2.5`}>
                     <p className="text-[11px] text-gray-400 dark:text-zinc-500">Emprestado</p>
-                    <p className="text-sm font-semibold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(loan.amount)}</p>
+                    <p className="text-sm font-bold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(loan.amount)}</p>
                   </div>
                   <div className={`${cellBg} px-3 py-2.5 text-right`}>
                     <p className="text-[11px] text-gray-400 dark:text-zinc-500">Total a Receber</p>
-                    <p className="text-sm font-semibold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(currentTotalReceivable)}</p>
+                    <p className="text-sm font-bold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(currentTotalReceivable)}</p>
                   </div>
                   <div className={`${cellBg} px-3 py-2.5`}>
                     <p className="text-[11px] text-gray-400 dark:text-zinc-500 flex items-center gap-1"><Lock className="h-3 w-3" /> Lucro Previsto</p>
-                    <p className="text-sm font-semibold tabular-nums text-primary dark:text-primary">{formatCurrency(loan.profit)}</p>
+                    <p className="text-sm font-bold tabular-nums text-primary dark:text-primary">{formatCurrency(loan.profit)}</p>
                   </div>
                   <div className={`${cellBg} px-3 py-2.5 text-right`}>
                     <p className="text-[11px] text-gray-400 dark:text-zinc-500 flex items-center gap-1 justify-end"><Check className="h-3 w-3" /> Lucro Realizado</p>
-                    <p className="text-sm font-semibold tabular-nums text-primary dark:text-primary">{formatCurrency(receivedProfit)} <span className="text-gray-400 dark:text-zinc-500 text-xs">{profitPct}%</span></p>
+                    <p className="text-sm font-bold tabular-nums text-primary dark:text-primary">{formatCurrency(receivedProfit)} <span className="text-gray-400 dark:text-zinc-500 text-xs">{profitPct}%</span></p>
                   </div>
                 </div>
 
@@ -1143,17 +1143,17 @@ export default function ClienteEmprestimosPage() {
                     <div className="mx-4 mt-2 px-3 py-2 rounded-lg bg-gray-50 dark:bg-zinc-800/60 space-y-1">
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-gray-500 dark:text-zinc-400">Só Juros (por parcela):</span>
-                        <span className="text-sm font-semibold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(intPerInst)}</span>
+                        <span className="text-sm font-bold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(intPerInst)}</span>
                       </div>
                       {hasPartialInterest && (
                         <>
                           <div className="flex items-center justify-between">
                             <span className="text-xs text-yellow-600 dark:text-yellow-400 flex items-center gap-1">💳 Juros já pago:</span>
-                            <span className="text-sm font-semibold tabular-nums text-yellow-600 dark:text-yellow-400">{formatCurrency(jurosPago)}</span>
+                            <span className="text-sm font-bold tabular-nums text-yellow-600 dark:text-yellow-400">{formatCurrency(jurosPago)}</span>
                           </div>
                           <div className="flex items-center justify-between">
                             <span className="text-xs text-red-500 dark:text-red-400">Juros pendente:</span>
-                            <span className="text-sm font-semibold tabular-nums text-red-500 dark:text-red-400">{formatCurrency(jurosPendente)}</span>
+                            <span className="text-sm font-bold tabular-nums text-red-500 dark:text-red-400">{formatCurrency(jurosPendente)}</span>
                           </div>
                         </>
                       )}

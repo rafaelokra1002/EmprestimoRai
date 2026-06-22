@@ -200,12 +200,12 @@ export function LoanDetailsContent({
         <div className="grid md:grid-cols-2 gap-4">
           <div>
             <p className="text-gray-700 dark:text-zinc-300 text-sm">🔒 Lucro Previsto</p>
-            <p className="text-2xl font-bold tabular-nums tracking-tight text-primary">{formatCurrency(loan.profit)}</p>
+            <p className="text-2xl font-semibold tabular-nums tracking-tight text-primary">{formatCurrency(loan.profit)}</p>
           </div>
           <div>
             <p className="text-gray-700 dark:text-zinc-300 text-sm">✅ Lucro Realizado</p>
             <div className="flex items-baseline gap-2">
-              <p className="text-2xl font-bold tabular-nums tracking-tight text-primary">{formatCurrency(realizedProfit)}</p>
+              <p className="text-2xl font-semibold tabular-nums tracking-tight text-primary">{formatCurrency(realizedProfit)}</p>
               <span className="text-gray-500 dark:text-zinc-400 text-sm">{realizedProfitPct}%</span>
             </div>
           </div>

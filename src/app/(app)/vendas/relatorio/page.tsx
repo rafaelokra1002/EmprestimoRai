@@ -222,7 +222,7 @@ export default function RelatorioVendasPage() {
           </div>
           <div>
             <p className="text-xs text-gray-500 dark:text-zinc-400">Vendido no Período</p>
-            <p className="text-2xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(globalStats.totalVendido)}</p>
+            <p className="text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(globalStats.totalVendido)}</p>
             <p className="text-xs text-gray-400 dark:text-zinc-500">{globalStats.vendaCount} vendas</p>
           </div>
         </div>
@@ -234,7 +234,7 @@ export default function RelatorioVendasPage() {
           </div>
           <div>
             <p className="text-xs text-gray-500 dark:text-zinc-400">Recebido no Período</p>
-            <p className="text-2xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(globalStats.totalRecebido)}</p>
+            <p className="text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(globalStats.totalRecebido)}</p>
           </div>
         </div>
 
@@ -245,7 +245,7 @@ export default function RelatorioVendasPage() {
           </div>
           <div>
             <p className="text-xs text-primary">Lucro no Período</p>
-            <p className="text-2xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(globalStats.lucro)}</p>
+            <p className="text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(globalStats.lucro)}</p>
             <p className="text-xs text-gray-400 dark:text-zinc-500">Vendido - Custo</p>
           </div>
         </div>
@@ -257,7 +257,7 @@ export default function RelatorioVendasPage() {
           </div>
           <div>
             <p className="text-xs text-amber-600">Em Atraso (Total)</p>
-            <p className="text-2xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(globalStats.atrasoDinheiro)}</p>
+            <p className="text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(globalStats.atrasoDinheiro)}</p>
             <p className="text-xs text-gray-400 dark:text-zinc-500">{globalStats.atrasoCount} itens</p>
           </div>
         </div>
@@ -349,7 +349,7 @@ export default function RelatorioVendasPage() {
           </div>
           <div>
             <p className="text-xs text-gray-500 dark:text-zinc-400">Vendido no Período</p>
-            <p className="text-2xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(currentTabStats.vendido)}</p>
+            <p className="text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(currentTabStats.vendido)}</p>
             <p className="text-xs text-gray-400 dark:text-zinc-500">{currentTabStats.count} vendas</p>
           </div>
         </div>
@@ -361,7 +361,7 @@ export default function RelatorioVendasPage() {
           </div>
           <div>
             <p className="text-xs text-gray-500 dark:text-zinc-400">Custo</p>
-            <p className="text-2xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(currentTabStats.custo)}</p>
+            <p className="text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(currentTabStats.custo)}</p>
           </div>
         </div>
 
@@ -372,7 +372,7 @@ export default function RelatorioVendasPage() {
           </div>
           <div>
             <p className="text-xs text-gray-500 dark:text-zinc-400">Lucro</p>
-            <p className="text-2xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(currentTabStats.lucro)}</p>
+            <p className="text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(currentTabStats.lucro)}</p>
           </div>
         </div>
 
@@ -383,7 +383,7 @@ export default function RelatorioVendasPage() {
           </div>
           <div>
             <p className="text-xs text-amber-600">Pendente (Total)</p>
-            <p className="text-2xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(currentTabStats.pendente)}</p>
+            <p className="text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(currentTabStats.pendente)}</p>
             <p className="text-xs text-gray-400 dark:text-zinc-500">Todos ativos</p>
           </div>
         </div>

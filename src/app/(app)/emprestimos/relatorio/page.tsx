@@ -9,7 +9,7 @@ import { formatCurrency, formatDate, localDateStr } from "@/lib/utils"
 import { getOverdueDailyAmountBRL, buildLoanData, calculateTotalAmountWithLateFee } from "@/lib/loan-logic"
 import { useTheme } from "@/lib/theme-provider"
 import {
-  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
+  LineChart, Line, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from "recharts"
 import {
   Calendar, Download, RefreshCw, ChevronDown, ChevronUp,
@@ -568,10 +568,10 @@ export default function RelatorioEmprestimosPage() {
   // Distribution bar chart
   const distributionData = useMemo(() => {
     return [
-      { name: "Na Rua", value: capitalNaRua },
-      { name: "Recebido", value: totalRecebidoHistorico },
-      { name: "Pendente", value: faltaReceber },
-      { name: "Atraso", value: emAtraso.total },
+      { name: "Na Rua", value: capitalNaRua, color: "#22c55e" },
+      { name: "Recebido", value: totalRecebidoHistorico, color: "#3b82f6" },
+      { name: "Pendente", value: faltaReceber, color: "#f59e0b" },
+      { name: "Atraso", value: emAtraso.total, color: "#ef4444" },
     ]
   }, [capitalNaRua, totalRecebidoHistorico, faltaReceber, emAtraso])
 
@@ -786,7 +786,7 @@ export default function RelatorioEmprestimosPage() {
         <Card className="border-gray-200 dark:border-zinc-800">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Wallet className="h-4 w-4 text-primary" />
+              <span className="text-base leading-none">💵</span>
               <span className="text-xs text-gray-500 dark:text-zinc-400">Capital na Rua</span>
             </div>
             <p className="text-2xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(capitalNaRua)}</p>
@@ -797,7 +797,7 @@ export default function RelatorioEmprestimosPage() {
         <Card className="border-gray-200 dark:border-zinc-800">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
-              <TrendingUp className="h-4 w-4 text-amber-600" />
+              <span className="text-base leading-none">💰</span>
               <span className="text-xs text-gray-500 dark:text-zinc-400">Juros a Receber</span>
             </div>
             <p className="text-2xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(jurosAReceber)}</p>
@@ -808,7 +808,7 @@ export default function RelatorioEmprestimosPage() {
         <Card className="border-gray-200 dark:border-zinc-800">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
-              <CheckCircle2 className="h-4 w-4 text-primary" />
+              <span className="text-base leading-none">✅</span>
               <span className="text-xs text-gray-500 dark:text-zinc-400">Total Recebido</span>
             </div>
             <p className="text-2xl font-bold tabular-nums tracking-tight text-primary">{formatCurrency(totalRecebidoHistorico)}</p>
@@ -819,7 +819,7 @@ export default function RelatorioEmprestimosPage() {
         <Card className="border-gray-200 dark:border-zinc-800">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Clock className="h-4 w-4 text-gray-500 dark:text-zinc-400" />
+              <span className="text-base leading-none">⏳</span>
               <span className="text-xs text-gray-500 dark:text-zinc-400">Falta Receber</span>
             </div>
             <p className="text-2xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(faltaReceber)}</p>
@@ -830,7 +830,7 @@ export default function RelatorioEmprestimosPage() {
         <Card className="border-gray-200 dark:border-zinc-800">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
-              <AlertTriangle className="h-4 w-4 text-red-600" />
+              <span className="text-base leading-none">⚠️</span>
               <span className="text-xs text-gray-500 dark:text-zinc-400">Em Atraso</span>
             </div>
             <p className="text-2xl font-bold tabular-nums tracking-tight text-red-600">{formatCurrency(emAtraso.total)}</p>
@@ -841,7 +841,7 @@ export default function RelatorioEmprestimosPage() {
         <Card className="border-gray-200 dark:border-zinc-800">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Percent className="h-4 w-4 text-purple-600" />
+              <span className="text-base leading-none">🏅</span>
               <span className="text-xs text-gray-500 dark:text-zinc-400">Lucro Realizado</span>
             </div>
             <p className="text-2xl font-bold tabular-nums tracking-tight text-purple-600">{formatCurrency(lucroRealizado)}</p>
@@ -869,7 +869,7 @@ export default function RelatorioEmprestimosPage() {
                     formatter={(value: number) => formatCurrency(value)}
                   />
                   <Legend />
-                  <Line type="monotone" dataKey="naRua" name="Na Rua" stroke="#f59e0b" strokeWidth={2} dot={{ r: 4 }} />
+                  <Line type="monotone" dataKey="naRua" name="Na Rua" stroke="#22c55e" strokeWidth={2} dot={{ r: 4 }} />
                   <Line type="monotone" dataKey="recebido" name="Recebido" stroke="#10b981" strokeWidth={2} dot={{ r: 4 }} />
                   <Line type="monotone" dataKey="lucro" name="Lucro" stroke="#ef4444" strokeWidth={2} dot={{ r: 4 }} />
                 </LineChart>
@@ -895,7 +895,11 @@ export default function RelatorioEmprestimosPage() {
                     contentStyle={tooltipStyle}
                     formatter={(value: number) => formatCurrency(value)}
                   />
-                  <Bar dataKey="value" fill="#10b981" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                    {distributionData.map((entry, index) => (
+                      <Cell key={index} fill={entry.color} />
+                    ))}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>

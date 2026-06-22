@@ -388,7 +388,7 @@ export default function TabelaPricePage() {
               </div>
               <div className="flex items-center justify-between border-t border-gray-200 dark:border-zinc-700 pt-3">
                 <span className="text-sm text-gray-500 dark:text-zinc-400">Total a Receber:</span>
-                <span className="text-lg font-bold tabular-nums text-primary">{formatCurrency(createdInfo.totalAmount)}</span>
+                <span className="text-lg font-semibold tabular-nums text-primary">{formatCurrency(createdInfo.totalAmount)}</span>
               </div>
               <div className="text-xs text-gray-400 dark:text-zinc-500 flex justify-between border-t border-gray-100 dark:border-zinc-800 pt-2">
                 <span>Juros Total (Price):</span>

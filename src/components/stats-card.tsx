@@ -18,7 +18,7 @@ export function StatsCard({ title, value, icon: Icon, description, trend, classN
         <Icon className="h-5 w-5 text-violet-600 dark:text-violet-300" />
       </div>
       <div className="mt-2">
-        <h3 className="text-xl leading-none font-bold tabular-nums tracking-tight text-slate-700 dark:text-zinc-100">{formatCurrency(value)}</h3>
+        <h3 className="text-xl leading-none font-semibold tabular-nums tracking-tight text-slate-700 dark:text-zinc-100">{formatCurrency(value)}</h3>
         {description && <p className="text-xs text-slate-400 dark:text-zinc-500 mt-1">{description}</p>}
         {trend !== undefined && (
           <p className={cn("text-xs mt-1", trend >= 0 ? "text-violet-600 dark:text-violet-300" : "text-red-500")}>

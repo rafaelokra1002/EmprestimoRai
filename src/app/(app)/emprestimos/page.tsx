@@ -1943,19 +1943,19 @@ export default function EmprestimosPage() {
                   <div className="mx-4 grid grid-cols-2 gap-px bg-gray-100 dark:bg-zinc-800 rounded-lg overflow-hidden border border-gray-100 dark:border-zinc-800">
                     <div className={`${cellBg} px-3 py-2.5`}>
                       <p className="text-[11px] text-gray-400 dark:text-zinc-500">Emprestado</p>
-                      <p className="text-sm font-semibold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(loan.amount)}</p>
+                      <p className="text-sm font-bold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(loan.amount)}</p>
                     </div>
                     <div className={`${cellBg} px-3 py-2.5 text-right`}>
                       <p className="text-[11px] text-gray-400 dark:text-zinc-500">Total a Receber</p>
-                      <p className="text-sm font-semibold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(currentTotalReceivable)}</p>
+                      <p className="text-sm font-bold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(currentTotalReceivable)}</p>
                     </div>
                     <div className={`${cellBg} px-3 py-2.5`}>
                       <p className="text-[11px] text-gray-400 dark:text-zinc-500 flex items-center gap-1"><Lock className="h-3 w-3" /> Lucro Previsto</p>
-                      <p className="text-sm font-semibold tabular-nums text-primary">{formatCurrency(loan.profit)}</p>
+                      <p className="text-sm font-bold tabular-nums text-primary">{formatCurrency(loan.profit)}</p>
                     </div>
                     <div className={`${cellBg} px-3 py-2.5 text-right`}>
                       <p className="text-[11px] text-gray-400 dark:text-zinc-500 flex items-center gap-1 justify-end"><Check className="h-3 w-3" /> Lucro Realizado</p>
-                      <p className="text-sm font-semibold tabular-nums text-primary">{formatCurrency(receivedProfit)} <span className="text-gray-400 dark:text-zinc-500 text-xs">{profitPct}%</span></p>
+                      <p className="text-sm font-bold tabular-nums text-primary">{formatCurrency(receivedProfit)} <span className="text-gray-400 dark:text-zinc-500 text-xs">{profitPct}%</span></p>
                     </div>
                   </div>
 
@@ -2052,7 +2052,7 @@ export default function EmprestimosPage() {
                       <div className="mx-4 mt-2 px-3 py-2 rounded-lg bg-gray-50 dark:bg-zinc-800/60 space-y-1">
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-gray-500 dark:text-zinc-400">Só Juros (por parcela):</span>
-                          <span className="text-sm font-semibold tabular-nums text-gray-900 dark:text-zinc-100">
+                          <span className="text-sm font-bold tabular-nums text-gray-900 dark:text-zinc-100">
                             {jurosMultiplier >= 1 && (
                               <span className="mr-1 relative -top-0.5 text-[9px] font-medium text-orange-500 dark:text-orange-400">{jurosMultiplier + 1}x</span>
                             )}
@@ -2063,11 +2063,11 @@ export default function EmprestimosPage() {
                           <>
                             <div className="flex items-center justify-between">
                               <span className="text-xs text-yellow-600 dark:text-yellow-400 flex items-center gap-1">💳 Juros já pago:</span>
-                              <span className="text-sm font-semibold tabular-nums text-yellow-600 dark:text-yellow-400">{formatCurrency(jurosPago)}</span>
+                              <span className="text-sm font-bold tabular-nums text-yellow-600 dark:text-yellow-400">{formatCurrency(jurosPago)}</span>
                             </div>
                             <div className="flex items-center justify-between">
                               <span className="text-xs text-red-500 dark:text-red-400">Juros pendente:</span>
-                              <span className="text-sm font-semibold tabular-nums text-red-500 dark:text-red-400">{formatCurrency(jurosPendente)}</span>
+                              <span className="text-sm font-bold tabular-nums text-red-500 dark:text-red-400">{formatCurrency(jurosPendente)}</span>
                             </div>
                           </>
                         )}
@@ -2312,19 +2312,19 @@ export default function EmprestimosPage() {
                   <div className="mx-4 grid grid-cols-2 gap-px bg-gray-100 dark:bg-zinc-800 rounded-lg overflow-hidden border border-gray-100 dark:border-zinc-800">
                     <div className="bg-white dark:bg-zinc-900 px-3 py-2.5">
                       <p className="text-[11px] text-gray-400 dark:text-zinc-500">Emprestado</p>
-                      <p className="text-sm font-semibold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(totalAmount)}</p>
+                      <p className="text-sm font-bold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(totalAmount)}</p>
                     </div>
                     <div className="bg-white dark:bg-zinc-900 px-3 py-2.5 text-right">
                       <p className="text-[11px] text-gray-400 dark:text-zinc-500">Total a Receber</p>
-                      <p className="text-sm font-semibold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(totalReceivable)}</p>
+                      <p className="text-sm font-bold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(totalReceivable)}</p>
                     </div>
                     <div className="bg-white dark:bg-zinc-900 px-3 py-2.5">
                       <p className="text-[11px] text-gray-400 dark:text-zinc-500 flex items-center gap-1"><Lock className="h-3 w-3" /> Lucro Previsto</p>
-                      <p className="text-sm font-semibold tabular-nums text-primary">{formatCurrency(totalProfit)}</p>
+                      <p className="text-sm font-bold tabular-nums text-primary">{formatCurrency(totalProfit)}</p>
                     </div>
                     <div className="bg-white dark:bg-zinc-900 px-3 py-2.5 text-right">
                       <p className="text-[11px] text-gray-400 dark:text-zinc-500 flex items-center gap-1 justify-end"><Check className="h-3 w-3" /> Recebido</p>
-                      <p className="text-sm font-semibold tabular-nums text-primary">{formatCurrency(totalReceivedProfit)}</p>
+                      <p className="text-sm font-bold tabular-nums text-primary">{formatCurrency(totalReceivedProfit)}</p>
                     </div>
                   </div>
 
@@ -2344,7 +2344,7 @@ export default function EmprestimosPage() {
                               <span className="text-xs text-gray-400 dark:text-zinc-500">Venc: {nextI ? formatDate(nextI.dueDate) : "—"}</span>
                               <span className={`ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${loanStatus.color}`}>{loanStatus.label}</span>
                             </div>
-                            <span className="ml-2 shrink-0 text-sm font-semibold tabular-nums text-gray-700 dark:text-zinc-300">{formatCurrency(loan.totalAmount)}</span>
+                            <span className="ml-2 shrink-0 text-sm font-bold tabular-nums text-gray-700 dark:text-zinc-300">{formatCurrency(loan.totalAmount)}</span>
                           </div>
                         )
                       })}
@@ -2706,7 +2706,7 @@ export default function EmprestimosPage() {
                       className="flex-1"
                     />
                     {interestType === "SAC" && sacAmounts && sacAmounts[i] !== undefined && (
-                      <span className="text-sm font-semibold tabular-nums text-primary w-24 text-right shrink-0">{formatCurrency(sacAmounts[i])}</span>
+                      <span className="text-sm font-bold tabular-nums text-primary w-24 text-right shrink-0">{formatCurrency(sacAmounts[i])}</span>
                     )}
                   </div>
                 )

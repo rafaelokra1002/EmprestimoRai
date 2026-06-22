@@ -487,7 +487,7 @@ export default function VeiculosPage() {
           </div>
           <div>
             <p className="text-xs text-gray-500 dark:text-zinc-400">Total</p>
-            <p className="text-2xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{totalVehicles}</p>
+            <p className="text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{totalVehicles}</p>
           </div>
         </div>
         <div className="rounded-xl border border-primary/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
@@ -496,7 +496,7 @@ export default function VeiculosPage() {
           </div>
           <div>
             <p className="text-xs text-gray-500 dark:text-zinc-400">Quitados</p>
-            <p className="text-2xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{totalQuitados}</p>
+            <p className="text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{totalQuitados}</p>
           </div>
         </div>
         <div className="rounded-xl border border-primary/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
@@ -505,7 +505,7 @@ export default function VeiculosPage() {
           </div>
           <div>
             <p className="text-xs text-primary">Recebido</p>
-            <p className="text-2xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(totalRecebido)}</p>
+            <p className="text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(totalRecebido)}</p>
           </div>
         </div>
         <div className="rounded-xl border border-primary/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
@@ -514,7 +514,7 @@ export default function VeiculosPage() {
           </div>
           <div>
             <p className="text-xs text-primary">Lucro Total</p>
-            <p className="text-2xl font-bold tabular-nums tracking-tight text-primary">{formatCurrency(totalLucro)}</p>
+            <p className="text-2xl font-semibold tabular-nums tracking-tight text-primary">{formatCurrency(totalLucro)}</p>
           </div>
         </div>
       </div>
@@ -626,17 +626,17 @@ export default function VeiculosPage() {
                     <div className="flex items-center justify-between rounded-lg bg-primary/5 dark:bg-primary/150/10 border border-primary/30 dark:border-primary/30 px-3 py-2">
                       <span className="text-sm text-gray-700 dark:text-zinc-300">Lucro</span>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold tabular-nums text-primary">{formatCurrency(lucro)}</span>
+                        <span className="text-sm font-semibold tabular-nums text-primary">{formatCurrency(lucro)}</span>
                         <span className="text-xs text-gray-400 dark:text-zinc-500">({lucroPct}%)</span>
                       </div>
                     </div>
                     <div className="flex items-center justify-between rounded-lg bg-primary/5 dark:bg-primary/150/10 border border-primary/30 dark:border-primary/30 px-3 py-2">
                       <span className="text-sm text-gray-700 dark:text-zinc-300">Recebido</span>
-                      <span className="text-sm font-bold tabular-nums text-primary">{formatCurrency(paidAmount)}</span>
+                      <span className="text-sm font-semibold tabular-nums text-primary">{formatCurrency(paidAmount)}</span>
                     </div>
                     <div className="flex items-center justify-between rounded-lg bg-amber-50 dark:bg-amber-950/300/10 border border-amber-500/20 px-3 py-2">
                       <span className="text-sm text-gray-700 dark:text-zinc-300">Falta</span>
-                      <span className="text-sm font-bold tabular-nums text-red-600">{formatCurrency(falta)}</span>
+                      <span className="text-sm font-semibold tabular-nums text-red-600">{formatCurrency(falta)}</span>
                     </div>
                   </div>
                 )}
@@ -868,7 +868,7 @@ export default function VeiculosPage() {
             <div>
               <Label className="font-semibold">Lucro estimado</Label>
               <div className="mt-1 rounded-lg border border-primary/30 bg-primary/5 dark:bg-primary/150/10 px-3 py-2">
-                <p className="text-2xl font-bold tabular-nums tracking-tight text-primary">{formatCurrency(estimatedProfit)}</p>
+                <p className="text-2xl font-semibold tabular-nums tracking-tight text-primary">{formatCurrency(estimatedProfit)}</p>
                 <p className="text-sm text-primary">({estimatedProfitPct.toFixed(1)}%)</p>
               </div>
             </div>

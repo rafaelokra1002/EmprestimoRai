@@ -589,7 +589,7 @@ export default function ClientesPage() {
         {/* Linha 1: título + botões de ação */}
         <div className="flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">Clientes</h1>
+            <h1 className="text-3xl font-semibold tracking-tight text-gray-900 dark:text-zinc-100">Clientes</h1>
             <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">Gerencie seus clientes</p>
           </div>
           <div className="flex items-center gap-2">

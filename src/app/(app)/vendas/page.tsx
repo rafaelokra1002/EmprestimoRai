@@ -393,7 +393,7 @@ export default function VendasPage() {
             <CheckCircle2 className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <p className="text-2xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{totalVendas}</p>
+            <p className="text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{totalVendas}</p>
             <p className="text-xs text-gray-500 dark:text-zinc-400">Vendas</p>
           </div>
         </div>
@@ -402,7 +402,7 @@ export default function VendasPage() {
             <DollarSign className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <p className="text-2xl font-bold tabular-nums tracking-tight text-primary">{formatCurrency(totalValue)}</p>
+            <p className="text-2xl font-semibold tabular-nums tracking-tight text-primary">{formatCurrency(totalValue)}</p>
             <p className="text-xs text-gray-500 dark:text-zinc-400">Total</p>
           </div>
         </div>
@@ -411,7 +411,7 @@ export default function VendasPage() {
             <CheckCircle2 className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <p className="text-2xl font-bold tabular-nums tracking-tight text-primary">{formatCurrency(totalRecebido)}</p>
+            <p className="text-2xl font-semibold tabular-nums tracking-tight text-primary">{formatCurrency(totalRecebido)}</p>
             <p className="text-xs text-gray-500 dark:text-zinc-400">Recebido</p>
           </div>
         </div>
@@ -420,7 +420,7 @@ export default function VendasPage() {
             <CalendarDays className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <p className="text-2xl font-bold tabular-nums tracking-tight text-primary">{formatCurrency(totalAReceber)}</p>
+            <p className="text-2xl font-semibold tabular-nums tracking-tight text-primary">{formatCurrency(totalAReceber)}</p>
             <p className="text-xs text-gray-500 dark:text-zinc-400">A Receber</p>
           </div>
         </div>
@@ -509,19 +509,19 @@ export default function VendasPage() {
                 <div className="grid grid-cols-2 gap-px mx-4 mb-3">
                   <div className="bg-gray-100 dark:bg-zinc-800/60 rounded-tl-lg p-3">
                     <p className="text-[10px] uppercase tracking-wider text-gray-400 dark:text-zinc-500 mb-1">Venda</p>
-                    <p className="text-sm font-bold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(sale.totalAmount)}</p>
+                    <p className="text-sm font-semibold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(sale.totalAmount)}</p>
                   </div>
                   <div className="bg-gray-100 dark:bg-zinc-800/60 rounded-tr-lg p-3">
                     <p className="text-[10px] uppercase tracking-wider text-primary mb-1">Recebido</p>
-                    <p className="text-sm font-bold tabular-nums text-primary">{formatCurrency(paid)}</p>
+                    <p className="text-sm font-semibold tabular-nums text-primary">{formatCurrency(paid)}</p>
                   </div>
                   <div className="bg-gray-100 dark:bg-zinc-800/60 rounded-bl-lg p-3">
                     <p className="text-[10px] uppercase tracking-wider text-amber-500 mb-1">Falta</p>
-                    <p className="text-sm font-bold tabular-nums text-amber-600">{formatCurrency(falta > 0 ? falta : 0)}</p>
+                    <p className="text-sm font-semibold tabular-nums text-amber-600">{formatCurrency(falta > 0 ? falta : 0)}</p>
                   </div>
                   <div className="bg-gray-100 dark:bg-zinc-800/60 rounded-br-lg p-3">
                     <p className="text-[10px] uppercase tracking-wider text-gray-400 dark:text-zinc-500 mb-1">Parcelas</p>
-                    <p className="text-sm font-bold tabular-nums text-gray-900 dark:text-zinc-100">{paidCount}/{sale.installmentCount}</p>
+                    <p className="text-sm font-semibold tabular-nums text-gray-900 dark:text-zinc-100">{paidCount}/{sale.installmentCount}</p>
                   </div>
                 </div>
 
@@ -853,7 +853,7 @@ export default function VendasPage() {
                 <p className="text-xs text-gray-400 dark:text-zinc-500">{payingSale.client?.name}</p>
                 <div className="mt-3 flex items-center justify-between">
                   <span className="text-xs text-gray-400 dark:text-zinc-500">{nextInst.number}ª parcela</span>
-                  <span className="text-sm font-bold tabular-nums text-primary">{formatCurrency(nextInst.amount)}</span>
+                  <span className="text-sm font-semibold tabular-nums text-primary">{formatCurrency(nextInst.amount)}</span>
                 </div>
                 <div className="flex items-center justify-between mt-1">
                   <span className="text-xs text-gray-400 dark:text-zinc-500">Vencimento</span>

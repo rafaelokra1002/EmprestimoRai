@@ -409,7 +409,7 @@ const [expenses, setExpenses] = useState<any[]>([])
           </div>
           <div className="min-w-0">
             <p className="text-xs text-gray-500 dark:text-zinc-400 truncate">Total gasto (ano)</p>
-            <p className="text-xl font-bold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(stats.totalAno)}</p>
+            <p className="text-xl font-medium tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(stats.totalAno)}</p>
             <p className="text-xs text-gray-400 dark:text-zinc-500">em {currentYear}</p>
           </div>
         </div>
@@ -423,7 +423,7 @@ const [expenses, setExpenses] = useState<any[]>([])
           </div>
           <div className="min-w-0">
             <p className="text-xs text-gray-500 dark:text-zinc-400 truncate">Gastos do mês ({monthName})</p>
-            <p className="text-xl font-bold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(stats.total)}</p>
+            <p className="text-xl font-medium tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(stats.total)}</p>
             <p className="text-xs text-gray-400 dark:text-zinc-500">{monthExpenses.length} lançamento{monthExpenses.length !== 1 ? "s" : ""}</p>
           </div>
           <ChevronRight className="h-4 w-4 text-gray-400 dark:text-zinc-500 ml-auto shrink-0" />
@@ -438,7 +438,7 @@ const [expenses, setExpenses] = useState<any[]>([])
           </div>
           <div className="min-w-0">
             <p className="text-xs text-gray-500 dark:text-zinc-400">Total de despesas</p>
-            <p className="text-xl font-bold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(stats.totalGeral)}</p>
+            <p className="text-xl font-medium tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(stats.totalGeral)}</p>
             <p className="text-xs text-gray-400 dark:text-zinc-500">{expenses.length} lançamento{expenses.length !== 1 ? "s" : ""}</p>
           </div>
           <ChevronRight className="h-4 w-4 text-gray-400 dark:text-zinc-500 ml-auto shrink-0" />
@@ -450,7 +450,7 @@ const [expenses, setExpenses] = useState<any[]>([])
           </div>
           <div className="min-w-0">
             <p className="text-xs text-gray-500 dark:text-zinc-400">Média mensal</p>
-            <p className="text-xl font-bold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(stats.mediaUltimos12)}</p>
+            <p className="text-xl font-medium tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(stats.mediaUltimos12)}</p>
             <p className="text-xs text-gray-400 dark:text-zinc-500">Média dos últimos 12 meses</p>
           </div>
         </div>
@@ -638,7 +638,7 @@ const [expenses, setExpenses] = useState<any[]>([])
                             </div>
                           </td>
                           <td className="px-4 py-4 text-gray-500 dark:text-zinc-400">{exp.supplier || "—"}</td>
-                          <td className="px-4 py-4 text-right font-semibold tabular-nums text-primary">{formatCurrency(exp.amount)}</td>
+                          <td className="px-4 py-4 text-right font-medium tabular-nums text-primary">{formatCurrency(exp.amount)}</td>
                           <td className="px-4 py-4 text-right">
                             <div className="relative flex items-center justify-end">
                               <button

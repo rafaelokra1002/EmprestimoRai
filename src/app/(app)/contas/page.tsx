@@ -311,7 +311,7 @@ export default function ContasPage() {
 
                 {caixaInicial !== null ? (
                   <div>
-                    <p className="text-[1.9rem] font-bold tracking-tight text-gray-900 dark:text-zinc-100 tabular-nums">{formatCurrency(caixaInicial)}</p>
+                    <p className="text-[1.9rem] font-semibold tracking-tight text-gray-900 dark:text-zinc-100 tabular-nums">{formatCurrency(caixaInicial)}</p>
                     <p className="mt-2 text-sm text-gray-500 dark:text-zinc-400">Caixa inicial</p>
                     <p className="text-sm text-gray-400 dark:text-zinc-500">Definido em {new Date().toLocaleDateString("pt-BR")}</p>
                   </div>
@@ -338,7 +338,7 @@ export default function ContasPage() {
 
                 {caixaInicial !== null && saldoAtualEmCaixa !== null ? (
                   <div>
-                    <p className="mb-5 text-[1.95rem] font-bold tracking-tight text-gray-900 dark:text-zinc-100 tabular-nums">{formatCurrency(saldoAtualEmCaixa)}</p>
+                    <p className="mb-5 text-[1.95rem] font-semibold tracking-tight text-gray-900 dark:text-zinc-100 tabular-nums">{formatCurrency(saldoAtualEmCaixa)}</p>
                     <div className="space-y-2.5 border-t border-gray-200 pt-3.5 text-sm dark:border-zinc-800">
                       <div className="flex items-center justify-between gap-3">
                         <span className="text-gray-500 dark:text-zinc-400">Caixa inicial</span>
@@ -354,7 +354,7 @@ export default function ContasPage() {
                       </div>
                       <div className="flex items-center justify-between gap-3 border-t border-gray-200 pt-3 dark:border-zinc-800">
                         <span className="font-semibold text-gray-900 dark:text-zinc-100">Saldo</span>
-                        <span className="font-bold text-gray-900 dark:text-zinc-100 tabular-nums">{formatCurrency(saldoAtualEmCaixa)}</span>
+                        <span className="font-semibold text-gray-900 dark:text-zinc-100 tabular-nums">{formatCurrency(saldoAtualEmCaixa)}</span>
                       </div>
                     </div>
                   </div>
@@ -376,7 +376,7 @@ export default function ContasPage() {
                       <Icon className={`h-5 w-5 ${item.iconClassName}`} />
                     </div>
                     <p className="text-sm font-medium text-gray-500 dark:text-zinc-400">{item.title}</p>
-                    <p className="mt-1 text-[1.45rem] font-bold tracking-tight text-gray-900 dark:text-zinc-100 tabular-nums">{item.value}</p>
+                    <p className="mt-1 text-[1.45rem] font-semibold tracking-tight text-gray-900 dark:text-zinc-100 tabular-nums">{item.value}</p>
                   </div>
                 )
               })}

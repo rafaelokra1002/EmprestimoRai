@@ -277,7 +277,7 @@ export function ComprovanteContent({
           </div>
 
           <div className="rounded-md bg-primary/10 dark:bg-primary/15 border border-primary/20 dark:border-primary/30 px-2.5 py-1.5 text-primary">
-            <div className="flex items-center justify-between text-xs font-bold tabular-nums">
+            <div className="flex items-center justify-between text-xs font-semibold tabular-nums">
               <span>Total a Receber:</span>
               <span>{formatCurrency(totalReceivable)}</span>
             </div>

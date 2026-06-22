@@ -261,9 +261,6 @@ export default function DashboardPage() {
     return { month: item.month, jurosMes: item.juros, jurosAcumulado: accumulated }
   })
 
-  // Mini bar chart data for "Recebido no Mês"
-  const paymentsBardData = (data?.paymentsByDay || []).slice(-7).map(d => ({ v: d.amount }))
-
   // Mini bar chart data for "Saiu"
   const saiuBarData = (data?.monthlyData || []).slice(-2)
 
@@ -375,11 +372,11 @@ export default function DashboardPage() {
           <div className="p-4 pb-2 flex-1">
             <div className="flex items-center gap-2 mb-3">
               <div className="rounded-xl bg-green-100 dark:bg-green-950/50 p-2">
-                <Receipt className="h-5 w-5 text-green-500" />
+                <TrendingUp className="h-5 w-5 text-green-500" />
               </div>
               <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Total a Receber</p>
             </div>
-            <p className="text-3xl font-bold tabular-nums tracking-tight text-green-500">
+            <p className="text-2xl font-semibold tabular-nums tracking-tight text-green-500">
               {formatCurrency(data?.monthInstallmentsDue?.total || 0)}
             </p>
             <p className="mt-1.5 text-xs text-gray-400 dark:text-zinc-500">
@@ -401,7 +398,7 @@ export default function DashboardPage() {
               </div>
               <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Capital na Rua</p>
             </div>
-            <p className="text-3xl font-bold tabular-nums tracking-tight text-orange-500">
+            <p className="text-2xl font-semibold tabular-nums tracking-tight text-orange-500">
               {formatCurrency(data?.capitalOnStreet || 0)}
             </p>
             <p className="mt-1.5 text-xs text-gray-400 dark:text-zinc-500">
@@ -422,7 +419,7 @@ export default function DashboardPage() {
               </div>
               <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Juros do Mês</p>
             </div>
-            <p className="text-3xl font-bold tabular-nums tracking-tight text-violet-600">
+            <p className="text-2xl font-semibold tabular-nums tracking-tight text-violet-600">
               {formatCurrency(data?.monthInstallmentsDue?.interest || 0)}
             </p>
             <p className="mt-1.5 text-xs text-gray-400 dark:text-zinc-500">
@@ -435,20 +432,23 @@ export default function DashboardPage() {
         </div>
 
         {/* Falta Receber */}
-        <div className="rounded-xl border border-green-200 dark:border-green-900/30 bg-green-50 dark:bg-green-950/20 overflow-hidden relative">
-          <div className="p-4">
+        <div className="rounded-xl border border-green-200 dark:border-green-900/30 bg-green-50 dark:bg-green-950/20 overflow-hidden flex flex-col">
+          <div className="p-4 pb-2 flex-1">
             <div className="flex items-center gap-2 mb-3">
               <div className="rounded-xl bg-green-100 dark:bg-green-950/50 p-2">
                 <Wallet className="h-5 w-5 text-green-500" />
               </div>
               <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Falta Receber</p>
             </div>
-            <p className="text-3xl font-bold tabular-nums tracking-tight text-green-500">
+            <p className="text-2xl font-semibold tabular-nums tracking-tight text-green-500">
               {formatCurrency(data?.faltaReceberMes || 0)}
             </p>
             <p className="mt-1.5 text-xs text-gray-400 dark:text-zinc-500">
               juros + multas de {faltaReceberMonthLabel}
             </p>
+          </div>
+          <div className="h-14">
+            <AreaSparkline values={sparkJuros} color="#22c55e" gradientId="grad-falta" />
           </div>
         </div>
       </div>
@@ -464,22 +464,13 @@ export default function DashboardPage() {
             </div>
             <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Recebido no Mês</p>
           </div>
-          <p className="text-2xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">
+          <p className="text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">
             {formatCurrency(data?.monthReceived || 0)}
           </p>
           <Delta pct={data?.weeklySummary?.deltas?.receivedPct} />
           <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">
             pagamentos recebidos em {periodLabel}
           </p>
-          {paymentsBardData.length > 0 && (
-            <div className="mt-3 h-10">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={paymentsBardData} barSize={6} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-                  <Bar dataKey="v" fill="#22c55e" radius={[2, 2, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
         </div>
 
         {/* Histórico de Pagamento */}
@@ -490,7 +481,7 @@ export default function DashboardPage() {
             </div>
             <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Histórico de Pagamento</p>
           </div>
-          <p className="text-2xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">
+          <p className="text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">
             {formatCurrency(data?.financials?.totalPaymentsReceived || 0)}
           </p>
           <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">
@@ -506,7 +497,7 @@ export default function DashboardPage() {
             </div>
             <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Gasto Mensal</p>
           </div>
-          <p className="text-2xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">
+          <p className="text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">
             {formatCurrency(data?.financials?.monthlyExpenses || 0)}
           </p>
           <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">despesas de {periodLabel}</p>
@@ -520,7 +511,7 @@ export default function DashboardPage() {
             </div>
             <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Clientes</p>
           </div>
-          <p className="text-3xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">
+          <p className="text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">
             {data?.counters?.totalClients || 0}
           </p>
           <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">cadastrados</p>
@@ -538,7 +529,7 @@ export default function DashboardPage() {
             </div>
             <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Contrato Ativo</p>
           </div>
-          <p className="text-3xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">
+          <p className="text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">
             {data?.counters?.activeLoans || 0}
           </p>
           <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">contratos ativos</p>
@@ -552,7 +543,7 @@ export default function DashboardPage() {
             </div>
             <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Vencendo Hoje</p>
           </div>
-          <p className="text-2xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">
+          <p className="text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">
             {formatCurrency(data?.weeklySummary?.dueTodayAmount || 0)}
           </p>
           <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">
@@ -568,7 +559,7 @@ export default function DashboardPage() {
             </div>
             <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Em Atraso</p>
           </div>
-          <p className="text-2xl font-bold tabular-nums tracking-tight text-red-500">
+          <p className="text-2xl font-semibold tabular-nums tracking-tight text-red-500">
             {formatCurrency(data?.overdueAmount || 0)}
           </p>
           <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">
@@ -584,7 +575,7 @@ export default function DashboardPage() {
             </div>
             <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Clientes Inativos</p>
           </div>
-          <p className="text-3xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">
+          <p className="text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">
             {data?.inactiveClients || 0}
           </p>
           <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">sem empréstimo ativo</p>
@@ -595,21 +586,21 @@ export default function DashboardPage() {
       <div className="grid gap-4 sm:grid-cols-2">
 
         {/* Multa de Atraso */}
-        <div className="rounded-xl border border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
+        <div className="relative overflow-hidden rounded-xl border border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
           <div className="flex items-center gap-2 mb-3">
             <div className="rounded-xl bg-primary/10 dark:bg-primary/20 p-2">
               <Calendar className="h-4 w-4 text-primary" />
             </div>
             <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Multa de Atraso</p>
           </div>
-          <p className="text-3xl font-bold tabular-nums tracking-tight text-green-500">
+          <p className="text-2xl font-semibold tabular-nums tracking-tight text-green-500">
             {formatCurrency(data?.totalPendingLateFees || 0)}
           </p>
           <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">a receber</p>
           {/* Decorative % badge */}
           <div className="absolute right-4 bottom-4">
-            <div className="flex items-center justify-center rounded-full bg-green-100 dark:bg-green-950/40 h-16 w-16">
-              <Percent className="h-9 w-9 text-green-500" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-green-100 dark:bg-green-950/40">
+              <Percent className="h-5 w-5 text-green-500" />
             </div>
           </div>
         </div>
@@ -624,7 +615,7 @@ export default function DashboardPage() {
                 </div>
                 <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Saiu (Empréstimos Concedidos)</p>
               </div>
-              <p className="text-3xl font-bold tabular-nums tracking-tight text-green-500">
+              <p className="text-2xl font-semibold tabular-nums tracking-tight text-green-500">
                 {formatCurrency(data?.monthNewLoansCapital || 0)}
               </p>
               <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">total emprestado neste mês</p>
@@ -701,7 +692,7 @@ export default function DashboardPage() {
       <div className="grid gap-4 xl:grid-cols-2">
         <div className="rounded-xl border border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 space-y-4">
           <div className="flex items-center gap-4">
-            <span className="inline-flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-4 border-amber-300 text-2xl font-bold tabular-nums text-amber-500">
+            <span className="inline-flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-4 border-amber-300 text-2xl font-semibold tabular-nums text-amber-500">
               {healthScore}
             </span>
             <div>
@@ -716,19 +707,19 @@ export default function DashboardPage() {
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-3">
               <p className="text-xs text-gray-500 dark:text-zinc-400">Taxa de Recebimento</p>
-              <p className="mt-1 text-xl font-bold tabular-nums text-red-500">{collectionRate.toFixed(1)}%</p>
+              <p className="mt-1 text-xl font-semibold tabular-nums text-red-500">{collectionRate.toFixed(1)}%</p>
             </div>
             <div className="rounded-lg border border-primary/30 bg-primary/5 dark:bg-primary/15 p-3">
               <p className="text-xs text-gray-500 dark:text-zinc-400">Inadimplência</p>
-              <p className="mt-1 text-xl font-bold tabular-nums text-primary">{defaultRate.toFixed(1)}%</p>
+              <p className="mt-1 text-xl font-semibold tabular-nums text-primary">{defaultRate.toFixed(1)}%</p>
             </div>
             <div className="rounded-lg border border-primary/30 bg-primary/5 dark:bg-primary/15 p-3">
               <p className="text-xs text-gray-500 dark:text-zinc-400">Recebido</p>
-              <p className="mt-1 text-xl font-bold tabular-nums text-primary">{formatCurrency(data?.totalReceived || 0)}</p>
+              <p className="mt-1 text-xl font-semibold tabular-nums text-primary">{formatCurrency(data?.totalReceived || 0)}</p>
             </div>
             <div className="rounded-lg border border-primary/30 bg-primary/5 dark:bg-primary/15 p-3">
               <p className="text-xs text-gray-500 dark:text-zinc-400">Em Atraso</p>
-              <p className="mt-1 text-xl font-bold tabular-nums text-primary">{data?.overdueCount || 0}</p>
+              <p className="mt-1 text-xl font-semibold tabular-nums text-primary">{data?.overdueCount || 0}</p>
             </div>
           </div>
         </div>
