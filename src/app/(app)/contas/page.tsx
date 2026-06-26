@@ -60,17 +60,22 @@ export default function ContasPage() {
 
   useEffect(() => {
     fetchExpenses()
-    const saved = localStorage.getItem("caixaInicial")
-    if (saved) setCaixaInicial(parseFloat(saved))
+    fetch("/api/profile").then((r) => r.json()).then((data) => setCaixaInicial(Number(data?.caixaInicial) || 0)).catch(() => setCaixaInicial(0))
     fetch("/api/dashboard").then((response) => response.json()).then((data) => setDashboardData(data)).catch(() => {})
   }, [])
 
-  const saveCaixaInicial = () => {
+  const saveCaixaInicial = async () => {
     const value = parseFloat(caixaInput.replace(/\./g, "").replace(",", ".")) || 0
     setCaixaInicial(value)
-    localStorage.setItem("caixaInicial", value.toString())
     setCaixaDialogOpen(false)
     setCaixaInput("")
+    try {
+      await fetch("/api/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ caixaInicial: value }),
+      })
+    } catch {}
   }
 
   const resetForm = () => {

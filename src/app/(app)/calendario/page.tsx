@@ -229,8 +229,8 @@ export default function CalendarioPage() {
       </div>
 
       {/* ===== STAT CARDS ===== */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Card className="border-gray-200 dark:border-zinc-800">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card className="border-primary/15 bg-primary/[0.03] dark:bg-primary/5">
           <CardContent className="p-5 flex items-start gap-3">
             <Clock className="h-5 w-5 text-gray-500 dark:text-zinc-400 mt-0.5" />
             <div>
@@ -239,7 +239,7 @@ export default function CalendarioPage() {
             </div>
           </CardContent>
         </Card>
-        <Card className="border-gray-200 dark:border-zinc-800">
+        <Card className="border-primary/15 bg-primary/[0.03] dark:bg-primary/5">
           <CardContent className="p-5 flex items-start gap-3">
             <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5" />
             <div>
@@ -248,7 +248,7 @@ export default function CalendarioPage() {
             </div>
           </CardContent>
         </Card>
-        <Card className="border-blue-200 dark:border-blue-900/60">
+        <Card className="border-primary/15 bg-primary/[0.03] dark:bg-primary/5">
           <CardContent className="p-5 flex items-start gap-3">
             <CheckCircle2 className="h-5 w-5 text-blue-500 mt-0.5" />
             <div>
@@ -257,7 +257,7 @@ export default function CalendarioPage() {
             </div>
           </CardContent>
         </Card>
-        <Card className="border-primary/30 dark:border-primary/30">
+        <Card className="border-primary/15 bg-primary/[0.03] dark:bg-primary/5">
           <CardContent className="p-5 flex items-start gap-3">
             <CalIcon className="h-5 w-5 text-primary mt-0.5" />
             <div>
@@ -269,9 +269,9 @@ export default function CalendarioPage() {
       </div>
 
       {/* ===== CALENDAR + SIDE PANEL ===== */}
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-4 lg:items-start">
         {/* Calendar */}
-        <Card className="border-gray-200 dark:border-zinc-800 flex-1 min-w-0 overflow-hidden">
+        <Card className="border-primary/20 bg-primary/5 dark:bg-primary/10 lg:col-span-3 min-w-0 overflow-hidden">
           <CardContent className="p-6">
           {/* Month nav */}
           <div className="flex items-center justify-between mb-6">
@@ -314,7 +314,7 @@ export default function CalendarioPage() {
                 {Array.from({ length: firstDayOfWeek }).map((_, i) => {
                   const d = prevMonthDays - firstDayOfWeek + 1 + i
                   return (
-                    <div key={`prev-${i}`} className="aspect-square rounded-xl border border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-800/20 p-2">
+                    <div key={`prev-${i}`} className="aspect-square rounded-xl border border-primary/10 bg-primary/[0.03] dark:bg-primary/5 p-2">
                       <span className="text-sm text-gray-300 dark:text-zinc-700">{d}</span>
                     </div>
                   )
@@ -339,7 +339,7 @@ export default function CalendarioPage() {
                           ? "border-2 border-green-600 shadow-[inset_0_0_0_4px_white,inset_0_0_0_5px_#16a34a] dark:shadow-[inset_0_0_0_4px_#18181b,inset_0_0_0_5px_#16a34a] bg-white dark:bg-zinc-900"
                           : isSelected
                           ? "border border-primary/40 bg-primary/5 dark:bg-primary/10 dark:border-primary/30"
-                          : "border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:border-gray-300 dark:hover:border-zinc-600 hover:bg-gray-50 dark:hover:bg-zinc-800/50"
+                          : "border border-primary/20 bg-primary/[0.03] dark:bg-primary/5 hover:border-primary/40 hover:bg-primary/5 dark:hover:bg-primary/10"
                         }`}
                     >
                       <span className={`text-sm font-medium ${
@@ -373,7 +373,7 @@ export default function CalendarioPage() {
 
                 {/* Next month leading days */}
                 {Array.from({ length: trailingCells }).map((_, i) => (
-                  <div key={`next-${i}`} className="aspect-square rounded-xl border border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-800/20 p-2">
+                  <div key={`next-${i}`} className="aspect-square rounded-xl border border-primary/10 bg-primary/[0.03] dark:bg-primary/5 p-2">
                     <span className="text-sm text-gray-300 dark:text-zinc-700">{i + 1}</span>
                   </div>
                 ))}
@@ -400,8 +400,8 @@ export default function CalendarioPage() {
       </Card>
 
         {/* ===== SIDE PANEL - DAY DETAILS ===== */}
-        <div className="w-full shrink-0 lg:w-[380px] lg:self-stretch">
-          <Card className="h-full border-gray-200 dark:border-zinc-800 overflow-hidden">
+        <div className="lg:col-span-1 lg:self-stretch">
+          <Card className="h-full border-primary/20 bg-primary/5 dark:bg-primary/10 overflow-hidden">
             <CardContent className="flex h-full min-h-0 flex-col p-5 overflow-hidden">
               {(() => {
                 const dateText = selectedDay
@@ -450,7 +450,7 @@ export default function CalendarioPage() {
                     </div>
 
                     {/* Total a cobrar */}
-                    <div className="rounded-xl border border-primary/30 bg-primary/5 dark:bg-primary/10 p-4">
+                    <div className="mr-2 rounded-xl border border-primary/30 bg-primary/5 dark:bg-primary/10 p-4">
                       <div className="flex items-center justify-between">
                         <div>
                           <span className="text-sm text-gray-700 dark:text-zinc-300">Total a cobrar no dia</span>

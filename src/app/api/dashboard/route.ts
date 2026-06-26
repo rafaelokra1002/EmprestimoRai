@@ -209,12 +209,9 @@ export async function GET(request: Request) {
       loan.installments.filter((inst) => inst.status !== "PAID" && new Date(inst.dueDate) < thirtyDaysAgo).map((inst) => Number(inst.amount || 0))
     ).reduce((s, a) => s + a, 0)
 
-    const todayDateStr = nowBR.toISOString().slice(0, 10)
     const capitalOnStreet = loans.reduce((acc, loan) => {
-      const sortedInsts = [...loan.installments].sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
-      const firstInst = sortedInsts[0]
-      // Inclui o empréstimo se a 1ª parcela vence hoje ou antes (compara só data, sem hora)
-      if (!firstInst || new Date(firstInst.dueDate).toISOString().slice(0, 10) > todayDateStr) return acc
+      // Todo empréstimo ATIVO tem capital na rua, independente da data de vencimento.
+      // (Pagamento "só juros" renova o vencimento p/ o futuro, mas o principal continua na rua.)
       const principal = Number(loan.amount || 0)
       const instCount = loan.installments.length || 1
       const principalPerInst = principal / instCount

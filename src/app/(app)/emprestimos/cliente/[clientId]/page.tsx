@@ -1163,12 +1163,12 @@ export default function ClienteEmprestimosPage() {
 
                 {/* Ações */}
                 <div className="px-4 pt-3 pb-4 mt-2 border-t border-gray-100 dark:border-zinc-800 space-y-3">
-                  <div className="grid w-full min-w-0 gap-1.5 pb-1 grid-cols-[minmax(0,2fr)_minmax(0,2fr)_repeat(5,minmax(0,1fr))]">
-                    <Button size="sm" onClick={() => openPaymentDialog(loan)} className="min-w-0 h-10 px-2 text-xs border border-primary/15 bg-primary/10 font-medium text-primary shadow-none transition-colors hover:bg-primary/15 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20 sm:text-sm">
-                      <Receipt className="mr-1 h-4 w-4 shrink-0" /> <span className="truncate">Pagar</span>
+                  <div className="grid w-full min-w-0 gap-1.5 pb-1 grid-cols-[minmax(0,1.6fr)_minmax(0,2.4fr)_repeat(5,minmax(0,1fr))]">
+                    <Button size="sm" onClick={() => openPaymentDialog(loan)} className="min-w-0 h-10 px-2 text-xs border border-primary/15 bg-primary/10 font-medium text-primary shadow-none transition-colors hover:bg-primary/15 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20">
+                      <Receipt className="mr-1 h-4 w-4 shrink-0" /> <span className="whitespace-nowrap">Pagar</span>
                     </Button>
-                    <Button size="sm" onClick={() => openInterestRenegotiateDialog(loan)} className="min-w-0 h-10 px-2 text-xs border border-primary/15 bg-primary/10 font-medium text-primary shadow-none transition-colors hover:bg-primary/15 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20 sm:text-sm">
-                      <DollarSign className="mr-1 h-4 w-4 shrink-0" /> <span className="truncate">Pagar Juros</span>
+                    <Button size="sm" onClick={() => openInterestRenegotiateDialog(loan)} className="min-w-0 h-10 px-2 text-xs border border-primary/15 bg-primary/10 font-medium text-primary shadow-none transition-colors hover:bg-primary/15 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20">
+                      <DollarSign className="mr-1 h-4 w-4 shrink-0" /> <span className="whitespace-nowrap">Pagar Juros</span>
                     </Button>
                     <button
                       onClick={() => {

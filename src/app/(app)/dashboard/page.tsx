@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import {
   AlertTriangle,
   Calendar,
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Clock3,
@@ -255,6 +256,25 @@ export default function DashboardPage() {
   const healthScore = data?.operationHealth?.score || 0
   const collectionRate = data?.operationHealth?.collectionRate || 0
   const defaultRate = data?.operationHealth?.defaultRate || 0
+  // Nível de saúde da operação (cores e rótulo dinâmicos pelo score)
+  const healthLevel = healthScore >= 70 ? "good" : healthScore >= 40 ? "warn" : "bad"
+  const healthRing = healthLevel === "good" ? "border-green-600 text-green-500" : healthLevel === "warn" ? "border-amber-400 text-amber-500" : "border-red-500 text-red-500"
+  const healthBadge = healthLevel === "good"
+    ? { label: "Saudável", cls: "bg-primary/10 text-primary" }
+    : healthLevel === "warn"
+      ? { label: "Atenção", cls: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400" }
+      : { label: "Crítico", cls: "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400" }
+  const healthBar = healthLevel === "good" ? "bg-primary" : healthLevel === "warn" ? "bg-amber-400" : "bg-red-500"
+  // Fundo do card inteiro conforme o nível (vermelho no Crítico, igual ao exemplo)
+  const healthCardCls = healthLevel === "good"
+    ? "border-primary/30 bg-gradient-to-br from-primary/15 to-primary/5 dark:from-green-950/70 dark:to-green-900/30"
+    : healthLevel === "warn"
+      ? "border-amber-300 dark:border-amber-900/50 bg-gradient-to-br from-amber-100 to-amber-50 dark:from-amber-950/60 dark:to-amber-950/20"
+      : "border-red-400 dark:border-red-900/60 bg-gradient-to-br from-red-100 to-red-50 dark:from-red-950/80 dark:to-red-900/40"
+  // Estilos dos sub-cards: verde (bom) usa primary; vermelho (ruim)
+  const goodCardCls = "border-primary/30 bg-primary/5 dark:bg-primary/15"
+  const badCardCls = "border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30"
+  const overdueAmt = data?.overdueAmount || 0
   const monthlyInterest = data?.charts?.interestTrend || []
   const interestChartData = monthlyInterest.map((item, index) => {
     const accumulated = monthlyInterest.slice(0, index + 1).reduce((sum, c) => sum + (c.juros || 0), 0)
@@ -653,7 +673,7 @@ export default function DashboardPage() {
 
       {/* ── Gráficos ────────────────────────────────────────────────────────── */}
       <div className="grid gap-4 xl:grid-cols-2">
-        <div className="rounded-xl border border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5">
+        <div className="rounded-xl border border-primary/20 bg-primary/5 dark:bg-primary/10 p-5">
           <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200 mb-4">Evolução Financeira (Últimos 6 meses)</p>
           <div className="h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -670,7 +690,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5">
+        <div className="rounded-xl border border-primary/20 bg-primary/5 dark:bg-primary/10 p-5">
           <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200 mb-4">Tendência de Juros Recebidos</p>
           <div className="h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -690,69 +710,75 @@ export default function DashboardPage() {
 
       {/* ── Saúde da Operação + Precisa de Atenção ───────────────────────────── */}
       <div className="grid gap-4 xl:grid-cols-2">
-        <div className="rounded-xl border border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 space-y-4">
+        <div className={`rounded-xl border p-5 space-y-4 ${healthCardCls}`}>
           <div className="flex items-center gap-4">
-            <span className="inline-flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-4 border-amber-300 text-2xl font-semibold tabular-nums text-amber-500">
-              {healthScore}
+            <span className={`inline-flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-full border-4 ${healthRing}`}>
+              <span className="text-2xl font-semibold tabular-nums leading-none">{healthScore}</span>
+              <span className="text-[9px] text-gray-400 dark:text-zinc-500">/100</span>
             </span>
             <div>
               <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Saúde da Operação</p>
-              <span className="mt-1 inline-flex rounded-full bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 text-xs text-amber-700 dark:text-amber-400">Atenção</span>
+              <span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-xs ${healthBadge.cls}`}>{healthBadge.label}</span>
             </div>
           </div>
           <div className="h-2.5 overflow-hidden rounded-full bg-gray-200 dark:bg-zinc-700">
-            <div className="h-full bg-primary transition-all" style={{ width: `${Math.min(100, healthScore)}%` }} />
+            <div className={`h-full ${healthBar} transition-all`} style={{ width: `${Math.min(100, healthScore)}%` }} />
           </div>
           <p className="text-xs text-gray-500 dark:text-zinc-400">Baseado em taxa de recebimento, inadimplência e margem de lucro</p>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-3">
-              <p className="text-xs text-gray-500 dark:text-zinc-400">Taxa de Recebimento</p>
-              <p className="mt-1 text-xl font-semibold tabular-nums text-red-500">{collectionRate.toFixed(1)}%</p>
+          <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+            <div className={`rounded-lg border p-3 ${collectionRate >= 50 ? goodCardCls : badCardCls}`}>
+              <p className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-zinc-400"><TrendingUp className="h-3.5 w-3.5" /> Taxa de Recebimento</p>
+              <p className={`mt-1 text-xl font-semibold tabular-nums ${collectionRate >= 50 ? "text-primary" : "text-red-500"}`}>{collectionRate.toFixed(1)}%</p>
+            </div>
+            <div className={`rounded-lg border p-3 ${defaultRate <= 20 ? goodCardCls : badCardCls}`}>
+              <p className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-zinc-400"><AlertTriangle className="h-3.5 w-3.5" /> Inadimplência</p>
+              <p className={`mt-1 text-xl font-semibold tabular-nums ${defaultRate <= 20 ? "text-primary" : "text-red-500"}`}>{defaultRate.toFixed(1)}%</p>
             </div>
             <div className="rounded-lg border border-primary/30 bg-primary/5 dark:bg-primary/15 p-3">
-              <p className="text-xs text-gray-500 dark:text-zinc-400">Inadimplência</p>
-              <p className="mt-1 text-xl font-semibold tabular-nums text-primary">{defaultRate.toFixed(1)}%</p>
-            </div>
-            <div className="rounded-lg border border-primary/30 bg-primary/5 dark:bg-primary/15 p-3">
-              <p className="text-xs text-gray-500 dark:text-zinc-400">Recebido</p>
+              <p className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-zinc-400"><CheckCircle2 className="h-3.5 w-3.5 text-primary" /> Recebido</p>
               <p className="mt-1 text-xl font-semibold tabular-nums text-primary">{formatCurrency(data?.totalReceived || 0)}</p>
             </div>
-            <div className="rounded-lg border border-primary/30 bg-primary/5 dark:bg-primary/15 p-3">
-              <p className="text-xs text-gray-500 dark:text-zinc-400">Em Atraso</p>
-              <p className="mt-1 text-xl font-semibold tabular-nums text-primary">{data?.overdueCount || 0}</p>
+            <div className={`rounded-lg border p-3 ${overdueAmt > 0 ? badCardCls : goodCardCls}`}>
+              <p className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-zinc-400"><DollarSign className="h-3.5 w-3.5" /> Em Atraso</p>
+              <p className={`mt-1 text-xl font-semibold tabular-nums ${overdueAmt > 0 ? "text-red-500" : "text-primary"}`}>{formatCurrency(overdueAmt)}</p>
             </div>
           </div>
         </div>
 
-        <div className="rounded-xl border border-primary/30 dark:border-primary/20 bg-primary/5 dark:bg-zinc-900 overflow-hidden">
-          <div className="flex items-center gap-2 px-5 py-4 border-b border-primary/20">
+        <div className="rounded-xl border border-green-700/50 dark:border-green-900/60 bg-gradient-to-br from-primary/10 to-primary/5 dark:from-green-950 dark:to-green-900/40 overflow-hidden">
+          <div className="flex items-center gap-2 px-5 py-4 border-b border-green-700/20 dark:border-green-900/40">
             <AlertTriangle className="h-4 w-4 text-primary" />
             <span className="text-sm font-bold text-primary">Precisa de Atenção</span>
           </div>
-          <div className="divide-y divide-primary/10">
-            <div className="flex items-center gap-4 px-5 py-4 bg-primary/5 dark:bg-primary/10">
+          <div className="divide-y divide-green-700/10 dark:divide-green-900/30">
+            <div className="flex items-center gap-4 px-5 py-4">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/15 dark:bg-primary/20">
                 <Calendar className="h-4 w-4 text-primary" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-bold text-primary">{data?.dueThisWeekCount ?? 0} Vencem esta semana</p>
-                <p className="text-xs text-primary/70">{formatCurrency(data?.dueThisWeekAmount ?? 0)} – empréstimos</p>
+                <p className="text-sm font-bold text-gray-800 dark:text-zinc-100">{data?.dueThisWeekCount ?? 0} Vencem esta semana</p>
+                <p className="text-xs text-gray-500 dark:text-zinc-400">{formatCurrency(data?.dueThisWeekAmount ?? 0)} – empréstimos</p>
               </div>
             </div>
-            <div className="flex items-center gap-4 px-5 py-4 bg-red-50 dark:bg-red-950/20">
+            <div className="flex items-center gap-4 px-5 py-4">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-100 dark:bg-red-900/30">
                 <UserX className="h-4 w-4 text-red-600 dark:text-red-400" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-bold text-red-700 dark:text-red-400">{data?.overdue30DaysCount ?? 0} Atrasados há +30 dias</p>
-                <p className="text-xs text-red-500">{formatCurrency(data?.overdue30DaysAmount ?? 0)} – clientes inadimplentes</p>
+                <p className="text-sm font-bold text-gray-800 dark:text-zinc-100">{data?.overdue30DaysCount ?? 0} Atrasados há +30 dias</p>
+                <p className="text-xs text-gray-500 dark:text-zinc-400">{formatCurrency(data?.overdue30DaysAmount ?? 0)} – clientes inadimplentes</p>
               </div>
             </div>
           </div>
           {(data?.dueThisWeekCount ?? 0) === 0 && (data?.overdue30DaysCount ?? 0) === 0 && (
-            <div className="flex items-center gap-2 px-5 py-4">
-              <Shield className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium text-primary">Tudo em ordem!</span>
+            <div className="flex items-center gap-3 px-5 py-4 border-t border-green-700/20 dark:border-green-900/40">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/15 dark:bg-green-900/40">
+                <CheckCircle2 className="h-4 w-4 text-primary dark:text-green-400" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-gray-800 dark:text-zinc-100">Tudo em ordem!</p>
+                <p className="text-xs text-gray-500 dark:text-zinc-400">Nenhum alerta no momento. Continue assim!</p>
+              </div>
             </div>
           )}
         </div>

@@ -84,8 +84,7 @@ export default function RelatorioEmprestimosPage() {
   const [fetchError, setFetchError] = useState<string | null>(null)
 
   useEffect(() => {
-    const saved = localStorage.getItem("caixaInicial")
-    if (saved) setCaixaInicial(parseFloat(saved))
+    fetch("/api/profile").then((r) => r.json()).then((data) => setCaixaInicial(Number(data?.caixaInicial) || 0)).catch(() => {})
   }, [])
 
   const fetchData = useCallback(async () => {
@@ -241,9 +240,15 @@ export default function RelatorioEmprestimosPage() {
   // ===== CALCULATIONS =====
   // Respeita o período do filtro: usa os ativos com VENCIMENTO dentro do período
   // (mesma base dos demais cards do relatório), não todos os ativos.
+  // Capital na rua = principal em aberto de TODOS os ativos (independe do vencimento;
+  // pagamento "só juros" renova o vencimento mas o principal continua na rua)
   const capitalNaRua = useMemo(() => {
-    return activeLoans.reduce((sum, l) => sum + remainingCapital(l), 0)
-  }, [activeLoans])
+    const base = loans.filter(l => l.status === "ACTIVE")
+    const typeFiltered = paymentFilter === "monthly" ? base.filter(l => l.installmentCount === 1)
+      : paymentFilter === "installment" ? base.filter(l => l.installmentCount > 1)
+      : base
+    return typeFiltered.reduce((sum, l) => sum + remainingCapital(l), 0)
+  }, [loans, paymentFilter])
 
   const emprestimosNoPeriodo = useMemo(() => {
     return newLoansInPeriod.reduce((sum, l) => sum + l.amount, 0)
@@ -790,7 +795,7 @@ export default function RelatorioEmprestimosPage() {
               <span className="text-xs text-gray-500 dark:text-zinc-400">Capital na Rua</span>
             </div>
             <p className="text-2xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(capitalNaRua)}</p>
-            <p className="text-xs text-gray-400 dark:text-zinc-500">{activeLoans.length} contratos no período</p>
+            <p className="text-xs text-gray-400 dark:text-zinc-500">{(paymentFilter === "monthly" ? modalityStats.monthly.contratos : paymentFilter === "installment" ? modalityStats.installment.contratos : modalityStats.all.contratos)} contratos ativos</p>
           </CardContent>
         </Card>
 

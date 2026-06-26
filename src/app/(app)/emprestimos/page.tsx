@@ -12,7 +12,7 @@ import {
   Plus, Trash2, DollarSign, Search, Clock, Pencil, FolderOpen,
   LayoutGrid, List, Filter, ChevronDown, Receipt, Calendar, Eye, FileText, RotateCcw,
   ExternalLink, Download, CheckCircle2, User, Lock, TrendingUp, ArrowRight, MoreHorizontal, Check, Tag, X,
-  MessageCircle, Send, Loader2
+  MessageCircle, Send, Loader2, Percent
 } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import { LoanRenegotiationContent } from "./_components/loan-renegotiation-content"
@@ -1484,7 +1484,7 @@ export default function EmprestimosPage() {
         <div className="flex items-center gap-2">
           {/* Vence Hoje */}
           <div className="relative group">
-            <Button onClick={sendBulkDueToday} disabled={bulkSendingDueToday} className="bg-amber-500 hover:bg-amber-600 text-white">
+            <Button onClick={sendBulkDueToday} disabled={bulkSendingDueToday} className="rounded-full bg-amber-500 hover:bg-amber-600 text-white">
               {bulkSendingDueToday ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <MessageCircle className="h-4 w-4 mr-2" />}
               {bulkSendingDueToday ? "Enviando..." : `Vence Hoje${dueTodayClients.length > 0 ? ` (${dueTodayClients.length})` : ""}`}
             </Button>
@@ -1509,7 +1509,7 @@ export default function EmprestimosPage() {
 
           {/* Atrasados */}
           <div className="relative group">
-            <Button onClick={sendBulkOverdue} disabled={bulkSendingOverdue} className="bg-red-600 hover:bg-red-700 text-white">
+            <Button onClick={sendBulkOverdue} disabled={bulkSendingOverdue} className="rounded-full bg-red-600 hover:bg-red-700 text-white">
               {bulkSendingOverdue ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <MessageCircle className="h-4 w-4 mr-2" />}
               {bulkSendingOverdue ? "Enviando..." : `Atrasados${overdueClients.length > 0 ? ` (${overdueClients.length})` : ""}`}
             </Button>
@@ -1548,7 +1548,7 @@ export default function EmprestimosPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-1 bg-white dark:bg-zinc-900 rounded-xl p-1 border border-gray-200 dark:border-zinc-800 overflow-x-auto">
+      <div className="flex w-fit max-w-full items-center gap-1 bg-white dark:bg-zinc-900 rounded-xl p-1 border border-gray-200 dark:border-zinc-800 overflow-x-auto">
         <button
           type="button"
           onClick={() => setActiveTab("all")}
@@ -1715,22 +1715,37 @@ export default function EmprestimosPage() {
       ) : groupedByClient.length === 0 ? (
         <div className="text-center py-8 text-gray-500 dark:text-zinc-400">Nenhum empréstimo encontrado</div>
       ) : viewMode === "list" ? (
-        <>
-        <div className="flex items-center gap-4 mb-2">
-          <div className="flex-1 rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-5 py-4">
-            <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Total Emprestado</p>
-            <p className="text-xl font-bold tabular-nums text-gray-900 dark:text-zinc-100 mt-1">{formatCurrency(filteredLoans.reduce((s, l) => s + l.amount, 0))}</p>
+        <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-900/40 p-4 space-y-3">
+        <div className="flex items-center gap-4">
+          <div className="flex flex-1 items-center gap-3 rounded-xl border border-gray-200 dark:border-zinc-800 border-l-4 border-l-blue-500 bg-white dark:bg-zinc-900 px-5 py-4">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-950/40">
+              <DollarSign className="h-5 w-5 text-blue-500" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Total Emprestado</p>
+              <p className="text-xl font-bold tabular-nums text-blue-600 dark:text-blue-400 mt-1">{formatCurrency(filteredLoans.reduce((s, l) => s + l.amount, 0))}</p>
+            </div>
           </div>
-          <div className="flex-1 rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-5 py-4">
-            <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Total a Receber</p>
-            <p className="text-xl font-bold tabular-nums text-primary mt-1">{formatCurrency(filteredLoans.reduce((s, l) => s + l.totalAmount, 0))}</p>
+          <div className="flex flex-1 items-center gap-3 rounded-xl border border-gray-200 dark:border-zinc-800 border-l-4 border-l-green-500 bg-white dark:bg-zinc-900 px-5 py-4">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-green-100 dark:bg-green-950/40">
+              <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Total a Receber</p>
+              <p className="text-xl font-bold tabular-nums text-green-600 dark:text-green-400 mt-1">{formatCurrency(filteredLoans.reduce((s, l) => s + l.totalAmount, 0))}</p>
+            </div>
           </div>
-          <div className="flex-1 rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-5 py-4">
-            <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Lucro a Receber</p>
-            <p className="text-xl font-bold tabular-nums text-primary mt-1">{formatCurrency(filteredLoans.reduce((s, l) => s + l.profit, 0))}</p>
+          <div className="flex flex-1 items-center gap-3 rounded-xl border border-gray-200 dark:border-zinc-800 border-l-4 border-l-purple-500 bg-white dark:bg-zinc-900 px-5 py-4">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-950/40">
+              <Percent className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Lucro a Receber</p>
+              <p className="text-xl font-bold tabular-nums text-purple-600 dark:text-purple-400 mt-1">{formatCurrency(filteredLoans.reduce((s, l) => s + l.profit, 0))}</p>
+            </div>
           </div>
         </div>
-        <p className="text-sm text-gray-500 dark:text-zinc-400 mb-2">{filteredLoans.length} empréstimo{filteredLoans.length !== 1 ? "s" : ""}</p>
+        <p className="text-sm text-gray-500 dark:text-zinc-400">{filteredLoans.length} empréstimo{filteredLoans.length !== 1 ? "s" : ""}</p>
         <div className="rounded-xl border border-gray-200 dark:border-zinc-800 overflow-hidden">
           <table className="w-full text-sm">
             <thead>
@@ -1825,7 +1840,7 @@ export default function EmprestimosPage() {
             </tbody>
           </table>
         </div>
-        </>
+        </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
           {groupedByClient.map((group) => {
@@ -2147,12 +2162,12 @@ export default function EmprestimosPage() {
                           </Button>
                       </div>
                     )}
-                    <div className="grid w-full min-w-0 gap-1.5 pb-1 grid-cols-[minmax(0,2fr)_minmax(0,2fr)_repeat(5,minmax(0,1fr))]">
-                      <Button size="sm" onClick={() => openPaymentDialog(loan)} className="min-w-0 h-10 px-2 text-xs border border-primary/15 bg-primary/10 font-medium text-primary shadow-none transition-colors hover:bg-primary/15 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20 sm:text-sm">
-                        <Receipt className="mr-1 h-4 w-4 shrink-0" /> <span className="truncate">Pagar</span>
+                    <div className="grid w-full min-w-0 gap-1.5 pb-1 grid-cols-[minmax(0,1.6fr)_minmax(0,2.4fr)_repeat(5,minmax(0,1fr))]">
+                      <Button size="sm" onClick={() => openPaymentDialog(loan)} className="min-w-0 h-10 px-2 text-xs border border-primary/15 bg-primary/10 font-medium text-primary shadow-none transition-colors hover:bg-primary/15 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20">
+                        <Receipt className="mr-1 h-4 w-4 shrink-0" /> <span className="whitespace-nowrap">Pagar</span>
                       </Button>
-                      <Button size="sm" onClick={() => openInterestRenegotiateDialog(loan)} className="min-w-0 h-10 px-2 text-xs border border-primary/15 bg-primary/10 font-medium text-primary shadow-none transition-colors hover:bg-primary/15 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20 sm:text-sm">
-                        <DollarSign className="mr-1 h-4 w-4 shrink-0" /> <span className="truncate">Pagar Juros</span>
+                      <Button size="sm" onClick={() => openInterestRenegotiateDialog(loan)} className="min-w-0 h-10 px-2 text-xs border border-primary/15 bg-primary/10 font-medium text-primary shadow-none transition-colors hover:bg-primary/15 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20">
+                        <DollarSign className="mr-1 h-4 w-4 shrink-0" /> <span className="whitespace-nowrap">Pagar Juros</span>
                       </Button>
                       <button
                         onClick={() => {

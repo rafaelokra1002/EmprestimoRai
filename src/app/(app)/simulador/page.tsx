@@ -166,7 +166,7 @@ export default function SimuladorPage() {
       </div>
 
       {/* ===== MAIN CARD ===== */}
-      <div className="rounded-xl border border-primary/30 bg-white dark:bg-zinc-900 p-4 space-y-3">
+      <div className="rounded-xl border border-primary/30 bg-primary/5 dark:bg-primary/10 p-4 space-y-3">
 
         {/* Row 1: Tipo de Pagamento + Modo de Juros + Nº Parcelas */}
         <div className="grid grid-cols-3 gap-3">
@@ -454,7 +454,7 @@ export default function SimuladorPage() {
           </button>
         </div>
 
-        <div className="rounded-xl border border-primary/30 bg-white dark:bg-zinc-900 overflow-hidden">
+        <div className="rounded-xl border border-primary/30 bg-primary/5 dark:bg-primary/10 overflow-hidden">
           <div className="grid grid-cols-3 px-4 py-2 border-b border-gray-100 dark:border-zinc-800 text-[10px] font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wider">
             <span>Parcela</span>
             <span>Vencimento</span>

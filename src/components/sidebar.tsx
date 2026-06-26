@@ -37,9 +37,16 @@ import {
 } from "lucide-react"
 import { useState } from "react"
 
+// Cor de fundo (gradiente) + badge do ícone por card
+const cardColors: Record<string, { card: string; badge: string; icon: string }> = {
+  blue: { card: "border-blue-500/30 bg-gradient-to-br from-blue-900/60 to-blue-950/20", badge: "bg-blue-500/20 ring-blue-500/30", icon: "text-blue-400" },
+  green: { card: "border-green-500/30 bg-gradient-to-br from-green-900/60 to-green-950/20", badge: "bg-green-500/20 ring-green-500/30", icon: "text-green-400" },
+  amber: { card: "border-amber-500/30 bg-gradient-to-br from-amber-900/60 to-amber-950/20", badge: "bg-amber-500/20 ring-amber-500/30", icon: "text-amber-400" },
+}
+
 const topItems = [
-  { href: "/perfil", label: "Meu Perfil", subtitle: "Ver informações", icon: User },
-  { href: "/funcionarios", label: "Funcionários", subtitle: "Cadastrar funcionários", icon: UserCog },
+  { href: "/perfil", label: "Meu Perfil", subtitle: "Ver informações", icon: User, color: "blue" },
+  { href: "/funcionarios", label: "Funcionários", subtitle: "Cadastrar funcionários", icon: UserCog, color: "green" },
 ]
 
 const highlightItem = {
@@ -47,6 +54,7 @@ const highlightItem = {
   label: "Relatórios Diário",
   subtitle: "Relatórios via WhatsApp",
   icon: FileText,
+  color: "amber",
 }
 
 const menuItems = [
@@ -111,51 +119,49 @@ export function Sidebar() {
 
         <nav className="p-3 space-y-1 flex-1 overflow-y-auto">
           {/* Top special items */}
-          <div className="space-y-1 mb-3">
+          <div className="space-y-2.5 mb-3">
             {topItems.map((item) => {
-              const isActive = pathname === item.href || pathname?.startsWith(item.href + "/")
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   onClick={() => setIsOpen(false)}
                   className={cn(
-                    "flex items-center gap-3 rounded-xl px-3 py-3 text-sm transition-all",
-                    isActive
-                      ? "bg-white/20 text-white shadow-sm ring-1 ring-white/10"
-                      : "bg-white/8 text-white/90 hover:bg-white/12"
+                    "flex items-center gap-2 rounded-xl px-2.5 py-3 text-sm transition-all border",
+                    cardColors[item.color].card
                   )}
                 >
-                  <item.icon className="h-6 w-6 shrink-0" />
+                  <span className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ring-1", cardColors[item.color].badge)}>
+                    <item.icon className={cn("h-4 w-4", cardColors[item.color].icon)} />
+                  </span>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm leading-tight">{item.label}</p>
-                    <p className={cn("text-[11px] leading-tight", isActive ? "text-white/70" : "text-violet-200")}>{item.subtitle}</p>
+                    <p className="truncate font-semibold text-[13px] leading-tight text-white">{item.label}</p>
+                    <p className="truncate text-[10px] leading-tight text-white/60">{item.subtitle}</p>
                   </div>
-                  <ChevronRight className="h-4 w-4 shrink-0 opacity-40" />
+                  <ChevronRight className="h-4 w-4 shrink-0 text-white/40" />
                 </Link>
               )
             })}
 
             {/* Highlighted item */}
             {highlightItem && (() => {
-              const isActive = pathname === highlightItem.href || pathname?.startsWith(highlightItem.href + "/")
               return (
                 <Link
                   href={highlightItem.href}
                   onClick={() => setIsOpen(false)}
                   className={cn(
-                    "flex items-center gap-3 rounded-xl px-3 py-3 text-sm transition-all border-2",
-                    isActive
-                      ? "bg-amber-500 border-amber-500 text-white shadow-sm"
-                      : "bg-amber-400/20 border-amber-400/50 text-white hover:bg-amber-400/30"
+                    "flex items-center gap-2 rounded-xl px-2.5 py-3 text-sm transition-all border",
+                    cardColors[highlightItem.color].card
                   )}
                 >
-                  <highlightItem.icon className={cn("h-6 w-6 shrink-0", isActive ? "text-white" : "text-amber-300")} />
+                  <span className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ring-1", cardColors[highlightItem.color].badge)}>
+                    <highlightItem.icon className={cn("h-4 w-4", cardColors[highlightItem.color].icon)} />
+                  </span>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm leading-tight">{highlightItem.label}</p>
-                    <p className={cn("text-[11px] leading-tight", isActive ? "text-white/70" : "text-violet-200")}>{highlightItem.subtitle}</p>
+                    <p className="truncate font-semibold text-[13px] leading-tight text-white">{highlightItem.label}</p>
+                    <p className="truncate text-[10px] leading-tight text-white/60">{highlightItem.subtitle}</p>
                   </div>
-                  <ChevronRight className="h-4 w-4 shrink-0 opacity-40" />
+                  <ChevronRight className="h-4 w-4 shrink-0 text-white/40" />
                 </Link>
               )
             })()}
@@ -170,11 +176,12 @@ export function Sidebar() {
               ? pathname === "/clientes"
               : pathname === item.href || pathname?.startsWith(item.href + "/")
             const className = cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-[15px] font-normal transition-all",
+              "flex items-center gap-2 rounded-lg px-2 py-2.5 text-xs transition-all overflow-hidden",
               isActive
-                ? "bg-white/18 text-white shadow-sm ring-1 ring-white/10"
-                : "text-violet-50/90 hover:bg-white/10 hover:text-white"
+                ? "border border-amber-500/40 border-l-[3px] border-l-amber-500 bg-gradient-to-r from-amber-950/50 via-zinc-900/40 to-zinc-900/10 text-white font-semibold shadow-sm"
+                : "font-normal text-violet-50/90 hover:bg-white/10 hover:text-white"
             )
+            const iconCls = cn("h-6 w-6 shrink-0", isActive && "text-amber-400")
 
             if (hardNavigationRoutes.has(item.href)) {
               return (
@@ -184,8 +191,9 @@ export function Sidebar() {
                   onClick={() => setIsOpen(false)}
                   className={className}
                 >
-                  <item.icon className="h-6 w-6 shrink-0" />
-                  <span className="truncate">{item.label}</span>
+                  <item.icon className={iconCls} />
+                  <span className="whitespace-nowrap">{item.label}</span>
+                  {isActive && <ChevronRight className="ml-auto h-3.5 w-3.5 shrink-0 text-amber-400" />}
                 </a>
               )
             }
@@ -197,8 +205,9 @@ export function Sidebar() {
                 onClick={() => setIsOpen(false)}
                 className={className}
               >
-                <item.icon className="h-4 w-4 shrink-0" />
-                <span className="truncate">{item.label}</span>
+                <item.icon className={iconCls} />
+                <span className="whitespace-nowrap">{item.label}</span>
+                {isActive && <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-amber-400" />}
               </Link>
             )
           })}

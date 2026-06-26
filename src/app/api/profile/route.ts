@@ -80,6 +80,7 @@ export async function GET() {
       ...user,
       chargeName: meta.chargeName || user.companyName || "",
       paymentLink: meta.paymentLink || "",
+      caixaInicial: Number(meta.caixaInicial) || 0,
       logoUrl: user.image || "",
       whatsappConnected: Boolean(meta.whatsappConnected),
       whatsappPairingCode: meta.whatsappPairingCode || "",
@@ -108,7 +109,7 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json()
-    const { name, email, phone, companyName, companyDoc, pixKey, password, chargeName, paymentLink, logoUrl, whatsappConnected, renewSubscription } = body
+    const { name, email, phone, companyName, companyDoc, pixKey, password, chargeName, paymentLink, logoUrl, whatsappConnected, renewSubscription, caixaInicial } = body
 
     const current = await prisma.user.findUnique({
       where: { id: (session.user as any).id },
@@ -124,6 +125,10 @@ export async function PUT(request: Request) {
 
     if (paymentLink !== undefined) {
       meta.paymentLink = String(paymentLink || "")
+    }
+
+    if (caixaInicial !== undefined) {
+      meta.caixaInicial = Number(caixaInicial) || 0
     }
 
     if (typeof whatsappConnected === "boolean") {
