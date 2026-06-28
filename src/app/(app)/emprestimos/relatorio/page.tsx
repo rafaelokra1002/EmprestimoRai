@@ -632,6 +632,27 @@ export default function RelatorioEmprestimosPage() {
   */
 
   const FILTER_LABELS: Record<string, string> = { monthly: "Mensal", all: "Todos", installment: "Parcelado" }
+  // Cor por modalidade: Todos = roxo, Parcelado = azul, Mensal = âmbar
+  const FILTER_COLORS: Record<string, { active: string; idle: string; badge: string; value: string }> = {
+    all: {
+      active: "border-purple-500 bg-purple-500/10 dark:bg-purple-500/15 shadow-sm shadow-purple-500/20",
+      idle: "border-purple-500/40 bg-purple-500/5 dark:bg-purple-500/10 hover:border-purple-500 hover:bg-purple-500/10",
+      badge: "bg-purple-500 text-white",
+      value: "text-purple-600 dark:text-purple-400",
+    },
+    installment: {
+      active: "border-blue-500 bg-blue-500/10 dark:bg-blue-500/15 shadow-sm shadow-blue-500/20",
+      idle: "border-blue-500/40 bg-blue-500/5 dark:bg-blue-500/10 hover:border-blue-500 hover:bg-blue-500/10",
+      badge: "bg-blue-500 text-white",
+      value: "text-blue-600 dark:text-blue-400",
+    },
+    monthly: {
+      active: "border-amber-500 bg-amber-500/10 dark:bg-amber-500/15 shadow-sm shadow-amber-500/20",
+      idle: "border-amber-500/40 bg-amber-500/5 dark:bg-amber-500/10 hover:border-amber-500 hover:bg-amber-500/10",
+      badge: "bg-amber-500 text-white",
+      value: "text-amber-600 dark:text-amber-400",
+    },
+  }
 
   return (
     <div className="space-y-6 pt-6 pb-12">
@@ -676,22 +697,20 @@ export default function RelatorioEmprestimosPage() {
 
       {/* ===== PAYMENT TYPE FILTER ===== */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center justify-between flex-wrap gap-3 rounded-xl border border-gray-200 dark:border-zinc-800 bg-gray-50/60 dark:bg-zinc-900/40 px-4 py-3">
           <div className="flex items-center gap-2 flex-wrap">
             <Filter className="h-4 w-4 text-gray-500 dark:text-zinc-400" />
             <span className="text-sm font-medium text-gray-700 dark:text-zinc-300">Tipo de Pagamento:</span>
             <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-primary/10 text-primary">{FILTER_LABELS[paymentFilter]}</span>
             <span className="text-sm text-primary">Na Rua: {formatCurrency(capitalNaRua)}</span>
           </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setShowModalityCards(v => !v)}
-              className="flex items-center gap-1 text-sm text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200"
-            >
-              {showModalityCards ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-              {showModalityCards ? "Ocultar" : "Mostrar"}
-            </button>
-          </div>
+          <button
+            onClick={() => setShowModalityCards(v => !v)}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-primary/50 px-3 py-1.5 text-sm font-medium text-primary transition hover:bg-primary/5 dark:hover:bg-primary/10"
+          >
+            {showModalityCards ? "Ocultar Filtros" : "Ver Filtros"}
+            {showModalityCards ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </button>
         </div>
 
         {showModalityCards && (
@@ -704,21 +723,19 @@ export default function RelatorioEmprestimosPage() {
                   key={type}
                   onClick={() => setPaymentFilter(type)}
                   className={`rounded-xl border p-4 text-left transition-colors ${
-                    isActive
-                      ? "border-primary bg-primary/5 dark:bg-primary/10"
-                      : "border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-primary/50 hover:bg-primary/5 dark:hover:bg-primary/10"
+                    isActive ? FILTER_COLORS[type].active : FILTER_COLORS[type].idle
                   }`}
                 >
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-sm font-semibold text-gray-800 dark:text-zinc-200">{FILTER_LABELS[type]}</span>
                     {isActive && (
-                      <span className="text-[10px] font-bold uppercase tracking-wide rounded-full px-2 py-0.5 bg-primary text-white">Ativo</span>
+                      <span className={`text-[10px] font-bold uppercase tracking-wide rounded-full px-2 py-0.5 ${FILTER_COLORS[type].badge}`}>Ativo</span>
                     )}
                   </div>
                   <div className="space-y-1 text-xs">
                     <div className="flex items-center justify-between">
                       <span className="text-gray-500 dark:text-zinc-400">Na Rua</span>
-                      <span className="font-semibold text-primary tabular-nums">{formatCurrency(stats.capitalNaRua)}</span>
+                      <span className={`font-semibold tabular-nums ${FILTER_COLORS[type].value}`}>{formatCurrency(stats.capitalNaRua)}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-gray-500 dark:text-zinc-400">Lucro</span>
@@ -788,7 +805,7 @@ export default function RelatorioEmprestimosPage() {
 
       {/* ===== 6 STATS CARDS ===== */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <Card className="border-gray-200 dark:border-zinc-800">
+        <Card className="border-primary/50 dark:border-primary/40">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
               <span className="text-base leading-none">💵</span>
@@ -799,7 +816,7 @@ export default function RelatorioEmprestimosPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-gray-200 dark:border-zinc-800">
+        <Card className="border-primary/50 dark:border-primary/40">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
               <span className="text-base leading-none">💰</span>
@@ -810,7 +827,7 @@ export default function RelatorioEmprestimosPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-gray-200 dark:border-zinc-800">
+        <Card className="border-primary/50 dark:border-primary/40">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
               <span className="text-base leading-none">✅</span>
@@ -821,7 +838,7 @@ export default function RelatorioEmprestimosPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-gray-200 dark:border-zinc-800">
+        <Card className="border-primary/50 dark:border-primary/40">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
               <span className="text-base leading-none">⏳</span>
@@ -832,7 +849,7 @@ export default function RelatorioEmprestimosPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-gray-200 dark:border-zinc-800">
+        <Card className="border-primary/50 dark:border-primary/40">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
               <span className="text-base leading-none">⚠️</span>
@@ -843,7 +860,7 @@ export default function RelatorioEmprestimosPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-gray-200 dark:border-zinc-800">
+        <Card className="border-primary/50 dark:border-primary/40">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
               <span className="text-base leading-none">🏅</span>
@@ -857,7 +874,7 @@ export default function RelatorioEmprestimosPage() {
       {/* ===== CHARTS ===== */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Evolução Mensal */}
-        <Card className="border-gray-200 dark:border-zinc-800">
+        <Card className="border-primary/50 dark:border-primary/40">
           <CardContent className="p-6">
             <div className="flex items-center gap-2 mb-4">
               <TrendingUp className="h-5 w-5 text-primary" />
@@ -884,7 +901,7 @@ export default function RelatorioEmprestimosPage() {
         </Card>
 
         {/* Distribuição */}
-        <Card className="border-gray-200 dark:border-zinc-800">
+        <Card className="border-primary/50 dark:border-primary/40">
           <CardContent className="p-6">
             <div className="flex items-center gap-2 mb-4">
               <Wallet className="h-5 w-5 text-primary" />
@@ -913,7 +930,7 @@ export default function RelatorioEmprestimosPage() {
       </div>
 
       {/* ===== CONTRATOS ATIVOS TABLE ===== */}
-      <Card className="border-gray-200 dark:border-zinc-800">
+      <Card className="border-primary/50 dark:border-primary/40">
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">

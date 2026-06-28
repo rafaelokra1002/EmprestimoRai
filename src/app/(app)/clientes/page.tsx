@@ -846,7 +846,7 @@ export default function ClientesPage() {
 
       {/* Listing */}
       {clientesView === "clientes" && (viewMode === "table" ? (
-        <div className="rounded-xl border border-primary/40 dark:border-primary/30 overflow-hidden bg-white dark:bg-zinc-900">
+        <div className="rounded-xl overflow-hidden bg-white dark:bg-zinc-900">
           {/* Search bar */}
           <div className="flex items-center gap-3 px-5 py-4 bg-white dark:bg-zinc-900">
             <div className="relative flex-1">
@@ -950,7 +950,7 @@ export default function ClientesPage() {
           </Table>
         </div>
       ) : (
-        <div className="rounded-xl border border-primary/40 dark:border-primary/30 overflow-hidden bg-white dark:bg-zinc-900">
+        <div className="rounded-xl overflow-hidden bg-white dark:bg-zinc-900">
           {/* Search bar */}
           <div className="flex items-center gap-3 px-5 py-4 bg-white dark:bg-zinc-900">
             <div className="relative flex-1">

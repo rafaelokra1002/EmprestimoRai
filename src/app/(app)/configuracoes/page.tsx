@@ -386,7 +386,7 @@ export default function ConfiguracoesPage() {
       )}
 
       {/* ═══════════════════════════ APARÊNCIA ═══════════════════════════ */}
-      <div className="bg-gray-50 dark:bg-zinc-800/60 border border-gray-200 dark:border-zinc-800 rounded-2xl p-6 space-y-5">
+      <div className="bg-gray-50 dark:bg-zinc-800/60 border border-primary/50 dark:border-primary/40 rounded-2xl p-6 space-y-5">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
             <Palette className="h-5 w-5 text-primary" />
@@ -425,7 +425,7 @@ export default function ConfiguracoesPage() {
       </div>
 
       {/* ═══════════════════════════ PERFIL ═══════════════════════════ */}
-      <div className="bg-gray-50 dark:bg-zinc-800/60 border border-gray-200 dark:border-zinc-800 rounded-2xl p-6 space-y-5">
+      <div className="bg-gray-50 dark:bg-zinc-800/60 border border-primary/50 dark:border-primary/40 rounded-2xl p-6 space-y-5">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-primary/5 dark:bg-primary/150/10 flex items-center justify-center">
             <User className="h-5 w-5 text-primary" />
@@ -480,7 +480,7 @@ export default function ConfiguracoesPage() {
       </div>
 
       {/* ═══════════════════════════ EMPRESA ═══════════════════════════ */}
-      <div className="bg-gray-50 dark:bg-zinc-800/60 border border-gray-200 dark:border-zinc-800 rounded-2xl p-6 space-y-5">
+      <div className="bg-gray-50 dark:bg-zinc-800/60 border border-primary/50 dark:border-primary/40 rounded-2xl p-6 space-y-5">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-primary/5 dark:bg-primary/150/10 flex items-center justify-center">
             <Building2 className="h-5 w-5 text-primary" />
@@ -514,7 +514,7 @@ export default function ConfiguracoesPage() {
       </button>
 
       {/* ═══════════════════════════ MENSAGEM DE COBRANÇA ═══════════════════════════ */}
-      <div className="bg-gray-50 dark:bg-zinc-800/60 border border-gray-200 dark:border-zinc-800 rounded-2xl p-6 space-y-5">
+      <div className="bg-gray-50 dark:bg-zinc-800/60 border border-primary/50 dark:border-primary/40 rounded-2xl p-6 space-y-5">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-primary/5 dark:bg-primary/150/10 flex items-center justify-center">
             <Settings2 className="h-5 w-5 text-primary" />
@@ -637,7 +637,7 @@ export default function ConfiguracoesPage() {
       </div>
 
       {/* ═══════════════════════════ FUNCIONÁRIOS ═══════════════════════════ */}
-      <div className="bg-gray-50 dark:bg-zinc-800/60 border border-gray-200 dark:border-zinc-800 rounded-2xl p-6 space-y-6">
+      <div className="bg-gray-50 dark:bg-zinc-800/60 border border-primary/50 dark:border-primary/40 rounded-2xl p-6 space-y-6">
         {/* Icon + Title centered */}
         <div className="flex flex-col items-center text-center space-y-3 pt-2">
           <div className="w-20 h-20 rounded-full bg-primary/5 dark:bg-primary/150/10 border-2 border-primary/30 dark:border-primary/30 flex items-center justify-center">

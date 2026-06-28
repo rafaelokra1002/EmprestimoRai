@@ -156,7 +156,7 @@ export default function SimuladorPage() {
   }
 
   return (
-    <div className="space-y-4 pt-4 pb-8 max-w-2xl">
+    <div className="space-y-4 pt-4 pb-8 max-w-5xl">
       {/* ===== HEADER ===== */}
       <div>
         <h1 className="text-xl font-bold text-gray-900 dark:text-zinc-100 flex items-center gap-2">

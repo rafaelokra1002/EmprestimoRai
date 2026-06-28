@@ -224,3 +224,5 @@ html:not(.dark) .focus-visible\:ring-emerald-500:focus-visible { --tw-ring-color
 .dark.purple .dark\:border-zinc-800\/50,
 .dark.purple .dark\:border-zinc-700 { border-color: hsl(258 28% 28%) !important; }
 .dark.purple .dark\:hover\:bg-zinc-800:hover { background-color: hsl(258 36% 27%) !important; }
+/* Header roxo no tema roxo (a regra acima só cobre dark:bg-zinc-950 sem opacidade) */
+.dark.purple .dark\:bg-zinc-950\/80 { background-color: hsl(258 45% 15% / 0.85) !important; }

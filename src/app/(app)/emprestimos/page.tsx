@@ -1484,10 +1484,15 @@ export default function EmprestimosPage() {
         <div className="flex items-center gap-2">
           {/* Vence Hoje */}
           <div className="relative group">
-            <Button onClick={sendBulkDueToday} disabled={bulkSendingDueToday} className="rounded-full bg-amber-500 hover:bg-amber-600 text-white">
+            <Button onClick={sendBulkDueToday} disabled={bulkSendingDueToday} className="rounded-xl bg-amber-500 hover:bg-amber-600 text-white">
               {bulkSendingDueToday ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <MessageCircle className="h-4 w-4 mr-2" />}
-              {bulkSendingDueToday ? "Enviando..." : `Vence Hoje${dueTodayClients.length > 0 ? ` (${dueTodayClients.length})` : ""}`}
+              {bulkSendingDueToday ? "Enviando..." : "Vence Hoje"}
             </Button>
+            {dueTodayClients.length > 0 && !bulkSendingDueToday && (
+              <span className="pointer-events-none absolute -top-1.5 -right-1.5 z-10 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-bold text-white">
+                {dueTodayClients.length}
+              </span>
+            )}
             {dueTodayClients.length > 0 && (
               <div className="pointer-events-none absolute right-0 top-full z-50 mt-2 hidden w-56 rounded-xl border border-amber-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-900 group-hover:block">
                 <div className="px-3 py-2 border-b border-amber-100 dark:border-zinc-800">
@@ -1509,10 +1514,15 @@ export default function EmprestimosPage() {
 
           {/* Atrasados */}
           <div className="relative group">
-            <Button onClick={sendBulkOverdue} disabled={bulkSendingOverdue} className="rounded-full bg-red-600 hover:bg-red-700 text-white">
+            <Button onClick={sendBulkOverdue} disabled={bulkSendingOverdue} className="rounded-xl bg-red-600 hover:bg-red-700 text-white">
               {bulkSendingOverdue ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <MessageCircle className="h-4 w-4 mr-2" />}
-              {bulkSendingOverdue ? "Enviando..." : `Atrasados${overdueClients.length > 0 ? ` (${overdueClients.length})` : ""}`}
+              {bulkSendingOverdue ? "Enviando..." : "Atrasados"}
             </Button>
+            {overdueClients.length > 0 && !bulkSendingOverdue && (
+              <span className="pointer-events-none absolute -top-1.5 -right-1.5 z-10 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
+                {overdueClients.length}
+              </span>
+            )}
             {overdueClients.length > 0 && (
               <div className="pointer-events-none absolute right-0 top-full z-50 mt-2 hidden w-56 rounded-xl border border-red-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-900 group-hover:block">
                 <div className="px-3 py-2 border-b border-red-100 dark:border-zinc-800">
@@ -1534,12 +1544,12 @@ export default function EmprestimosPage() {
           <button
             type="button"
             onClick={() => { setBatchResult(null); setBatchOpen(true) }}
-            className="relative inline-flex items-center gap-2 rounded-full border border-blue-400 bg-white px-4 py-2 text-sm font-semibold text-blue-600 transition hover:bg-blue-50 dark:bg-zinc-900 dark:border-blue-500 dark:text-blue-400 dark:hover:bg-zinc-800"
+            className="relative inline-flex items-center gap-2 rounded-xl border border-blue-400 bg-white px-4 py-2 text-sm font-semibold text-blue-600 transition hover:bg-blue-50 dark:bg-zinc-900 dark:border-blue-500 dark:text-blue-400 dark:hover:bg-zinc-800"
           >
             <MessageCircle className="h-4 w-4" />
             Cobrança em Lote
             {loansDueIn2Days.length > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[10px] font-bold text-white">
+              <span className="absolute -top-1.5 -right-1.5 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-blue-600 px-1 text-[10px] font-bold text-white">
                 {loansDueIn2Days.length}
               </span>
             )}
@@ -1662,35 +1672,35 @@ export default function EmprestimosPage() {
         </div>
 
         {filterOpen && (
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex w-fit max-w-full items-center gap-1.5 flex-wrap rounded-xl border border-gray-200 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-900/40 p-2">
             {filterOptions.map((opt) => {
               const isActive = loanFilter === opt.value
               const toneClass =
                 opt.value === "overdue"
                   ? isActive
-                    ? "border-red-500 bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-300"
+                    ? "border-red-500 bg-red-500 text-white shadow-sm"
                     : "border-red-300 text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950/20"
                   : opt.value === "due_today"
                     ? isActive
-                      ? "border-orange-500 bg-orange-50 text-orange-600 dark:bg-orange-950/30 dark:text-orange-300"
+                      ? "border-orange-500 bg-orange-500 text-white shadow-sm"
                       : "border-orange-300 text-orange-600 hover:bg-orange-50 dark:border-orange-800 dark:text-orange-300 dark:hover:bg-orange-950/20"
                     : opt.value === "interest_only"
                       ? isActive
-                        ? "border-purple-500 bg-purple-50 text-purple-600 dark:bg-purple-950/30 dark:text-purple-300"
+                        ? "border-purple-500 bg-purple-500 text-white shadow-sm"
                         : "border-purple-300 text-purple-600 hover:bg-purple-50 dark:border-purple-800 dark:text-purple-300 dark:hover:bg-purple-950/20"
                       : opt.value === "monthly" || opt.value === "installments"
                         ? isActive
-                          ? "border-blue-500 bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-300"
+                          ? "border-blue-500 bg-blue-500 text-white shadow-sm"
                           : "border-blue-300 text-blue-600 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-300 dark:hover:bg-blue-950/20"
                         : isActive
-                          ? "border-primary/50 bg-primary/10 text-primary dark:bg-primary/20"
+                          ? "border-primary bg-primary text-white shadow-sm"
                           : "border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
 
               return (
                 <button
                   key={opt.value}
                   onClick={() => setLoanFilter(opt.value)}
-                  className={`inline-flex items-center gap-2 rounded-2xl border px-4 py-2 text-sm font-semibold transition ${toneClass}`}
+                  className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition ${toneClass}`}
                 >
                   {opt.label}
                 </button>
@@ -1939,18 +1949,10 @@ export default function EmprestimosPage() {
 
                   {/* Valor Restante */}
                   <div className="px-4 pb-3">
-                    <div className={`${remainingBg} rounded-2xl border border-white/50 px-4 py-3 shadow-sm dark:border-white/5`}>
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-500 dark:text-zinc-400">Saldo Atual</p>
-                          <p className={`mt-1 text-[1.65rem] font-bold tabular-nums leading-none tracking-tight ${remainingColor}`}>{formatCurrency(remaining)}</p>
-                          <p className="mt-1 text-[11px] text-gray-500 dark:text-zinc-400">restante a receber</p>
-                        </div>
-                        <span className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${status.color}`}>
-                          {status.label}
-                        </span>
-                      </div>
-                      <p className="mt-2 text-[11px] text-gray-500 dark:text-zinc-400">valor atualizado conforme pagamentos e vencimentos</p>
+                    <div className={`${remainingBg} rounded-2xl border border-white/50 px-4 py-3 text-center shadow-sm dark:border-white/5`}>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-500 dark:text-zinc-400">Saldo Atual</p>
+                      <p className={`mt-1 text-[1.65rem] font-bold tabular-nums leading-none tracking-tight ${remainingColor}`}>{formatCurrency(remaining)}</p>
+                      <p className="mt-1 text-[11px] text-gray-500 dark:text-zinc-400">restante a receber</p>
                     </div>
                   </div>
 
@@ -2163,10 +2165,10 @@ export default function EmprestimosPage() {
                       </div>
                     )}
                     <div className="grid w-full min-w-0 gap-1.5 pb-1 grid-cols-[minmax(0,1.6fr)_minmax(0,2.4fr)_repeat(5,minmax(0,1fr))]">
-                      <Button size="sm" onClick={() => openPaymentDialog(loan)} className="min-w-0 h-10 px-2 text-xs border border-primary/15 bg-primary/10 font-medium text-primary shadow-none transition-colors hover:bg-primary/15 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20">
+                      <Button title="Registre pagamentos: parcela, valor parcial ou quitação total" size="sm" onClick={() => openPaymentDialog(loan)} className="min-w-0 h-10 px-2 text-xs border border-primary/15 bg-primary/10 font-medium text-primary shadow-none transition-colors hover:bg-primary/15 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20">
                         <Receipt className="mr-1 h-4 w-4 shrink-0" /> <span className="whitespace-nowrap">Pagar</span>
                       </Button>
-                      <Button size="sm" onClick={() => openInterestRenegotiateDialog(loan)} className="min-w-0 h-10 px-2 text-xs border border-primary/15 bg-primary/10 font-medium text-primary shadow-none transition-colors hover:bg-primary/15 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20">
+                      <Button title="Pague apenas os juros e renove o prazo (+30 dias)" size="sm" onClick={() => openInterestRenegotiateDialog(loan)} className="min-w-0 h-10 px-2 text-xs border border-primary/15 bg-primary/10 font-medium text-primary shadow-none transition-colors hover:bg-primary/15 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20">
                         <DollarSign className="mr-1 h-4 w-4 shrink-0" /> <span className="whitespace-nowrap">Pagar Juros</span>
                       </Button>
                       <button
@@ -2292,12 +2294,15 @@ export default function EmprestimosPage() {
               const fCardBg = isGroupRed ? "bg-red-50 dark:bg-red-950/20" : isGroupPurple ? "bg-purple-50 dark:bg-purple-950/20" : isGroupBlue ? "bg-blue-50 dark:bg-blue-950/20" : isGroupOrange ? "bg-orange-50 dark:bg-orange-950/20" : "bg-white dark:bg-zinc-900"
               const fRemainingColor = isGroupRed ? "text-red-600 dark:text-red-400" : isGroupPurple ? "text-purple-600 dark:text-purple-400" : isGroupBlue ? "text-blue-600 dark:text-blue-400" : isGroupOrange ? "text-orange-600 dark:text-orange-400" : "text-primary"
               const fRemainingBg = isGroupRed ? "bg-red-50 dark:bg-red-950/30" : isGroupPurple ? "bg-purple-50 dark:bg-purple-950/30" : isGroupBlue ? "bg-blue-50 dark:bg-blue-950/30" : isGroupOrange ? "bg-orange-50 dark:bg-orange-950/30" : "bg-primary/10 dark:bg-primary/20"
+              const fCellBg = isGroupRed ? "bg-red-50 dark:bg-red-950/20" : isGroupPurple ? "bg-purple-50 dark:bg-purple-950/20" : isGroupBlue ? "bg-blue-50 dark:bg-blue-950/20" : isGroupOrange ? "bg-orange-50 dark:bg-orange-950/20" : "bg-gray-50 dark:bg-zinc-800/50"
 
               return (
                 <div key={group.clientId} className={`rounded-xl border overflow-hidden shadow-sm hover:shadow-md transition-shadow ${fCardBorder} ${fCardBg}`}>
-                  {/* Header - nome centralizado */}
-                  <div className="px-4 pt-4 pb-2 text-center border-b border-gray-100 dark:border-zinc-800">
-                    <h3 className="font-semibold text-base text-gray-900 dark:text-zinc-100">{group.clientName}</h3>
+                  {/* Header - nome em destaque */}
+                  <div className="flex flex-col border-b border-gray-100 dark:border-zinc-800 px-3 pt-3 pb-3">
+                    <div className="rounded-lg bg-black/5 dark:bg-black/20 px-4 py-2 text-center">
+                      <h3 className="truncate font-semibold text-base text-gray-900 dark:text-zinc-100">{group.clientName}</h3>
+                    </div>
                   </div>
 
                   {/* Avatar + badges */}
@@ -2317,27 +2322,28 @@ export default function EmprestimosPage() {
 
                   {/* Valor Restante */}
                   <div className="px-4 pb-3">
-                    <div className={`${fRemainingBg} rounded-lg px-4 py-3 text-center`}>
-                      <p className={`text-lg font-bold tabular-nums tracking-tight ${fRemainingColor}`}>{formatCurrency(remaining)}</p>
-                      <p className="text-[11px] text-gray-400 dark:text-zinc-500 mt-0.5">restante a receber</p>
+                    <div className={`${fRemainingBg} rounded-2xl border border-white/50 px-4 py-3 text-center shadow-sm dark:border-white/5`}>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-500 dark:text-zinc-400">Saldo Total</p>
+                      <p className={`mt-1 text-[1.65rem] font-bold tabular-nums leading-none tracking-tight ${fRemainingColor}`}>{formatCurrency(remaining)}</p>
+                      <p className="mt-1 text-[11px] text-gray-500 dark:text-zinc-400">restante a receber</p>
                     </div>
                   </div>
 
                   {/* Grid de valores */}
                   <div className="mx-4 grid grid-cols-2 gap-px bg-gray-100 dark:bg-zinc-800 rounded-lg overflow-hidden border border-gray-100 dark:border-zinc-800">
-                    <div className="bg-white dark:bg-zinc-900 px-3 py-2.5">
+                    <div className={`${fCellBg} px-3 py-2.5`}>
                       <p className="text-[11px] text-gray-400 dark:text-zinc-500">Emprestado</p>
                       <p className="text-sm font-bold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(totalAmount)}</p>
                     </div>
-                    <div className="bg-white dark:bg-zinc-900 px-3 py-2.5 text-right">
+                    <div className={`${fCellBg} px-3 py-2.5 text-right`}>
                       <p className="text-[11px] text-gray-400 dark:text-zinc-500">Total a Receber</p>
                       <p className="text-sm font-bold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(totalReceivable)}</p>
                     </div>
-                    <div className="bg-white dark:bg-zinc-900 px-3 py-2.5">
+                    <div className={`${fCellBg} px-3 py-2.5`}>
                       <p className="text-[11px] text-gray-400 dark:text-zinc-500 flex items-center gap-1"><Lock className="h-3 w-3" /> Lucro Previsto</p>
                       <p className="text-sm font-bold tabular-nums text-primary">{formatCurrency(totalProfit)}</p>
                     </div>
-                    <div className="bg-white dark:bg-zinc-900 px-3 py-2.5 text-right">
+                    <div className={`${fCellBg} px-3 py-2.5 text-right`}>
                       <p className="text-[11px] text-gray-400 dark:text-zinc-500 flex items-center gap-1 justify-end"><Check className="h-3 w-3" /> Recebido</p>
                       <p className="text-sm font-bold tabular-nums text-primary">{formatCurrency(totalReceivedProfit)}</p>
                     </div>
@@ -3606,7 +3612,7 @@ export default function EmprestimosPage() {
         open={!!renegotiateDialog}
         onClose={() => { setRenegotiateDialog(null); setRenegotiateMode(null); setRenegotiateEntry("all"); setRenegotiateAmount(0); setRenegotiateNotes("") }}
         title={renegotiateEntry === "interest" ? "Renegociar Dívida" : "Renegociação de Contrato"}
-        className={renegotiateEntry === "interest" ? "max-w-2xl" : "max-w-2xl"}
+        className="max-w-lg"
       >
         {renegotiateDialog && (
           renegotiateEntry === "interest" ? (() => {
@@ -3623,14 +3629,14 @@ export default function EmprestimosPage() {
             const pendingPartialInterest = currentInterest > 0 ? Math.max(currentInterest - cyclePaid, 0) : 0
             const amountAfterInterestPayment = Math.max(currentRemaining - renegotiateAmount, currentLoan.totalAmount)
             return (
-              <div className="space-y-5">
-                <div className="rounded-3xl bg-gradient-to-r from-emerald-50 via-emerald-50 to-slate-50 p-5 dark:from-emerald-950/20 dark:via-emerald-950/10 dark:to-zinc-900">
+              <div className="space-y-4">
+                <div className="rounded-2xl bg-gradient-to-r from-emerald-50 via-emerald-50 to-slate-50 p-4 dark:from-emerald-950/20 dark:via-emerald-950/10 dark:to-zinc-900">
                   <div className="flex items-center gap-3">
                     <Avatar name={currentLoan.client.name} src={currentLoan.client.photo} size="sm" />
                     <div>
-                      <p className="text-xl font-semibold text-slate-900 dark:text-zinc-100">{currentLoan.client.name}</p>
-                      <p className="text-base text-slate-500 dark:text-zinc-400">Saldo devedor: {formatCurrency(getRemaining(currentLoan))}</p>
-                      <p className="text-base text-slate-500 dark:text-zinc-400">Valor por parcela: {formatCurrency(nextInstallment?.amount || currentLoan.installmentValue)}</p>
+                      <p className="text-base font-semibold text-slate-900 dark:text-zinc-100">{currentLoan.client.name}</p>
+                      <p className="text-sm text-slate-500 dark:text-zinc-400">Saldo devedor: {formatCurrency(getRemaining(currentLoan))}</p>
+                      <p className="text-sm text-slate-500 dark:text-zinc-400">Valor por parcela: {formatCurrency(nextInstallment?.amount || currentLoan.installmentValue)}</p>
                     </div>
                   </div>
                 </div>
@@ -3650,15 +3656,15 @@ export default function EmprestimosPage() {
                           setRenegotiateAmount(currentInterest)
                         }
                       }}
-                      className="w-full rounded-3xl border p-5 text-left transition-colors border-gray-200 bg-white hover:bg-gray-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+                      className="w-full rounded-2xl border p-4 text-left transition-colors border-primary/40 bg-primary/5 hover:bg-primary/10 dark:bg-primary/10 dark:hover:bg-primary/20"
                     >
-                      <div className="flex items-center gap-4">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary">
-                          <DollarSign className="h-6 w-6" />
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-primary dark:bg-primary/20 dark:text-primary">
+                          <DollarSign className="h-5 w-5" />
                         </div>
                         <div>
-                          <p className="text-xl font-semibold text-gray-900 dark:text-zinc-100">Cliente pagou só os juros</p>
-                          <p className="text-base text-gray-500 dark:text-zinc-400">Registrar pagamento apenas dos juros da parcela</p>
+                          <p className="text-base font-semibold text-primary">Cliente pagou só os juros</p>
+                          <p className="text-sm text-gray-500 dark:text-zinc-400">Registrar pagamento apenas dos juros da parcela</p>
                         </div>
                       </div>
                     </button>
@@ -3669,15 +3675,15 @@ export default function EmprestimosPage() {
                         setRenegotiateMode("partial")
                         setRenegotiateAmount(pendingPartialInterest || currentInterest)
                       }}
-                      className="w-full rounded-3xl border p-5 text-left transition-colors border-gray-200 bg-white hover:bg-gray-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+                      className="w-full rounded-2xl border p-4 text-left transition-colors border-blue-400/50 bg-blue-50/40 hover:bg-blue-50 dark:border-blue-900/50 dark:bg-blue-950/20 dark:hover:bg-blue-950/30"
                     >
-                      <div className="flex items-center gap-4">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary">
-                          <DollarSign className="h-6 w-6" />
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/15 text-blue-500 dark:bg-blue-500/20">
+                          <DollarSign className="h-5 w-5" />
                         </div>
                         <div>
-                          <p className="text-xl font-semibold text-gray-900 dark:text-zinc-100">Pagamento parcial de juros</p>
-                          <p className="text-base text-gray-500 dark:text-zinc-400">Registrar pagamento de parte dos juros de uma parcela</p>
+                          <p className="text-base font-semibold text-blue-600 dark:text-blue-400">Pagamento parcial de juros</p>
+                          <p className="text-sm text-gray-500 dark:text-zinc-400">Registrar pagamento de parte dos juros de uma parcela</p>
                         </div>
                       </div>
                     </button>

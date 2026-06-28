@@ -85,7 +85,7 @@ export function Sidebar() {
       {/* Mobile toggle */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        style={{ background: theme === "dark" ? "linear-gradient(180deg, #27272a 0%, #1c1c1f 100%)" : "var(--sidebar-via)" }}
+        style={{ background: theme === "purple" ? "linear-gradient(180deg, #4c1d95 0%, #2e1065 100%)" : theme === "dark" ? "linear-gradient(180deg, #27272a 0%, #1c1c1f 100%)" : "var(--sidebar-via)" }}
         className="fixed top-4 left-4 z-50 rounded-md border border-white/20 p-2 text-white shadow-lg shadow-black/30 lg:hidden"
       >
         {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -105,7 +105,7 @@ export function Sidebar() {
           "fixed top-0 left-0 z-40 flex h-full w-64 flex-col overflow-y-auto transition-transform duration-300 ease-in-out",
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
-        style={{ background: theme === "dark" ? "linear-gradient(180deg, #27272a 0%, #1c1c1f 100%)" : "var(--sidebar-via)" }}
+        style={{ background: theme === "purple" ? "linear-gradient(180deg, #4c1d95 0%, #2e1065 100%)" : theme === "dark" ? "linear-gradient(180deg, #27272a 0%, #1c1c1f 100%)" : "var(--sidebar-via)" }}
       >
         <div className="flex items-center gap-2 border-b border-white/10 p-6">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/16 ring-1 ring-white/10">
@@ -176,7 +176,7 @@ export function Sidebar() {
               ? pathname === "/clientes"
               : pathname === item.href || pathname?.startsWith(item.href + "/")
             const className = cn(
-              "flex items-center gap-2 rounded-lg px-2 py-2.5 text-xs transition-all overflow-hidden",
+              "flex items-center gap-2 rounded-lg px-2 py-2.5 text-[13px] transition-all overflow-hidden",
               isActive
                 ? "border border-amber-500/40 border-l-[3px] border-l-amber-500 bg-gradient-to-r from-amber-950/50 via-zinc-900/40 to-zinc-900/10 text-white font-semibold shadow-sm"
                 : "font-normal text-violet-50/90 hover:bg-white/10 hover:text-white"

@@ -474,8 +474,18 @@ export default function CalendarioPage() {
                           ? <Car className="h-4 w-4 text-blue-600" />
                           : <ShoppingBag className="h-4 w-4 text-primary" />
 
+                        // Tom do card por status: vencido=vermelho, vence hoje=âmbar, em dia=azul (bem fraco)
+                        const dueD = toLocalDate(entry.dueDate)
+                        const isOverdue = entry.status === "OVERDUE"
+                        const isDueToday = !isOverdue && !!todayDate && dueD.getFullYear() === todayDate.getFullYear() && dueD.getMonth() === todayDate.getMonth() && dueD.getDate() === todayDate.getDate()
+                        const entryTone = isOverdue
+                          ? "border-red-300/50 dark:border-red-800/40 bg-red-50/50 dark:bg-red-950/20"
+                          : isDueToday
+                          ? "border-amber-300/50 dark:border-amber-800/40 bg-amber-50/50 dark:bg-amber-950/20"
+                          : "border-blue-300/50 dark:border-blue-800/40 bg-blue-50/50 dark:bg-blue-950/20"
+
                         return (
-                          <div key={entry.id} className="rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800/60 p-4 space-y-2.5">
+                          <div key={entry.id} className={`rounded-xl border p-4 space-y-2.5 ${entryTone}`}>
                             {/* Top row */}
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">

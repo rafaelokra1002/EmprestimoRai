@@ -15,6 +15,11 @@ import { ComprovanteContent } from "../../_components/comprovante-content"
 import { formatCurrency, formatDate, localDateStr, buildLoanReportMessage } from "@/lib/utils"
 import { buildLoanData, calculateEffectivePaidAmountFromPayments, calculateRealizedProfitFromPayments, calculateTotalAmountWithLateFee, calculateOverdueInterest, getDaysOverdue, getNextDueDate as getNextDueDateFn, getOverdueDailyAmountBRL, getPaidExcludingInterest } from "@/lib/loan-logic"
 
+// Tooltip estilizado que aparece ao passar o mouse no botão (usar com "group relative" no botão)
+const tooltipCls = "pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-max max-w-[220px] -translate-x-1/2 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-center text-[11px] font-medium leading-snug text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100"
+// Variante alinhada à esquerda (p/ botões na borda esquerda, evita corte pelo overflow do card)
+const tooltipClsLeft = "pointer-events-none absolute bottom-full left-0 z-50 mb-2 w-max max-w-[220px] rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-left text-[11px] font-medium leading-snug text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100"
+
 interface Loan {
   id: string
   amount: number
@@ -982,17 +987,10 @@ export default function ClienteEmprestimosPage() {
 
                 {/* Valor Restante */}
                 <div className="px-4 pb-3">
-                  <div className={`${remainingBg} rounded-2xl border border-white/50 px-4 py-3 shadow-sm dark:border-white/5`}>
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-500 dark:text-zinc-400">Saldo Atual</p>
-                        <p className={`mt-1 text-[1.65rem] font-bold tabular-nums leading-none tracking-tight ${remainingColor}`}>{formatCurrency(remaining)}</p>
-                        <p className="mt-1 text-[11px] text-gray-500 dark:text-zinc-400">restante a receber</p>
-                      </div>
-                      <span className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${status.color}`}>
-                        {status.label}
-                      </span>
-                    </div>
+                  <div className={`${remainingBg} rounded-2xl border border-white/50 px-4 py-3 text-center shadow-sm dark:border-white/5`}>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-500 dark:text-zinc-400">Saldo Atual</p>
+                    <p className={`mt-1 text-[1.65rem] font-bold tabular-nums leading-none tracking-tight ${remainingColor}`}>{formatCurrency(remaining)}</p>
+                    <p className="mt-1 text-[11px] text-gray-500 dark:text-zinc-400">restante a receber</p>
                     {(() => {
                       const overdueExtra = loan.installments
                         .filter((i: any) => i.status !== "PAID")
@@ -1003,7 +1001,7 @@ export default function ClienteEmprestimosPage() {
                       if (overdueExtra > 0) {
                         return <p className="mt-2 text-[11px] text-primary">contém {formatCurrency(overdueExtra)} de juros por atraso</p>
                       }
-                      return <p className="mt-2 text-[11px] text-gray-500 dark:text-zinc-400">valor atualizado conforme pagamentos e vencimentos</p>
+                      return null
                     })()}
                   </div>
                 </div>
@@ -1164,12 +1162,14 @@ export default function ClienteEmprestimosPage() {
                 {/* Ações */}
                 <div className="px-4 pt-3 pb-4 mt-2 border-t border-gray-100 dark:border-zinc-800 space-y-3">
                   <div className="grid w-full min-w-0 gap-1.5 pb-1 grid-cols-[minmax(0,1.6fr)_minmax(0,2.4fr)_repeat(5,minmax(0,1fr))]">
-                    <Button size="sm" onClick={() => openPaymentDialog(loan)} className="min-w-0 h-10 px-2 text-xs border border-primary/15 bg-primary/10 font-medium text-primary shadow-none transition-colors hover:bg-primary/15 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20">
+                    <button onClick={() => openPaymentDialog(loan)} className="group relative inline-flex min-w-0 h-10 items-center justify-center rounded-md px-2 text-xs border border-primary/15 bg-primary/10 font-medium text-primary transition-colors hover:bg-primary/15 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20">
                       <Receipt className="mr-1 h-4 w-4 shrink-0" /> <span className="whitespace-nowrap">Pagar</span>
-                    </Button>
-                    <Button size="sm" onClick={() => openInterestRenegotiateDialog(loan)} className="min-w-0 h-10 px-2 text-xs border border-primary/15 bg-primary/10 font-medium text-primary shadow-none transition-colors hover:bg-primary/15 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20">
+                      <span className={tooltipClsLeft}>Registre pagamentos: parcela, valor parcial ou quitação total</span>
+                    </button>
+                    <button onClick={() => openInterestRenegotiateDialog(loan)} className="group relative inline-flex min-w-0 h-10 items-center justify-center rounded-md px-2 text-xs border border-primary/15 bg-primary/10 font-medium text-primary transition-colors hover:bg-primary/15 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20">
                       <DollarSign className="mr-1 h-4 w-4 shrink-0" /> <span className="whitespace-nowrap">Pagar Juros</span>
-                    </Button>
+                      <span className={tooltipClsLeft}>Pague apenas os juros e renove o prazo (+30 dias)</span>
+                    </button>
                     <button
                       onClick={() => {
                         const phone = (clientPhone || "").replace(/\D/g, "")
@@ -1177,22 +1177,26 @@ export default function ClienteEmprestimosPage() {
                         const text = buildLoanReportMessage(loan, clientName, remaining)
                         window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank")
                       }}
-                      className="flex min-w-0 w-full items-center justify-center rounded-xl bg-green-50 p-2 text-green-700 transition-colors hover:bg-green-100 dark:bg-green-950/30 dark:text-green-400 dark:hover:bg-green-900/40"
-                      title="Enviar relatório ao cliente"
+                      className="group relative flex min-w-0 w-full items-center justify-center rounded-xl bg-green-50 p-2 text-green-700 transition-colors hover:bg-green-100 dark:bg-green-950/30 dark:text-green-400 dark:hover:bg-green-900/40"
                     >
                       <Send className="h-4 w-4" />
+                      <span className={tooltipCls}>Enviar relatório ao cliente pelo WhatsApp</span>
                     </button>
-                    <button className="flex min-w-0 w-full items-center justify-center rounded-2xl border border-violet-100 bg-violet-50/80 p-2 text-primary shadow-sm transition-colors hover:bg-violet-100 dark:border-violet-900/40 dark:bg-violet-950/30 dark:text-primary dark:hover:bg-violet-900/40" onClick={() => router.push(`/emprestimos/${loan.id}`)} title="Histórico">
+                    <button className="group relative flex min-w-0 w-full items-center justify-center rounded-2xl border border-violet-100 bg-violet-50/80 p-2 text-primary shadow-sm transition-colors hover:bg-violet-100 dark:border-violet-900/40 dark:bg-violet-950/30 dark:text-primary dark:hover:bg-violet-900/40" onClick={() => router.push(`/emprestimos/${loan.id}`)}>
                       <RotateCcw className="h-4 w-4" />
+                      <span className={tooltipCls}>Ver histórico de pagamentos</span>
                     </button>
-                    <button className="flex min-w-0 w-full items-center justify-center rounded-xl bg-blue-50 p-2 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors" onClick={() => router.push(`/emprestimos/${loan.id}/editar`)} title="Editar">
+                    <button className="group relative flex min-w-0 w-full items-center justify-center rounded-xl bg-blue-50 p-2 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors" onClick={() => router.push(`/emprestimos/${loan.id}/editar`)}>
                       <Pencil className="h-4 w-4" />
+                      <span className={tooltipCls}>Editar empréstimo</span>
                     </button>
-                    <button className="flex min-w-0 w-full items-center justify-center rounded-xl bg-amber-50 p-2 text-amber-500 transition-colors hover:bg-amber-100 dark:bg-amber-950/30 dark:text-amber-400 dark:hover:bg-amber-900/40" onClick={() => openRenegotiateDialog(loan)} title="Renegociar">
+                    <button className="group relative flex min-w-0 w-full items-center justify-center rounded-xl bg-amber-50 p-2 text-amber-500 transition-colors hover:bg-amber-100 dark:bg-amber-950/30 dark:text-amber-400 dark:hover:bg-amber-900/40" onClick={() => openRenegotiateDialog(loan)}>
                       <RotateCcw className="h-4 w-4" />
+                      <span className={tooltipCls}>Renegociar empréstimo / atraso</span>
                     </button>
-                    <button className="flex min-w-0 w-full items-center justify-center rounded-xl bg-red-50 p-2 text-red-500 transition-colors hover:bg-red-100 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-900/40" onClick={() => handleDelete(loan.id)} title="Excluir">
+                    <button className="group relative flex min-w-0 w-full items-center justify-center rounded-xl bg-red-50 p-2 text-red-500 transition-colors hover:bg-red-100 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-900/40" onClick={() => handleDelete(loan.id)}>
                       <Trash2 className="h-4 w-4" />
+                      <span className={tooltipCls}>Excluir empréstimo</span>
                     </button>
                   </div>
                   {(status.label === "Atrasado" || status.label === "Inadimplente") && (
@@ -1257,7 +1261,7 @@ export default function ClienteEmprestimosPage() {
         open={!!renegotiateDialog}
         onClose={() => { setRenegotiateDialog(null); setRenegotiateMode(null); setRenegotiateEntry("all"); setRenegotiateAmount(0); setRenegotiateNotes("") }}
         title={renegotiateEntry === "interest" ? "Renegociar Dívida" : "Renegociação de Contrato"}
-        className="max-w-2xl"
+        className="max-w-lg"
       >
         {renegotiateDialog && (
           renegotiateEntry === "interest" ? (() => {
@@ -1274,14 +1278,14 @@ export default function ClienteEmprestimosPage() {
             const pendingPartialInterest = currentInterest > 0 ? Math.max(currentInterest - cyclePaid, 0) : 0
             const amountAfterInterestPayment = Math.max(currentRemaining - renegotiateAmount, currentLoan.totalAmount)
             return (
-              <div className="space-y-5">
-                <div className="rounded-3xl bg-gradient-to-r from-emerald-50 via-emerald-50 to-slate-50 p-5 dark:from-emerald-950/20 dark:via-emerald-950/10 dark:to-zinc-900">
+              <div className="space-y-4">
+                <div className="rounded-2xl bg-gradient-to-r from-emerald-50 via-emerald-50 to-slate-50 p-4 dark:from-emerald-950/20 dark:via-emerald-950/10 dark:to-zinc-900">
                   <div className="flex items-center gap-3">
                     <Avatar name={currentLoan.client.name} src={currentLoan.client.photo} size="sm" />
                     <div>
-                      <p className="text-xl font-semibold text-slate-900 dark:text-zinc-100">{currentLoan.client.name}</p>
-                      <p className="text-base text-slate-500 dark:text-zinc-400">Saldo devedor: {formatCurrency(getRemaining(currentLoan))}</p>
-                      <p className="text-base text-slate-500 dark:text-zinc-400">Valor por parcela: {formatCurrency(nextInstallment?.amount || currentLoan.installmentValue)}</p>
+                      <p className="text-base font-semibold text-slate-900 dark:text-zinc-100">{currentLoan.client.name}</p>
+                      <p className="text-sm text-slate-500 dark:text-zinc-400">Saldo devedor: {formatCurrency(getRemaining(currentLoan))}</p>
+                      <p className="text-sm text-slate-500 dark:text-zinc-400">Valor por parcela: {formatCurrency(nextInstallment?.amount || currentLoan.installmentValue)}</p>
                     </div>
                   </div>
                 </div>
@@ -1309,15 +1313,15 @@ export default function ClienteEmprestimosPage() {
                           setRenegotiateNewDueDate(localDateStr(nextDue))
                         }
                       }}
-                      className="w-full rounded-3xl border p-5 text-left transition-colors border-gray-200 bg-white hover:bg-gray-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+                      className="w-full rounded-2xl border p-4 text-left transition-colors border-primary/40 bg-primary/5 hover:bg-primary/10 dark:bg-primary/10 dark:hover:bg-primary/20"
                     >
-                      <div className="flex items-center gap-4">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary">
-                          <DollarSign className="h-6 w-6" />
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-primary dark:bg-primary/20 dark:text-primary">
+                          <DollarSign className="h-5 w-5" />
                         </div>
                         <div>
-                          <p className="text-xl font-semibold text-gray-900 dark:text-zinc-100">Cliente pagou só os juros</p>
-                          <p className="text-base text-gray-500 dark:text-zinc-400">Registrar pagamento apenas dos juros da parcela</p>
+                          <p className="text-base font-semibold text-primary">Cliente pagou só os juros</p>
+                          <p className="text-sm text-gray-500 dark:text-zinc-400">Registrar pagamento apenas dos juros da parcela</p>
                         </div>
                       </div>
                     </button>
@@ -1328,15 +1332,15 @@ export default function ClienteEmprestimosPage() {
                         setRenegotiateMode("partial")
                         setRenegotiateAmount(pendingPartialInterest || currentInterest)
                       }}
-                      className="w-full rounded-3xl border p-5 text-left transition-colors border-gray-200 bg-white hover:bg-gray-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+                      className="w-full rounded-2xl border p-4 text-left transition-colors border-blue-400/50 bg-blue-50/40 hover:bg-blue-50 dark:border-blue-900/50 dark:bg-blue-950/20 dark:hover:bg-blue-950/30"
                     >
-                      <div className="flex items-center gap-4">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary">
-                          <DollarSign className="h-6 w-6" />
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/15 text-blue-500 dark:bg-blue-500/20">
+                          <DollarSign className="h-5 w-5" />
                         </div>
                         <div>
-                          <p className="text-xl font-semibold text-gray-900 dark:text-zinc-100">Pagamento parcial de juros</p>
-                          <p className="text-base text-gray-500 dark:text-zinc-400">Registrar pagamento de parte dos juros de uma parcela</p>
+                          <p className="text-base font-semibold text-blue-600 dark:text-blue-400">Pagamento parcial de juros</p>
+                          <p className="text-sm text-gray-500 dark:text-zinc-400">Registrar pagamento de parte dos juros de uma parcela</p>
                         </div>
                       </div>
                     </button>

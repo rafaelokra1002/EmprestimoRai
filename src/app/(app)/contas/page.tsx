@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import {
   Plus, Trash2, Search, ChevronDown, DollarSign, AlertTriangle,
   CheckCircle2, CreditCard, Pencil, Undo2, Copy,
-  Package, TrendingUp, Receipt, Landmark,
+  Package, TrendingUp, TrendingDown, Receipt, Landmark,
 } from "lucide-react"
 import { formatCurrency, localDateStr } from "@/lib/utils"
 
@@ -277,6 +277,13 @@ export default function ContasPage() {
       iconClassName: "text-violet-200",
       iconBgClassName: "bg-violet-400/15",
     },
+    {
+      title: "Saídas (Despesas)",
+      value: formatCurrency(stats.pagasTotal || 0),
+      icon: TrendingDown,
+      iconClassName: "text-red-300",
+      iconBgClassName: "bg-red-400/15",
+    },
   ]
 
   return (
@@ -286,7 +293,7 @@ export default function ContasPage() {
         <p className="mt-1 text-sm text-gray-500 dark:text-zinc-400">Acompanhe o saldo disponível e o fluxo de capital</p>
       </div>
       <div className="flex min-h-[calc(100vh-14rem)] items-start justify-center">
-        <section className="relative w-full max-w-6xl overflow-hidden rounded-[32px] border border-gray-200 bg-white px-6 py-7 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 md:px-8">
+        <section className="relative w-full max-w-6xl overflow-hidden rounded-[32px] px-6 py-7 md:px-8">
 
           <div className="relative space-y-5">
 
