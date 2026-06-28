@@ -18,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { LoanRenegotiationContent } from "./_components/loan-renegotiation-content"
 import { ComprovanteContent } from "./_components/comprovante-content"
 import { formatCurrency, formatDate, calculateLoan, generateInstallmentDates, resolveDailyInterestAmount, localDateStr, buildLoanReportMessage } from "@/lib/utils"
+import { showToast } from "@/lib/toast"
 import { buildLoanData, calculateEffectivePaidAmountFromPayments, calculateOverdueInterest, calculateRealizedProfitFromPayments, calculateTotalAmountWithLateFee, getDaysOverdue, getNextDueDate, getOverdueDailyAmountBRL, getPaidExcludingInterest } from "@/lib/loan-logic"
 
 interface Loan {
@@ -417,6 +418,7 @@ export default function EmprestimosPage() {
       resetForm()
       fetchLoans()
       setSuccessDialog(true)
+      showToast("Empréstimo criado com sucesso!")
     } else {
       const err = await res.json().catch(() => ({ error: "Erro desconhecido" }))
       alert("Erro ao criar empréstimo: " + (err.error || JSON.stringify(err)))
@@ -1335,6 +1337,7 @@ export default function EmprestimosPage() {
         }
         setPaymentReceiptInfo(info)
         setPaymentReceiptDialog(true)
+        showToast("Pagamento de juros registrado com sucesso!")
       } else {
         alert("Erro ao registrar pagamento de juros")
       }
@@ -3473,6 +3476,7 @@ export default function EmprestimosPage() {
                         setPaymentReceiptDialog(true)
                       }
 
+                      showToast("Pagamento registrado com sucesso!")
                       // Atualizar lista em background
                       fetchLoans()
                     } catch (err) {

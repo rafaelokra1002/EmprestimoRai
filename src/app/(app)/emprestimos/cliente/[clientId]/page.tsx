@@ -14,6 +14,7 @@ import { LoanRenegotiationContent } from "../../_components/loan-renegotiation-c
 import { ComprovanteContent } from "../../_components/comprovante-content"
 import { formatCurrency, formatDate, localDateStr, buildLoanReportMessage } from "@/lib/utils"
 import { buildLoanData, calculateEffectivePaidAmountFromPayments, calculateRealizedProfitFromPayments, calculateTotalAmountWithLateFee, calculateOverdueInterest, getDaysOverdue, getNextDueDate as getNextDueDateFn, getOverdueDailyAmountBRL, getPaidExcludingInterest } from "@/lib/loan-logic"
+import { showToast } from "@/lib/toast"
 
 // Tooltip estilizado que aparece ao passar o mouse no botão (usar com "group relative" no botão)
 const tooltipCls = "pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-max max-w-[220px] -translate-x-1/2 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-center text-[11px] font-medium leading-snug text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100"
@@ -679,6 +680,7 @@ export default function ClienteEmprestimosPage() {
           remainingBalance: receiptLoan.totalAmount,
         })
         setPaymentReceiptDialog(true)
+        showToast("Pagamento de juros registrado com sucesso!")
       }
 
       fetchLoans()
@@ -765,6 +767,7 @@ export default function ClienteEmprestimosPage() {
             remainingBalance: 0,
           })
           setPaymentReceiptDialog(true)
+          showToast("Pagamento registrado com sucesso!")
         }
       } else {
         const body: any = {
@@ -854,6 +857,7 @@ export default function ClienteEmprestimosPage() {
             remainingBalance: Math.max(0, receiptLoan.totalAmount - alreadyPaid - receiptAmount),
           })
           setPaymentReceiptDialog(true)
+          showToast("Pagamento registrado com sucesso!")
         }
       }
 

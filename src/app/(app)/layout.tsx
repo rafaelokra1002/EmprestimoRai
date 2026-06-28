@@ -1,5 +1,6 @@
 import { Sidebar } from "@/components/sidebar"
 import { HeaderActions } from "@/components/header-actions"
+import { ToastHost } from "@/components/toast-host"
 import { getServerSession } from "next-auth"
 import { redirect } from "next/navigation"
 import { authOptions } from "@/lib/auth"
@@ -26,6 +27,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </div>
         </main>
       </div>
+      <ToastHost />
     </div>
   )
 }

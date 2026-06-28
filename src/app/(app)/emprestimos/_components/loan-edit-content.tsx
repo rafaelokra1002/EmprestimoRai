@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Avatar } from "@/components/avatar"
 import { CalendarDays, ChevronDown, RefreshCw, Plus, X } from "lucide-react"
 import { calculateLoan, formatCurrency, generateInstallmentDates, localDateStr, resolveDailyInterestAmount } from "@/lib/utils"
+import { showToast } from "@/lib/toast"
 
 interface Client {
   id: string
@@ -251,6 +252,7 @@ export function LoanEditContent({ presentation = "page", onClose }: LoanEditCont
       }
 
       window.dispatchEvent(new Event("loans:updated"))
+      showToast("Empréstimo atualizado! As próximas cobranças usarão os novos dados.")
       handleClose()
     } catch (err: any) {
       setError(err?.message || "Erro de conexão")
