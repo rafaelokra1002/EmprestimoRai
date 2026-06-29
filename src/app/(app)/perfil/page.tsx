@@ -351,7 +351,7 @@ export default function PerfilPage() {
       </div>
 
       {message && (
-        <div className={`rounded-lg border px-4 py-3 text-sm ${message.toLowerCase().includes("erro") ? "border-red-500/30 bg-red-50 dark:bg-red-950/300/10 text-red-300" : "border-primary/30 bg-primary/5 dark:bg-primary/150/10 text-primary"}`}>
+        <div className={`rounded-lg border px-4 py-3 text-sm ${message.toLowerCase().includes("erro") ? "border-red-500/30 bg-red-50 dark:bg-red-950/10 text-red-300" : "border-primary/30 bg-primary/5 dark:bg-primary/10 text-primary"}`}>
           {message}
         </div>
       )}

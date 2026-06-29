@@ -77,7 +77,7 @@ export default function RelatorioEmprestimosPage() {
   const [endDate, setEndDate] = useState(lastOfMonth())
   const autoDateSet = useRef(false)
   const [paymentFilter, setPaymentFilter] = useState<"all" | "monthly" | "installment">("all")
-  const [showModalityCards, setShowModalityCards] = useState(true)
+  const [showModalityCards, setShowModalityCards] = useState(false)
   const [caixaExtra, setCaixaExtra] = useState(0)
   const [caixaInicial, setCaixaInicial] = useState(0)
   const [updatedAt, setUpdatedAt] = useState("")
@@ -591,7 +591,7 @@ export default function RelatorioEmprestimosPage() {
           <div className="flex items-center gap-3">
             <Wallet className="h-5 w-5 text-primary" />
             <h2 className="text-lg font-bold text-gray-900 dark:text-zinc-100">Fluxo de Caixa</h2>
-            <Badge className="bg-primary/5 dark:bg-primary/150/20 text-primary border-0 text-xs">Novidade</Badge>
+            <Badge className="bg-primary/5 dark:bg-primary/20 text-primary border-0 text-xs">Novidade</Badge>
           </div>
 
           <div className="rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800/40 p-4 flex items-center justify-between">
@@ -974,8 +974,8 @@ export default function RelatorioEmprestimosPage() {
                         <Badge
                           className={`text-xs px-3 ${
                             c.status === "ON_TIME"
-                              ? "bg-primary/5 dark:bg-primary/150/20 text-primary border-primary/30"
-                              : "bg-red-50 dark:bg-red-950/300/20 text-red-600 border-red-500/30"
+                              ? "bg-primary/10 dark:bg-primary/20 text-primary border-primary/30"
+                              : "bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border-red-500/30"
                           }`}
                         >
                           {c.status === "ON_TIME" ? "Em Dia" : "Atrasado"}

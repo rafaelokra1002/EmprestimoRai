@@ -922,15 +922,15 @@ export default function ClienteEmprestimosPage() {
                   return dueDate.getDate() === today.getDate() && dueDate.getMonth() === today.getMonth() && dueDate.getFullYear() === today.getFullYear()
                 })()
               : false
-            const isDueTodayHighlight = isDueToday && loan.installmentCount > 1
+            const isDueTodayHighlight = Boolean(isDueToday)
             const isParcelado = loan.installmentCount > 1
             const isParceladoCardBlue = isParcelado && !isAtrasado && !isQuitado && !isSoJuros && !isPagoNoMes
 
             const cardBorder = isAtrasado ? "border-red-400 dark:border-red-700" : isDueTodayHighlight ? "border-yellow-400 dark:border-yellow-700" : (isSoJuros || isPagoNoMes) ? "border-purple-400 dark:border-purple-700" : (isQuitado || isParceladoCardBlue) ? "border-blue-400 dark:border-blue-700" : "border-primary/40 dark:border-primary/30"
-            const cardBg = isAtrasado ? "bg-red-50/40 dark:bg-red-950/20" : isDueTodayHighlight ? "bg-yellow-50/40 dark:bg-yellow-950/20" : (isSoJuros || isPagoNoMes) ? "bg-purple-50/40 dark:bg-purple-950/20" : isParceladoCardBlue ? "bg-blue-50/40 dark:bg-blue-950/20" : "bg-white dark:bg-zinc-900"
-            const remainingColor = isAtrasado ? "text-red-600 dark:text-red-400" : isDueTodayHighlight ? "text-yellow-700 dark:text-yellow-400" : (isSoJuros || isPagoNoMes) ? "text-purple-600 dark:text-purple-400" : (isQuitado || isParceladoCardBlue) ? "text-blue-700 dark:text-blue-400" : isDueToday ? "text-orange-600 dark:text-orange-400" : "text-primary dark:text-primary"
-            const remainingBg = isAtrasado ? "bg-red-50 dark:bg-red-950/20" : isDueTodayHighlight ? "bg-yellow-50 dark:bg-yellow-950/20" : (isSoJuros || isPagoNoMes) ? "bg-purple-50 dark:bg-purple-950/20" : (isQuitado || isParceladoCardBlue) ? "bg-blue-50 dark:bg-blue-900/40" : isDueToday ? "bg-orange-50 dark:bg-orange-950/20" : "bg-primary/10 dark:bg-primary/20"
-            const cellBg = isDueTodayHighlight ? "bg-yellow-50/60 dark:bg-yellow-950/10" : (isSoJuros || isPagoNoMes) ? "bg-purple-50/60 dark:bg-purple-950/10" : isParceladoCardBlue ? "bg-blue-50/60 dark:bg-blue-950/10" : "bg-gray-50 dark:bg-zinc-800/50"
+            const cardBg = isAtrasado ? "bg-red-100 dark:bg-red-950/30" : isDueTodayHighlight ? "bg-yellow-50/40 dark:bg-yellow-950/20" : (isSoJuros || isPagoNoMes) ? "bg-purple-50/40 dark:bg-purple-950/20" : isParceladoCardBlue ? "bg-blue-50/40 dark:bg-blue-950/20" : "bg-white dark:bg-zinc-900"
+            const remainingColor = isAtrasado ? "text-red-700 dark:text-red-400" : isDueTodayHighlight ? "text-yellow-700 dark:text-yellow-400" : (isSoJuros || isPagoNoMes) ? "text-purple-600 dark:text-purple-400" : (isQuitado || isParceladoCardBlue) ? "text-blue-700 dark:text-blue-400" : isDueToday ? "text-orange-600 dark:text-orange-400" : "text-primary dark:text-primary"
+            const remainingBg = isAtrasado ? "bg-red-100 dark:bg-red-900/40" : isDueTodayHighlight ? "bg-yellow-50 dark:bg-yellow-950/20" : (isSoJuros || isPagoNoMes) ? "bg-purple-50 dark:bg-purple-950/20" : (isQuitado || isParceladoCardBlue) ? "bg-blue-50 dark:bg-blue-900/40" : isDueToday ? "bg-orange-50 dark:bg-orange-950/20" : "bg-primary/10 dark:bg-primary/20"
+            const cellBg = isAtrasado ? "bg-red-50 dark:bg-red-950/20" : isDueTodayHighlight ? "bg-yellow-50/60 dark:bg-yellow-950/10" : (isSoJuros || isPagoNoMes) ? "bg-purple-50/60 dark:bg-purple-950/10" : isParceladoCardBlue ? "bg-blue-50/60 dark:bg-blue-950/10" : "bg-gray-50 dark:bg-zinc-800/50"
 
             return (
               <div key={loan.id} className={`rounded-xl border overflow-hidden shadow-sm hover:shadow-md transition-shadow ${cardBorder} ${cardBg}`}>
@@ -992,7 +992,6 @@ export default function ClienteEmprestimosPage() {
                 {/* Valor Restante */}
                 <div className="px-4 pb-3">
                   <div className={`${remainingBg} rounded-2xl border border-white/50 px-4 py-3 text-center shadow-sm dark:border-white/5`}>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-500 dark:text-zinc-400">Saldo Atual</p>
                     <p className={`mt-1 text-[1.65rem] font-bold tabular-nums leading-none tracking-tight ${remainingColor}`}>{formatCurrency(remaining)}</p>
                     <p className="mt-1 text-[11px] text-gray-500 dark:text-zinc-400">restante a receber</p>
                     {(() => {

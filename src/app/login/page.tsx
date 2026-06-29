@@ -60,7 +60,7 @@ export default function LoginPage() {
           <h2 className="text-lg font-semibold text-gray-900 dark:text-zinc-100 mb-6">Entrar</h2>
 
           {error && (
-            <div className="bg-red-50 dark:bg-red-950/300/10 border border-red-500/20 text-red-600 text-sm rounded-lg p-3 mb-4">
+            <div className="bg-red-50 dark:bg-red-950/10 border border-red-500/20 text-red-600 text-sm rounded-lg p-3 mb-4">
               {error}
             </div>
           )}

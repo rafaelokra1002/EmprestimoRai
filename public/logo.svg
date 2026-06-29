@@ -1,0 +1,49 @@
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Fundo interno preto com degradê escuro esverdeado -->
+    <linearGradient id="hexFill" x1="60" y1="6" x2="60" y2="114" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0B2417"/>
+      <stop offset="0.55" stop-color="#04120A"/>
+      <stop offset="1" stop-color="#000000"/>
+    </linearGradient>
+    <!-- Borda verde neon -->
+    <linearGradient id="edgeGrad" x1="14" y1="10" x2="106" y2="114" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#00E676"/>
+      <stop offset="0.5" stop-color="#00C853"/>
+      <stop offset="1" stop-color="#2E7D32"/>
+    </linearGradient>
+    <!-- Letra S -->
+    <linearGradient id="sGrad" x1="40" y1="38" x2="80" y2="86" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#00E676"/>
+      <stop offset="0.55" stop-color="#00C853"/>
+      <stop offset="1" stop-color="#2E7D32"/>
+    </linearGradient>
+    <!-- Brilho verde nas bordas -->
+    <filter id="neon" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2.4" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Hexágono: fundo -->
+  <path d="M60 6 L106 33 L106 87 L60 114 L14 87 L14 33 Z" fill="url(#hexFill)"/>
+
+  <!-- Hexágono: borda neon com brilho -->
+  <path d="M60 6 L106 33 L106 87 L60 114 L14 87 L14 33 Z"
+        stroke="url(#edgeGrad)" stroke-width="4.5" stroke-linejoin="round" filter="url(#neon)"/>
+  <!-- linha interna sutil (profundidade 3D) -->
+  <path d="M60 16 L97 38 L97 82 L60 104 L23 82 L23 38 Z"
+        stroke="#00E676" stroke-opacity="0.12" stroke-width="1.5" stroke-linejoin="round"/>
+
+  <!-- Sombra do S (profundidade 3D discreta) -->
+  <text x="61.4" y="64" text-anchor="middle" dominant-baseline="central"
+        font-family="'Arial Black', 'Arial Bold', Arial, sans-serif" font-weight="900" font-size="62"
+        fill="#031C0E" opacity="0.7">S</text>
+  <!-- Letra S bold central -->
+  <text x="60" y="62" text-anchor="middle" dominant-baseline="central"
+        font-family="'Arial Black', 'Arial Bold', Arial, sans-serif" font-weight="900" font-size="62"
+        fill="url(#sGrad)" filter="url(#neon)">S</text>
+</svg>

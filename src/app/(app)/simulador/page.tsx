@@ -156,27 +156,31 @@ export default function SimuladorPage() {
   }
 
   return (
-    <div className="space-y-4 pt-4 pb-8 max-w-5xl">
+    <div className="space-y-4 pt-0 pb-8 max-w-6xl">
       {/* ===== HEADER ===== */}
       <div>
-        <h1 className="text-xl font-bold text-gray-900 dark:text-zinc-100 flex items-center gap-2">
-          <Calculator className="h-5 w-5 text-primary" /> Simulador de Empréstimo
-        </h1>
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-zinc-100">Simulador de Empréstimo</h1>
         <p className="text-sm text-gray-500 dark:text-zinc-400">Simule empréstimos antes de criar</p>
       </div>
 
       {/* ===== MAIN CARD ===== */}
-      <div className="rounded-xl border border-primary/30 bg-primary/5 dark:bg-primary/10 p-4 space-y-3">
+      <div className="rounded-2xl border border-primary/40 bg-white dark:bg-zinc-900 p-6 space-y-5">
 
-        {/* Row 1: Tipo de Pagamento + Modo de Juros + Nº Parcelas */}
-        <div className="grid grid-cols-3 gap-3">
+        {/* Card header */}
+        <div className="flex items-center gap-2.5 pb-1">
+          <Calculator className="h-6 w-6 text-primary" />
+          <h2 className="text-xl font-bold text-gray-900 dark:text-zinc-100">Simulador de Empréstimo</h2>
+        </div>
+
+        {/* Row 1: Tipo / Modo / Nº Parcelas / Data Início / Primeiro Vencimento */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           <div>
-            <Label className="text-xs font-semibold text-gray-600 dark:text-zinc-400">Tipo de Pagamento</Label>
-            <div className="relative mt-1">
+            <Label className="text-sm font-medium text-gray-700 dark:text-zinc-300">Tipo de Pagamento</Label>
+            <div className="relative mt-1.5">
               <select
                 value={paymentType}
                 onChange={(e) => setPaymentType(e.target.value as PaymentType)}
-                className="flex h-9 w-full rounded-lg border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 px-3 py-1.5 text-sm text-gray-900 dark:text-zinc-100 appearance-none pr-8"
+                className="flex h-11 w-full rounded-lg border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 px-3 py-2 text-sm text-gray-900 dark:text-zinc-100 appearance-none pr-8"
               >
                 {paymentOptions.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
@@ -186,8 +190,8 @@ export default function SimuladorPage() {
             </div>
           </div>
           <div>
-            <Label className="text-xs font-semibold text-gray-600 dark:text-zinc-400">Modo de Juros</Label>
-            <div className="relative mt-1">
+            <Label className="text-sm font-medium text-gray-700 dark:text-zinc-300">Modo de Juros</Label>
+            <div className="relative mt-1.5">
               <select
                 value={interestMode}
                 onChange={(e) => {
@@ -202,7 +206,7 @@ export default function SimuladorPage() {
                     }
                   }
                 }}
-                className="flex h-9 w-full rounded-lg border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 px-3 py-1.5 text-sm text-gray-900 dark:text-zinc-100 appearance-none pr-8"
+                className="flex h-11 w-full rounded-lg border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 px-3 py-2 text-sm text-gray-900 dark:text-zinc-100 appearance-none pr-8"
               >
                 {interestOptions.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
@@ -212,30 +216,49 @@ export default function SimuladorPage() {
             </div>
           </div>
           <div>
-            <Label className="text-xs font-semibold text-gray-600 dark:text-zinc-400">Nº de Parcelas</Label>
+            <Label className="text-sm font-medium text-gray-700 dark:text-zinc-300">Nº de Parcelas</Label>
             <Input
               type="text"
               inputMode="numeric"
               value={interestMode === "AVISTA_30" ? "1" : installmentCount}
               disabled={interestMode === "AVISTA_30"}
               onChange={(e) => { const v = e.target.value; if (/^\d*$/.test(v)) setInstallmentCount(v) }}
-              className="mt-1 h-9 bg-gray-50 dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              className="mt-1.5 h-11 bg-gray-50 dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             />
+          </div>
+          <div>
+            <Label className="text-sm font-medium text-gray-700 dark:text-zinc-300">Data de Início</Label>
+            <Input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="mt-1.5 h-11 bg-gray-50 dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 text-sm"
+            />
+          </div>
+          <div>
+            <Label className="text-sm font-medium text-gray-700 dark:text-zinc-300">Primeiro Vencimento</Label>
+            <Input
+              type="date"
+              value={firstDueDate}
+              onChange={(e) => setFirstDueDate(e.target.value)}
+              className="mt-1.5 h-11 bg-gray-50 dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 text-sm"
+            />
+            <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">Próximas parcelas calculadas a partir desta data</p>
           </div>
         </div>
 
-        {/* Row 2: Valor + Taxa + Data Início + Primeiro Vencimento */}
-        <div className="grid grid-cols-4 gap-3">
+        {/* Row 2: Valor + Taxa */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <Label className="text-xs font-semibold text-gray-600 dark:text-zinc-400 flex items-center gap-1">
-              <span className="text-primary text-xs">$</span> Valor
+            <Label className="text-sm font-medium text-gray-700 dark:text-zinc-300 flex items-center gap-1.5">
+              <span className="text-primary">$</span> Valor do Empréstimo
             </Label>
             <Input
               type="text"
               inputMode="decimal"
               value={valor}
               onChange={(e) => { const v = e.target.value; if (/^\d*[,.]?\d*$/.test(v)) setValor(v.replace(",", ".")) }}
-              className="mt-1 h-9 bg-gray-50 dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 text-sm font-medium"
+              className="mt-1.5 h-11 bg-gray-50 dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 text-sm font-medium"
             />
             <input
               type="range"
@@ -244,19 +267,20 @@ export default function SimuladorPage() {
               step={100}
               value={parseFloat(valor) || 100}
               onChange={(e) => setValor(e.target.value)}
-              className="w-full mt-1.5 h-1 rounded-full appearance-none cursor-pointer bg-gray-200 dark:bg-zinc-700 accent-green-500"
+              className="w-full mt-2 h-1.5 rounded-full appearance-none cursor-pointer bg-gray-200 dark:bg-zinc-700 accent-green-500"
             />
+            <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">R$ 100 - R$ 100.000</p>
           </div>
           <div>
-            <Label className="text-xs font-semibold text-gray-600 dark:text-zinc-400 flex items-center gap-1">
-              <span className="text-primary text-xs">%</span> Taxa de Juros
+            <Label className="text-sm font-medium text-gray-700 dark:text-zinc-300 flex items-center gap-1.5">
+              <span className="text-primary">%</span> Taxa de Juros (%)
             </Label>
             <Input
               type="text"
               inputMode="decimal"
               value={taxa}
               onChange={(e) => { const v = e.target.value; if (/^\d*[,.]?\d*$/.test(v)) setTaxa(v.replace(",", ".")) }}
-              className="mt-1 h-9 bg-gray-50 dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 text-sm font-medium"
+              className="mt-1.5 h-11 bg-gray-50 dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 text-sm font-medium"
             />
             <input
               type="range"
@@ -265,46 +289,29 @@ export default function SimuladorPage() {
               step={0.5}
               value={parseFloat(taxa) || 0}
               onChange={(e) => setTaxa(e.target.value)}
-              className="w-full mt-1.5 h-1 rounded-full appearance-none cursor-pointer bg-gray-200 dark:bg-zinc-700 accent-green-500"
+              className="w-full mt-2 h-1.5 rounded-full appearance-none cursor-pointer bg-gray-200 dark:bg-zinc-700 accent-green-500"
             />
-          </div>
-          <div>
-            <Label className="text-xs font-semibold text-gray-600 dark:text-zinc-400">Data de Início</Label>
-            <Input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="mt-1 h-9 bg-gray-50 dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 text-sm"
-            />
-          </div>
-          <div>
-            <Label className="text-xs font-semibold text-gray-600 dark:text-zinc-400">1º Vencimento</Label>
-            <Input
-              type="date"
-              value={firstDueDate}
-              onChange={(e) => setFirstDueDate(e.target.value)}
-              className="mt-1 h-9 bg-gray-50 dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 text-sm"
-            />
+            <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">Sem limite máximo</p>
           </div>
         </div>
 
         {/* ===== RESULT CARDS ===== */}
-        <div className="grid grid-cols-4 gap-2 pt-1">
-          <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
-            <p className="text-[11px] text-amber-600 font-medium">Valor da Parcela</p>
-            <p className="text-lg font-medium tabular-nums tracking-tight text-primary mt-0.5">{formatCurrency(result.installmentValue)}</p>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-2">
+          <div className="rounded-xl border border-primary/30 bg-primary/5 dark:bg-primary/10 p-4">
+            <p className="text-xs text-gray-500 dark:text-zinc-400">Valor da Parcela</p>
+            <p className="text-2xl font-bold tabular-nums tracking-tight text-primary mt-1">{formatCurrency(result.installmentValue)}</p>
           </div>
-          <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
-            <p className="text-[11px] text-amber-600 font-medium">Total de Juros</p>
-            <p className="text-lg font-medium tabular-nums tracking-tight text-primary mt-0.5">{formatCurrency(result.totalInterest)}</p>
+          <div className="rounded-xl border border-orange-500/30 bg-orange-50 dark:bg-orange-950/20 p-4">
+            <p className="text-xs text-gray-500 dark:text-zinc-400">Total de Juros</p>
+            <p className="text-2xl font-bold tabular-nums tracking-tight text-orange-600 dark:text-orange-400 mt-1">{formatCurrency(result.totalInterest)}</p>
           </div>
-          <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
-            <p className="text-[11px] text-amber-600 font-medium">Total a Receber</p>
-            <p className="text-lg font-medium tabular-nums tracking-tight text-primary mt-0.5">{formatCurrency(result.totalAmount)}</p>
+          <div className="rounded-xl border border-primary/30 bg-primary/5 dark:bg-primary/10 p-4">
+            <p className="text-xs text-gray-500 dark:text-zinc-400">Total a Receber</p>
+            <p className="text-2xl font-bold tabular-nums tracking-tight text-primary mt-1">{formatCurrency(result.totalAmount)}</p>
           </div>
-          <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
-            <p className="text-[11px] text-amber-600 font-medium">Taxa Efetiva Total</p>
-            <p className="text-lg font-medium tabular-nums tracking-tight text-gray-900 dark:text-zinc-100 mt-0.5">{result.effectiveRate.toFixed(1)}%</p>
+          <div className="rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800/50 p-4">
+            <p className="text-xs text-gray-500 dark:text-zinc-400">Taxa Efetiva Total</p>
+            <p className="text-2xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100 mt-1">{result.effectiveRate.toFixed(1)}%</p>
           </div>
         </div>
 
@@ -325,14 +332,14 @@ export default function SimuladorPage() {
                 key={cr.label}
                 className={`rounded-xl border p-4 ${
                   cr.label === (interestMode === "PER_INSTALLMENT" ? "Por Parcela" : "Tabela Price")
-                    ? "border-primary/40 bg-primary/5 dark:bg-primary/150/5"
+                    ? "border-primary/40 bg-primary/5 dark:bg-primary/5"
                     : "border-gray-200 dark:border-zinc-800 bg-gray-100 dark:bg-zinc-800/30"
                 }`}
               >
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-gray-800 dark:text-zinc-200">{cr.label}</span>
                   {cr.label === (interestMode === "PER_INSTALLMENT" ? "Por Parcela" : "Tabela Price") && (
-                    <Badge className="bg-primary/5 dark:bg-primary/150/20 text-primary border-primary/30 text-[10px]">
+                    <Badge className="bg-primary/5 dark:bg-primary/20 text-primary border-primary/30 text-[10px]">
                       Selecionado
                     </Badge>
                   )}

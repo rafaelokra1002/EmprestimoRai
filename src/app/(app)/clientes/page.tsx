@@ -532,10 +532,10 @@ export default function ClientesPage() {
   }
 
   const getScoreColor = (score: number) => {
-    if (score >= 150) return "bg-yellow-50 dark:bg-yellow-950/300/20 text-yellow-600"
-    if (score >= 100) return "bg-orange-50 dark:bg-orange-950/300/20 text-orange-600"
-    if (score >= 50) return "bg-blue-50 dark:bg-blue-950/300/20 text-blue-600"
-    return "bg-red-50 dark:bg-red-950/300/20 text-red-600"
+    if (score >= 150) return "bg-yellow-50 dark:bg-yellow-950/20 text-yellow-600"
+    if (score >= 100) return "bg-orange-50 dark:bg-orange-950/20 text-orange-600"
+    if (score >= 50) return "bg-blue-50 dark:bg-blue-950/20 text-blue-600"
+    return "bg-red-50 dark:bg-red-950/20 text-red-600"
   }
 
   const getScoreLabel = (score: number) => {
@@ -846,7 +846,7 @@ export default function ClientesPage() {
 
       {/* Listing */}
       {clientesView === "clientes" && (viewMode === "table" ? (
-        <div className="rounded-xl overflow-hidden bg-white dark:bg-zinc-900">
+        <div className="rounded-xl overflow-hidden border border-primary/50 dark:border-primary/40 bg-white dark:bg-zinc-900">
           {/* Search bar */}
           <div className="flex items-center gap-3 px-5 py-4 bg-white dark:bg-zinc-900">
             <div className="relative flex-1">
@@ -950,7 +950,7 @@ export default function ClientesPage() {
           </Table>
         </div>
       ) : (
-        <div className="rounded-xl overflow-hidden bg-white dark:bg-zinc-900">
+        <div className="rounded-xl overflow-hidden border border-primary/50 dark:border-primary/40 bg-white dark:bg-zinc-900">
           {/* Search bar */}
           <div className="flex items-center gap-3 px-5 py-4 bg-white dark:bg-zinc-900">
             <div className="relative flex-1">
@@ -1746,7 +1746,7 @@ export default function ClientesPage() {
                                   event.stopPropagation()
                                   handleDocDelete(doc.id)
                                 }}
-                                className="p-1.5 rounded-md text-red-600 hover:bg-red-50 dark:bg-red-950/300/10 transition-colors"
+                                className="p-1.5 rounded-md text-red-600 hover:bg-red-50 dark:bg-red-950/10 transition-colors"
                                 title="Excluir documento"
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -1764,7 +1764,7 @@ export default function ClientesPage() {
 
           {/* Botões de ação */}
           {formError && (
-            <div className="px-4 py-3 rounded-lg bg-red-50 dark:bg-red-950/300/10 border border-red-500/30 text-red-600 text-sm">
+            <div className="px-4 py-3 rounded-lg bg-red-50 dark:bg-red-950/10 border border-red-500/30 text-red-600 text-sm">
               {formError}
             </div>
           )}

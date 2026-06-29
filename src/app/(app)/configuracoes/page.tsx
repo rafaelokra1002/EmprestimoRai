@@ -371,7 +371,7 @@ export default function ConfiguracoesPage() {
         </div>
         <button
           onClick={() => router.push("/perfil")}
-          className="flex items-center gap-2 text-sm text-primary border border-primary/40 rounded-full px-4 py-2 hover:bg-primary/5 dark:bg-primary/150/10 transition"
+          className="flex items-center gap-2 text-sm text-primary border border-primary/40 rounded-full px-4 py-2 hover:bg-primary/5 dark:bg-primary/10 transition"
         >
           <ExternalLink className="h-4 w-4" />
           Perfil Completo
@@ -380,7 +380,7 @@ export default function ConfiguracoesPage() {
 
       {/* ─── Message feedback ─── */}
       {message && (
-        <div className={`p-3 rounded-lg text-sm ${message.includes("sucesso") ? "bg-primary/5 dark:bg-primary/150/10 text-primary border border-primary/30 dark:border-primary/30" : "bg-red-50 dark:bg-red-950/300/10 text-red-600 border border-red-500/20"}`}>
+        <div className={`p-3 rounded-lg text-sm ${message.includes("sucesso") ? "bg-primary/5 dark:bg-primary/10 text-primary border border-primary/30 dark:border-primary/30" : "bg-red-50 dark:bg-red-950/10 text-red-600 border border-red-500/20"}`}>
           {message}
         </div>
       )}
@@ -427,7 +427,7 @@ export default function ConfiguracoesPage() {
       {/* ═══════════════════════════ PERFIL ═══════════════════════════ */}
       <div className="bg-gray-50 dark:bg-zinc-800/60 border border-primary/50 dark:border-primary/40 rounded-2xl p-6 space-y-5">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-primary/5 dark:bg-primary/150/10 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-full bg-primary/5 dark:bg-primary/10 flex items-center justify-center">
             <User className="h-5 w-5 text-primary" />
           </div>
           <div>
@@ -482,7 +482,7 @@ export default function ConfiguracoesPage() {
       {/* ═══════════════════════════ EMPRESA ═══════════════════════════ */}
       <div className="bg-gray-50 dark:bg-zinc-800/60 border border-primary/50 dark:border-primary/40 rounded-2xl p-6 space-y-5">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-primary/5 dark:bg-primary/150/10 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-full bg-primary/5 dark:bg-primary/10 flex items-center justify-center">
             <Building2 className="h-5 w-5 text-primary" />
           </div>
           <div>
@@ -516,7 +516,7 @@ export default function ConfiguracoesPage() {
       {/* ═══════════════════════════ MENSAGEM DE COBRANÇA ═══════════════════════════ */}
       <div className="bg-gray-50 dark:bg-zinc-800/60 border border-primary/50 dark:border-primary/40 rounded-2xl p-6 space-y-5">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-primary/5 dark:bg-primary/150/10 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-full bg-primary/5 dark:bg-primary/10 flex items-center justify-center">
             <Settings2 className="h-5 w-5 text-primary" />
           </div>
           <div>
@@ -527,7 +527,7 @@ export default function ConfiguracoesPage() {
 
         {/* Template feedback */}
         {templateMsg && (
-          <div className={`p-3 rounded-lg text-sm ${templateMsg.includes("sucesso") ? "bg-primary/5 dark:bg-primary/150/10 text-primary border border-primary/30 dark:border-primary/30" : "bg-red-50 dark:bg-red-950/300/10 text-red-600 border border-red-500/20"}`}>
+          <div className={`p-3 rounded-lg text-sm ${templateMsg.includes("sucesso") ? "bg-primary/5 dark:bg-primary/10 text-primary border border-primary/30 dark:border-primary/30" : "bg-red-50 dark:bg-red-950/10 text-red-600 border border-red-500/20"}`}>
             {templateMsg}
           </div>
         )}
@@ -640,7 +640,7 @@ export default function ConfiguracoesPage() {
       <div className="bg-gray-50 dark:bg-zinc-800/60 border border-primary/50 dark:border-primary/40 rounded-2xl p-6 space-y-6">
         {/* Icon + Title centered */}
         <div className="flex flex-col items-center text-center space-y-3 pt-2">
-          <div className="w-20 h-20 rounded-full bg-primary/5 dark:bg-primary/150/10 border-2 border-primary/30 dark:border-primary/30 flex items-center justify-center">
+          <div className="w-20 h-20 rounded-full bg-primary/5 dark:bg-primary/10 border-2 border-primary/30 dark:border-primary/30 flex items-center justify-center">
             <Users className="h-10 w-10 text-primary" />
           </div>
           <div>

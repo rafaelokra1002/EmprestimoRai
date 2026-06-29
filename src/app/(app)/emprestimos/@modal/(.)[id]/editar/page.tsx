@@ -18,7 +18,7 @@ export default function EditarEmprestimoModalPage() {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-2 sm:p-4">
       <button type="button" aria-label="Fechar edição" className="absolute inset-0 cursor-default" onClick={handleClose} />
-      <div className="relative z-10 max-h-[96vh] w-full max-w-[560px] overflow-hidden">
+      <div className="relative z-10 max-h-[96vh] w-full max-w-lg overflow-hidden">
         <LoanEditContent presentation="modal" onClose={handleClose} />
       </div>
     </div>

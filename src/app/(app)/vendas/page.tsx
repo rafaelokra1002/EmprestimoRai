@@ -351,9 +351,9 @@ export default function VendasPage() {
   ]
 
   const statusBadge = (status: string) => {
-    if (status === "quitado") return { label: "Quitado", cls: "bg-primary/5 dark:bg-primary/150/20 text-primary border-primary/30" }
-    if (status === "atraso") return { label: "Em Atraso", cls: "bg-red-50 dark:bg-red-950/300/20 text-red-600 border-red-500/30" }
-    return { label: "Pendente", cls: "bg-amber-50 dark:bg-amber-950/300/20 text-amber-600 border-amber-500/30" }
+    if (status === "quitado") return { label: "Quitado", cls: "bg-primary/5 dark:bg-primary/20 text-primary border-primary/30" }
+    if (status === "atraso") return { label: "Em Atraso", cls: "bg-red-50 dark:bg-red-950/20 text-red-600 border-red-500/30" }
+    return { label: "Pendente", cls: "bg-amber-50 dark:bg-amber-950/20 text-amber-600 border-amber-500/30" }
   }
 
   return (
@@ -389,7 +389,7 @@ export default function VendasPage() {
       {/* ===== STAT CARDS ===== */}
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-xl border border-primary/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
-          <div className="h-9 w-9 rounded-lg bg-primary/5 dark:bg-primary/150/10 flex items-center justify-center">
+          <div className="h-9 w-9 rounded-lg bg-primary/5 dark:bg-primary/10 flex items-center justify-center">
             <CheckCircle2 className="h-5 w-5 text-primary" />
           </div>
           <div>
@@ -398,7 +398,7 @@ export default function VendasPage() {
           </div>
         </div>
         <div className="rounded-xl border border-primary/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
-          <div className="h-9 w-9 rounded-lg bg-primary/5 dark:bg-primary/150/10 flex items-center justify-center">
+          <div className="h-9 w-9 rounded-lg bg-primary/5 dark:bg-primary/10 flex items-center justify-center">
             <DollarSign className="h-5 w-5 text-primary" />
           </div>
           <div>
@@ -407,7 +407,7 @@ export default function VendasPage() {
           </div>
         </div>
         <div className="rounded-xl border border-primary/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
-          <div className="h-9 w-9 rounded-lg bg-primary/5 dark:bg-primary/150/10 flex items-center justify-center">
+          <div className="h-9 w-9 rounded-lg bg-primary/5 dark:bg-primary/10 flex items-center justify-center">
             <CheckCircle2 className="h-5 w-5 text-primary" />
           </div>
           <div>
@@ -416,7 +416,7 @@ export default function VendasPage() {
           </div>
         </div>
         <div className="rounded-xl border border-primary/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
-          <div className="h-9 w-9 rounded-lg bg-primary/5 dark:bg-primary/150/10 flex items-center justify-center">
+          <div className="h-9 w-9 rounded-lg bg-primary/5 dark:bg-primary/10 flex items-center justify-center">
             <CalendarDays className="h-5 w-5 text-primary" />
           </div>
           <div>
@@ -455,7 +455,7 @@ export default function VendasPage() {
               onClick={() => setActiveFilter(f.key)}
               className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all border ${
                 active
-                  ? "border-primary bg-primary/5 dark:bg-primary/150/10 text-primary"
+                  ? "border-primary bg-primary/5 dark:bg-primary/10 text-primary"
                   : "border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800/60 text-gray-500 dark:text-zinc-400 hover:border-gray-300 dark:border-zinc-700"
               }`}
             >
@@ -602,7 +602,7 @@ export default function VendasPage() {
           </div>
 
           {/* Client Selector */}
-          <div className="rounded-xl border border-blue-500/30 bg-blue-50 dark:bg-blue-950/300/5 p-4 space-y-3">
+          <div className="rounded-xl border border-blue-500/30 bg-blue-50 dark:bg-blue-950/5 p-4 space-y-3">
             <div className="flex items-center gap-2">
               <User className="h-4 w-4 text-blue-600" />
               <span className="text-sm font-semibold text-blue-600">Usar cliente cadastrado</span>
@@ -1009,15 +1009,15 @@ export default function VendasPage() {
                   key={inst.id}
                   className={`rounded-lg border p-3 flex items-center justify-between ${
                     isPaid
-                      ? "border-primary/30 dark:border-primary/30 bg-primary/5 dark:bg-primary/150/5"
+                      ? "border-primary/30 dark:border-primary/30 bg-primary/5 dark:bg-primary/5"
                       : isOverdue
-                      ? "border-red-500/20 bg-red-50 dark:bg-red-950/300/5"
+                      ? "border-red-500/20 bg-red-50 dark:bg-red-950/5"
                       : "border-gray-200 dark:border-zinc-800 bg-gray-100 dark:bg-zinc-800/30"
                   }`}
                 >
                   <div className="flex items-center gap-3">
                     <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                      isPaid ? "bg-primary/5 dark:bg-primary/150/20 text-primary" : isOverdue ? "bg-red-50 dark:bg-red-950/300/20 text-red-600" : "bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400"
+                      isPaid ? "bg-primary/5 dark:bg-primary/20 text-primary" : isOverdue ? "bg-red-50 dark:bg-red-950/20 text-red-600" : "bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400"
                     }`}>
                       {inst.number}
                     </div>
@@ -1028,10 +1028,10 @@ export default function VendasPage() {
                   </div>
                   <Badge className={`text-xs ${
                     isPaid
-                      ? "bg-primary/5 dark:bg-primary/150/20 text-primary border-primary/30"
+                      ? "bg-primary/5 dark:bg-primary/20 text-primary border-primary/30"
                       : isOverdue
-                      ? "bg-red-50 dark:bg-red-950/300/20 text-red-600 border-red-500/30"
-                      : "bg-amber-50 dark:bg-amber-950/300/20 text-amber-600 border-amber-500/30"
+                      ? "bg-red-50 dark:bg-red-950/20 text-red-600 border-red-500/30"
+                      : "bg-amber-50 dark:bg-amber-950/20 text-amber-600 border-amber-500/30"
                   }`}>
                     {isPaid ? "Pago" : isOverdue ? "Vencido" : "Pendente"}
                   </Badge>

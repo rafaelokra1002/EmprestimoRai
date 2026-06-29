@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Avatar } from "@/components/avatar"
-import { CalendarDays, ChevronDown, RefreshCw, Plus, X } from "lucide-react"
+import { ChevronDown, RefreshCw, Plus, X } from "lucide-react"
 import { calculateLoan, formatCurrency, generateInstallmentDates, localDateStr, resolveDailyInterestAmount } from "@/lib/utils"
 import { showToast } from "@/lib/toast"
 
@@ -397,16 +397,14 @@ export function LoanEditContent({ presentation = "page", onClose }: LoanEditCont
           <div>
             <Label className="text-base font-medium text-slate-800 dark:text-zinc-100">Data do Contrato</Label>
             <div className="relative">
-              <Input type="date" value={contractDate} onChange={(e) => setContractDate(e.target.value)} className={`${inputClass} pr-11`} />
-              <CalendarDays className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-primary" />
+              <Input type="date" value={contractDate} onChange={(e) => setContractDate(e.target.value)} className={`${inputClass} pr-3`} />
             </div>
             <p className={helperClass}>Quando foi fechado</p>
           </div>
           <div>
             <Label className="text-base font-medium text-slate-800 dark:text-zinc-100">1ª Parcela *</Label>
             <div className="relative">
-              <Input type="date" value={firstInstallmentDate} onChange={(e) => setFirstInstallmentDate(e.target.value)} className={`${inputClass} pr-11`} />
-              <CalendarDays className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-primary" />
+              <Input type="date" value={firstInstallmentDate} onChange={(e) => setFirstInstallmentDate(e.target.value)} className={`${inputClass} pr-3`} />
             </div>
             <p className={helperClass}>Quando começa a pagar</p>
           </div>
@@ -427,9 +425,8 @@ export function LoanEditContent({ presentation = "page", onClose }: LoanEditCont
                       updated[index] = e.target.value
                       setInstallmentDates(updated)
                     }}
-                    className={`${inputClass} mt-0 pr-11`}
+                    className={`${inputClass} mt-0 pr-3`}
                   />
-                  <CalendarDays className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-primary" />
                 </div>
               </div>
             ))}
@@ -518,7 +515,7 @@ export function LoanEditContent({ presentation = "page", onClose }: LoanEditCont
         </div>
 
         <div className="flex justify-end gap-3 border-t border-gray-100 pt-2 dark:border-zinc-800">
-          <Button variant="outline" className="rounded-2xl px-5" onClick={handleClose}>Cancelar</Button>
+          <Button variant="outline" className="rounded-2xl px-5 !border-gray-300 dark:!border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-800" onClick={handleClose}>Cancelar</Button>
           <Button className="rounded-2xl bg-primary px-5 text-white hover:bg-primary/90" onClick={handleSave} disabled={saving}>{saving ? "Salvando..." : "Salvar Alterações"}</Button>
         </div>
       </div>

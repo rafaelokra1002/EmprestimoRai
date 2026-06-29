@@ -217,7 +217,7 @@ export default function RelatorioVendasPage() {
       <div className="grid grid-cols-2 gap-3">
         {/* Vendido no Período */}
         <div className="rounded-xl border border-primary/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
-          <div className="h-10 w-10 rounded-xl bg-primary/5 dark:bg-primary/150/10 flex items-center justify-center">
+          <div className="h-10 w-10 rounded-xl bg-primary/5 dark:bg-primary/10 flex items-center justify-center">
             <DollarSign className="h-5 w-5 text-primary" />
           </div>
           <div>
@@ -229,7 +229,7 @@ export default function RelatorioVendasPage() {
 
         {/* Recebido no Período */}
         <div className="rounded-xl border border-primary/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
-          <div className="h-10 w-10 rounded-xl bg-primary/5 dark:bg-primary/150/10 flex items-center justify-center">
+          <div className="h-10 w-10 rounded-xl bg-primary/5 dark:bg-primary/10 flex items-center justify-center">
             <CheckCircle2 className="h-5 w-5 text-primary" />
           </div>
           <div>
@@ -240,7 +240,7 @@ export default function RelatorioVendasPage() {
 
         {/* Lucro no Período */}
         <div className="rounded-xl border border-primary/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
-          <div className="h-10 w-10 rounded-xl bg-primary/5 dark:bg-primary/150/10 flex items-center justify-center">
+          <div className="h-10 w-10 rounded-xl bg-primary/5 dark:bg-primary/10 flex items-center justify-center">
             <TrendingUp className="h-5 w-5 text-primary" />
           </div>
           <div>
@@ -252,7 +252,7 @@ export default function RelatorioVendasPage() {
 
         {/* Em Atraso */}
         <div className="rounded-xl border border-amber-500/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
-          <div className="h-10 w-10 rounded-xl bg-amber-50 dark:bg-amber-950/300/10 flex items-center justify-center">
+          <div className="h-10 w-10 rounded-xl bg-amber-50 dark:bg-amber-950/10 flex items-center justify-center">
             <AlertTriangle className="h-5 w-5 text-amber-600" />
           </div>
           <div>
@@ -344,7 +344,7 @@ export default function RelatorioVendasPage() {
       <div className="grid grid-cols-2 gap-3">
         {/* Vendido no Período */}
         <div className="rounded-xl border border-primary/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
-          <div className="h-10 w-10 rounded-xl bg-primary/5 dark:bg-primary/150/10 flex items-center justify-center">
+          <div className="h-10 w-10 rounded-xl bg-primary/5 dark:bg-primary/10 flex items-center justify-center">
             <Package className="h-5 w-5 text-primary" />
           </div>
           <div>
@@ -356,7 +356,7 @@ export default function RelatorioVendasPage() {
 
         {/* Custo */}
         <div className="rounded-xl border border-primary/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
-          <div className="h-10 w-10 rounded-xl bg-amber-50 dark:bg-amber-950/300/10 flex items-center justify-center">
+          <div className="h-10 w-10 rounded-xl bg-amber-50 dark:bg-amber-950/10 flex items-center justify-center">
             <DollarSign className="h-5 w-5 text-amber-600" />
           </div>
           <div>
@@ -367,7 +367,7 @@ export default function RelatorioVendasPage() {
 
         {/* Lucro */}
         <div className="rounded-xl border border-primary/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
-          <div className="h-10 w-10 rounded-xl bg-primary/5 dark:bg-primary/150/10 flex items-center justify-center">
+          <div className="h-10 w-10 rounded-xl bg-primary/5 dark:bg-primary/10 flex items-center justify-center">
             <Percent className="h-5 w-5 text-primary" />
           </div>
           <div>
@@ -378,7 +378,7 @@ export default function RelatorioVendasPage() {
 
         {/* Pendente (Total) */}
         <div className="rounded-xl border border-amber-500/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
-          <div className="h-10 w-10 rounded-xl bg-amber-50 dark:bg-amber-950/300/10 flex items-center justify-center">
+          <div className="h-10 w-10 rounded-xl bg-amber-50 dark:bg-amber-950/10 flex items-center justify-center">
             <Clock className="h-5 w-5 text-amber-600" />
           </div>
           <div>

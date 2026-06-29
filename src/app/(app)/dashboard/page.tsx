@@ -452,7 +452,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Falta Receber */}
-        <div className="rounded-xl border border-green-200 dark:border-green-900/30 bg-green-50 dark:bg-green-950/20 overflow-hidden flex flex-col">
+        <div className="rounded-xl border border-green-100 dark:border-green-900/30 bg-white dark:bg-zinc-900 overflow-hidden flex flex-col">
           <div className="p-4 pb-2 flex-1">
             <div className="flex items-center gap-2 mb-3">
               <div className="rounded-xl bg-green-100 dark:bg-green-950/50 p-2">
@@ -751,16 +751,16 @@ export default function DashboardPage() {
             <span className="text-sm font-bold text-primary">Precisa de Atenção</span>
           </div>
           <div className="divide-y divide-green-700/10 dark:divide-green-900/30">
-            <div className="flex items-center gap-4 px-5 py-4">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/15 dark:bg-primary/20">
-                <Calendar className="h-4 w-4 text-primary" />
+            <div className="flex items-center gap-4 px-5 py-4 bg-purple-100/70 dark:bg-purple-950/30">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/30">
+                <Calendar className="h-4 w-4 text-purple-600 dark:text-purple-400" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-bold text-gray-800 dark:text-zinc-100">{data?.dueThisWeekCount ?? 0} Vencem esta semana</p>
                 <p className="text-xs text-gray-500 dark:text-zinc-400">{formatCurrency(data?.dueThisWeekAmount ?? 0)} – empréstimos</p>
               </div>
             </div>
-            <div className="flex items-center gap-4 px-5 py-4">
+            <div className="flex items-center gap-4 px-5 py-4 bg-red-100/70 dark:bg-red-950/30">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-100 dark:bg-red-900/30">
                 <UserX className="h-4 w-4 text-red-600 dark:text-red-400" />
               </div>

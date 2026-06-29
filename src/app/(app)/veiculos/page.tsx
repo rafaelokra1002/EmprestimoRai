@@ -482,7 +482,7 @@ export default function VeiculosPage() {
       {/* ===== STAT CARDS ===== */}
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-xl border border-primary/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
-          <div className="h-9 w-9 rounded-lg bg-primary/5 dark:bg-primary/150/10 flex items-center justify-center">
+          <div className="h-9 w-9 rounded-lg bg-primary/5 dark:bg-primary/10 flex items-center justify-center">
             <LinkIcon className="h-5 w-5 text-primary" />
           </div>
           <div>
@@ -491,7 +491,7 @@ export default function VeiculosPage() {
           </div>
         </div>
         <div className="rounded-xl border border-primary/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
-          <div className="h-9 w-9 rounded-lg bg-primary/5 dark:bg-primary/150/10 flex items-center justify-center">
+          <div className="h-9 w-9 rounded-lg bg-primary/5 dark:bg-primary/10 flex items-center justify-center">
             <CheckCircle2 className="h-5 w-5 text-primary" />
           </div>
           <div>
@@ -500,7 +500,7 @@ export default function VeiculosPage() {
           </div>
         </div>
         <div className="rounded-xl border border-primary/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
-          <div className="h-9 w-9 rounded-lg bg-primary/5 dark:bg-primary/150/10 flex items-center justify-center">
+          <div className="h-9 w-9 rounded-lg bg-primary/5 dark:bg-primary/10 flex items-center justify-center">
             <DollarSign className="h-5 w-5 text-primary" />
           </div>
           <div>
@@ -509,7 +509,7 @@ export default function VeiculosPage() {
           </div>
         </div>
         <div className="rounded-xl border border-primary/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
-          <div className="h-9 w-9 rounded-lg bg-primary/5 dark:bg-primary/150/10 flex items-center justify-center">
+          <div className="h-9 w-9 rounded-lg bg-primary/5 dark:bg-primary/10 flex items-center justify-center">
             <TrendingUp className="h-5 w-5 text-primary" />
           </div>
           <div>
@@ -545,7 +545,7 @@ export default function VeiculosPage() {
               onClick={() => setActiveFilter(f.key)}
               className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all border ${
                 active
-                  ? "border-primary bg-primary/5 dark:bg-primary/150/10 text-primary"
+                  ? "border-primary bg-primary/5 dark:bg-primary/10 text-primary"
                   : "border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800/60 text-gray-500 dark:text-zinc-400 hover:border-gray-300 dark:border-zinc-700"
               }`}
             >
@@ -592,7 +592,7 @@ export default function VeiculosPage() {
                           <Badge className="bg-gray-200 dark:bg-zinc-700/50 text-gray-700 dark:text-zinc-300 border-gray-300 dark:border-zinc-700 text-[10px] px-1.5 py-0">
                             <FileText className="h-3 w-3 mr-1" /> Comprovante
                           </Badge>
-                          <Badge className="bg-primary/5 dark:bg-primary/150/20 text-primary border-primary/30 text-[10px] px-1.5 py-0">
+                          <Badge className="bg-primary/5 dark:bg-primary/20 text-primary border-primary/30 text-[10px] px-1.5 py-0">
                             {v.installmentCount}x
                           </Badge>
                         </div>
@@ -623,18 +623,18 @@ export default function VeiculosPage() {
                 {/* Lucro / Recebido / Falta bars */}
                 {salePrice > 0 && (
                   <div className="mx-4 mb-3 space-y-1.5">
-                    <div className="flex items-center justify-between rounded-lg bg-primary/5 dark:bg-primary/150/10 border border-primary/30 dark:border-primary/30 px-3 py-2">
+                    <div className="flex items-center justify-between rounded-lg bg-primary/5 dark:bg-primary/10 border border-primary/30 dark:border-primary/30 px-3 py-2">
                       <span className="text-sm text-gray-700 dark:text-zinc-300">Lucro</span>
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-semibold tabular-nums text-primary">{formatCurrency(lucro)}</span>
                         <span className="text-xs text-gray-400 dark:text-zinc-500">({lucroPct}%)</span>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between rounded-lg bg-primary/5 dark:bg-primary/150/10 border border-primary/30 dark:border-primary/30 px-3 py-2">
+                    <div className="flex items-center justify-between rounded-lg bg-primary/5 dark:bg-primary/10 border border-primary/30 dark:border-primary/30 px-3 py-2">
                       <span className="text-sm text-gray-700 dark:text-zinc-300">Recebido</span>
                       <span className="text-sm font-semibold tabular-nums text-primary">{formatCurrency(paidAmount)}</span>
                     </div>
-                    <div className="flex items-center justify-between rounded-lg bg-amber-50 dark:bg-amber-950/300/10 border border-amber-500/20 px-3 py-2">
+                    <div className="flex items-center justify-between rounded-lg bg-amber-50 dark:bg-amber-950/10 border border-amber-500/20 px-3 py-2">
                       <span className="text-sm text-gray-700 dark:text-zinc-300">Falta</span>
                       <span className="text-sm font-semibold tabular-nums text-red-600">{formatCurrency(falta)}</span>
                     </div>
@@ -652,15 +652,15 @@ export default function VeiculosPage() {
                           key={inst.number}
                           className={`rounded-lg border p-2.5 flex items-center justify-between text-sm ${
                             isPaid
-                              ? "border-primary/30 dark:border-primary/30 bg-primary/5 dark:bg-primary/150/5"
+                              ? "border-primary/30 dark:border-primary/30 bg-primary/5 dark:bg-primary/5"
                               : isOverdue
-                              ? "border-red-500/20 bg-red-50 dark:bg-red-950/300/5"
+                              ? "border-red-500/20 bg-red-50 dark:bg-red-950/5"
                               : "border-gray-200 dark:border-zinc-800 bg-gray-100 dark:bg-zinc-800/30"
                           }`}
                         >
                           <div className="flex items-center gap-2.5">
                             <div className={`h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold ${
-                              isPaid ? "bg-primary/5 dark:bg-primary/150/20 text-primary" : isOverdue ? "bg-red-50 dark:bg-red-950/300/20 text-red-600" : "bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400"
+                              isPaid ? "bg-primary/5 dark:bg-primary/20 text-primary" : isOverdue ? "bg-red-50 dark:bg-red-950/20 text-red-600" : "bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400"
                             }`}>
                               {inst.number}
                             </div>
@@ -669,9 +669,9 @@ export default function VeiculosPage() {
                           <div className="flex items-center gap-2">
                             <span className="font-medium text-gray-900 dark:text-zinc-100">{formatCurrency(inst.amount)}</span>
                             <Badge className={`text-[10px] ${
-                              isPaid ? "bg-primary/5 dark:bg-primary/150/20 text-primary border-primary/30"
-                              : isOverdue ? "bg-red-50 dark:bg-red-950/300/20 text-red-600 border-red-500/30"
-                              : "bg-amber-50 dark:bg-amber-950/300/20 text-amber-600 border-amber-500/30"
+                              isPaid ? "bg-primary/5 dark:bg-primary/20 text-primary border-primary/30"
+                              : isOverdue ? "bg-red-50 dark:bg-red-950/20 text-red-600 border-red-500/30"
+                              : "bg-amber-50 dark:bg-amber-950/20 text-amber-600 border-amber-500/30"
                             }`}>
                               {isPaid ? "Pago" : isOverdue ? "Vencido" : "Pendente"}
                             </Badge>
@@ -770,7 +770,7 @@ export default function VeiculosPage() {
           </div>
 
           {/* Client Selector */}
-          <div className="rounded-xl border border-blue-500/30 bg-blue-50 dark:bg-blue-950/300/5 p-4 space-y-3">
+          <div className="rounded-xl border border-blue-500/30 bg-blue-50 dark:bg-blue-950/5 p-4 space-y-3">
             <div className="flex items-center gap-2">
               <User className="h-4 w-4 text-blue-600" />
               <span className="text-sm font-semibold text-blue-600">Usar cliente cadastrado</span>
@@ -867,7 +867,7 @@ export default function VeiculosPage() {
             </div>
             <div>
               <Label className="font-semibold">Lucro estimado</Label>
-              <div className="mt-1 rounded-lg border border-primary/30 bg-primary/5 dark:bg-primary/150/10 px-3 py-2">
+              <div className="mt-1 rounded-lg border border-primary/30 bg-primary/5 dark:bg-primary/10 px-3 py-2">
                 <p className="text-2xl font-semibold tabular-nums tracking-tight text-primary">{formatCurrency(estimatedProfit)}</p>
                 <p className="text-sm text-primary">({estimatedProfitPct.toFixed(1)}%)</p>
               </div>
@@ -947,7 +947,7 @@ export default function VeiculosPage() {
             const paidValue = editingVehicleData.paidAmount || 0
             return (
               <>
-                <div className="rounded-lg border border-primary/30 bg-primary/5 dark:bg-primary/150/10 px-3 py-2 text-primary font-semibold">
+                <div className="rounded-lg border border-primary/30 bg-primary/5 dark:bg-primary/10 px-3 py-2 text-primary font-semibold">
                   {paidInstallments} parcela(s) paga(s) = {formatCurrency(paidValue)}
                 </div>
 

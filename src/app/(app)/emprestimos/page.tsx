@@ -21,6 +21,11 @@ import { formatCurrency, formatDate, calculateLoan, generateInstallmentDates, re
 import { showToast } from "@/lib/toast"
 import { buildLoanData, calculateEffectivePaidAmountFromPayments, calculateOverdueInterest, calculateRealizedProfitFromPayments, calculateTotalAmountWithLateFee, getDaysOverdue, getNextDueDate, getOverdueDailyAmountBRL, getPaidExcludingInterest } from "@/lib/loan-logic"
 
+// Tooltip estilizado que aparece ao passar o mouse no botão (usar com "group relative" no botão)
+const tooltipCls = "pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-max max-w-[220px] -translate-x-1/2 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-center text-[11px] font-medium leading-snug text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100"
+// Variante alinhada à esquerda (p/ botões na borda esquerda, evita corte pelo overflow do card)
+const tooltipClsLeft = "pointer-events-none absolute bottom-full left-0 z-50 mb-2 w-max max-w-[220px] rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-left text-[11px] font-medium leading-snug text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100"
+
 interface Loan {
   id: string
   amount: number
@@ -587,8 +592,8 @@ export default function EmprestimosPage() {
   }
 
   const getLoanStatusInfo = (loan: Loan) => {
-    if (loan.status === "COMPLETED") return { label: "Quitado", color: "bg-blue-50 dark:bg-blue-950/300/20 text-blue-600" }
-    if (loan.status === "DEFAULTED") return { label: "Inadimplente", color: "bg-red-50 dark:bg-red-950/300/20 text-red-600" }
+    if (loan.status === "COMPLETED") return { label: "Quitado", color: "bg-blue-50 dark:bg-blue-950/20 text-blue-600" }
+    if (loan.status === "DEFAULTED") return { label: "Inadimplente", color: "bg-red-50 dark:bg-red-950/20 text-red-600" }
     const isInstallmentLoan = loan.installmentCount > 1
     const hasInterestPayment = loan.payments.some((p: any) => {
       const notes = (p.notes || "").toLowerCase()
@@ -602,10 +607,10 @@ export default function EmprestimosPage() {
       if (i.status === "PAID") return false
       return toDateStr(new Date(i.dueDate)) < todayStr
     })
-    if (hasOverdue) return { label: "Atrasado", color: "bg-red-50 dark:bg-red-950/300/20 text-red-600" }
+    if (hasOverdue) return { label: "Atrasado", color: "bg-red-50 dark:bg-red-950/20 text-red-600" }
     if (isInstallmentLoan && hasCurrentMonthPrincipalPayment(loan)) return { label: "Pago no Mês", color: "bg-purple-50 dark:bg-purple-950/20 text-purple-600" }
     if (isInstallmentLoan) return { label: "Em Dia", color: "bg-blue-50 dark:bg-blue-950/20 text-blue-600" }
-    return { label: "Pendente", color: "bg-orange-50 dark:bg-orange-950/300/20 text-orange-600" }
+    return { label: "Pendente", color: "bg-orange-50 dark:bg-orange-950/20 text-orange-600" }
   }
 
   const getGroupStatusInfo = (groupLoans: Loan[]) => {
@@ -613,9 +618,9 @@ export default function EmprestimosPage() {
     const anyOverdue = groupLoans.some(l =>
       l.status !== "COMPLETED" && l.installments.some((i: any) => i.status !== "PAID" && toDateStr(new Date(i.dueDate)) < todayStr)
     )
-    if (anyOverdue) return { label: "Atrasado", color: "bg-red-50 dark:bg-red-950/300/20 text-red-600" }
+    if (anyOverdue) return { label: "Atrasado", color: "bg-red-50 dark:bg-red-950/20 text-red-600" }
     const allCompleted = groupLoans.every(l => l.status === "COMPLETED")
-    if (allCompleted) return { label: "Quitado", color: "bg-blue-50 dark:bg-blue-950/300/20 text-blue-600" }
+    if (allCompleted) return { label: "Quitado", color: "bg-blue-50 dark:bg-blue-950/20 text-blue-600" }
     if (hasActiveInstallmentLoan) {
       const anyCurrentMonthPrincipalPayment = groupLoans.some((loan) => hasCurrentMonthPrincipalPayment(loan))
       if (anyCurrentMonthPrincipalPayment) {
@@ -1487,7 +1492,7 @@ export default function EmprestimosPage() {
         <div className="flex items-center gap-2">
           {/* Vence Hoje */}
           <div className="relative group">
-            <Button onClick={sendBulkDueToday} disabled={bulkSendingDueToday} className="rounded-xl bg-amber-500 hover:bg-amber-600 text-white">
+            <Button onClick={sendBulkDueToday} disabled={bulkSendingDueToday} className="rounded-xl border border-amber-400 bg-white px-4 py-2 text-sm font-semibold text-amber-600 transition hover:bg-amber-50 hover:brightness-100 dark:bg-zinc-900 dark:border-amber-500 dark:text-amber-400 dark:hover:bg-zinc-800">
               {bulkSendingDueToday ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <MessageCircle className="h-4 w-4 mr-2" />}
               {bulkSendingDueToday ? "Enviando..." : "Vence Hoje"}
             </Button>
@@ -1517,7 +1522,7 @@ export default function EmprestimosPage() {
 
           {/* Atrasados */}
           <div className="relative group">
-            <Button onClick={sendBulkOverdue} disabled={bulkSendingOverdue} className="rounded-xl bg-red-600 hover:bg-red-700 text-white">
+            <Button onClick={sendBulkOverdue} disabled={bulkSendingOverdue} className="rounded-xl border border-red-400 bg-white px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50 hover:brightness-100 dark:bg-zinc-900 dark:border-red-500 dark:text-red-400 dark:hover:bg-zinc-800">
               {bulkSendingOverdue ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <MessageCircle className="h-4 w-4 mr-2" />}
               {bulkSendingOverdue ? "Enviando..." : "Atrasados"}
             </Button>
@@ -1740,12 +1745,12 @@ export default function EmprestimosPage() {
             </div>
           </div>
           <div className="flex flex-1 items-center gap-3 rounded-xl border border-gray-200 dark:border-zinc-800 border-l-4 border-l-green-500 bg-white dark:bg-zinc-900 px-5 py-4">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-green-100 dark:bg-green-950/40">
-              <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 dark:bg-primary/15">
+              <TrendingUp className="h-5 w-5 text-primary" />
             </div>
             <div className="min-w-0">
               <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Total a Receber</p>
-              <p className="text-xl font-bold tabular-nums text-green-600 dark:text-green-400 mt-1">{formatCurrency(filteredLoans.reduce((s, l) => s + l.totalAmount, 0))}</p>
+              <p className="text-xl font-bold tabular-nums text-primary mt-1">{formatCurrency(filteredLoans.reduce((s, l) => s + l.totalAmount, 0))}</p>
             </div>
           </div>
           <div className="flex flex-1 items-center gap-3 rounded-xl border border-gray-200 dark:border-zinc-800 border-l-4 border-l-purple-500 bg-white dark:bg-zinc-900 px-5 py-4">
@@ -1874,7 +1879,7 @@ export default function EmprestimosPage() {
               const isPagoNoMes = status.label === "Pago no Mês"
               const isQuitado = status.label === "Quitado"
               const isDueToday = nextInst && toDateStr(new Date(nextInst.dueDate)) === todayStr
-              const isDueTodayHighlight = Boolean(isDueToday && loan.installmentCount > 1)
+              const isDueTodayHighlight = Boolean(isDueToday)
               const isParceladoCardBlue = loan.installmentCount > 1 && !isAtrasado && !isQuitado && !isSoJuros && !isPagoNoMes
               const isRenegotiada = (loan.tags || []).some((t: string) => t.split("|")[0] === "Renegociacao")
               const oldLoanIdMatch = loan.notes?.match(/Renegociacao do contrato ([a-z0-9_-]+)/i)
@@ -1953,7 +1958,6 @@ export default function EmprestimosPage() {
                   {/* Valor Restante */}
                   <div className="px-4 pb-3">
                     <div className={`${remainingBg} rounded-2xl border border-white/50 px-4 py-3 text-center shadow-sm dark:border-white/5`}>
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-500 dark:text-zinc-400">Saldo Atual</p>
                       <p className={`mt-1 text-[1.65rem] font-bold tabular-nums leading-none tracking-tight ${remainingColor}`}>{formatCurrency(remaining)}</p>
                       <p className="mt-1 text-[11px] text-gray-500 dark:text-zinc-400">restante a receber</p>
                     </div>
@@ -2168,12 +2172,14 @@ export default function EmprestimosPage() {
                       </div>
                     )}
                     <div className="grid w-full min-w-0 gap-1.5 pb-1 grid-cols-[minmax(0,1.6fr)_minmax(0,2.4fr)_repeat(5,minmax(0,1fr))]">
-                      <Button title="Registre pagamentos: parcela, valor parcial ou quitação total" size="sm" onClick={() => openPaymentDialog(loan)} className="min-w-0 h-10 px-2 text-xs border border-primary/15 bg-primary/10 font-medium text-primary shadow-none transition-colors hover:bg-primary/15 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20">
+                      <button onClick={() => openPaymentDialog(loan)} className="group relative inline-flex min-w-0 h-10 items-center justify-center rounded-md px-2 text-xs border border-primary/15 bg-primary/10 font-medium text-primary transition-colors hover:bg-primary/15 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20">
                         <Receipt className="mr-1 h-4 w-4 shrink-0" /> <span className="whitespace-nowrap">Pagar</span>
-                      </Button>
-                      <Button title="Pague apenas os juros e renove o prazo (+30 dias)" size="sm" onClick={() => openInterestRenegotiateDialog(loan)} className="min-w-0 h-10 px-2 text-xs border border-primary/15 bg-primary/10 font-medium text-primary shadow-none transition-colors hover:bg-primary/15 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20">
+                        <span className={tooltipClsLeft}>Registre pagamentos: parcela, valor parcial ou quitação total</span>
+                      </button>
+                      <button onClick={() => openInterestRenegotiateDialog(loan)} className="group relative inline-flex min-w-0 h-10 items-center justify-center rounded-md px-2 text-xs border border-primary/15 bg-primary/10 font-medium text-primary transition-colors hover:bg-primary/15 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20">
                         <DollarSign className="mr-1 h-4 w-4 shrink-0" /> <span className="whitespace-nowrap">Pagar Juros</span>
-                      </Button>
+                        <span className={tooltipClsLeft}>Pague apenas os juros e renove o prazo (+30 dias)</span>
+                      </button>
                       <button
                         onClick={() => {
                           const phone = (getClientPhone(loan) || "").replace(/\D/g, "")
@@ -2181,22 +2187,26 @@ export default function EmprestimosPage() {
                           const text = buildLoanReportMessage(loan, loan.client.name, getRemaining(loan))
                           window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank")
                         }}
-                        className="flex min-w-0 w-full items-center justify-center rounded-xl bg-green-50 p-2 text-green-700 transition-colors hover:bg-green-100 dark:bg-green-950/30 dark:text-green-400 dark:hover:bg-green-900/40"
-                        title="Enviar relatório ao cliente"
+                        className="group relative flex min-w-0 w-full items-center justify-center rounded-xl bg-green-50 p-2 text-green-700 transition-colors hover:bg-green-100 dark:bg-green-950/30 dark:text-green-400 dark:hover:bg-green-900/40"
                       >
                         <Send className="h-4 w-4" />
+                        <span className={tooltipCls}>Enviar relatório ao cliente pelo WhatsApp</span>
                       </button>
-                      <button className="flex min-w-0 w-full items-center justify-center rounded-2xl border border-violet-100 bg-violet-50/80 p-2 text-primary shadow-sm transition-colors hover:bg-violet-100 dark:border-violet-900/40 dark:bg-violet-950/30 dark:text-primary dark:hover:bg-violet-900/40" onClick={() => router.push(`/emprestimos/${loan.id}`)} title="Histórico">
+                      <button className="group relative flex min-w-0 w-full items-center justify-center rounded-2xl border border-violet-100 bg-violet-50/80 p-2 text-primary shadow-sm transition-colors hover:bg-violet-100 dark:border-violet-900/40 dark:bg-violet-950/30 dark:text-primary dark:hover:bg-violet-900/40" onClick={() => router.push(`/emprestimos/${loan.id}`)}>
                         <RotateCcw className="h-4 w-4" />
+                        <span className={tooltipCls}>Ver histórico de pagamentos</span>
                       </button>
-                      <button className="flex min-w-0 w-full items-center justify-center rounded-xl bg-blue-50 p-2 text-blue-600 transition-colors hover:bg-blue-100 dark:bg-blue-950/30 dark:text-blue-400 dark:hover:bg-blue-900/40" onClick={() => router.push(`/emprestimos/${loan.id}/editar`)} title="Editar">
+                      <button className="group relative flex min-w-0 w-full items-center justify-center rounded-xl bg-blue-50 p-2 text-blue-600 transition-colors hover:bg-blue-100 dark:bg-blue-950/30 dark:text-blue-400 dark:hover:bg-blue-900/40" onClick={() => router.push(`/emprestimos/${loan.id}/editar`)}>
                         <Pencil className="h-4 w-4" />
+                        <span className={tooltipCls}>Editar empréstimo</span>
                       </button>
-                      <button className="flex min-w-0 w-full items-center justify-center rounded-xl bg-amber-50 p-2 text-amber-500 transition-colors hover:bg-amber-100 dark:bg-amber-950/30 dark:text-amber-400 dark:hover:bg-amber-900/40" onClick={() => openRenegotiateDialog(loan)} title="Renegociar">
+                      <button className="group relative flex min-w-0 w-full items-center justify-center rounded-xl bg-amber-50 p-2 text-amber-500 transition-colors hover:bg-amber-100 dark:bg-amber-950/30 dark:text-amber-400 dark:hover:bg-amber-900/40" onClick={() => openRenegotiateDialog(loan)}>
                         <RotateCcw className="h-4 w-4" />
+                        <span className={tooltipCls}>Renegociar empréstimo / atraso</span>
                       </button>
-                      <button className="flex min-w-0 w-full items-center justify-center rounded-xl bg-red-50 p-2 text-red-500 transition-colors hover:bg-red-100 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-900/40" onClick={() => handleDelete(loan.id)} title="Excluir">
+                      <button className="group relative flex min-w-0 w-full items-center justify-center rounded-xl bg-red-50 p-2 text-red-500 transition-colors hover:bg-red-100 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-900/40" onClick={() => handleDelete(loan.id)}>
                         <Trash2 className="h-4 w-4" />
+                        <span className={tooltipCls}>Excluir empréstimo</span>
                       </button>
                     </div>
                   </div>
@@ -2292,12 +2302,16 @@ export default function EmprestimosPage() {
               const isGroupRed = groupStatus.label === "Atrasado" || groupStatus.label === "Inadimplente"
               const isGroupPurple = groupStatus.label === "Pago no Mês"
               const isGroupBlue = groupStatus.label === "Em Dia" || groupStatus.label === "Quitado"
+              const isGroupDueToday = !isGroupRed && group.loans.some((l) => {
+                const ni = getNextDueInst(l)
+                return ni && toDateStr(new Date(ni.dueDate)) === todayStr
+              })
 
-              const fCardBorder = isGroupRed ? "border-red-300 dark:border-red-800" : isGroupPurple ? "border-purple-300 dark:border-purple-800" : isGroupBlue ? "border-blue-300 dark:border-blue-800" : isGroupOrange ? "border-orange-300 dark:border-orange-800" : "border-primary/30 dark:border-primary/30"
-              const fCardBg = isGroupRed ? "bg-red-50 dark:bg-red-950/20" : isGroupPurple ? "bg-purple-50 dark:bg-purple-950/20" : isGroupBlue ? "bg-blue-50 dark:bg-blue-950/20" : isGroupOrange ? "bg-orange-50 dark:bg-orange-950/20" : "bg-white dark:bg-zinc-900"
-              const fRemainingColor = isGroupRed ? "text-red-600 dark:text-red-400" : isGroupPurple ? "text-purple-600 dark:text-purple-400" : isGroupBlue ? "text-blue-600 dark:text-blue-400" : isGroupOrange ? "text-orange-600 dark:text-orange-400" : "text-primary"
-              const fRemainingBg = isGroupRed ? "bg-red-50 dark:bg-red-950/30" : isGroupPurple ? "bg-purple-50 dark:bg-purple-950/30" : isGroupBlue ? "bg-blue-50 dark:bg-blue-950/30" : isGroupOrange ? "bg-orange-50 dark:bg-orange-950/30" : "bg-primary/10 dark:bg-primary/20"
-              const fCellBg = isGroupRed ? "bg-red-50 dark:bg-red-950/20" : isGroupPurple ? "bg-purple-50 dark:bg-purple-950/20" : isGroupBlue ? "bg-blue-50 dark:bg-blue-950/20" : isGroupOrange ? "bg-orange-50 dark:bg-orange-950/20" : "bg-gray-50 dark:bg-zinc-800/50"
+              const fCardBorder = isGroupRed ? "border-red-300 dark:border-red-800" : isGroupDueToday ? "border-yellow-400 dark:border-yellow-700" : isGroupPurple ? "border-purple-300 dark:border-purple-800" : isGroupBlue ? "border-blue-300 dark:border-blue-800" : isGroupOrange ? "border-orange-300 dark:border-orange-800" : "border-primary/30 dark:border-primary/30"
+              const fCardBg = isGroupRed ? "bg-red-50 dark:bg-red-950/20" : isGroupDueToday ? "bg-yellow-50 dark:bg-yellow-950/20" : isGroupPurple ? "bg-purple-50 dark:bg-purple-950/20" : isGroupBlue ? "bg-blue-50 dark:bg-blue-950/20" : isGroupOrange ? "bg-orange-50 dark:bg-orange-950/20" : "bg-white dark:bg-zinc-900"
+              const fRemainingColor = isGroupRed ? "text-red-600 dark:text-red-400" : isGroupDueToday ? "text-yellow-700 dark:text-yellow-400" : isGroupPurple ? "text-purple-600 dark:text-purple-400" : isGroupBlue ? "text-blue-600 dark:text-blue-400" : isGroupOrange ? "text-orange-600 dark:text-orange-400" : "text-primary"
+              const fRemainingBg = isGroupRed ? "bg-red-50 dark:bg-red-950/30" : isGroupDueToday ? "bg-yellow-50 dark:bg-yellow-950/30" : isGroupPurple ? "bg-purple-50 dark:bg-purple-950/30" : isGroupBlue ? "bg-blue-50 dark:bg-blue-950/30" : isGroupOrange ? "bg-orange-50 dark:bg-orange-950/30" : "bg-primary/10 dark:bg-primary/20"
+              const fCellBg = isGroupRed ? "bg-red-50 dark:bg-red-950/20" : isGroupDueToday ? "bg-yellow-50 dark:bg-yellow-950/20" : isGroupPurple ? "bg-purple-50 dark:bg-purple-950/20" : isGroupBlue ? "bg-blue-50 dark:bg-blue-950/20" : isGroupOrange ? "bg-orange-50 dark:bg-orange-950/20" : "bg-gray-50 dark:bg-zinc-800/50"
 
               return (
                 <div key={group.clientId} className={`rounded-xl border overflow-hidden shadow-sm hover:shadow-md transition-shadow ${fCardBorder} ${fCardBg}`}>
@@ -2326,7 +2340,6 @@ export default function EmprestimosPage() {
                   {/* Valor Restante */}
                   <div className="px-4 pb-3">
                     <div className={`${fRemainingBg} rounded-2xl border border-white/50 px-4 py-3 text-center shadow-sm dark:border-white/5`}>
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-500 dark:text-zinc-400">Saldo Total</p>
                       <p className={`mt-1 text-[1.65rem] font-bold tabular-nums leading-none tracking-tight ${fRemainingColor}`}>{formatCurrency(remaining)}</p>
                       <p className="mt-1 text-[11px] text-gray-500 dark:text-zinc-400">restante a receber</p>
                     </div>

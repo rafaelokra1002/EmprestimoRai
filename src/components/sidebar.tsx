@@ -11,7 +11,6 @@ import {
   DollarSign,
   Download,
   Users,
-  Banknote,
   FileText,
   Calendar,
   Receipt,
@@ -34,6 +33,7 @@ import {
   XCircle,
   MapPin,
   GraduationCap,
+  MessageSquareText,
 } from "lucide-react"
 import { useState } from "react"
 
@@ -67,6 +67,7 @@ const menuItems = [
   { href: "/simulador", label: "Simulador", icon: Calculator },
   { href: "/contas", label: "Caixa", icon: CreditCard },
   { href: "/despesas", label: "Despesas", icon: Receipt },
+  { href: "/templates", label: "Templates", icon: MessageSquareText },
   { href: "/backup", label: "Backup", icon: Download },
   { href: "/clientes/desaparecido", label: "Desaparecido", icon: XCircle },
   { href: "/aulas", label: "Aulas", icon: GraduationCap },
@@ -85,7 +86,7 @@ export function Sidebar() {
       {/* Mobile toggle */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        style={{ background: theme === "purple" ? "linear-gradient(180deg, #4c1d95 0%, #2e1065 100%)" : theme === "dark" ? "linear-gradient(180deg, #27272a 0%, #1c1c1f 100%)" : "var(--sidebar-via)" }}
+        style={{ background: theme === "purple" ? "linear-gradient(180deg, #2c2553 0%, #15102a 100%)" : theme === "dark" ? "linear-gradient(180deg, #27272a 0%, #1c1c1f 100%)" : "linear-gradient(180deg, #0f4a34 0%, #0a3322 100%)" }}
         className="fixed top-4 left-4 z-50 rounded-md border border-white/20 p-2 text-white shadow-lg shadow-black/30 lg:hidden"
       >
         {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -105,16 +106,14 @@ export function Sidebar() {
           "fixed top-0 left-0 z-40 flex h-full w-64 flex-col overflow-y-auto transition-transform duration-300 ease-in-out",
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
-        style={{ background: theme === "purple" ? "linear-gradient(180deg, #4c1d95 0%, #2e1065 100%)" : theme === "dark" ? "linear-gradient(180deg, #27272a 0%, #1c1c1f 100%)" : "var(--sidebar-via)" }}
+        style={{ background: theme === "purple" ? "linear-gradient(180deg, #2c2553 0%, #15102a 100%)" : theme === "dark" ? "linear-gradient(180deg, #27272a 0%, #1c1c1f 100%)" : "linear-gradient(180deg, #0f4a34 0%, #0a3322 100%)" }}
       >
-        <div className="flex items-center gap-2 border-b border-white/10 p-6">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/16 ring-1 ring-white/10">
-            <Banknote className="h-5 w-5 text-white" />
+        <div className="flex flex-col border-b border-white/10 p-6">
+          <div className="flex items-center gap-2.5">
+            <img src="/logo.svg" alt="SP Cobrança Fácil" className="h-9 w-9 shrink-0" />
+            <span className="text-lg font-bold text-white leading-tight">SP Cobrança Fácil</span>
           </div>
-          <div>
-            <span className="text-lg font-bold text-white">SP Cobrança Fácil</span>
-            <p className="text-[11px] text-violet-200">Gestão Financeira</p>
-          </div>
+          <span className="pl-[2.875rem] text-[11px] text-violet-200 leading-tight">Gestão Financeira</span>
         </div>
 
         <nav className="p-3 space-y-1 flex-1 overflow-y-auto">

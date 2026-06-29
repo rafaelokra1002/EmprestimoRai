@@ -92,16 +92,16 @@ export default function ChequePage() {
                   <p className="text-sm text-gray-500 dark:text-zinc-400">Valor do Cheque</p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{formatCurrency(valor)}</p>
                 </div>
-                <div className="p-4 rounded-lg bg-red-50 dark:bg-red-950/300/5 border border-red-500/20">
+                <div className="p-4 rounded-lg bg-red-50 dark:bg-red-950/5 border border-red-500/20">
                   <p className="text-sm text-gray-500 dark:text-zinc-400">Desconto</p>
                   <p className="text-2xl font-bold text-red-600">- {formatCurrency(resultado.desconto)}</p>
                   <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">Taxa efetiva: {resultado.taxaEfetiva}%</p>
                 </div>
-                <div className="p-4 rounded-lg bg-primary/5 dark:bg-primary/150/5 border border-primary/30 dark:border-primary/30">
+                <div className="p-4 rounded-lg bg-primary/5 dark:bg-primary/5 border border-primary/30 dark:border-primary/30">
                   <p className="text-sm text-gray-500 dark:text-zinc-400">Valor Líquido (a pagar)</p>
                   <p className="text-2xl font-bold text-primary">{formatCurrency(resultado.valorLiquido)}</p>
                 </div>
-                <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-950/300/5 border border-blue-500/20">
+                <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-950/5 border border-blue-500/20">
                   <p className="text-sm text-gray-500 dark:text-zinc-400">Seu Lucro</p>
                   <p className="text-2xl font-bold text-blue-600">{formatCurrency(resultado.desconto)}</p>
                   <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">
