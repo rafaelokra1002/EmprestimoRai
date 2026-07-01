@@ -100,11 +100,12 @@ export async function GET(request: Request) {
         where: { loan: { userId, deleted: false, client: { status: { not: "DESAPARECIDO" } } } },
         _sum: { amount: true },
       }),
-      // Pagamentos do mês atual (ou selecionado). Exclui empréstimos deletados para que,
-      // ao apagar tudo, o "Recebido no Mês" zere (antes contava pagamentos de deletados).
+      // Pagamentos do mês (recebimentos). Conta TODOS os recebimentos que existem —
+      // inclusive de empréstimos apagados — porque o "Recebido" só some quando o
+      // recebimento é excluído em Recebimentos.
       prisma.payment.aggregate({
         where: {
-          loan: { userId, deleted: false, client: { status: { not: "DESAPARECIDO" } } },
+          loan: { userId },
           date: {
             gte: new Date(filterYear, filterMonth, 1),
             lte: new Date(filterYear, filterMonth + 1, 0, 23, 59, 59),
