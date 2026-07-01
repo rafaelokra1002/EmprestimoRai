@@ -311,11 +311,19 @@ export async function DELETE(
       return NextResponse.json({ error: "Sessão inválida. Faça login novamente." }, { status: 401 })
     }
 
-    // Hard delete: apaga o empréstimo e, por cascade (schema), as parcelas e os
-    // pagamentos. Assim o dashboard e os recebimentos zeram ao apagar manualmente.
-    const result = await prisma.loan.deleteMany({ where: { id: params.id, userId } })
-    if (result.count === 0) {
-      return NextResponse.json({ error: "Empréstimo não encontrado" }, { status: 404 })
+    const hasPayments = await prisma.payment.count({ where: { loanId: params.id } })
+
+    if (hasPayments > 0) {
+      // Soft delete: mantém os pagamentos (recebimentos) no histórico. O empréstimo some
+      // do dashboard (que filtra deleted:false), mas os recebimentos só são apagados quando
+      // o próprio recebimento é excluído.
+      await prisma.$transaction([
+        prisma.installment.deleteMany({ where: { loanId: params.id } }),
+        prisma.loan.updateMany({ where: { id: params.id, userId }, data: { deleted: true } }),
+      ])
+    } else {
+      // Sem pagamentos: hard delete (não há recebimento a preservar)
+      await prisma.loan.deleteMany({ where: { id: params.id, userId } })
     }
 
     return NextResponse.json({ success: true })
