@@ -4,7 +4,6 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { signOut } from "next-auth/react"
 import { cn } from "@/lib/utils"
-import { useTheme } from "@/lib/theme-provider"
 import {
   LayoutGrid,
   Award,
@@ -79,14 +78,19 @@ const hardNavigationRoutes = new Set(["/emprestimos/tabela-price", "/emprestimos
 export function Sidebar() {
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
-  const { theme, toggleTheme } = useTheme()
+
+  // Só o item mais específico (href mais longo) que casa com a rota fica ativo,
+  // para não marcar "Empréstimos" e "Relatório Empréstimos" ao mesmo tempo.
+  const activeHref = menuItems
+    .filter((item) => pathname === item.href || (pathname?.startsWith(item.href + "/") ?? false))
+    .sort((a, b) => b.href.length - a.href.length)[0]?.href
 
   return (
     <>
       {/* Mobile toggle */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        style={{ background: theme === "purple" ? "linear-gradient(180deg, #2c2553 0%, #15102a 100%)" : theme === "dark" ? "linear-gradient(180deg, #27272a 0%, #1c1c1f 100%)" : "linear-gradient(180deg, #0f4a34 0%, #0a3322 100%)" }}
+        style={{ background: "linear-gradient(180deg, var(--sidebar-from) 0%, var(--sidebar-via) 50%, var(--sidebar-to) 100%)" }}
         className="fixed top-4 left-4 z-50 rounded-md border border-white/20 p-2 text-white shadow-lg shadow-black/30 lg:hidden"
       >
         {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -106,7 +110,7 @@ export function Sidebar() {
           "fixed top-0 left-0 z-40 flex h-full w-64 flex-col overflow-y-auto transition-transform duration-300 ease-in-out",
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
-        style={{ background: theme === "purple" ? "linear-gradient(180deg, #2c2553 0%, #15102a 100%)" : theme === "dark" ? "linear-gradient(180deg, #27272a 0%, #1c1c1f 100%)" : "linear-gradient(180deg, #0f4a34 0%, #0a3322 100%)" }}
+        style={{ background: "linear-gradient(180deg, var(--sidebar-from) 0%, var(--sidebar-via) 50%, var(--sidebar-to) 100%)" }}
       >
         <div className="flex flex-col border-b border-white/10 p-6">
           <div className="flex items-center gap-2.5">
@@ -170,10 +174,7 @@ export function Sidebar() {
 
           {/* Regular menu items */}
           {menuItems.map((item) => {
-            const isClientesRoot = item.href === "/clientes"
-            const isActive = isClientesRoot
-              ? pathname === "/clientes"
-              : pathname === item.href || pathname?.startsWith(item.href + "/")
+            const isActive = item.href === activeHref
             const className = cn(
               "flex items-center gap-2 rounded-lg px-2 py-2.5 text-[13px] transition-all overflow-hidden",
               isActive

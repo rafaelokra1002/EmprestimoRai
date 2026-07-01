@@ -22,7 +22,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <HeaderActions email={email} />
         </header>
         <main className="flex-1">
-          <div className="p-4 sm:p-6 lg:p-8">
+          <div className="px-4 pt-2 pb-4 sm:px-6 sm:pb-6 lg:px-8 lg:pb-8">
             {children}
           </div>
         </main>

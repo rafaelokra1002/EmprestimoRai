@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -152,8 +152,12 @@ export function LoanEditContent({ presentation = "page", onClose }: LoanEditCont
     fetchClients()
   }, [])
 
+  const didInitDatesRef = useRef(false)
   useEffect(() => {
     if (!firstInstallmentDate || installmentCount < 1) return
+    // Não regenerar as datas no carregamento — preserva as datas salvas/editadas.
+    // Só regenera quando o usuário muda os campos (data, parcelas, modalidade...) depois.
+    if (!didInitDatesRef.current) { didInitDatesRef.current = true; return }
     const dates = generateInstallmentDates(
       new Date(firstInstallmentDate + "T12:00:00"),
       installmentCount,

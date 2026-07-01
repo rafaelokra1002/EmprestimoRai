@@ -15,7 +15,7 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType>({
   theme: "light",
   toggleTheme: () => {},
-  accentColor: "violet",
+  accentColor: "green",
   setAccentColor: () => {},
 })
 
@@ -25,7 +25,7 @@ export function useTheme() {
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>("light")
-  const [accentColor, setAccentColorState] = useState<string>("violet")
+  const [accentColor, setAccentColorState] = useState<string>("green")
   const [mounted, setMounted] = useState(false)
 
   const applyThemeClasses = (t: Theme) => {

@@ -293,12 +293,12 @@ export default function ContasPage() {
         <p className="mt-1 text-sm text-gray-500 dark:text-zinc-400">Acompanhe o saldo disponível e o fluxo de capital</p>
       </div>
       <div className="flex min-h-[calc(100vh-14rem)] items-start justify-center">
-        <section className="relative w-full max-w-6xl overflow-hidden rounded-[32px] px-6 py-7 md:px-8">
+        <section className="relative w-full max-w-6xl overflow-hidden rounded-[32px] py-7">
 
           <div className="relative space-y-5">
 
             <div className="grid gap-4 lg:grid-cols-[1fr_1.05fr]">
-              <div className="rounded-[24px] border border-gray-200 bg-white/90 p-5 shadow-sm backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-900/80">
+              <div className="rounded-[24px] border border-primary/40 bg-white/90 p-5 shadow-sm backdrop-blur-md dark:border-primary/40 dark:bg-zinc-900/80">
                 <div className="mb-5 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-primary/30 bg-primary/5 dark:border-primary/20 dark:bg-primary/15">
@@ -340,7 +340,7 @@ export default function ContasPage() {
                 )}
               </div>
 
-              <div className="rounded-[24px] border border-gray-200 bg-white/90 p-5 shadow-sm backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-900/80">
+              <div className="rounded-[24px] border border-primary/40 bg-white/90 p-5 shadow-sm backdrop-blur-md dark:border-primary/40 dark:bg-zinc-900/80">
                 <div className="mb-5 flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-gray-50 dark:border-zinc-700 dark:bg-zinc-800">
                     <Landmark className="h-5 w-5 text-gray-600 dark:text-zinc-300" />
@@ -382,7 +382,7 @@ export default function ContasPage() {
                 return (
                   <div
                     key={item.title}
-                    className="rounded-[20px] border border-gray-200 bg-white/90 p-4 shadow-sm backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-900"
+                    className="rounded-[20px] border border-primary/40 bg-white/90 p-4 shadow-sm backdrop-blur-md dark:border-primary/40 dark:bg-zinc-900"
                   >
                     <div className={`mb-3 flex h-10 w-10 items-center justify-center rounded-xl ${item.iconBgClassName}`}>
                       <Icon className={`h-5 w-5 ${item.iconClassName}`} />

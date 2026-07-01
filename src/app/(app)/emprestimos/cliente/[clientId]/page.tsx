@@ -540,10 +540,19 @@ export default function ClienteEmprestimosPage() {
   const interestPerInst = (loan: Loan) =>
     Math.round((loan.profit / loan.installmentCount) * 100) / 100
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Excluir este empréstimo?")) return
-    await fetch(`/api/loans/${id}`, { method: "DELETE" })
-    fetchLoans()
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const handleDelete = (id: string) => setDeleteConfirmId(id)
+  const confirmDelete = async () => {
+    if (!deleteConfirmId) return
+    setDeleting(true)
+    try {
+      await fetch(`/api/loans/${deleteConfirmId}`, { method: "DELETE" })
+      setDeleteConfirmId(null)
+      fetchLoans()
+    } finally {
+      setDeleting(false)
+    }
   }
 
   const today = () => localDateStr()
@@ -926,11 +935,11 @@ export default function ClienteEmprestimosPage() {
             const isParcelado = loan.installmentCount > 1
             const isParceladoCardBlue = isParcelado && !isAtrasado && !isQuitado && !isSoJuros && !isPagoNoMes
 
-            const cardBorder = isAtrasado ? "border-red-400 dark:border-red-700" : isDueTodayHighlight ? "border-yellow-400 dark:border-yellow-700" : (isSoJuros || isPagoNoMes) ? "border-purple-400 dark:border-purple-700" : (isQuitado || isParceladoCardBlue) ? "border-blue-400 dark:border-blue-700" : "border-primary/40 dark:border-primary/30"
-            const cardBg = isAtrasado ? "bg-red-100 dark:bg-red-950/30" : isDueTodayHighlight ? "bg-yellow-50/40 dark:bg-yellow-950/20" : (isSoJuros || isPagoNoMes) ? "bg-purple-50/40 dark:bg-purple-950/20" : isParceladoCardBlue ? "bg-blue-50/40 dark:bg-blue-950/20" : "bg-white dark:bg-zinc-900"
-            const remainingColor = isAtrasado ? "text-red-700 dark:text-red-400" : isDueTodayHighlight ? "text-yellow-700 dark:text-yellow-400" : (isSoJuros || isPagoNoMes) ? "text-purple-600 dark:text-purple-400" : (isQuitado || isParceladoCardBlue) ? "text-blue-700 dark:text-blue-400" : isDueToday ? "text-orange-600 dark:text-orange-400" : "text-primary dark:text-primary"
-            const remainingBg = isAtrasado ? "bg-red-100 dark:bg-red-900/40" : isDueTodayHighlight ? "bg-yellow-50 dark:bg-yellow-950/20" : (isSoJuros || isPagoNoMes) ? "bg-purple-50 dark:bg-purple-950/20" : (isQuitado || isParceladoCardBlue) ? "bg-blue-50 dark:bg-blue-900/40" : isDueToday ? "bg-orange-50 dark:bg-orange-950/20" : "bg-primary/10 dark:bg-primary/20"
-            const cellBg = isAtrasado ? "bg-red-50 dark:bg-red-950/20" : isDueTodayHighlight ? "bg-yellow-50/60 dark:bg-yellow-950/10" : (isSoJuros || isPagoNoMes) ? "bg-purple-50/60 dark:bg-purple-950/10" : isParceladoCardBlue ? "bg-blue-50/60 dark:bg-blue-950/10" : "bg-gray-50 dark:bg-zinc-800/50"
+            const cardBorder = isAtrasado ? "border-red-400 dark:border-red-700" : isDueTodayHighlight ? "border-orange-400 dark:border-orange-700" : (isSoJuros || isPagoNoMes) ? "border-purple-400 dark:border-purple-700" : (isQuitado || isParceladoCardBlue) ? "border-blue-400 dark:border-blue-700" : "border-primary/40 dark:border-primary/30"
+            const cardBg = isAtrasado ? "bg-red-100 dark:bg-red-950/30" : isDueTodayHighlight ? "bg-orange-50/40 dark:bg-orange-950/20" : (isSoJuros || isPagoNoMes) ? "bg-purple-50/40 dark:bg-purple-950/20" : isParceladoCardBlue ? "bg-blue-50/40 dark:bg-blue-950/20" : "bg-white dark:bg-zinc-900"
+            const remainingColor = isAtrasado ? "text-red-700 dark:text-red-400" : isDueTodayHighlight ? "text-orange-700 dark:text-orange-400" : (isSoJuros || isPagoNoMes) ? "text-purple-600 dark:text-purple-400" : (isQuitado || isParceladoCardBlue) ? "text-blue-700 dark:text-blue-400" : isDueToday ? "text-orange-600 dark:text-orange-400" : "text-primary dark:text-primary"
+            const remainingBg = isAtrasado ? "bg-red-100 dark:bg-red-900/40" : isDueTodayHighlight ? "bg-orange-50 dark:bg-orange-950/20" : (isSoJuros || isPagoNoMes) ? "bg-purple-50 dark:bg-purple-950/20" : (isQuitado || isParceladoCardBlue) ? "bg-blue-50 dark:bg-blue-900/40" : isDueToday ? "bg-orange-50 dark:bg-orange-950/20" : "bg-primary/10 dark:bg-primary/20"
+            const cellBg = isAtrasado ? "bg-red-50 dark:bg-red-950/20" : isDueTodayHighlight ? "bg-orange-50/60 dark:bg-orange-950/10" : (isSoJuros || isPagoNoMes) ? "bg-purple-50/60 dark:bg-purple-950/10" : isParceladoCardBlue ? "bg-blue-50/60 dark:bg-blue-950/10" : "bg-gray-50 dark:bg-zinc-800/50"
 
             return (
               <div key={loan.id} className={`rounded-xl border overflow-hidden shadow-sm hover:shadow-md transition-shadow ${cardBorder} ${cardBg}`}>
@@ -952,7 +961,7 @@ export default function ClienteEmprestimosPage() {
                       </span>
                     )}
                     <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary">
-                      {MODALITY_LABELS[loan.modality] || loan.modality}
+                      {isParcelado ? "PARCELADO" : (MODALITY_LABELS[loan.modality] || loan.modality)}
                     </span>
                   </div>
                   <div className="flex items-center gap-1">
@@ -1008,62 +1017,6 @@ export default function ClienteEmprestimosPage() {
                     })()}
                   </div>
                 </div>
-
-                {/* Parcelas em atraso - Breakdown */}
-                {(() => {
-                  const loanData = buildLoanData({
-                    amount: loan.amount, interestRate: loan.interestRate, interestType: loan.interestType || "SIMPLE",
-                    totalAmount: loan.totalAmount, dailyInterestAmount: loan.dailyInterestAmount || 0,
-                    dueDay: loan.dueDay || new Date(loan.installments[0]?.dueDate || Date.now()).getDate(),
-                    modality: loan.modality, firstInstallmentDate: loan.firstInstallmentDate || loan.installments[0]?.dueDate || new Date().toISOString(),
-                    installments: loan.installments, payments: loan.payments,
-                  })
-                  const daysOverdue = getDaysOverdue(loanData)
-                  const dailyAmt = getOverdueDailyAmountBRL(loanData)
-
-                  if (daysOverdue <= 0) return null
-
-                  const overdueInsts = loan.installments
-                    .filter((i: any) => i.status !== "PAID" && new Date(i.dueDate) < new Date())
-                    .sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
-                  const visibleOverdueInsts = loan.installmentCount > 1
-                    ? overdueInsts.slice(0, 1)
-                    : overdueInsts
-                  return (
-                    <div className="mx-4 mb-2 px-3 py-2.5 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/50 space-y-2">
-                      {visibleOverdueInsts.map((inst: any) => {
-                        const todayStartInst = new Date(); todayStartInst.setHours(0, 0, 0, 0)
-                        const dueStartInst = new Date(inst.dueDate); dueStartInst.setHours(0, 0, 0, 0)
-                        const instDays = Math.max(0, Math.floor((todayStartInst.getTime() - dueStartInst.getTime()) / (1000 * 60 * 60 * 24)))
-                        const baseAmount = Math.max(0, inst.amount - (inst.paidAmount || 0))
-                        const payableAmount = getInstallmentPayableAmount(loan, inst)
-                        const instPenalty = Math.max(0, Math.round((payableAmount - baseAmount) * 100) / 100)
-                        return (
-                          <div key={inst.id}>
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs font-medium text-red-700 dark:text-red-400">Parcela {inst.number}/{loan.installmentCount} em atraso</span>
-                              <span className="text-xs font-bold text-red-700 dark:text-red-400">{instDays} dias</span>
-                            </div>
-                            <div className="flex items-center justify-between text-xs mt-0.5">
-                              <span className="text-gray-600 dark:text-zinc-400">Vencimento: {formatDate(inst.dueDate)}</span>
-                              <span className="text-gray-700 dark:text-zinc-300 font-medium">Valor: {formatCurrency(baseAmount)}</span>
-                            </div>
-                            {instPenalty > 0 && (
-                              <div className="flex items-center justify-between text-xs mt-0.5">
-                                <span className="text-red-600 dark:text-red-400">Multa Aplicada:</span>
-                                <span className="text-red-600 dark:text-red-400 font-bold">+{formatCurrency(instPenalty)}</span>
-                              </div>
-                            )}
-                            <div className="flex items-center justify-between text-xs mt-0.5">
-                              <span className="font-medium text-red-700 dark:text-red-300">Valor total com atraso:</span>
-                              <span className="font-bold text-red-700 dark:text-red-300">{formatCurrency(payableAmount)}</span>
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  )
-                })()}
 
                 {/* Grid de valores */}
                 <div className="mx-4 grid grid-cols-2 gap-px bg-gray-100 dark:bg-zinc-800 rounded-lg overflow-hidden border border-gray-100 dark:border-zinc-800">
@@ -1158,6 +1111,61 @@ export default function ClienteEmprestimosPage() {
                           </div>
                         </>
                       )}
+                    </div>
+                  )
+                })()}
+
+                {/* Parcelas em atraso - Breakdown */}
+                {(() => {
+                  const loanData = buildLoanData({
+                    amount: loan.amount, interestRate: loan.interestRate, interestType: loan.interestType || "SIMPLE",
+                    totalAmount: loan.totalAmount, dailyInterestAmount: loan.dailyInterestAmount || 0,
+                    dueDay: loan.dueDay || new Date(loan.installments[0]?.dueDate || Date.now()).getDate(),
+                    modality: loan.modality, firstInstallmentDate: loan.firstInstallmentDate || loan.installments[0]?.dueDate || new Date().toISOString(),
+                    installments: loan.installments, payments: loan.payments,
+                  })
+                  const daysOverdue = getDaysOverdue(loanData)
+
+                  if (daysOverdue <= 0) return null
+
+                  const overdueInsts = loan.installments
+                    .filter((i: any) => i.status !== "PAID" && new Date(i.dueDate) < new Date())
+                    .sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+                  const visibleOverdueInsts = loan.installmentCount > 1
+                    ? overdueInsts.slice(0, 1)
+                    : overdueInsts
+                  return (
+                    <div className="mx-4 mt-2 px-3 py-2.5 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/50 space-y-2">
+                      {visibleOverdueInsts.map((inst: any) => {
+                        const todayStartInst = new Date(); todayStartInst.setHours(0, 0, 0, 0)
+                        const dueStartInst = new Date(inst.dueDate); dueStartInst.setHours(0, 0, 0, 0)
+                        const instDays = Math.max(0, Math.floor((todayStartInst.getTime() - dueStartInst.getTime()) / (1000 * 60 * 60 * 24)))
+                        const baseAmount = Math.max(0, inst.amount - (inst.paidAmount || 0))
+                        const payableAmount = getInstallmentPayableAmount(loan, inst)
+                        const instPenalty = Math.max(0, Math.round((payableAmount - baseAmount) * 100) / 100)
+                        return (
+                          <div key={inst.id}>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-medium text-red-700 dark:text-red-400">Parcela {inst.number}/{loan.installmentCount} em atraso</span>
+                              <span className="text-xs font-bold text-red-700 dark:text-red-400">{instDays} dias</span>
+                            </div>
+                            <div className="flex items-center justify-between text-xs mt-0.5">
+                              <span className="text-gray-600 dark:text-zinc-400">Vencimento: {formatDate(inst.dueDate)}</span>
+                              <span className="text-gray-700 dark:text-zinc-300 font-medium">Valor: {formatCurrency(baseAmount)}</span>
+                            </div>
+                            {instPenalty > 0 && (
+                              <div className="flex items-center justify-between text-xs mt-0.5">
+                                <span className="text-red-600 dark:text-red-400">Multa Aplicada:</span>
+                                <span className="text-red-600 dark:text-red-400 font-bold">+{formatCurrency(instPenalty)}</span>
+                              </div>
+                            )}
+                            <div className="flex items-center justify-between text-xs mt-0.5">
+                              <span className="font-medium text-red-700 dark:text-red-300">Valor total com atraso:</span>
+                              <span className="font-bold text-red-700 dark:text-red-300">{formatCurrency(payableAmount)}</span>
+                            </div>
+                          </div>
+                        )
+                      })}
                     </div>
                   )
                 })()}
@@ -1874,6 +1882,34 @@ export default function ClienteEmprestimosPage() {
               loanId={comprovanteLoanId}
               onClose={() => setComprovanteLoanId(null)}
             />
+          </div>
+        </div>
+      )}
+
+      {/* Confirmação de exclusão (centralizado) */}
+      {deleteConfirmId && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/55 p-4">
+          <button type="button" aria-label="Fechar" className="absolute inset-0 cursor-default" onClick={() => setDeleteConfirmId(null)} />
+          <div className="relative z-10 w-full max-w-sm rounded-2xl border border-red-300 dark:border-red-800/60 bg-white dark:bg-zinc-900 p-6 shadow-2xl space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-red-100 dark:bg-red-950/40">
+                <Trash2 className="h-6 w-6 text-red-600 dark:text-red-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-red-700 dark:text-red-400">Excluir empréstimo?</h3>
+                <p className="text-xs text-gray-500 dark:text-zinc-400">Esta ação não pode ser desfeita.</p>
+              </div>
+            </div>
+            <p className="text-sm text-gray-600 dark:text-zinc-400">
+              O empréstimo será removido do dashboard. Os <span className="font-semibold text-gray-800 dark:text-zinc-200">recebimentos serão mantidos</span> no histórico.
+            </p>
+            <div className="flex gap-2 pt-1">
+              <button onClick={() => setDeleteConfirmId(null)} className="flex-1 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-zinc-300 transition hover:bg-gray-50 dark:hover:bg-zinc-700">Cancelar</button>
+              <button onClick={confirmDelete} disabled={deleting} className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-50">
+                {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                Excluir
+              </button>
+            </div>
           </div>
         </div>
       )}

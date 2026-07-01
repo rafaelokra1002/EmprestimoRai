@@ -750,8 +750,8 @@ export default function DashboardPage() {
             <AlertTriangle className="h-4 w-4 text-primary" />
             <span className="text-sm font-bold text-primary">Precisa de Atenção</span>
           </div>
-          <div className="divide-y divide-green-700/10 dark:divide-green-900/30">
-            <div className="flex items-center gap-4 px-5 py-4 bg-purple-100/70 dark:bg-purple-950/30">
+          <div className="space-y-2 p-3">
+            <div className="flex items-center gap-4 rounded-xl border border-purple-300 dark:border-purple-800/60 bg-purple-100/70 dark:bg-purple-950/30 px-5 py-4">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/30">
                 <Calendar className="h-4 w-4 text-purple-600 dark:text-purple-400" />
               </div>
@@ -760,7 +760,7 @@ export default function DashboardPage() {
                 <p className="text-xs text-gray-500 dark:text-zinc-400">{formatCurrency(data?.dueThisWeekAmount ?? 0)} – empréstimos</p>
               </div>
             </div>
-            <div className="flex items-center gap-4 px-5 py-4 bg-red-100/70 dark:bg-red-950/30">
+            <div className="flex items-center gap-4 rounded-xl border border-red-300 dark:border-red-800/60 bg-red-100/70 dark:bg-red-950/30 px-5 py-4">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-100 dark:bg-red-900/30">
                 <UserX className="h-4 w-4 text-red-600 dark:text-red-400" />
               </div>

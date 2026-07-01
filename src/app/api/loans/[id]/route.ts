@@ -179,12 +179,9 @@ export async function PUT(
         )
       }
 
-      // Só Juros (tem pagamento de juros, principal não amortizado): mantém os vencimentos
-      // já renovados em vez de voltar ao cronograma original.
-      if (existingLoan.payments.length > 0) {
-        const existingDueByNumber = new Map(existingLoan.installments.map((i) => [i.number, i.dueDate]))
-        installmentDates = installmentDates.map((d, idx) => existingDueByNumber.get(idx + 1) ?? d)
-      }
+      // As datas vêm do formulário (que preserva os vencimentos renovados quando não são
+      // editados, e aplica as alterações quando o usuário edita) — então usamos installmentDates
+      // direto, sem forçar de volta os vencimentos existentes.
 
       await prisma.$transaction(async (tx) => {
         await tx.installment.deleteMany({ where: { loanId: params.id } })
