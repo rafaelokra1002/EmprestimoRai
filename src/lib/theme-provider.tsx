@@ -41,8 +41,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setMounted(true)
     const savedTheme = localStorage.getItem("theme") as Theme | null
     const savedAccent = loadAccentColor()
-    const validTheme = savedTheme === "dark" || savedTheme === "light" || savedTheme === "purple"
-      ? savedTheme : "light"
+    // Modo roxo desativado: quem estiver salvo em "purple" volta para "dark".
+    // (reativar: incluir "purple" na validação abaixo)
+    const validTheme: Theme = savedTheme === "purple"
+      ? "dark"
+      : savedTheme === "dark" || savedTheme === "light"
+        ? savedTheme : "light"
     setTheme(validTheme)
     applyThemeClasses(validTheme)
     setAccentColorState(savedAccent)
@@ -50,7 +54,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const toggleTheme = () => {
-    const cycle: Theme[] = ["light", "dark", "purple"]
+    // Modo roxo desativado — reativar adicionando "purple" ao ciclo:
+    // const cycle: Theme[] = ["light", "dark", "purple"]
+    const cycle: Theme[] = ["light", "dark"]
     const next = cycle[(cycle.indexOf(theme) + 1) % cycle.length]
     setTheme(next)
     localStorage.setItem("theme", next)

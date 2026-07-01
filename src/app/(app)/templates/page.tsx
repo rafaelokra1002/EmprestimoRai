@@ -1,8 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { AlertTriangle, Loader2, Trash2, MessageSquareText } from "lucide-react"
-import { MessageTemplatesEditor } from "@/components/message-templates-editor"
+import { Wrench, MessageSquareText, AlertTriangle, Loader2, Trash2 } from "lucide-react"
 import { showToast } from "@/lib/toast"
 
 export default function TemplatesPage() {
@@ -42,12 +41,22 @@ export default function TemplatesPage() {
         </div>
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-zinc-100">Templates</h1>
-          <p className="text-sm text-gray-500 dark:text-zinc-400">Edite as mensagens do sistema e gerencie o reset dos dados</p>
+          <p className="text-sm text-gray-500 dark:text-zinc-400">Mensagens do sistema</p>
         </div>
       </div>
 
-      {/* Editor de mensagens */}
-      <MessageTemplatesEditor />
+      {/* Editor em manutenção */}
+      <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-amber-300 dark:border-amber-800/60 bg-amber-50/60 dark:bg-amber-950/20 px-6 py-12 text-center">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-950/40">
+          <Wrench className="h-8 w-8 text-amber-600 dark:text-amber-400" />
+        </div>
+        <div>
+          <h2 className="text-lg font-bold text-amber-700 dark:text-amber-400">Editor de mensagens em manutenção</h2>
+          <p className="mt-1 max-w-md text-sm text-gray-600 dark:text-zinc-400">
+            Estamos fazendo ajustes nesta área. Em breve você poderá editar as mensagens do sistema por aqui.
+          </p>
+        </div>
+      </div>
 
       {/* ───────────── Zona de perigo: Resetar Sistema ───────────── */}
       <div className="rounded-2xl border border-red-300 dark:border-red-800/60 bg-red-50/60 dark:bg-red-950/20 p-6 space-y-4">

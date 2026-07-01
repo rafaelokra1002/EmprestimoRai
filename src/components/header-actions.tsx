@@ -1,7 +1,7 @@
 "use client"
 
 import { useTheme } from "@/lib/theme-provider"
-import { Moon, Sun, Sparkles, User, Settings, LogOut, ChevronDown } from "lucide-react"
+import { Moon, Sun, User, Settings, LogOut, ChevronDown } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { signOut } from "next-auth/react"
 import { useRouter } from "next/navigation"
@@ -31,9 +31,9 @@ export function HeaderActions({ email }: HeaderActionsProps) {
         onClick={toggleTheme}
         className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-600 dark:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
         aria-label="Alternar tema"
-        title={theme === "light" ? "Modo escuro" : theme === "dark" ? "Modo roxo" : "Modo claro"}
+        title={theme === "light" ? "Modo escuro" : "Modo claro"}
       >
-        {theme === "light" ? <Moon className="h-4 w-4" /> : theme === "dark" ? <Sparkles className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+        {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
       </button>
 
       <div className="relative" ref={menuRef}>
