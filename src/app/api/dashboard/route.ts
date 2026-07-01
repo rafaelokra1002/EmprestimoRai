@@ -152,19 +152,19 @@ export async function GET(request: Request) {
     // não abater quando há pagamento. Também calcula o mês anterior, para o "vs mês anterior".
     const saiuYear = showAll ? bY : filterYear
     const saiuMonth = showAll ? bM : filterMonth
-    const saiuMonthStart = new Date(saiuYear, saiuMonth, 1)
-    const saiuMonthEnd = new Date(saiuYear, saiuMonth + 1, 0, 23, 59, 59)
-    const saiuPrevStart = new Date(saiuYear, saiuMonth - 1, 1)
-    const saiuPrevEnd = new Date(saiuYear, saiuMonth, 0, 23, 59, 59)
-    const inRange = (loan: any, start: Date, end: Date) => {
-      const d = new Date(loan.createdAt)
-      return d >= start && d <= end
+    // Compara o mês de CADASTRO (createdAt) em horário do Brasil (UTC-3) — evita o bug
+    // na virada do mês (ex.: criado 30/06 23h BR = 01/07 02h UTC saía do mês de junho).
+    const inMonthBR = (loan: any, y: number, m: number) => {
+      const d = new Date(new Date(loan.createdAt).getTime() - 3 * 60 * 60 * 1000)
+      return d.getUTCFullYear() === y && d.getUTCMonth() === m
     }
-    const loansInMonth = allLoansForInterest.filter((l: any) => inRange(l, saiuMonthStart, saiuMonthEnd))
+    const prevSaiuYear = saiuMonth === 0 ? saiuYear - 1 : saiuYear
+    const prevSaiuMonth = saiuMonth === 0 ? 11 : saiuMonth - 1
+    const loansInMonth = allLoansForInterest.filter((l: any) => inMonthBR(l, saiuYear, saiuMonth))
     const monthNewLoansCapital = loansInMonth.reduce((acc, loan: any) => acc + Number(loan.amount), 0)
     const monthNewLoansProfit = loansInMonth.reduce((acc, loan: any) => acc + Number(loan.profit), 0)
     const prevMonthNewLoansCapital = allLoansForInterest
-      .filter((l: any) => inRange(l, saiuPrevStart, saiuPrevEnd))
+      .filter((l: any) => inMonthBR(l, prevSaiuYear, prevSaiuMonth))
       .reduce((acc, loan: any) => acc + Number(loan.amount), 0)
 
     const monthInstallmentsDue = loans.reduce((acc, loan) => {
