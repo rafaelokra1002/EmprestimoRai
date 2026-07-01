@@ -190,15 +190,22 @@ export default function RecebimentosPage() {
     return { totalReceived, interestReceived, principalPaid, count }
   }, [paymentsInRange])
 
-  const deletePayment = async (paymentId: string) => {
-    if (!confirm("Tem certeza que deseja excluir este pagamento?")) return
+  const [deletePaymentId, setDeletePaymentId] = useState<string | null>(null)
+  const [deletingPayment, setDeletingPayment] = useState(false)
+  const deletePayment = (paymentId: string) => setDeletePaymentId(paymentId)
+  const confirmDeletePayment = async () => {
+    if (!deletePaymentId) return
+    setDeletingPayment(true)
     try {
-      const res = await fetch(`/api/payments?id=${paymentId}`, { method: "DELETE" })
+      const res = await fetch(`/api/payments?id=${deletePaymentId}`, { method: "DELETE" })
       if (res.ok) {
+        setDeletePaymentId(null)
         loadData()
       }
     } catch (e) {
       console.error(e)
+    } finally {
+      setDeletingPayment(false)
     }
   }
 
@@ -471,6 +478,21 @@ export default function RecebimentosPage() {
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => { setEditingPaymentId(null); setEditingAmount("") }} disabled={savingAmount}>Cancelar</Button>
             <Button onClick={handleSaveEditAmount} disabled={!editingAmount || savingAmount}>{savingAmount ? "Salvando..." : "Salvar"}</Button>
+          </div>
+        </div>
+      </Dialog>
+
+      {/* Confirmação de exclusão de pagamento (centralizado) */}
+      <Dialog open={!!deletePaymentId} onClose={() => setDeletePaymentId(null)} title="Excluir pagamento?" className="max-w-sm">
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600 dark:text-zinc-400">
+            Tem certeza que deseja excluir este pagamento? Esta ação não pode ser desfeita.
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setDeletePaymentId(null)} disabled={deletingPayment}>Cancelar</Button>
+            <Button onClick={confirmDeletePayment} disabled={deletingPayment} className="bg-red-600 hover:bg-red-700 text-white">
+              {deletingPayment ? "Excluindo..." : "Excluir"}
+            </Button>
           </div>
         </div>
       </Dialog>
