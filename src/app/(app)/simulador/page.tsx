@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { formatCurrency, localDateStr } from "@/lib/utils"
+import { showToast } from "@/lib/toast"
 import {
   Calculator, Calendar, ChevronDown, TrendingUp,
   FileDown, GitCompareArrows, Copy, Send, Phone, Loader2, CheckCircle2
@@ -378,7 +379,7 @@ export default function SimuladorPage() {
           </div>
           <div className="grid grid-cols-2 gap-2">
             <button
-              onClick={() => { navigator.clipboard.writeText(buildSimulationText()); alert("Texto copiado!") }}
+              onClick={() => { navigator.clipboard.writeText(buildSimulationText()); showToast("Texto copiado!", "success", "center") }}
               className="flex items-center justify-center gap-2 py-2 rounded-lg border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700 text-xs font-medium text-gray-700 dark:text-zinc-300 transition"
             >
               <Copy className="h-3.5 w-3.5" /> Copiar Texto
@@ -387,7 +388,7 @@ export default function SimuladorPage() {
               disabled={sending}
               onClick={async () => {
                 const phone = clientPhone.replace(/\D/g, "")
-                if (!phone) { alert("Informe o telefone do cliente."); return }
+                if (!phone) { showToast("Informe o telefone do cliente.", "error", "center"); return }
                 setSending(true)
                 setSendResult(null)
                 try {
@@ -398,7 +399,7 @@ export default function SimuladorPage() {
                   })
                   if (!res.ok) {
                     const data = await res.json().catch(() => ({}))
-                    alert("Erro ao enviar: " + (data?.error || "Erro desconhecido"))
+                    showToast("Erro ao enviar: " + (data?.error || "Erro desconhecido"), "error", "center")
                     setSendResult("error")
                   } else {
                     setSendResult("ok")
@@ -461,7 +462,7 @@ export default function SimuladorPage() {
           </button>
         </div>
 
-        <div className="rounded-xl border border-primary/30 bg-primary/5 dark:bg-primary/10 overflow-hidden">
+        <div className="rounded-xl border border-primary/30 bg-white dark:bg-zinc-900 overflow-hidden">
           <div className="grid grid-cols-3 px-4 py-2 border-b border-gray-100 dark:border-zinc-800 text-[10px] font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wider">
             <span>Parcela</span>
             <span>Vencimento</span>

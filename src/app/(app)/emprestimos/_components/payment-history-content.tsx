@@ -53,9 +53,12 @@ function cleanPaymentNotes(notes: string | null) {
 
   return notes
     .replace(/\[(lateFee|dailyFee):[\d.]+\]/gi, "")
+    .replace(/\[OVERDUE_CONFIG:[^\]]*\]/gi, "")
     .replace(/\s+\|\s+/g, " | ")
+    .replace(/^\s*\|\s*/, "")
+    .replace(/\s*\|\s*$/, "")
     .replace(/\s{2,}/g, " ")
-    .trim()
+    .trim() || "Pagamento registrado"
 }
 
 function getInstallmentLabel(notes: string | null) {
@@ -532,12 +535,12 @@ export function PaymentHistoryContent({
   }
 
   if (loading) {
-    return <div className="rounded-[28px] bg-white p-6 text-sm text-gray-500">Carregando histórico...</div>
+    return <div className="rounded-xl border border-gray-200 bg-white p-6 text-sm text-gray-500 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">Carregando histórico...</div>
   }
 
   if (error || !loan) {
     return (
-      <div className="rounded-[28px] bg-white p-6">
+      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-[20px] font-semibold text-slate-800">Histórico de Pagamentos</h2>
           <button type="button" onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full border border-emerald-300 text-emerald-500 transition-colors hover:bg-emerald-50">
@@ -550,7 +553,7 @@ export function PaymentHistoryContent({
   }
 
   return (
-    <div className="rounded-[28px] bg-white p-6 shadow-2xl dark:bg-zinc-900">
+    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900">
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="text-[20px] font-semibold text-slate-800 dark:text-zinc-100">Histórico de Pagamentos</h2>

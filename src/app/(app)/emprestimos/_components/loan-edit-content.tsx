@@ -279,7 +279,7 @@ export function LoanEditContent({ presentation = "page", onClose }: LoanEditCont
   }
 
   const card = (
-    <div className="mx-auto max-w-3xl rounded-[28px] border border-gray-200 bg-white shadow-[0_24px_60px_-32px_rgba(15,23,42,0.18)] dark:border-zinc-800 dark:bg-zinc-900">
+    <div className="mx-auto max-w-3xl rounded-xl border border-gray-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-900">
       <div className="flex items-center justify-between px-5 pb-2 pt-4 sm:px-6">
         <h1 className="text-xl font-semibold text-slate-800 dark:text-zinc-100">Editar Empréstimo</h1>
         <button

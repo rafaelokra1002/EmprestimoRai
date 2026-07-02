@@ -17,9 +17,11 @@ import { buildLoanData, calculateEffectivePaidAmountFromPayments, calculateReali
 import { showToast } from "@/lib/toast"
 
 // Tooltip estilizado que aparece ao passar o mouse no botão (usar com "group relative" no botão)
-const tooltipCls = "pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-max max-w-[220px] -translate-x-1/2 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-center text-[11px] font-medium leading-snug text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100"
+const tooltipCls = "pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-max whitespace-nowrap -translate-x-1/2 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-center text-[11px] font-medium leading-snug text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100"
 // Variante alinhada à esquerda (p/ botões na borda esquerda, evita corte pelo overflow do card)
-const tooltipClsLeft = "pointer-events-none absolute bottom-full left-0 z-50 mb-2 w-max max-w-[220px] rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-left text-[11px] font-medium leading-snug text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100"
+const tooltipClsLeft = "pointer-events-none absolute bottom-full left-0 z-50 mb-2 w-max whitespace-nowrap rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-left text-[11px] font-medium leading-snug text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100"
+// Variante alinhada à direita (p/ botões na borda direita, evita corte pelo overflow do card)
+const tooltipClsRight = "pointer-events-none absolute bottom-full right-0 z-50 mb-2 w-max whitespace-nowrap rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-right text-[11px] font-medium leading-snug text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100"
 
 interface Loan {
   id: string
@@ -1184,7 +1186,7 @@ export default function ClienteEmprestimosPage() {
                     <button
                       onClick={() => {
                         const phone = (clientPhone || "").replace(/\D/g, "")
-                        if (!phone) { alert("Cliente sem telefone cadastrado"); return }
+                        if (!phone) { showToast("Cliente sem telefone cadastrado", "error"); return }
                         const text = buildLoanReportMessage(loan, clientName, remaining)
                         window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank")
                       }}
@@ -1203,11 +1205,11 @@ export default function ClienteEmprestimosPage() {
                     </button>
                     <button className="group relative flex min-w-0 w-full items-center justify-center rounded-xl bg-amber-50 p-2 text-amber-500 transition-colors hover:bg-amber-100 dark:bg-amber-950/30 dark:text-amber-400 dark:hover:bg-amber-900/40" onClick={() => openRenegotiateDialog(loan)}>
                       <RotateCcw className="h-4 w-4" />
-                      <span className={tooltipCls}>Renegociar empréstimo / atraso</span>
+                      <span className={tooltipClsRight}>Renegociar empréstimo / atraso</span>
                     </button>
                     <button className="group relative flex min-w-0 w-full items-center justify-center rounded-xl bg-red-50 p-2 text-red-500 transition-colors hover:bg-red-100 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-900/40" onClick={() => handleDelete(loan.id)}>
                       <Trash2 className="h-4 w-4" />
-                      <span className={tooltipCls}>Excluir empréstimo</span>
+                      <span className={tooltipClsRight}>Excluir empréstimo</span>
                     </button>
                   </div>
                   {(status.label === "Atrasado" || status.label === "Inadimplente") && (

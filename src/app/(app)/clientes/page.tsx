@@ -475,10 +475,18 @@ export default function ClientesPage() {
     return <FileText className="h-5 w-5 text-blue-600" />
   }
 
-  const handleDelete = async (id: string) => {
-    if (confirm("Tem certeza que deseja excluir este cliente?")) {
-      await fetch(`/api/clients/${id}`, { method: "DELETE" })
+  const [deleteClientId, setDeleteClientId] = useState<string | null>(null)
+  const [deletingClient, setDeletingClient] = useState(false)
+  const handleDelete = (id: string) => setDeleteClientId(id)
+  const confirmDeleteClient = async () => {
+    if (!deleteClientId) return
+    setDeletingClient(true)
+    try {
+      await fetch(`/api/clients/${deleteClientId}`, { method: "DELETE" })
+      setDeleteClientId(null)
       fetchClients()
+    } finally {
+      setDeletingClient(false)
     }
   }
 
@@ -524,25 +532,26 @@ export default function ClientesPage() {
     { key: "documentos", label: "Documentos", icon: <FileText className="h-4 w-4" /> },
   ]
 
+  // Faixas alinhadas com a página de Score
   const getScoreIcon = (score: number) => {
-    if (score >= 150) return "⭐"
-    if (score >= 100) return "🔥"
-    if (score >= 50) return "👍"
+    if (score >= 120) return "⭐"
+    if (score >= 100) return "👍"
+    if (score >= 70) return "🔥"
     return "⚠️"
   }
 
   const getScoreColor = (score: number) => {
-    if (score >= 150) return "bg-yellow-50 dark:bg-yellow-950/20 text-yellow-600"
-    if (score >= 100) return "bg-orange-50 dark:bg-orange-950/20 text-orange-600"
-    if (score >= 50) return "bg-blue-50 dark:bg-blue-950/20 text-blue-600"
-    return "bg-red-50 dark:bg-red-950/20 text-red-600"
+    if (score >= 120) return "bg-violet-50 dark:bg-violet-950/20 text-violet-600 dark:text-violet-400"
+    if (score >= 100) return "bg-green-500/10 dark:bg-green-500/15 text-green-800 dark:text-green-400"
+    if (score >= 70) return "bg-yellow-50 dark:bg-yellow-950/20 text-yellow-600 dark:text-yellow-400"
+    return "bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400"
   }
 
   const getScoreLabel = (score: number) => {
-    if (score >= 150) return "Premium"
-    if (score >= 100) return "Excelente"
-    if (score >= 50) return "Bom"
-    return "Baixo"
+    if (score >= 120) return "Excelente"
+    if (score >= 100) return "Bom"
+    if (score >= 70) return "Regular"
+    return "Crítico"
   }
 
   const formatDate = (dateStr: string) => {
@@ -1809,6 +1818,21 @@ export default function ClientesPage() {
             </div>
           </div>
         </form>
+      </Dialog>
+
+      {/* Confirmação de exclusão de cliente (centralizado) */}
+      <Dialog open={!!deleteClientId} onClose={() => setDeleteClientId(null)} title="Excluir cliente?" className="max-w-sm">
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600 dark:text-zinc-400">
+            Tem certeza que deseja excluir este cliente? Esta ação não pode ser desfeita.
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setDeleteClientId(null)} disabled={deletingClient}>Cancelar</Button>
+            <Button onClick={confirmDeleteClient} disabled={deletingClient} className="bg-red-600 hover:bg-red-700 text-white">
+              {deletingClient ? "Excluindo..." : "Excluir"}
+            </Button>
+          </div>
+        </div>
       </Dialog>
     </div>
   )

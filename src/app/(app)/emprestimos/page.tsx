@@ -22,9 +22,11 @@ import { showToast } from "@/lib/toast"
 import { buildLoanData, calculateEffectivePaidAmountFromPayments, calculateOverdueInterest, calculateRealizedProfitFromPayments, calculateTotalAmountWithLateFee, getDaysOverdue, getNextDueDate, getOverdueDailyAmountBRL, getPaidExcludingInterest } from "@/lib/loan-logic"
 
 // Tooltip estilizado que aparece ao passar o mouse no botão (usar com "group relative" no botão)
-const tooltipCls = "pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-max max-w-[220px] -translate-x-1/2 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-center text-[11px] font-medium leading-snug text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100"
+const tooltipCls = "pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-max whitespace-nowrap -translate-x-1/2 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-center text-[11px] font-medium leading-snug text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100"
 // Variante alinhada à esquerda (p/ botões na borda esquerda, evita corte pelo overflow do card)
-const tooltipClsLeft = "pointer-events-none absolute bottom-full left-0 z-50 mb-2 w-max max-w-[220px] rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-left text-[11px] font-medium leading-snug text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100"
+const tooltipClsLeft = "pointer-events-none absolute bottom-full left-0 z-50 mb-2 w-max whitespace-nowrap rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-left text-[11px] font-medium leading-snug text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100"
+// Variante alinhada à direita (p/ botões na borda direita, evita corte pelo overflow do card)
+const tooltipClsRight = "pointer-events-none absolute bottom-full right-0 z-50 mb-2 w-max whitespace-nowrap rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-right text-[11px] font-medium leading-snug text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100"
 
 interface Loan {
   id: string
@@ -1007,6 +1009,24 @@ export default function EmprestimosPage() {
     }
   }
 
+  // Envia mensagem direto pelo WhatsApp conectado (Baileys), sem abrir wa.me
+  const sendWhatsappDirect = async (rawPhone: string, message: string) => {
+    const phone = (rawPhone || "").replace(/\D/g, "")
+    if (!phone) { showToast("Cliente sem telefone cadastrado", "error"); return }
+    try {
+      const res = await fetch("/api/whatsapp/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone, message }),
+      })
+      const data = await res.json()
+      if (!res.ok || data?.error) throw new Error(data?.error || "Erro ao enviar mensagem")
+      showToast("Mensagem enviada ao cliente!", "success")
+    } catch (error: any) {
+      showToast(error?.message || "Erro ao enviar mensagem", "error")
+    }
+  }
+
   const getOverdueLoans = () => {
     return loans.filter(l => {
       if (l.status === "COMPLETED") return false
@@ -1902,11 +1922,11 @@ export default function EmprestimosPage() {
               const oldLoan = isRenegotiada && oldLoanIdMatch ? loans.find((l) => l.id === oldLoanIdMatch[1]) : null
 
               // Cores: Renegociada=rosa, Vence hoje=laranja, Atrasado=vermelho, Só Juros/Pago no mês=roxo, Quitado=azul, resto=branco
-              const cardBorder = isRenegotiada ? "border-pink-300 dark:border-pink-800" : isAtrasado ? "border-red-400 dark:border-red-700" : isDueTodayHighlight ? "border-orange-400 dark:border-orange-700" : (isSoJuros || isPagoNoMes) ? "border-purple-400 dark:border-purple-700" : (isQuitado || isParceladoCardBlue) ? "border-blue-400 dark:border-blue-700" : isDueToday ? "border-orange-400 dark:border-orange-700" : "border-green-500 dark:border-green-600"
-              const cardBg = isRenegotiada ? "bg-pink-100 dark:bg-pink-950/30" : isAtrasado ? "bg-red-100 dark:bg-red-950/30" : isDueTodayHighlight ? "bg-orange-100 dark:bg-orange-950/30" : (isSoJuros || isPagoNoMes) ? "bg-purple-100 dark:bg-purple-950/30" : (isQuitado || isParceladoCardBlue) ? "bg-blue-100 dark:bg-blue-950/30" : isDueToday ? "bg-orange-100 dark:bg-orange-950/30" : "bg-green-50 dark:bg-green-950/20"
-              const remainingColor = isRenegotiada ? "text-primary" : isAtrasado ? "text-red-700 dark:text-red-400" : isDueTodayHighlight ? "text-orange-700 dark:text-orange-400" : (isSoJuros || isPagoNoMes) ? "text-purple-700 dark:text-purple-400" : (isQuitado || isParceladoCardBlue) ? "text-blue-700 dark:text-blue-400" : isDueToday ? "text-orange-700 dark:text-orange-400" : "text-green-600 dark:text-green-400"
-              const remainingBg = isRenegotiada ? "bg-pink-50 dark:bg-pink-900/30" : isAtrasado ? "bg-red-100 dark:bg-red-900/40" : isDueTodayHighlight ? "bg-orange-100 dark:bg-orange-900/40" : (isSoJuros || isPagoNoMes) ? "bg-purple-100 dark:bg-purple-900/40" : (isQuitado || isParceladoCardBlue) ? "bg-blue-100 dark:bg-blue-900/40" : isDueToday ? "bg-orange-100 dark:bg-orange-900/40" : "bg-green-50 dark:bg-green-900/30"
-              const cellBg = isRenegotiada ? "bg-pink-50 dark:bg-pink-950/20" : isAtrasado ? "bg-red-50 dark:bg-red-950/20" : isDueTodayHighlight ? "bg-orange-50 dark:bg-orange-950/20" : (isSoJuros || isPagoNoMes) ? "bg-purple-50 dark:bg-purple-950/20" : (isQuitado || isParceladoCardBlue) ? "bg-blue-50 dark:bg-blue-950/20" : isDueToday ? "bg-orange-50 dark:bg-orange-950/20" : "bg-green-50 dark:bg-green-950/20"
+              const cardBorder = isRenegotiada ? "border-pink-300 dark:border-pink-800" : isAtrasado ? "border-red-400 dark:border-red-700" : isDueTodayHighlight ? "border-orange-400 dark:border-orange-700" : (isSoJuros || isPagoNoMes) ? "border-purple-400 dark:border-purple-700" : (isQuitado || isParceladoCardBlue) ? "border-blue-400 dark:border-blue-700" : isDueToday ? "border-orange-400 dark:border-orange-700" : "border-green-600 dark:border-green-600"
+              const cardBg = isRenegotiada ? "bg-pink-100 dark:bg-pink-950/30" : isAtrasado ? "bg-red-100 dark:bg-red-950/30" : isDueTodayHighlight ? "bg-orange-100 dark:bg-orange-950/30" : (isSoJuros || isPagoNoMes) ? "bg-purple-100 dark:bg-purple-950/30" : (isQuitado || isParceladoCardBlue) ? "bg-blue-100 dark:bg-blue-950/30" : isDueToday ? "bg-orange-100 dark:bg-orange-950/30" : "bg-[#f0fdf4] dark:bg-green-950/20"
+              const remainingColor = isRenegotiada ? "text-primary" : isAtrasado ? "text-red-700 dark:text-red-400" : isDueTodayHighlight ? "text-orange-700 dark:text-orange-400" : (isSoJuros || isPagoNoMes) ? "text-purple-700 dark:text-purple-400" : (isQuitado || isParceladoCardBlue) ? "text-blue-700 dark:text-blue-400" : isDueToday ? "text-orange-700 dark:text-orange-400" : "text-[#16a34a] dark:text-green-400"
+              const remainingBg = isRenegotiada ? "bg-pink-50 dark:bg-pink-900/30" : isAtrasado ? "bg-red-100 dark:bg-red-900/40" : isDueTodayHighlight ? "bg-orange-100 dark:bg-orange-900/40" : (isSoJuros || isPagoNoMes) ? "bg-purple-100 dark:bg-purple-900/40" : (isQuitado || isParceladoCardBlue) ? "bg-blue-100 dark:bg-blue-900/40" : isDueToday ? "bg-orange-100 dark:bg-orange-900/40" : "bg-[#f0fdf4] dark:bg-green-900/30"
+              const cellBg = isRenegotiada ? "bg-pink-50 dark:bg-pink-950/20" : isAtrasado ? "bg-red-50 dark:bg-red-950/20" : isDueTodayHighlight ? "bg-orange-50 dark:bg-orange-950/20" : (isSoJuros || isPagoNoMes) ? "bg-purple-50 dark:bg-purple-950/20" : (isQuitado || isParceladoCardBlue) ? "bg-blue-50 dark:bg-blue-950/20" : isDueToday ? "bg-orange-50 dark:bg-orange-950/20" : "bg-[#f0fdf4] dark:bg-green-950/20"
 
               return (
                 <div key={group.clientId} className={`rounded-xl border overflow-hidden shadow-sm hover:shadow-md transition-shadow ${cardBorder} ${cardBg}`}>
@@ -2198,10 +2218,8 @@ export default function EmprestimosPage() {
                       </button>
                       <button
                         onClick={() => {
-                          const phone = (getClientPhone(loan) || "").replace(/\D/g, "")
-                          if (!phone) { alert("Cliente sem telefone cadastrado"); return }
                           const text = buildLoanReportMessage(loan, loan.client.name, getRemaining(loan))
-                          window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank")
+                          sendWhatsappDirect(getClientPhone(loan) || "", text)
                         }}
                         className="group relative flex min-w-0 w-full items-center justify-center rounded-xl bg-green-50 p-2 text-green-700 transition-colors hover:bg-green-100 dark:bg-green-950/30 dark:text-green-400 dark:hover:bg-green-900/40"
                       >
@@ -2218,11 +2236,11 @@ export default function EmprestimosPage() {
                       </button>
                       <button className="group relative flex min-w-0 w-full items-center justify-center rounded-xl bg-amber-50 p-2 text-amber-500 transition-colors hover:bg-amber-100 dark:bg-amber-950/30 dark:text-amber-400 dark:hover:bg-amber-900/40" onClick={() => openRenegotiateDialog(loan)}>
                         <RotateCcw className="h-4 w-4" />
-                        <span className={tooltipCls}>Renegociar empréstimo / atraso</span>
+                        <span className={tooltipClsRight}>Renegociar empréstimo / atraso</span>
                       </button>
                       <button className="group relative flex min-w-0 w-full items-center justify-center rounded-xl bg-red-50 p-2 text-red-500 transition-colors hover:bg-red-100 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-900/40" onClick={() => handleDelete(loan.id)}>
                         <Trash2 className="h-4 w-4" />
-                        <span className={tooltipCls}>Excluir empréstimo</span>
+                        <span className={tooltipClsRight}>Excluir empréstimo</span>
                       </button>
                     </div>
                   </div>
@@ -2324,11 +2342,11 @@ export default function EmprestimosPage() {
                 return ni && toDateStr(new Date(ni.dueDate)) === todayStr
               })
 
-              const fCardBorder = isGroupRed ? "border-red-300 dark:border-red-800" : isGroupDueToday ? "border-orange-400 dark:border-orange-700" : isGroupPurple ? "border-purple-300 dark:border-purple-800" : isGroupBlue ? "border-blue-300 dark:border-blue-800" : isGroupOrange ? "border-orange-300 dark:border-orange-800" : isGroupGreen ? "border-green-500 dark:border-green-600" : "border-primary/30 dark:border-primary/30"
-              const fCardBg = isGroupRed ? "bg-red-50 dark:bg-red-950/20" : isGroupDueToday ? "bg-orange-50 dark:bg-orange-950/20" : isGroupPurple ? "bg-purple-50 dark:bg-purple-950/20" : isGroupBlue ? "bg-blue-50 dark:bg-blue-950/20" : isGroupOrange ? "bg-orange-50 dark:bg-orange-950/20" : isGroupGreen ? "bg-green-50 dark:bg-green-950/20" : "bg-white dark:bg-zinc-900"
-              const fRemainingColor = isGroupRed ? "text-red-600 dark:text-red-400" : isGroupDueToday ? "text-orange-700 dark:text-orange-400" : isGroupPurple ? "text-purple-600 dark:text-purple-400" : isGroupBlue ? "text-blue-600 dark:text-blue-400" : isGroupOrange ? "text-orange-600 dark:text-orange-400" : isGroupGreen ? "text-green-600 dark:text-green-400" : "text-primary"
-              const fRemainingBg = isGroupRed ? "bg-red-50 dark:bg-red-950/30" : isGroupDueToday ? "bg-orange-50 dark:bg-orange-950/30" : isGroupPurple ? "bg-purple-50 dark:bg-purple-950/30" : isGroupBlue ? "bg-blue-50 dark:bg-blue-950/30" : isGroupOrange ? "bg-orange-50 dark:bg-orange-950/30" : isGroupGreen ? "bg-green-50 dark:bg-green-900/30" : "bg-primary/10 dark:bg-primary/20"
-              const fCellBg = isGroupRed ? "bg-red-50 dark:bg-red-950/20" : isGroupDueToday ? "bg-orange-50 dark:bg-orange-950/20" : isGroupPurple ? "bg-purple-50 dark:bg-purple-950/20" : isGroupBlue ? "bg-blue-50 dark:bg-blue-950/20" : isGroupOrange ? "bg-orange-50 dark:bg-orange-950/20" : isGroupGreen ? "bg-green-50 dark:bg-green-950/20" : "bg-gray-50 dark:bg-zinc-800/50"
+              const fCardBorder = isGroupRed ? "border-red-300 dark:border-red-800" : isGroupDueToday ? "border-orange-400 dark:border-orange-700" : isGroupPurple ? "border-purple-300 dark:border-purple-800" : isGroupBlue ? "border-blue-300 dark:border-blue-800" : isGroupOrange ? "border-orange-300 dark:border-orange-800" : isGroupGreen ? "border-green-600 dark:border-green-600" : "border-primary/30 dark:border-primary/30"
+              const fCardBg = isGroupRed ? "bg-red-50 dark:bg-red-950/20" : isGroupDueToday ? "bg-orange-100 dark:bg-orange-950/30" : isGroupPurple ? "bg-purple-50 dark:bg-purple-950/20" : isGroupBlue ? "bg-blue-50 dark:bg-blue-950/20" : isGroupOrange ? "bg-orange-50 dark:bg-orange-950/20" : isGroupGreen ? "bg-[#f0fdf4] dark:bg-green-950/20" : "bg-white dark:bg-zinc-900"
+              const fRemainingColor = isGroupRed ? "text-red-600 dark:text-red-400" : isGroupDueToday ? "text-orange-700 dark:text-orange-400" : isGroupPurple ? "text-purple-600 dark:text-purple-400" : isGroupBlue ? "text-blue-600 dark:text-blue-400" : isGroupOrange ? "text-orange-600 dark:text-orange-400" : isGroupGreen ? "text-[#16a34a] dark:text-green-400" : "text-primary"
+              const fRemainingBg = isGroupRed ? "bg-red-50 dark:bg-red-950/30" : isGroupDueToday ? "bg-orange-100 dark:bg-orange-900/40" : isGroupPurple ? "bg-purple-50 dark:bg-purple-950/30" : isGroupBlue ? "bg-blue-50 dark:bg-blue-950/30" : isGroupOrange ? "bg-orange-50 dark:bg-orange-950/30" : isGroupGreen ? "bg-[#f0fdf4] dark:bg-green-900/30" : "bg-primary/10 dark:bg-primary/20"
+              const fCellBg = isGroupRed ? "bg-red-50 dark:bg-red-950/20" : isGroupDueToday ? "bg-orange-50 dark:bg-orange-950/20" : isGroupPurple ? "bg-purple-50 dark:bg-purple-950/20" : isGroupBlue ? "bg-blue-50 dark:bg-blue-950/20" : isGroupOrange ? "bg-orange-50 dark:bg-orange-950/20" : isGroupGreen ? "bg-[#f0fdf4] dark:bg-green-950/20" : "bg-gray-50 dark:bg-zinc-800/50"
 
               return (
                 <div key={group.clientId} className={`rounded-xl border overflow-hidden shadow-sm hover:shadow-md transition-shadow ${fCardBorder} ${fCardBg}`}>
@@ -3998,8 +4016,7 @@ export default function EmprestimosPage() {
                   ? `\n\n⚠️ *Em caso de Atraso:*\n${formatCurrency(createdLoanInfo.dailyLateFee)} por dia${createdLoanInfo.penaltyFee > 0 ? ` + multa ${formatCurrency(createdLoanInfo.penaltyFee)}` : ""}\n\n🔄 *Opção de renovação*\nPague os juros (${formatCurrency(createdLoanInfo.profit)}) e ganhe +${modalityLabel}`
                   : ""
                 const text = `📋 *Relatório de Pagamento*\n\n📅 Vencimento: ${new Date(createdLoanInfo.firstInstallmentDate + "T12:00:00").toLocaleDateString("pt-BR")}\n\n💰 Valor liberado: ${formatCurrency(createdLoanInfo.amount)}\n📊 Juros: ${createdLoanInfo.interestRate}%\n👉 Total a pagar: ${formatCurrency(createdLoanInfo.totalAmount)}${lateSection}`
-                const phone = createdLoanInfo.clientPhone?.replace(/\D/g, "") || ""
-                window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank")
+                sendWhatsappDirect(createdLoanInfo.clientPhone || "", text)
               }}
             >
               <ExternalLink className="h-4 w-4" /> Enviar para cliente
@@ -4123,9 +4140,7 @@ export default function EmprestimosPage() {
                 className="gap-1.5 bg-primary hover:bg-primary/90 text-white"
                 onClick={() => {
                   const text = `📋 *Comprovante de Pagamento*\n\n📌 Tipo: ${paymentReceiptInfo.type}\n👤 Cliente: ${paymentReceiptInfo.clientName}\n📄 Parcela: ${paymentReceiptInfo.installmentLabel}\n💰 Valor Pago: ${formatCurrency(paymentReceiptInfo.amount)}\n📅 Data: ${paymentReceiptInfo.date}\n💵 Saldo Restante: ${formatCurrency(paymentReceiptInfo.remainingBalance)}${paymentReceiptInfo.isCompleted ? "\n\n✅ *Contrato Quitado!*" : ""}`
-                  const phone = paymentReceiptInfo.clientPhone?.replace(/\D/g, "") || ""
-                  if (!phone) return alert("Cliente sem telefone cadastrado")
-                  window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank")
+                  sendWhatsappDirect(paymentReceiptInfo.clientPhone || "", text)
                 }}
               >
                 <Send className="h-4 w-4" /> Para Cliente

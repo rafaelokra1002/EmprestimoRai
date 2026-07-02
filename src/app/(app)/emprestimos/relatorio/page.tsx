@@ -15,7 +15,7 @@ import {
   Calendar, Download, RefreshCw, ChevronDown, ChevronUp,
   Wallet, TrendingUp, DollarSign, CheckCircle2, Clock, AlertTriangle,
   Percent, Filter,
-  Users, ToggleLeft, ToggleRight
+  Users, ToggleLeft, ToggleRight, AlertOctagon, Award
 } from "lucide-react"
 
 const today = () => localDateStr()
@@ -175,10 +175,19 @@ export default function RelatorioEmprestimosPage() {
     return base.filter(hasInstInPeriod)
   }, [loans, paymentFilter, startDate, endDate])
 
+  // Capital na rua = principal em aberto, alinhado ao dashboard (desconta parcelas
+  // pagas E pagamentos parciais, proporcional ao valor da parcela)
   const remainingCapital = (l: Loan) => {
-    if (l.installmentCount <= 0) return l.amount
-    const paidInsts = l.installments.filter((i: any) => i.status === "PAID").length
-    return l.amount * (l.installmentCount - paidInsts) / l.installmentCount
+    const principal = Number(l.amount || 0)
+    const instCount = l.installments.length || 1
+    const principalPerInst = principal / instCount
+    const capitalRepaid = l.installments.reduce((s: number, i: any) => {
+      if (i.status === "PAID") return s + principalPerInst
+      const partial = Number(i.paidAmount || 0)
+      if (partial > 0 && Number(i.amount) > 0) return s + (partial / Number(i.amount)) * principalPerInst
+      return s
+    }, 0)
+    return Math.max(0, principal - capitalRepaid)
   }
 
   // Juros extras de ciclos para MENSAL (1 parcela) em atraso > 30 dias
@@ -207,11 +216,64 @@ export default function RelatorioEmprestimosPage() {
     return base + getExtraCyclesInterest(l)
   }
 
+  // Lucro realizado do empréstimo = juros + multa efetivamente recebidos (proporcional
+  // aos pagamentos). Retorna 0 enquanto não houver pagamento.
+  const getRealizedProfit = (l: Loan) => {
+    const dailyRate = getOverdueDailyAmountBRL(buildLoanData({
+      amount: l.amount, interestRate: l.interestRate, interestType: l.interestType,
+      totalAmount: l.totalAmount, dailyInterest: l.dailyInterest,
+      dailyInterestAmount: Number((l as any).dailyInterestAmount || 0),
+      modality: l.modality, firstInstallmentDate: l.firstInstallmentDate,
+      installments: l.installments, payments: l.payments,
+    }))
+
+    let juros = 0
+    if (l.payments.length > 0) {
+      const capitalIntact = l.installments.every((i: any) => (i.paidAmount || 0) === 0)
+      if (capitalIntact) {
+        juros = l.payments.reduce((s: number, p: any) => s + Number(p.amount), 0)
+      } else {
+        const interestRatio = l.totalAmount > 0 ? l.profit / l.totalAmount : 0
+        juros = l.payments.reduce((s: number, p: any) => {
+          const notes = (p.notes || "").toLowerCase()
+          const isSoJuros = notes.includes("só juros") || notes.includes("so juros") || notes.includes("parcial de juros")
+          if (isSoJuros) return s + Number(p.amount)
+          const payDate = new Date(p.date); payDate.setHours(0, 0, 0, 0)
+          const multaForPayment = l.installments.reduce((acc: number, i: any) => {
+            if (!i.paidDate) return acc
+            const paid = new Date(i.paidDate); paid.setHours(0, 0, 0, 0)
+            if (paid.getTime() !== payDate.getTime()) return acc
+            const due = new Date(i.dueDate); due.setHours(0, 0, 0, 0)
+            if (paid <= due) return acc
+            const daysOver = Math.max(0, Math.floor((paid.getTime() - due.getTime()) / 86400000))
+            return acc + dailyRate * daysOver + Number((l as any).penaltyFee || 0)
+          }, 0)
+          const baseAmount = Math.max(0, Number(p.amount) - multaForPayment)
+          return s + baseAmount * interestRatio
+        }, 0)
+      }
+    }
+
+    let multa = 0
+    if (dailyRate > 0 || (l as any).penaltyFee > 0) {
+      multa = l.installments.reduce((s: number, i: any) => {
+        if (i.status !== "PAID" || !i.paidDate) return s
+        const due = new Date(i.dueDate); due.setHours(0, 0, 0, 0)
+        const paid = new Date(i.paidDate); paid.setHours(0, 0, 0, 0)
+        if (paid <= due) return s
+        const daysOver = Math.max(0, Math.floor((paid.getTime() - due.getTime()) / 86400000))
+        return s + dailyRate * daysOver + Number((l as any).penaltyFee || 0)
+      }, 0)
+    }
+
+    return juros + multa
+  }
+
   const modalityStats = useMemo(() => {
     const allActive = loans.filter(l => l.status === "ACTIVE")
     const calc = (subset: Loan[]) => ({
       capitalNaRua: subset.reduce((s, l) => s + remainingCapital(l), 0),
-      lucro: subset.reduce((s, l) => s + l.profit, 0),
+      lucro: subset.reduce((s, l) => s + getRealizedProfit(l), 0),
       contratos: subset.length,
     })
     return {
@@ -455,6 +517,59 @@ export default function RelatorioEmprestimosPage() {
   }, [deletedLoans, startDate, endDate])
 
   const lucroRealizado = jurosRecebidos + jurosMultaRecebidos + deletedLoansLucro
+
+  // Versões TOTAIS (sem filtro de período) usadas nos cards "Em Atraso" e "Lucro Realizado"
+  const emAtrasoTotal = useMemo(() => {
+    const now = new Date()
+    const todayStr = localDateStr(now)
+    const base = loans.filter(l => l.status === "ACTIVE")
+    const typeFiltered = paymentFilter === "monthly" ? base.filter(l => l.installmentCount === 1)
+      : paymentFilter === "installment" ? base.filter(l => l.installmentCount > 1)
+      : base
+    let total = 0
+    let count = 0
+    typeFiltered.forEach((l) => {
+      const overdueInsts = l.installments.filter((i: any) => {
+        if (i.status === "PAID") return false
+        const d = localDateStr(new Date(i.dueDate))
+        return d < todayStr
+      })
+      if (overdueInsts.length > 0) {
+        count++
+        const instTotal = overdueInsts.reduce((s: number, i: any) => s + Number(i.amount), 0)
+        const dailyRate = getOverdueDailyAmountBRL(buildLoanData({
+          amount: l.amount, interestRate: l.interestRate, interestType: l.interestType,
+          totalAmount: l.totalAmount, dailyInterest: l.dailyInterest,
+          dailyInterestAmount: Number((l as any).dailyInterestAmount || 0),
+          dueDay: (l as any).dueDay ?? undefined,
+          modality: l.modality, firstInstallmentDate: l.firstInstallmentDate,
+          installments: l.installments, payments: l.payments,
+        }))
+        const multas = overdueInsts.reduce((s: number, i: any) => {
+          const due = new Date(i.dueDate); due.setHours(0, 0, 0, 0)
+          const daysOver = Math.max(0, Math.floor((now.getTime() - due.getTime()) / 86400000))
+          return s + dailyRate * daysOver + Number((l as any).penaltyFee || 0)
+        }, 0)
+        total += instTotal + multas
+      }
+    })
+    return { total, count }
+  }, [loans, paymentFilter])
+
+  const lucroRealizadoTotal = useMemo(() => {
+    const base = loans.filter(l => l.status === "ACTIVE" || l.status === "COMPLETED")
+    const typeFiltered = paymentFilter === "monthly" ? base.filter(l => l.installmentCount === 1)
+      : paymentFilter === "installment" ? base.filter(l => l.installmentCount > 1)
+      : base
+
+    const realizadoT = typeFiltered.reduce((total, l) => total + getRealizedProfit(l), 0)
+
+    const deletedT = deletedLoans.reduce((total, l) => {
+      return total + l.payments.reduce((s: number, p: any) => s + Number(p.amount), 0)
+    }, 0)
+
+    return realizadoT + deletedT
+  }, [loans, deletedLoans, paymentFilter])
 
   const entradas = pagamentosNoPeriodo
   // Despesas NÃO entram em nenhum cálculo (ficam só na aba Despesas)
@@ -852,21 +967,22 @@ export default function RelatorioEmprestimosPage() {
         <Card className="border-primary/50 dark:border-primary/40">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-base leading-none">⚠️</span>
+              <AlertOctagon className="h-4 w-4 text-red-500" />
               <span className="text-xs text-gray-500 dark:text-zinc-400">Em Atraso</span>
             </div>
-            <p className="text-2xl font-bold tabular-nums tracking-tight text-red-600">{formatCurrency(emAtraso.total)}</p>
-            <p className="text-xs text-gray-400 dark:text-zinc-500">{emAtraso.count} contratos no período</p>
+            <p className="text-2xl font-bold tabular-nums tracking-tight text-red-600">{formatCurrency(emAtrasoTotal.total)}</p>
+            <p className="text-xs text-gray-400 dark:text-zinc-500">{emAtrasoTotal.count} contratos no total</p>
           </CardContent>
         </Card>
 
         <Card className="border-primary/50 dark:border-primary/40">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-base leading-none">🏅</span>
+              <Award className="h-4 w-4 text-purple-500" />
               <span className="text-xs text-gray-500 dark:text-zinc-400">Lucro Realizado</span>
             </div>
-            <p className="text-2xl font-bold tabular-nums tracking-tight text-purple-600">{formatCurrency(lucroRealizado)}</p>
+            <p className="text-2xl font-bold tabular-nums tracking-tight text-purple-600">{formatCurrency(lucroRealizadoTotal)}</p>
+            <p className="text-xs text-gray-400 dark:text-zinc-500">Juros já recebido</p>
           </CardContent>
         </Card>
       </div>

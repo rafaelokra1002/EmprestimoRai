@@ -11,7 +11,7 @@ export const ACCENT_PRESETS: AccentPreset[] = [
   {
     id: "green", name: "Verde",
     primary: "142 76% 36%", primaryDark: "142 68% 58%",
-    gradient: ["#14532d", "#16a34a", "#166534"],
+    gradient: ["#14532d", "#166534", "#0d3f24"],
     shades: { 50:"#f0fdf4",100:"#dcfce7",200:"#bbf7d0",300:"#86efac",400:"#4ade80",500:"#22c55e",600:"#16a34a",700:"#15803d",800:"#166534",900:"#14532d",950:"#052e16" },
   },
   {
@@ -34,14 +34,17 @@ export const ACCENT_PRESETS: AccentPreset[] = [
   },
 ]
 
-export function applyAccentColor(presetId: string, _isDark: boolean) {
-  const preset = ACCENT_PRESETS.find((p) => p.id === presetId) ?? ACCENT_PRESETS[0]
+export function applyAccentColor(presetId: string, isDark: boolean) {
   const root = document.documentElement
 
-  // Muda a cor do menu lateral (sidebar) conforme a paleta escolhida
-  root.style.setProperty("--sidebar-from", preset.gradient[0])
-  root.style.setProperty("--sidebar-via", preset.gradient[1])
-  root.style.setProperty("--sidebar-to", preset.gradient[2])
+  // Sidebar depende do TEMA (não da paleta):
+  // modo escuro = preto, modo claro = verde escuro
+  const sidebar = isDark
+    ? ["#171a20", "#13151b", "#0d0e12"]
+    : ["#14532d", "#166534", "#0d3f24"]
+  root.style.setProperty("--sidebar-from", sidebar[0])
+  root.style.setProperty("--sidebar-via", sidebar[1])
+  root.style.setProperty("--sidebar-to", sidebar[2])
 }
 
 export function saveAccentColor(presetId: string) {

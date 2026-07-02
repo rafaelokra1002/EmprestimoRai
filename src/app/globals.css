@@ -24,9 +24,9 @@
     --input: 268 24% 88%;
     --ring: 142 80% 36%;
     --radius: 0.75rem;
-    --sidebar-from: #5b1e91;
-    --sidebar-via: #6d28d9;
-    --sidebar-to: #4c1d95;
+    --sidebar-from: #14532d;
+    --sidebar-via: #166534;
+    --sidebar-to: #0d3f24;
     /* Accent color shades (default: violet) — updated by applyAccentColor() */
     --ac-50: #f5f3ff; --ac-100: #ede9fe; --ac-200: #ddd6fe; --ac-300: #c4b5fd;
     --ac-400: #a78bfa; --ac-500: #8b5cf6; --ac-600: #7c3aed; --ac-700: #6d28d9;
@@ -57,6 +57,10 @@
     --border: 260 14% 24%;
     --input: 260 14% 24%;
     --ring: 142 68% 55%;
+    /* Sidebar preto no modo escuro */
+    --sidebar-from: #171a20;
+    --sidebar-via: #13151b;
+    --sidebar-to: #0d0e12;
   }
 }
 

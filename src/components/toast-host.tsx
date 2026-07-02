@@ -2,12 +2,32 @@
 
 import { useEffect, useState } from "react"
 import { CheckCircle2, AlertTriangle, Info } from "lucide-react"
-import type { ToastType } from "@/lib/toast"
+import type { ToastType, ToastPosition } from "@/lib/toast"
 
 interface ToastItem {
   id: number
   message: string
   type: ToastType
+  position: ToastPosition
+}
+
+function ToastCard({ t }: { t: ToastItem }) {
+  const tone =
+    t.type === "error"
+      ? "border-red-500/50 text-white"
+      : t.type === "info"
+      ? "border-blue-500/50 text-white"
+      : "border-green-500/50 text-white"
+  const Icon = t.type === "error" ? AlertTriangle : t.type === "info" ? Info : CheckCircle2
+  const iconColor = t.type === "error" ? "text-red-400" : t.type === "info" ? "text-blue-400" : "text-green-400"
+  return (
+    <div
+      className={`pointer-events-auto flex items-start gap-2.5 rounded-xl border bg-zinc-900/95 px-4 py-3 text-sm font-medium shadow-lg shadow-black/30 backdrop-blur-sm animate-in fade-in zoom-in-95 duration-200 ${tone}`}
+    >
+      <Icon className={`mt-0.5 h-5 w-5 shrink-0 ${iconColor}`} />
+      <span className="leading-snug">{t.message}</span>
+    </div>
+  )
 }
 
 export function ToastHost() {
@@ -17,7 +37,7 @@ export function ToastHost() {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent).detail || {}
       const id = Date.now() + Math.random()
-      const item: ToastItem = { id, message: detail.message || "", type: detail.type || "success" }
+      const item: ToastItem = { id, message: detail.message || "", type: detail.type || "success", position: detail.position || "corner" }
       setToasts((prev) => [...prev, item])
       setTimeout(() => {
         setToasts((prev) => prev.filter((t) => t.id !== id))
@@ -27,29 +47,23 @@ export function ToastHost() {
     return () => window.removeEventListener("app:toast", handler)
   }, [])
 
-  if (toasts.length === 0) return null
+  const cornerToasts = toasts.filter((t) => t.position !== "center")
+  const centerToasts = toasts.filter((t) => t.position === "center")
 
   return (
-    <div className="pointer-events-none fixed bottom-4 right-4 z-[200] flex w-[min(92vw,360px)] flex-col gap-2">
-      {toasts.map((t) => {
-        const tone =
-          t.type === "error"
-            ? "border-red-500/50 text-white"
-            : t.type === "info"
-            ? "border-blue-500/50 text-white"
-            : "border-green-500/50 text-white"
-        const Icon = t.type === "error" ? AlertTriangle : t.type === "info" ? Info : CheckCircle2
-        const iconColor = t.type === "error" ? "text-red-400" : t.type === "info" ? "text-blue-400" : "text-green-400"
-        return (
-          <div
-            key={t.id}
-            className={`pointer-events-auto flex items-start gap-2.5 rounded-xl border bg-zinc-900/95 px-4 py-3 text-sm font-medium shadow-lg shadow-black/30 backdrop-blur-sm animate-in slide-in-from-right-4 fade-in duration-300 ${tone}`}
-          >
-            <Icon className={`mt-0.5 h-5 w-5 shrink-0 ${iconColor}`} />
-            <span className="leading-snug">{t.message}</span>
+    <>
+      {cornerToasts.length > 0 && (
+        <div className="pointer-events-none fixed bottom-4 right-4 z-[200] flex w-[min(92vw,360px)] flex-col gap-2">
+          {cornerToasts.map((t) => <ToastCard key={t.id} t={t} />)}
+        </div>
+      )}
+      {centerToasts.length > 0 && (
+        <div className="pointer-events-none fixed inset-0 z-[200] flex items-center justify-center px-4">
+          <div className="flex w-[min(92vw,380px)] flex-col gap-2">
+            {centerToasts.map((t) => <ToastCard key={t.id} t={t} />)}
           </div>
-        )
-      })}
-    </div>
+        </div>
+      )}
+    </>
   )
 }
