@@ -1069,8 +1069,8 @@ export default function EmprestimosPage() {
         if (res.ok) { sent++ } else { failed++ }
       } catch { failed++ }
       sentClients.add(loan.client.id)
-      // Delay between sends to avoid WhatsApp rate limiting
-      await new Promise(r => setTimeout(r, 60000))
+      // Delay aleatório entre envios (90s–150s por cliente) para reduzir risco de bloqueio do WhatsApp
+      await new Promise(r => setTimeout(r, 90000 + Math.random() * 60000))
     }
     setBulkSendingOverdue(false)
     setBulkResultDialog({ type: "atrasados", sent, failed, total: sentClients.size })
@@ -1151,7 +1151,7 @@ export default function EmprestimosPage() {
         })
         if (res.ok) { sent++ } else { failed++ }
       } catch { failed++ }
-      await new Promise(r => setTimeout(r, 60000))
+      await new Promise(r => setTimeout(r, 90000 + Math.random() * 60000))
     }
     setBulkSendingDueToday(false)
     setBulkResultDialog({ type: "vencendo hoje", sent, failed, total: byClient.size })
