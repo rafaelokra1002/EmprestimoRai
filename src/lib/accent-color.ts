@@ -34,17 +34,14 @@ export const ACCENT_PRESETS: AccentPreset[] = [
   },
 ]
 
-export function applyAccentColor(presetId: string, isDark: boolean) {
+export function applyAccentColor(presetId: string, _isDark: boolean) {
+  const preset = ACCENT_PRESETS.find((p) => p.id === presetId) ?? ACCENT_PRESETS[0]
   const root = document.documentElement
 
-  // Sidebar depende do TEMA (não da paleta):
-  // modo escuro = preto, modo claro = verde escuro
-  const sidebar = isDark
-    ? ["#171a20", "#13151b", "#0d0e12"]
-    : ["#14532d", "#166534", "#0d3f24"]
-  root.style.setProperty("--sidebar-from", sidebar[0])
-  root.style.setProperty("--sidebar-via", sidebar[1])
-  root.style.setProperty("--sidebar-to", sidebar[2])
+  // Cor do menu lateral (sidebar) conforme a paleta escolhida em Configurações
+  root.style.setProperty("--sidebar-from", preset.gradient[0])
+  root.style.setProperty("--sidebar-via", preset.gradient[1])
+  root.style.setProperty("--sidebar-to", preset.gradient[2])
 }
 
 export function saveAccentColor(presetId: string) {
