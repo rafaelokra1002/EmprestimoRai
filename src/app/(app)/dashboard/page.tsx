@@ -91,6 +91,7 @@ interface DashboardData {
     score: number
     collectionRate: number
     defaultRate: number
+    hasData?: boolean
   }
   alerts: { title: string; description: string; severity: "high" | "medium" | "low" }[]
   dueThisWeekCount: number
@@ -257,20 +258,25 @@ export default function DashboardPage() {
   const collectionRate = data?.operationHealth?.collectionRate || 0
   const defaultRate = data?.operationHealth?.defaultRate || 0
   // Nível de saúde da operação (cores e rótulo dinâmicos pelo score)
-  const healthLevel = healthScore >= 70 ? "good" : healthScore >= 40 ? "warn" : "bad"
-  const healthRing = healthLevel === "good" ? "border-green-600 text-green-500" : healthLevel === "warn" ? "border-amber-400 text-amber-500" : "border-red-500 text-red-500"
+  const healthHasData = data?.operationHealth?.hasData !== false
+  const healthLevel = !healthHasData ? "empty" : healthScore >= 70 ? "good" : healthScore >= 40 ? "warn" : "bad"
+  const healthRing = healthLevel === "good" ? "border-green-600 text-green-500" : healthLevel === "warn" ? "border-amber-400 text-amber-500" : healthLevel === "empty" ? "border-gray-300 text-gray-400 dark:border-zinc-700 dark:text-zinc-500" : "border-red-500 text-red-500"
   const healthBadge = healthLevel === "good"
     ? { label: "Saudável", cls: "bg-primary/10 text-primary" }
     : healthLevel === "warn"
       ? { label: "Atenção", cls: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400" }
-      : { label: "Crítico", cls: "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400" }
-  const healthBar = healthLevel === "good" ? "bg-primary" : healthLevel === "warn" ? "bg-amber-400" : "bg-red-500"
+      : healthLevel === "empty"
+        ? { label: "Sem dados", cls: "bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400" }
+        : { label: "Crítico", cls: "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400" }
+  const healthBar = healthLevel === "good" ? "bg-primary" : healthLevel === "warn" ? "bg-amber-400" : healthLevel === "empty" ? "bg-gray-300 dark:bg-zinc-600" : "bg-red-500"
   // Fundo do card inteiro conforme o nível (vermelho no Crítico, igual ao exemplo)
   const healthCardCls = healthLevel === "good"
     ? "border-primary/30 bg-gradient-to-br from-primary/15 to-primary/5 dark:from-green-950/70 dark:to-green-900/30"
     : healthLevel === "warn"
       ? "border-amber-300 dark:border-amber-900/50 bg-gradient-to-br from-amber-100 to-amber-50 dark:from-amber-950/60 dark:to-amber-950/20"
-      : "border-red-400 dark:border-red-900/60 bg-gradient-to-br from-red-100 to-red-50 dark:from-red-950/80 dark:to-red-900/40"
+      : healthLevel === "empty"
+        ? "border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900/40"
+        : "border-red-400 dark:border-red-900/60 bg-gradient-to-br from-red-100 to-red-50 dark:from-red-950/80 dark:to-red-900/40"
   // Estilos dos sub-cards: verde (bom) usa primary; vermelho (ruim)
   const goodCardCls = "border-primary/30 bg-primary/5 dark:bg-primary/15"
   const badCardCls = "border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30"

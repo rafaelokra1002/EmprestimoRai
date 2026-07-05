@@ -517,12 +517,16 @@ export async function GET(request: Request) {
 
     const collectionRate = totalToReceive > 0 ? (totalReceived / totalToReceive) * 100 : 0
     const defaultRate = activeInstallments > 0 ? (overdueCount / activeInstallments) * 100 : 0
-    const healthScore = Math.round(
-      Math.max(
-        0,
-        Math.min(100, 60 + collectionRate * 0.3 - defaultRate * 1.5 - dueTodayCount * 0.2)
-      )
-    )
+    // Operação vazia (sem parcelas ativas e nada a receber) → sem dados, score 0
+    const hasData = activeInstallments > 0 || totalToReceive > 0
+    const healthScore = !hasData
+      ? 0
+      : Math.round(
+          Math.max(
+            0,
+            Math.min(100, 60 + collectionRate * 0.3 - defaultRate * 1.5 - dueTodayCount * 0.2)
+          )
+        )
 
     const alerts = [
       overdueCount > 0
@@ -599,6 +603,7 @@ export async function GET(request: Request) {
         score: healthScore,
         collectionRate,
         defaultRate,
+        hasData,
       },
       alerts,
       dueThisWeekCount,
