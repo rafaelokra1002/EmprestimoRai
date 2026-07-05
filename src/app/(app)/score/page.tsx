@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import {
   Search, Trophy, Pencil, ChevronDown, ChevronUp, Clock, AlertCircle,
   DollarSign, ThumbsUp, ThumbsDown, Sparkles, RefreshCw, Save, Star,
-  CheckCircle2, ShieldAlert, BookOpen,
+  CheckCircle2, ShieldAlert, BookOpen, HelpCircle,
 } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
 import { calculateRealizedProfitFromPayments } from "@/lib/loan-logic"
@@ -272,6 +272,24 @@ export default function ScorePage() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100 flex items-center gap-2">
             <Trophy className="h-6 w-6 text-yellow-500" />
             Score de Clientes
+            <span className="group relative inline-flex">
+              <HelpCircle className="h-5 w-5 text-primary cursor-help" />
+              <div className="absolute left-0 top-full z-50 hidden pt-2 group-hover:block">
+                <div className="w-[20rem] rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-4 text-left shadow-xl">
+                  <p className="mb-3 text-sm font-semibold text-gray-900 dark:text-zinc-100">Como funciona o scoring?</p>
+                  <ul className="space-y-2 text-xs font-normal text-gray-600 dark:text-zinc-300">
+                    <li className="flex gap-2"><CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" /> O score acompanha a confiabilidade do cliente com base no histórico de recebimentos.</li>
+                    <li className="flex gap-2"><CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" /> As informações ficam salvas e vinculadas aos recebimentos do cliente.</li>
+                    <li className="flex gap-2"><CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" /> Se o cliente for excluído, o score exibido para ele some da lista.</li>
+                    <li className="flex gap-2"><CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" /> O histórico e os recebimentos continuam sendo a base das informações salvas.</li>
+                    <li className="flex gap-2"><CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" /> A pontuação considera pagamentos em dia, atrasos e consistência nos recebimentos.</li>
+                  </ul>
+                  <div className="mt-3 flex gap-2 border-t border-gray-100 dark:border-zinc-800 pt-2 text-[11px] font-normal text-gray-400 dark:text-zinc-500">
+                    <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" /> O score é atualizado automaticamente conforme novas movimentações e recebimentos.
+                  </div>
+                </div>
+              </div>
+            </span>
           </h1>
           <p className="text-gray-500 dark:text-zinc-400 text-sm mt-1">
             Acompanhe a pontuação de confiabilidade dos seus clientes atualizada automaticamente

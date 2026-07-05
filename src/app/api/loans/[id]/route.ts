@@ -83,6 +83,27 @@ export async function PUT(
       typeof body?.contractDate === "string" &&
       typeof body?.firstInstallmentDate === "string"
 
+    // Atualização leve: apenas datas de vencimento das parcelas (edição inline no card)
+    if (!isFullLoanEdit && Array.isArray(body?.installmentDates) && body.installmentDates.length > 0) {
+      const existingLoan = await prisma.loan.findFirst({
+        where: { id: params.id, userId, deleted: false },
+        include: { installments: true },
+      })
+      if (!existingLoan) {
+        return NextResponse.json({ error: "Empréstimo não encontrado" }, { status: 404 })
+      }
+      const sorted = [...existingLoan.installments].sort((a, b) => a.number - b.number)
+      for (let i = 0; i < Math.min(body.installmentDates.length, sorted.length); i++) {
+        const d = body.installmentDates[i] as string | null
+        if (!d) continue
+        await prisma.installment.update({
+          where: { id: sorted[i].id },
+          data: { dueDate: new Date(d.includes("T") ? d : d + "T12:00:00") },
+        })
+      }
+      return NextResponse.json({ success: true })
+    }
+
     if (isFullLoanEdit) {
       const data = loanSchema.parse(body)
 

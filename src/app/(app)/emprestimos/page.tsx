@@ -1922,11 +1922,11 @@ export default function EmprestimosPage() {
               const oldLoan = isRenegotiada && oldLoanIdMatch ? loans.find((l) => l.id === oldLoanIdMatch[1]) : null
 
               // Cores: Renegociada=rosa, Vence hoje=laranja, Atrasado=vermelho, Só Juros/Pago no mês=roxo, Quitado=azul, resto=branco
-              const cardBorder = isRenegotiada ? "border-pink-300 dark:border-pink-800" : isAtrasado ? "border-red-400 dark:border-red-700" : isDueTodayHighlight ? "border-orange-400 dark:border-orange-700" : (isSoJuros || isPagoNoMes) ? "border-purple-400 dark:border-purple-700" : (isQuitado || isParceladoCardBlue) ? "border-blue-400 dark:border-blue-700" : isDueToday ? "border-orange-400 dark:border-orange-700" : "border-green-600 dark:border-green-600"
-              const cardBg = isRenegotiada ? "bg-pink-100 dark:bg-pink-950/30" : isAtrasado ? "bg-red-100 dark:bg-red-950/30" : isDueTodayHighlight ? "bg-orange-100 dark:bg-orange-950/30" : (isSoJuros || isPagoNoMes) ? "bg-purple-100 dark:bg-purple-950/30" : (isQuitado || isParceladoCardBlue) ? "bg-blue-100 dark:bg-blue-950/30" : isDueToday ? "bg-orange-100 dark:bg-orange-950/30" : "bg-[#f0fdf4] dark:bg-green-950/20"
+              const cardBorder = isRenegotiada ? "border-pink-300 dark:border-pink-800" : isAtrasado ? "border-red-400 dark:border-red-700" : isDueTodayHighlight ? "border-orange-400 dark:border-orange-700" : (isSoJuros || isPagoNoMes) ? "border-purple-400 dark:border-purple-700" : (isQuitado || isParceladoCardBlue) ? "border-blue-400 dark:border-blue-700" : isDueToday ? "border-orange-400 dark:border-orange-700" : "border-gray-200 dark:border-zinc-700"
+              const cardBg = isRenegotiada ? "bg-pink-100 dark:bg-pink-950/30" : isAtrasado ? "bg-red-100 dark:bg-red-950/30" : isDueTodayHighlight ? "bg-orange-100 dark:bg-orange-950/30" : (isSoJuros || isPagoNoMes) ? "bg-purple-100 dark:bg-purple-950/30" : (isQuitado || isParceladoCardBlue) ? "bg-blue-100 dark:bg-blue-950/30" : isDueToday ? "bg-orange-100 dark:bg-orange-950/30" : "bg-white dark:bg-zinc-900"
               const remainingColor = isRenegotiada ? "text-primary" : isAtrasado ? "text-red-700 dark:text-red-400" : isDueTodayHighlight ? "text-orange-700 dark:text-orange-400" : (isSoJuros || isPagoNoMes) ? "text-purple-700 dark:text-purple-400" : (isQuitado || isParceladoCardBlue) ? "text-blue-700 dark:text-blue-400" : isDueToday ? "text-orange-700 dark:text-orange-400" : "text-[#16a34a] dark:text-green-400"
-              const remainingBg = isRenegotiada ? "bg-pink-50 dark:bg-pink-900/30" : isAtrasado ? "bg-red-100 dark:bg-red-900/40" : isDueTodayHighlight ? "bg-orange-100 dark:bg-orange-900/40" : (isSoJuros || isPagoNoMes) ? "bg-purple-100 dark:bg-purple-900/40" : (isQuitado || isParceladoCardBlue) ? "bg-blue-100 dark:bg-blue-900/40" : isDueToday ? "bg-orange-100 dark:bg-orange-900/40" : "bg-[#f0fdf4] dark:bg-green-900/30"
-              const cellBg = isRenegotiada ? "bg-pink-50 dark:bg-pink-950/20" : isAtrasado ? "bg-red-50 dark:bg-red-950/20" : isDueTodayHighlight ? "bg-orange-50 dark:bg-orange-950/20" : (isSoJuros || isPagoNoMes) ? "bg-purple-50 dark:bg-purple-950/20" : (isQuitado || isParceladoCardBlue) ? "bg-blue-50 dark:bg-blue-950/20" : isDueToday ? "bg-orange-50 dark:bg-orange-950/20" : "bg-[#f0fdf4] dark:bg-green-950/20"
+              const remainingBg = isRenegotiada ? "bg-pink-50 dark:bg-pink-900/30" : isAtrasado ? "bg-red-100 dark:bg-red-900/40" : isDueTodayHighlight ? "bg-orange-100 dark:bg-orange-900/40" : (isSoJuros || isPagoNoMes) ? "bg-purple-100 dark:bg-purple-900/40" : (isQuitado || isParceladoCardBlue) ? "bg-blue-100 dark:bg-blue-900/40" : isDueToday ? "bg-orange-100 dark:bg-orange-900/40" : "bg-gray-50 dark:bg-zinc-800/50"
+              const cellBg = isRenegotiada ? "bg-pink-50 dark:bg-pink-950/20" : isAtrasado ? "bg-red-50 dark:bg-red-950/20" : isDueTodayHighlight ? "bg-orange-50 dark:bg-orange-950/20" : (isSoJuros || isPagoNoMes) ? "bg-purple-50 dark:bg-purple-950/20" : (isQuitado || isParceladoCardBlue) ? "bg-blue-50 dark:bg-blue-950/20" : isDueToday ? "bg-orange-50 dark:bg-orange-950/20" : "bg-gray-50 dark:bg-zinc-800/50"
 
               return (
                 <div key={group.clientId} className={`rounded-xl border overflow-hidden shadow-sm hover:shadow-md transition-shadow ${cardBorder} ${cardBg}`}>
@@ -1952,38 +1952,38 @@ export default function EmprestimosPage() {
 
                   {/* Avatar + badges + ações */}
                   <div className="flex flex-col gap-2 px-4 pb-2 pt-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="flex min-w-0 flex-wrap items-center gap-2">
+                    <div className="flex min-w-0 items-center gap-2">
                       <Avatar name={group.clientName} src={group.clientPhoto} size="sm" />
                       {isRenegotiada && (
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300">
                           Reneg.
                         </span>
                       )}
-                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${status.color}`}>
+                      <span className={`shrink-0 whitespace-nowrap px-1.5 py-0.5 rounded text-[9px] font-medium ${status.color}`}>
                         {status.label}
                       </span>
-                      <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/15 dark:bg-primary/20 text-primary">
-                        {loan.installmentCount > 1 ? "PARCELADO" : MODALITY_LABELS[loan.modality] || loan.modality}
+                      <span className="shrink-0 whitespace-nowrap px-1.5 py-0.5 rounded text-[9px] font-medium bg-primary/15 dark:bg-primary/20 text-primary">
+                        {loan.interestType === "CUSTOM" ? "PERSONALIZADO" : loan.installmentCount > 1 ? "PARCELADO" : MODALITY_LABELS[loan.modality] || loan.modality}
                       </span>
                     </div>
-                    <div className="flex flex-wrap items-center gap-1 sm:justify-end">
+                    <div className="flex shrink-0 flex-nowrap items-center gap-1 sm:justify-end">
                       <button
                         onClick={() => { setEditingTags(loan.tags || []); setTagInput(""); setShowTagForm(false); setTagDialog(loan) }}
-                        className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-primary border border-primary/20 dark:border-primary/30 hover:bg-primary/10 dark:hover:bg-primary/20 transition-colors"
+                        className="flex shrink-0 items-center gap-1 whitespace-nowrap px-1.5 py-1 rounded-lg text-[11px] text-primary border border-primary/20 dark:border-primary/30 hover:bg-primary/10 dark:hover:bg-primary/20 transition-colors"
                         title="Etiqueta"
                       >
                         <Tag className="h-3 w-3" /> Etiqueta
                       </button>
                       <button
                         onClick={() => setExpandedLoan(expandedLoan === loan.id ? null : loan.id)}
-                        className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs transition-colors ${expandedLoan === loan.id ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800" : "text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800"}`}
+                        className={`flex shrink-0 items-center gap-1 whitespace-nowrap px-1.5 py-1 rounded-lg text-[11px] transition-colors ${expandedLoan === loan.id ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800" : "text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800"}`}
                         title="Detalhes"
                       >
                         <Eye className="h-3 w-3" /> Detalhes
                       </button>
                       <button
                         onClick={() => setComprovanteLoanId(loan.id)}
-                        className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+                        className="flex shrink-0 items-center gap-1 whitespace-nowrap px-1.5 py-1 rounded-lg text-[11px] text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
                         title="Comprovante"
                       >
                         <FileText className="h-3 w-3" /> Comprovante
@@ -2342,11 +2342,11 @@ export default function EmprestimosPage() {
                 return ni && toDateStr(new Date(ni.dueDate)) === todayStr
               })
 
-              const fCardBorder = isGroupRed ? "border-red-300 dark:border-red-800" : isGroupDueToday ? "border-orange-400 dark:border-orange-700" : isGroupPurple ? "border-purple-300 dark:border-purple-800" : isGroupBlue ? "border-blue-300 dark:border-blue-800" : isGroupOrange ? "border-orange-300 dark:border-orange-800" : isGroupGreen ? "border-green-600 dark:border-green-600" : "border-primary/30 dark:border-primary/30"
-              const fCardBg = isGroupRed ? "bg-red-50 dark:bg-red-950/20" : isGroupDueToday ? "bg-orange-100 dark:bg-orange-950/30" : isGroupPurple ? "bg-purple-50 dark:bg-purple-950/20" : isGroupBlue ? "bg-blue-50 dark:bg-blue-950/20" : isGroupOrange ? "bg-orange-50 dark:bg-orange-950/20" : isGroupGreen ? "bg-[#f0fdf4] dark:bg-green-950/20" : "bg-white dark:bg-zinc-900"
-              const fRemainingColor = isGroupRed ? "text-red-600 dark:text-red-400" : isGroupDueToday ? "text-orange-700 dark:text-orange-400" : isGroupPurple ? "text-purple-600 dark:text-purple-400" : isGroupBlue ? "text-blue-600 dark:text-blue-400" : isGroupOrange ? "text-orange-600 dark:text-orange-400" : isGroupGreen ? "text-[#16a34a] dark:text-green-400" : "text-primary"
-              const fRemainingBg = isGroupRed ? "bg-red-50 dark:bg-red-950/30" : isGroupDueToday ? "bg-orange-100 dark:bg-orange-900/40" : isGroupPurple ? "bg-purple-50 dark:bg-purple-950/30" : isGroupBlue ? "bg-blue-50 dark:bg-blue-950/30" : isGroupOrange ? "bg-orange-50 dark:bg-orange-950/30" : isGroupGreen ? "bg-[#f0fdf4] dark:bg-green-900/30" : "bg-primary/10 dark:bg-primary/20"
-              const fCellBg = isGroupRed ? "bg-red-50 dark:bg-red-950/20" : isGroupDueToday ? "bg-orange-50 dark:bg-orange-950/20" : isGroupPurple ? "bg-purple-50 dark:bg-purple-950/20" : isGroupBlue ? "bg-blue-50 dark:bg-blue-950/20" : isGroupOrange ? "bg-orange-50 dark:bg-orange-950/20" : isGroupGreen ? "bg-[#f0fdf4] dark:bg-green-950/20" : "bg-gray-50 dark:bg-zinc-800/50"
+              const fCardBorder = isGroupRed ? "border-red-300 dark:border-red-800" : isGroupDueToday ? "border-orange-400 dark:border-orange-700" : isGroupPurple ? "border-purple-300 dark:border-purple-800" : isGroupBlue ? "border-blue-400 dark:border-blue-700" : isGroupOrange ? "border-orange-300 dark:border-orange-800" : isGroupGreen ? "border-gray-200 dark:border-zinc-700" : "border-primary/30 dark:border-primary/30"
+              const fCardBg = isGroupRed ? "bg-red-50 dark:bg-red-950/20" : isGroupDueToday ? "bg-orange-100 dark:bg-orange-950/30" : isGroupPurple ? "bg-purple-50 dark:bg-purple-950/20" : isGroupBlue ? "bg-blue-100 dark:bg-blue-950/30" : isGroupOrange ? "bg-orange-50 dark:bg-orange-950/20" : isGroupGreen ? "bg-white dark:bg-zinc-900" : "bg-white dark:bg-zinc-900"
+              const fRemainingColor = isGroupRed ? "text-red-600 dark:text-red-400" : isGroupDueToday ? "text-orange-700 dark:text-orange-400" : isGroupPurple ? "text-purple-600 dark:text-purple-400" : isGroupBlue ? "text-blue-700 dark:text-blue-400" : isGroupOrange ? "text-orange-600 dark:text-orange-400" : isGroupGreen ? "text-[#16a34a] dark:text-green-400" : "text-primary"
+              const fRemainingBg = isGroupRed ? "bg-red-50 dark:bg-red-950/30" : isGroupDueToday ? "bg-orange-100 dark:bg-orange-900/40" : isGroupPurple ? "bg-purple-50 dark:bg-purple-950/30" : isGroupBlue ? "bg-blue-100 dark:bg-blue-900/40" : isGroupOrange ? "bg-orange-50 dark:bg-orange-950/30" : isGroupGreen ? "bg-gray-50 dark:bg-zinc-800/50" : "bg-primary/10 dark:bg-primary/20"
+              const fCellBg = isGroupRed ? "bg-red-50 dark:bg-red-950/20" : isGroupDueToday ? "bg-orange-50 dark:bg-orange-950/20" : isGroupPurple ? "bg-purple-50 dark:bg-purple-950/20" : isGroupBlue ? "bg-blue-50 dark:bg-blue-950/20" : isGroupOrange ? "bg-orange-50 dark:bg-orange-950/20" : isGroupGreen ? "bg-gray-50 dark:bg-zinc-800/50" : "bg-gray-50 dark:bg-zinc-800/50"
 
               return (
                 <div key={group.clientId} className={`rounded-xl border overflow-hidden shadow-sm hover:shadow-md transition-shadow ${fCardBorder} ${fCardBg}`}>

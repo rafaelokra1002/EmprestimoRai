@@ -15,7 +15,7 @@ import {
   Calendar, Download, RefreshCw, ChevronDown, ChevronUp,
   Wallet, TrendingUp, DollarSign, CheckCircle2, Clock, AlertTriangle,
   Percent, Filter,
-  Users, ToggleLeft, ToggleRight, AlertOctagon, Award
+  Users, ToggleLeft, ToggleRight, AlertOctagon, Award, HelpCircle
 } from "lucide-react"
 
 const today = () => localDateStr()
@@ -271,17 +271,29 @@ export default function RelatorioEmprestimosPage() {
 
   const modalityStats = useMemo(() => {
     const allActive = loans.filter(l => l.status === "ACTIVE")
-    const calc = (subset: Loan[]) => ({
+    // Lucro realizado de empréstimos apagados (soft-delete): parcelas removidas, mas
+    // recebimentos preservados. Só some quando o recebimento é excluído em Recebimentos.
+    // Pagamento "só juros" = lucro cheio; parcela normal = só a parte de juros (proporção).
+    const deletedProfit = (subset: Loan[]) =>
+      subset.reduce((total, l) => {
+        const interestRatio = l.totalAmount > 0 ? l.profit / l.totalAmount : 0
+        return total + l.payments.reduce((ps: number, p: any) => {
+          const notes = (p.notes || "").toLowerCase()
+          const isSoJuros = notes.includes("só juros") || notes.includes("so juros") || notes.includes("parcial de juros")
+          return ps + (isSoJuros ? Number(p.amount) : Number(p.amount) * interestRatio)
+        }, 0)
+      }, 0)
+    const calc = (subset: Loan[], deletedSubset: Loan[]) => ({
       capitalNaRua: subset.reduce((s, l) => s + remainingCapital(l), 0),
-      lucro: subset.reduce((s, l) => s + getRealizedProfit(l), 0),
+      lucro: subset.reduce((s, l) => s + getRealizedProfit(l), 0) + deletedProfit(deletedSubset),
       contratos: subset.length,
     })
     return {
-      all: calc(allActive),
-      installment: calc(allActive.filter(l => l.installmentCount > 1)),
-      monthly: calc(allActive.filter(l => l.installmentCount === 1)),
+      all: calc(allActive, deletedLoans),
+      installment: calc(allActive.filter(l => l.installmentCount > 1), deletedLoans.filter(l => l.installmentCount > 1)),
+      monthly: calc(allActive.filter(l => l.installmentCount === 1), deletedLoans.filter(l => l.installmentCount === 1)),
     }
-  }, [loans])
+  }, [loans, deletedLoans])
 
   const filteredExpenses = useMemo(() => {
     return expenses.filter((e) => {
@@ -774,7 +786,27 @@ export default function RelatorioEmprestimosPage() {
       {/* ===== HEADER ===== */}
       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">Relatório Operacional</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100 flex items-center gap-2">
+            Relatório Operacional
+            <span className="group relative inline-flex">
+              <HelpCircle className="h-5 w-5 text-primary cursor-help" />
+              <div className="absolute left-0 top-full z-50 hidden pt-2 group-hover:block">
+                <div className="w-[21rem] rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-4 text-left shadow-xl">
+                  <p className="mb-3 text-sm font-semibold text-gray-900 dark:text-zinc-100">Como funciona o relatório?</p>
+                  <ul className="space-y-2 text-xs font-normal text-gray-600 dark:text-zinc-300">
+                    <li className="flex gap-2"><CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" /> Mostra seus empréstimos em tempo real, filtrados pelo período e pelo tipo (mensal/parcelado) escolhidos.</li>
+                    <li className="flex gap-2"><CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" /> Capital na Rua = principal ainda em aberto dos contratos ativos.</li>
+                    <li className="flex gap-2"><CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" /> Recebido e juros são somados a partir dos recebimentos registrados.</li>
+                    <li className="flex gap-2"><CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" /> "Em Atraso" e "Lucro Realizado" mostram o total (ignoram o filtro de período).</li>
+                    <li className="flex gap-2"><CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" /> Resultado do Período = Caixa inicial + Recebido − Emprestado no período.</li>
+                  </ul>
+                  <div className="mt-3 flex gap-2 border-t border-gray-100 dark:border-zinc-800 pt-2 text-[11px] font-normal text-gray-400 dark:text-zinc-500">
+                    <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" /> Despesas não entram nas somas (ficam só na aba Despesas) e empréstimos apagados saem dos totais do período.
+                  </div>
+                </div>
+              </div>
+            </span>
+          </h1>
           <p className="text-sm text-gray-500 dark:text-zinc-400">Acompanhe seus empréstimos em tempo real</p>
         </div>
         <div className="flex items-center gap-3 text-sm">

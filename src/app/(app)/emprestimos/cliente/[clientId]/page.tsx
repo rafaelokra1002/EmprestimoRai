@@ -65,6 +65,11 @@ export default function ClienteEmprestimosPage() {
   const [tagColor, setTagColor] = useState("#10b981")
   const [showTagForm, setShowTagForm] = useState(false)
 
+  // Edição inline da data de vencimento
+  const [editingDateLoanId, setEditingDateLoanId] = useState<string | null>(null)
+  const [dateDraft, setDateDraft] = useState("")
+  const [savingDate, setSavingDate] = useState(false)
+
   // Profile PIX key
   const [profilePixKey, setProfilePixKey] = useState("")
   const [profileChargeName, setProfileChargeName] = useState("")
@@ -162,6 +167,30 @@ export default function ClienteEmprestimosPage() {
 
   const toDateStr = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
   const todayStr = toDateStr(new Date())
+
+  // Salva nova data de vencimento de uma parcela (edição inline no card)
+  const saveInstallmentDate = async (loan: Loan, targetInstId: string) => {
+    if (!dateDraft) return
+    setSavingDate(true)
+    try {
+      const sorted = [...loan.installments].sort((a: any, b: any) => a.number - b.number)
+      const installmentDates = sorted.map((i: any) => (i.id === targetInstId ? dateDraft : toDateStr(new Date(i.dueDate))))
+      const res = await fetch(`/api/loans/${loan.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ installmentDates }),
+      })
+      const data = await res.json()
+      if (!res.ok || data?.error) throw new Error(data?.error || "Erro ao alterar data")
+      showToast("Data de vencimento alterada!")
+      setEditingDateLoanId(null)
+      await fetchLoans()
+    } catch (e: any) {
+      showToast(e?.message || "Erro ao alterar data", "error")
+    } finally {
+      setSavingDate(false)
+    }
+  }
   const isSameMonthYear = (value: Date, reference: Date) => (
     value.getFullYear() === reference.getFullYear() && value.getMonth() === reference.getMonth()
   )
@@ -938,10 +967,10 @@ export default function ClienteEmprestimosPage() {
             const isParceladoCardBlue = isParcelado && !isAtrasado && !isQuitado && !isSoJuros && !isPagoNoMes
 
             const cardBorder = isAtrasado ? "border-red-400 dark:border-red-700" : isDueTodayHighlight ? "border-orange-400 dark:border-orange-700" : (isSoJuros || isPagoNoMes) ? "border-purple-400 dark:border-purple-700" : (isQuitado || isParceladoCardBlue) ? "border-blue-400 dark:border-blue-700" : "border-primary/40 dark:border-primary/30"
-            const cardBg = isAtrasado ? "bg-red-100 dark:bg-red-950/30" : isDueTodayHighlight ? "bg-orange-50/40 dark:bg-orange-950/20" : (isSoJuros || isPagoNoMes) ? "bg-purple-50/40 dark:bg-purple-950/20" : isParceladoCardBlue ? "bg-blue-50/40 dark:bg-blue-950/20" : "bg-white dark:bg-zinc-900"
-            const remainingColor = isAtrasado ? "text-red-700 dark:text-red-400" : isDueTodayHighlight ? "text-orange-700 dark:text-orange-400" : (isSoJuros || isPagoNoMes) ? "text-purple-600 dark:text-purple-400" : (isQuitado || isParceladoCardBlue) ? "text-blue-700 dark:text-blue-400" : isDueToday ? "text-orange-600 dark:text-orange-400" : "text-primary dark:text-primary"
-            const remainingBg = isAtrasado ? "bg-red-100 dark:bg-red-900/40" : isDueTodayHighlight ? "bg-orange-50 dark:bg-orange-950/20" : (isSoJuros || isPagoNoMes) ? "bg-purple-50 dark:bg-purple-950/20" : (isQuitado || isParceladoCardBlue) ? "bg-blue-50 dark:bg-blue-900/40" : isDueToday ? "bg-orange-50 dark:bg-orange-950/20" : "bg-primary/10 dark:bg-primary/20"
-            const cellBg = isAtrasado ? "bg-red-50 dark:bg-red-950/20" : isDueTodayHighlight ? "bg-orange-50/60 dark:bg-orange-950/10" : (isSoJuros || isPagoNoMes) ? "bg-purple-50/60 dark:bg-purple-950/10" : isParceladoCardBlue ? "bg-blue-50/60 dark:bg-blue-950/10" : "bg-gray-50 dark:bg-zinc-800/50"
+            const cardBg = isAtrasado ? "bg-red-100 dark:bg-red-950/30" : isDueTodayHighlight ? "bg-orange-100 dark:bg-orange-950/30" : (isSoJuros || isPagoNoMes) ? "bg-purple-100 dark:bg-purple-950/30" : isParceladoCardBlue ? "bg-blue-100 dark:bg-blue-950/30" : "bg-white dark:bg-zinc-900"
+            const remainingColor = isAtrasado ? "text-red-700 dark:text-red-400" : isDueTodayHighlight ? "text-orange-700 dark:text-orange-400" : (isSoJuros || isPagoNoMes) ? "text-purple-700 dark:text-purple-400" : (isQuitado || isParceladoCardBlue) ? "text-blue-700 dark:text-blue-400" : isDueToday ? "text-orange-600 dark:text-orange-400" : "text-primary dark:text-primary"
+            const remainingBg = isAtrasado ? "bg-red-100 dark:bg-red-900/40" : isDueTodayHighlight ? "bg-orange-100 dark:bg-orange-900/40" : (isSoJuros || isPagoNoMes) ? "bg-purple-100 dark:bg-purple-900/40" : (isQuitado || isParceladoCardBlue) ? "bg-blue-100 dark:bg-blue-900/40" : isDueToday ? "bg-orange-50 dark:bg-orange-950/20" : "bg-primary/10 dark:bg-primary/20"
+            const cellBg = isAtrasado ? "bg-red-50 dark:bg-red-950/20" : isDueTodayHighlight ? "bg-orange-50 dark:bg-orange-950/20" : (isSoJuros || isPagoNoMes) ? "bg-purple-50 dark:bg-purple-950/20" : isParceladoCardBlue ? "bg-blue-50 dark:bg-blue-950/20" : "bg-gray-50 dark:bg-zinc-800/50"
 
             return (
               <div key={loan.id} className={`rounded-xl border overflow-hidden shadow-sm hover:shadow-md transition-shadow ${cardBorder} ${cardBg}`}>
@@ -963,7 +992,7 @@ export default function ClienteEmprestimosPage() {
                       </span>
                     )}
                     <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary">
-                      {isParcelado ? "PARCELADO" : (MODALITY_LABELS[loan.modality] || loan.modality)}
+                      {loan.interestType === "CUSTOM" ? "PERSONALIZADO" : isParcelado ? "PARCELADO" : (MODALITY_LABELS[loan.modality] || loan.modality)}
                     </span>
                   </div>
                   <div className="flex items-center gap-1">
@@ -1005,18 +1034,6 @@ export default function ClienteEmprestimosPage() {
                   <div className={`${remainingBg} rounded-2xl border border-white/50 px-4 py-3 text-center shadow-sm dark:border-white/5`}>
                     <p className={`mt-1 text-[1.65rem] font-bold tabular-nums leading-none tracking-tight ${remainingColor}`}>{formatCurrency(remaining)}</p>
                     <p className="mt-1 text-[11px] text-gray-500 dark:text-zinc-400">restante a receber</p>
-                    {(() => {
-                      const overdueExtra = loan.installments
-                        .filter((i: any) => i.status !== "PAID")
-                        .reduce((sum: number, i: any) => {
-                          const d = getInstallmentOverdueDetails(loan, i)
-                          return sum + d.juros + d.multa
-                        }, 0)
-                      if (overdueExtra > 0) {
-                        return <p className="mt-2 text-[11px] text-primary">contém {formatCurrency(overdueExtra)} de juros por atraso</p>
-                      }
-                      return null
-                    })()}
                   </div>
                 </div>
 
@@ -1067,16 +1084,43 @@ export default function ClienteEmprestimosPage() {
                   </div>
                 ) : (
                   <div className="mx-4 mt-3 flex items-center justify-between text-xs text-gray-500 dark:text-zinc-400">
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex flex-wrap items-center gap-1.5">
                       <Calendar className="h-3.5 w-3.5" />
-                      <span>Venc: {nextInst ? formatDate(nextInst.dueDate) : "—"}</span>
-                      {(loan.installmentCount > 1 || loan.interestType === "CUSTOM") && nextInst && (
+                      {editingDateLoanId === loan.id && nextInst ? (
                         <>
-                          <span className="text-gray-300 dark:text-zinc-600">•</span>
-                          <span>Parcela {nextInst.number}/{loan.installmentCount}</span>
+                          <input
+                            type="date"
+                            value={dateDraft}
+                            onChange={(e) => setDateDraft(e.target.value)}
+                            className="rounded border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-1.5 py-0.5 text-xs text-gray-700 dark:text-zinc-200"
+                          />
+                          <button onClick={() => saveInstallmentDate(loan, nextInst.id)} disabled={savingDate} className="text-primary hover:opacity-80 disabled:opacity-50" title="Salvar">
+                            <Check className="h-3.5 w-3.5" />
+                          </button>
+                          <button onClick={() => setEditingDateLoanId(null)} className="text-gray-400 hover:opacity-80" title="Cancelar">
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <span>Venc: {nextInst ? formatDate(nextInst.dueDate) : "—"}</span>
+                          {(loan.installmentCount > 1 || loan.interestType === "CUSTOM") && nextInst && (
+                            <>
+                              <span className="text-gray-300 dark:text-zinc-600">•</span>
+                              <span>Parcela {nextInst.number}/{loan.installmentCount}</span>
+                            </>
+                          )}
+                          {nextInst && (
+                            <button
+                              onClick={() => { setEditingDateLoanId(loan.id); setDateDraft(toDateStr(new Date(nextInst.dueDate))) }}
+                              className="text-gray-400 hover:text-primary transition-colors"
+                              title="Alterar data de vencimento"
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </button>
+                          )}
                         </>
                       )}
-                      <Pencil className="h-3 w-3 text-gray-300 dark:text-zinc-600" />
                     </div>
                     <div className="flex items-center gap-1.5">
                       <DollarSign className="h-3.5 w-3.5 text-primary" />
@@ -1214,7 +1258,7 @@ export default function ClienteEmprestimosPage() {
                   </div>
                   {(status.label === "Atrasado" || status.label === "Inadimplente") && (
                     <div>
-                      <Button size="sm" onClick={() => openWhatsappDialog(loan)} className="w-full h-9 text-sm bg-primary hover:bg-primary/90 text-white transition-colors">
+                      <Button size="sm" onClick={() => openWhatsappDialog(loan)} className="w-full h-9 text-sm bg-red-600 hover:bg-red-700 text-white transition-colors">
                         <MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Cobrar via WhatsApp
                       </Button>
                     </div>
