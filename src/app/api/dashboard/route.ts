@@ -81,12 +81,12 @@ export async function GET(request: Request) {
       prisma.client.count({
         where: {
           userId,
-          status: { not: "DESAPARECIDO" },
+          status: "ACTIVE",
           deleted: false,
           loans: { none: { status: "ACTIVE", deleted: false } },
         },
       }),
-      prisma.client.count({ where: { userId, status: { not: "DESAPARECIDO" }, deleted: false } }),
+      prisma.client.count({ where: { userId, status: "ACTIVE", deleted: false } }),
       prisma.sale.findMany({ where: { userId }, select: { id: true } }),
       prisma.vehicle.findMany({ where: { userId }, select: { id: true } }),
       prisma.expense.aggregate({
