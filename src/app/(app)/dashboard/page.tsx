@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import {
   AlertTriangle,
+  Bell,
   Calendar,
   CheckCircle2,
   ChevronLeft,
@@ -16,6 +17,7 @@ import {
   Receipt,
   Shield,
   ShieldAlert,
+  Smartphone,
   TrendingUp,
   UserX,
   Users,
@@ -142,6 +144,8 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [showBackupAlert, setShowBackupAlert] = useState(false)
   const [backupLoading, setBackupLoading] = useState(false)
+  const [bannerSlide, setBannerSlide] = useState(0) // 0 = backup, 1 = instalar app
+  const [showPushBanner, setShowPushBanner] = useState(false)
   const [filterActive, setFilterActive] = useState(false)
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth())
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
@@ -190,6 +194,13 @@ export default function DashboardPage() {
     }
   }, [selectedMonth, selectedYear, filterActive])
 
+  // Alterna automaticamente entre os slides do banner (backup / instalar app)
+  useEffect(() => {
+    if (!showBackupAlert) return
+    const t = setInterval(() => setBannerSlide((s) => (s + 1) % 2), 6000)
+    return () => clearInterval(t)
+  }, [showBackupAlert])
+
   const selectedMonthName = new Date(selectedYear, selectedMonth, 1).toLocaleString("pt-BR", { month: "long" })
   const periodLabel = filterActive ? selectedMonthName : "total geral"
   const currentMonthName = new Date().toLocaleString("pt-BR", { month: "long" })
@@ -209,7 +220,31 @@ export default function DashboardPage() {
     if (!last || (Date.now() - Number(last)) >= 2 * 24 * 60 * 60 * 1000) {
       setShowBackupAlert(true)
     }
+    // Banner de notificações push: mostra sempre que o navegador suporta e a
+    // permissão ainda não foi concedida. Fechar no X só oculta na sessão atual —
+    // ao atualizar a página ele volta (até o usuário ativar).
+    if (typeof window !== "undefined" && "Notification" in window) {
+      if (Notification.permission !== "granted") {
+        setShowPushBanner(true)
+      }
+    }
   }, [])
+
+  const handleEnablePush = async () => {
+    try {
+      if (typeof window === "undefined" || !("Notification" in window)) return
+      const perm = await Notification.requestPermission()
+      if (perm === "granted") {
+        setShowPushBanner(false)
+        new Notification("Notificações ativadas!", { body: "Você receberá alertas de cobranças em atraso." })
+      }
+    } catch { /* ignore */ }
+  }
+
+  const dismissPushBanner = () => {
+    // Só oculta na sessão atual (não persiste) — reaparece no próximo refresh
+    setShowPushBanner(false)
+  }
 
   const handleBackup = async () => {
     setBackupLoading(true)
@@ -260,20 +295,20 @@ export default function DashboardPage() {
   // Nível de saúde da operação (cores e rótulo dinâmicos pelo score)
   const healthHasData = data?.operationHealth?.hasData !== false
   const healthLevel = !healthHasData ? "empty" : healthScore >= 70 ? "good" : healthScore >= 40 ? "warn" : "bad"
-  const healthRing = healthLevel === "good" ? "border-green-600 text-green-500" : healthLevel === "warn" ? "border-amber-400 text-amber-500" : healthLevel === "empty" ? "border-gray-300 text-gray-400 dark:border-zinc-700 dark:text-zinc-500" : "border-red-500 text-red-500"
+  const healthRing = healthLevel === "good" ? "border-green-600 text-green-500" : healthLevel === "warn" ? "border-orange-400 text-orange-500" : healthLevel === "empty" ? "border-gray-300 text-gray-400 dark:border-zinc-700 dark:text-zinc-500" : "border-red-500 text-red-500"
   const healthBadge = healthLevel === "good"
     ? { label: "Saudável", cls: "bg-primary/10 text-primary" }
     : healthLevel === "warn"
-      ? { label: "Atenção", cls: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400" }
+      ? { label: "Atenção", cls: "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400" }
       : healthLevel === "empty"
         ? { label: "Sem dados", cls: "bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400" }
         : { label: "Crítico", cls: "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400" }
-  const healthBar = healthLevel === "good" ? "bg-primary" : healthLevel === "warn" ? "bg-amber-400" : healthLevel === "empty" ? "bg-gray-300 dark:bg-zinc-600" : "bg-red-500"
+  const healthBar = healthLevel === "good" ? "bg-primary" : healthLevel === "warn" ? "bg-orange-400" : healthLevel === "empty" ? "bg-gray-300 dark:bg-zinc-600" : "bg-red-500"
   // Fundo do card inteiro conforme o nível (vermelho no Crítico, igual ao exemplo)
   const healthCardCls = healthLevel === "good"
     ? "border-primary/30 bg-gradient-to-br from-primary/15 to-primary/5 dark:from-green-950/70 dark:to-green-900/30"
     : healthLevel === "warn"
-      ? "border-amber-300 dark:border-amber-900/50 bg-gradient-to-br from-amber-100 to-amber-50 dark:from-amber-950/60 dark:to-amber-950/20"
+      ? "border-orange-400 dark:border-orange-700 bg-orange-100 dark:bg-orange-950/30"
       : healthLevel === "empty"
         ? "border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900/40"
         : "border-red-400 dark:border-red-900/60 bg-gradient-to-br from-red-100 to-red-50 dark:from-red-950/80 dark:to-red-900/40"
@@ -293,37 +328,95 @@ export default function DashboardPage() {
   return (
     <div className="space-y-5 pt-6">
 
-      {/* ── Backup Alert ───────────────────────────────────────────────────── */}
-      {showBackupAlert && (
-        <div className="flex items-center gap-4 rounded-xl border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/20 p-4">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/40">
-            <ShieldAlert className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+      {/* ── Banner notificações push ───────────────────────────────────────── */}
+      {showPushBanner && (
+        <div className="relative flex flex-col gap-3 rounded-xl border border-green-500/30 dark:border-green-800/50 bg-green-500/10 dark:bg-green-950/20 p-4 sm:flex-row sm:items-center sm:gap-4">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-green-500/15 dark:bg-green-900/40">
+            <Bell className="h-5 w-5 text-[#16a34a] dark:text-green-400" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">Lembrete de backup</p>
-            <p className="text-xs text-amber-700 dark:text-amber-400">Faça backup dos seus dados a cada 2 dias para evitar perdas. Clique em "Fazer Backup" para baixar o arquivo.</p>
+            <p className="text-sm font-semibold text-green-800 dark:text-green-300">Ative as notificações push</p>
+            <p className="text-xs text-gray-500 dark:text-zinc-400">Receba alertas de cobranças em atraso e vencimento do plano diretamente no seu dispositivo.</p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <button
-              onClick={() => router.push("/backup")}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-amber-400 bg-white hover:bg-amber-50 dark:bg-zinc-900 dark:hover:bg-amber-950/20 px-4 py-1.5 text-sm font-medium text-amber-600 dark:text-amber-400 transition-colors"
+              onClick={handleEnablePush}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[#16a34a] hover:bg-[#15803d] px-4 py-1.5 text-sm font-medium text-white transition-colors"
             >
-              Ir para Backup
+              Ativar
             </button>
             <button
-              onClick={handleBackup}
-              disabled={backupLoading}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 disabled:opacity-60 px-4 py-1.5 text-sm font-medium text-white transition-colors"
-            >
-              {backupLoading ? "Baixando..." : "Fazer Backup"}
-            </button>
-            <button
-              onClick={() => setShowBackupAlert(false)}
-              className="ml-1 inline-flex h-7 w-7 items-center justify-center rounded-lg text-amber-500 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors"
+              onClick={dismissPushBanner}
+              className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 hover:bg-green-500/10 dark:hover:bg-green-900/30 transition-colors"
             >
               <X className="h-4 w-4" />
             </button>
           </div>
+        </div>
+      )}
+
+      {/* ── Banner slider (backup / instalar app) ──────────────────────────── */}
+      {showBackupAlert && (
+        <div className={`relative overflow-hidden rounded-xl border p-4 pb-6 transition-colors ${bannerSlide === 0 ? "border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/20" : "border-blue-200 dark:border-blue-800/50 bg-blue-50 dark:bg-blue-950/20"}`}>
+          {bannerSlide === 0 ? (
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4 animate-in fade-in duration-300">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/40">
+                <ShieldAlert className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">Lembrete de backup</p>
+                <p className="text-xs text-amber-700 dark:text-amber-400">Faça backup dos seus dados a cada 2 dias para evitar perdas. Clique em "Fazer Backup" para baixar o arquivo.</p>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                <button
+                  onClick={() => router.push("/backup")}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-amber-400 bg-white hover:bg-amber-50 dark:bg-zinc-900 dark:hover:bg-amber-950/20 px-4 py-1.5 text-sm font-medium text-amber-600 dark:text-amber-400 transition-colors"
+                >
+                  Ir para Backup
+                </button>
+                <button
+                  onClick={handleBackup}
+                  disabled={backupLoading}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 disabled:opacity-60 px-4 py-1.5 text-sm font-medium text-white transition-colors"
+                >
+                  {backupLoading ? "Baixando..." : "Fazer Backup"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4 animate-in fade-in duration-300">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/40">
+                <Smartphone className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">Instale o app no celular</p>
+                <p className="text-xs text-blue-700 dark:text-blue-400">
+                  <span className="font-medium">Android (Chrome):</span> toque no menu <span className="font-semibold">⋮</span> e em "Instalar app" / "Adicionar à tela inicial".{" "}
+                  <span className="font-medium">iPhone (Safari):</span> toque em <span className="font-semibold">Compartilhar</span> e em "Adicionar à Tela de Início".
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Dots de navegação */}
+          <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 items-center gap-1.5">
+            {[0, 1].map((i) => (
+              <button
+                key={i}
+                onClick={() => setBannerSlide(i)}
+                aria-label={`Slide ${i + 1}`}
+                className={`h-1.5 rounded-full transition-all ${bannerSlide === i ? (bannerSlide === 0 ? "w-4 bg-amber-500" : "w-4 bg-blue-500") : (bannerSlide === 0 ? "w-1.5 bg-amber-300 dark:bg-amber-800" : "w-1.5 bg-blue-300 dark:bg-blue-800")}`}
+              />
+            ))}
+          </div>
+
+          {/* Fechar */}
+          <button
+            onClick={() => setShowBackupAlert(false)}
+            className={`absolute right-2 top-2 inline-flex h-7 w-7 items-center justify-center rounded-lg transition-colors ${bannerSlide === 0 ? "text-amber-500 hover:bg-amber-100 dark:hover:bg-amber-900/30" : "text-blue-500 hover:bg-blue-100 dark:hover:bg-blue-900/30"}`}
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
       )}
 
@@ -679,7 +772,7 @@ export default function DashboardPage() {
 
       {/* ── Gráficos ────────────────────────────────────────────────────────── */}
       <div className="grid gap-4 xl:grid-cols-2">
-        <div className="rounded-xl border border-primary/20 bg-primary/5 dark:bg-primary/10 p-5">
+        <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5">
           <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200 mb-4">Evolução Financeira (Últimos 6 meses)</p>
           <div className="h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -696,7 +789,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-primary/20 bg-primary/5 dark:bg-primary/10 p-5">
+        <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5">
           <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200 mb-4">Tendência de Juros Recebidos</p>
           <div className="h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -757,9 +850,9 @@ export default function DashboardPage() {
             <span className="text-sm font-bold text-primary">Precisa de Atenção</span>
           </div>
           <div className="space-y-2 p-3">
-            <div className="flex items-center gap-4 rounded-xl border border-purple-300 dark:border-purple-800/60 bg-purple-100/70 dark:bg-purple-950/30 px-5 py-4">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/30">
-                <Calendar className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+            <div className="flex items-center gap-4 rounded-xl border border-orange-400 dark:border-orange-700 bg-orange-100 dark:bg-orange-950/30 px-5 py-4">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-orange-100 dark:bg-orange-900/30">
+                <Calendar className="h-4 w-4 text-orange-600 dark:text-orange-400" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-bold text-gray-800 dark:text-zinc-100">{data?.dueThisWeekCount ?? 0} Vencem esta semana</p>

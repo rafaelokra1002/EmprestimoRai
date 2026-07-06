@@ -77,15 +77,16 @@ export async function GET(request: Request) {
           dueDate: { gte: startOfToday, lt: endOfToday },
         },
       }),
-      prisma.client.count({ where: { userId, status: "ACTIVE" } }),
+      prisma.client.count({ where: { userId, status: "ACTIVE", deleted: false } }),
       prisma.client.count({
         where: {
           userId,
           status: { not: "DESAPARECIDO" },
+          deleted: false,
           loans: { none: { status: "ACTIVE", deleted: false } },
         },
       }),
-      prisma.client.count({ where: { userId, status: { not: "DESAPARECIDO" } } }),
+      prisma.client.count({ where: { userId, status: { not: "DESAPARECIDO" }, deleted: false } }),
       prisma.sale.findMany({ where: { userId }, select: { id: true } }),
       prisma.vehicle.findMany({ where: { userId }, select: { id: true } }),
       prisma.expense.aggregate({
