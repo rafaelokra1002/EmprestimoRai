@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react"
 import { useParams } from "next/navigation"
-import { CheckCircle2, User, Phone, FileText, MapPin, Briefcase, DollarSign, Instagram, Camera, X, ImageIcon } from "lucide-react"
+import { CheckCircle2, User, Phone, FileText, MapPin, Briefcase, DollarSign, Instagram, Camera, X, ImageIcon, Key, Home } from "lucide-react"
 
 interface PhotoFile {
   name: string
@@ -74,6 +74,7 @@ export default function RegistroPage() {
     city: "",
     state: "",
     profession: "",
+    housingType: "",
   })
   const [photos, setPhotos] = useState<Photos>({
     docFrente: null,
@@ -83,6 +84,7 @@ export default function RegistroPage() {
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState("")
+  const [showPhotoError, setShowPhotoError] = useState(false)
   const [cepLoading, setCepLoading] = useState(false)
 
   const set = (field: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -129,6 +131,10 @@ export default function RegistroPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!photos.selfie?.dataUrl) {
+      setShowPhotoError(true)
+      return
+    }
     setLoading(true)
     setError("")
     try {
@@ -154,8 +160,8 @@ export default function RegistroPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
         <div className="w-full max-w-sm rounded-2xl bg-white border border-gray-200 shadow-sm p-8 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
-            <CheckCircle2 className="h-8 w-8 text-emerald-600" />
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#16a34a]/15">
+            <CheckCircle2 className="h-8 w-8 text-[#16a34a]" />
           </div>
           <h1 className="text-xl font-bold text-gray-900">Cadastro enviado!</h1>
           <p className="mt-2 text-sm text-gray-500">Seus dados foram recebidos com sucesso. Em breve entraremos em contato.</p>
@@ -166,6 +172,24 @@ export default function RegistroPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      {showPhotoError && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-xl">
+            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-red-100">
+              <Camera className="h-7 w-7 text-red-500" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900">Foto obrigatória</h3>
+            <p className="mt-1.5 text-sm text-gray-500">Envie a <span className="font-semibold">selfie do rosto</span> para concluir o cadastro. Ela é necessária para a aprovação.</p>
+            <button
+              type="button"
+              onClick={() => setShowPhotoError(false)}
+              className="mt-4 w-full rounded-lg bg-[#16a34a] py-2.5 text-sm font-semibold text-white hover:bg-[#15803d] transition-colors"
+            >
+              Entendi
+            </button>
+          </div>
+        </div>
+      )}
       <div className="w-full max-w-md rounded-2xl bg-white border border-gray-200 shadow-sm p-8">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Cadastro de Cliente</h1>
@@ -207,7 +231,7 @@ export default function RegistroPage() {
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <Field icon={<Instagram className="h-4 w-4" />} label="Instagram">
+            <Field icon={<Instagram className="h-4 w-4" />} label="Instagram (opcional)">
               <input
                 placeholder="@usuario"
                 className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
@@ -329,12 +353,37 @@ export default function RegistroPage() {
             </div>
           </div>
 
+          {/* Moradia */}
+          <div className="pt-1">
+            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">Moradia</p>
+            <label className="mb-2 block text-sm font-medium text-gray-700">Tipo de moradia</label>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { value: "ALUGUEL", label: "Aluguel", icon: <Key className="h-4 w-4" /> },
+                { value: "PROPRIA", label: "Casa própria", icon: <Home className="h-4 w-4" /> },
+              ].map((opt) => {
+                const active = form.housingType === opt.value
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setForm((prev) => ({ ...prev, housingType: opt.value }))}
+                    className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors ${active ? "border-[#16a34a] bg-[#16a34a]/10 text-[#15803d]" : "border-gray-300 bg-white text-gray-600 hover:bg-gray-50"}`}
+                  >
+                    <span className={active ? "text-[#16a34a]" : "text-gray-400"}>{opt.icon}</span>
+                    {opt.label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
           {/* Fotos de documentos */}
           <div className="pt-1">
             <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">Fotos dos Documentos</p>
             <div className="space-y-3">
               <PhotoUpload
-                label="Selfie do rosto"
+                label="Selfie do rosto *"
                 photo={photos.selfie}
                 onSelect={handlePhotoChange("selfie")}
                 onRemove={removePhoto("selfie")}
@@ -349,7 +398,7 @@ export default function RegistroPage() {
           <button
             type="submit"
             disabled={loading}
-            className="mt-2 w-full rounded-lg bg-emerald-600 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+            className="mt-2 w-full rounded-lg bg-[#16a34a] py-2.5 text-sm font-semibold text-white hover:bg-[#15803d] disabled:opacity-50 transition-colors"
           >
             {loading ? "Enviando..." : "Enviar Cadastro"}
           </button>

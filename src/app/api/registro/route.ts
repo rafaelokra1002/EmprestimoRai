@@ -57,6 +57,7 @@ export async function POST(request: Request) {
       city,
       state,
       profession,
+      housingType,
       photos,
     } = await request.json()
 
@@ -96,6 +97,7 @@ export async function POST(request: Request) {
         city: city || null,
         state: state || null,
         profession: profession || null,
+        housingType: housingType || null,
         photo: selfieDataUrl,
         status: "INACTIVE",
         score: 100,

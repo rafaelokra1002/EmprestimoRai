@@ -14,7 +14,7 @@ import { FilterDropdown } from "@/components/ui/filter-dropdown"
 import { Textarea } from "@/components/ui/textarea"
 import { Avatar } from "@/components/avatar"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Search, Pencil, Trash2, User, MapPin, FileText, Users, Camera, Upload, Eye, Image, DollarSign, Briefcase, LayoutGrid, Rows3, Filter, CheckCircle2, MoreVertical, UserCheck, Phone, Mail, XCircle, Share2, MessageCircle, Copy, Info } from "lucide-react"
+import { Plus, Search, Pencil, Trash2, User, MapPin, FileText, Users, Camera, Upload, Eye, Image, DollarSign, Briefcase, LayoutGrid, Rows3, Filter, CheckCircle2, MoreVertical, UserCheck, Phone, Mail, XCircle, Share2, MessageCircle, Copy, Info, Key, Home } from "lucide-react"
 import { useSession } from "next-auth/react"
 
 interface Client {
@@ -355,6 +355,7 @@ export default function ClientesPage() {
       neighborhood: client.neighborhood || "",
       complement: client.complement || "",
       number: client.number || "",
+      housingType: (client as any).housingType || "",
       notes: client.notes || "",
       status: client.status,
     })
@@ -500,7 +501,7 @@ export default function ClientesPage() {
       income: undefined, requestedAmount: undefined,
       referral: false, referralName: "", referralPhone: "", photo: "",
       address: "", city: "", state: "", zipCode: "",
-      neighborhood: "", complement: "", number: "",
+      neighborhood: "", complement: "", number: "", housingType: "",
       notes: "", status: initialStatus
     })
     setPhotoPreview(null)
@@ -720,12 +721,12 @@ export default function ClientesPage() {
           {aprovacaoTab === "pendentes" && (
             <div className="space-y-3">
               {clients.filter(c => c.status === "INACTIVE").length === 0 ? (
-                <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-8 text-center text-sm text-gray-400 dark:text-zinc-500">
+                <div className="rounded-xl border border-green-500/50 dark:border-green-800/50 bg-white dark:bg-zinc-900 p-8 text-center text-sm text-gray-400 dark:text-zinc-500">
                   Nenhum cadastro pendente de aprovação
                 </div>
               ) : (
                 clients.filter(c => c.status === "INACTIVE").map((client) => (
-                  <div key={client.id} className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-5 py-4">
+                  <div key={client.id} className="rounded-xl border border-green-500/50 dark:border-green-800/50 bg-white dark:bg-zinc-900 px-5 py-4">
                     {/* Header: nome + badge + data */}
                     <div className="flex items-start justify-between gap-4 mb-3">
                       <div>
@@ -814,12 +815,12 @@ export default function ClientesPage() {
           {aprovacaoTab === "historico" && (
             <div className="space-y-2">
               {aprovacaoHistorico.length === 0 ? (
-                <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-8 text-center text-sm text-gray-400 dark:text-zinc-500">
+                <div className="rounded-xl border border-green-500/50 dark:border-green-800/50 bg-white dark:bg-zinc-900 p-8 text-center text-sm text-gray-400 dark:text-zinc-500">
                   Nenhuma ação registrada nesta sessão
                 </div>
               ) : (
                 aprovacaoHistorico.map((item, i) => (
-                  <div key={i} className="flex items-center justify-between gap-4 rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-5 py-4">
+                  <div key={i} className="flex items-center justify-between gap-4 rounded-xl border border-green-500/50 dark:border-green-800/50 bg-white dark:bg-zinc-900 px-5 py-4">
                     <div>
                       <p className="font-semibold text-gray-900 dark:text-zinc-100">{item.name}</p>
                       {(item.phone || item.email) && (
@@ -1644,6 +1645,30 @@ export default function ClientesPage() {
                 <div>
                   <Label className="font-semibold">Estado (UF)</Label>
                   <Input {...register("state")} placeholder="UF" className="mt-1" />
+                </div>
+              </div>
+
+              {/* Tipo de moradia */}
+              <div>
+                <Label className="font-semibold">Tipo de moradia</Label>
+                <div className="mt-1 grid grid-cols-2 gap-3">
+                  {[
+                    { value: "ALUGUEL", label: "Aluguel", icon: <Key className="h-4 w-4" /> },
+                    { value: "PROPRIA", label: "Casa própria", icon: <Home className="h-4 w-4" /> },
+                  ].map((opt) => {
+                    const active = watch("housingType") === opt.value
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setValue("housingType", opt.value, { shouldDirty: true })}
+                        className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors ${active ? "border-[#16a34a] bg-[#16a34a]/10 text-[#15803d] dark:border-green-700 dark:bg-green-950/30 dark:text-green-400" : "border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-600 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800"}`}
+                      >
+                        <span className={active ? "text-[#16a34a] dark:text-green-400" : "text-gray-400 dark:text-zinc-500"}>{opt.icon}</span>
+                        {opt.label}
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
             </div>

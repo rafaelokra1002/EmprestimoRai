@@ -31,6 +31,7 @@ export const clientSchema = z.object({
   neighborhood: z.preprocess(emptyToUndefined, z.string().optional()),
   complement: z.preprocess(emptyToUndefined, z.string().optional()),
   number: z.preprocess(emptyToUndefined, z.string().optional()),
+  housingType: z.preprocess(emptyToUndefined, z.string().optional()),
   notes: z.preprocess(emptyToUndefined, z.string().optional()),
   status: z.enum(["ACTIVE", "INACTIVE", "DESAPARECIDO"]).default("ACTIVE"),
 })

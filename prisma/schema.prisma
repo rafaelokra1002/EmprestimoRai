@@ -92,6 +92,7 @@ model Client {
   neighborhood String?
   complement   String?
   number       String?
+  housingType  String?
   notes        String?
   score        Int              @default(100)
   status       ClientStatus     @default(ACTIVE)

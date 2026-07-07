@@ -272,8 +272,11 @@ export default function ScorePage() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100 flex items-center gap-2">
             <Trophy className="h-6 w-6 text-yellow-500" />
             Score de Clientes
+          </h1>
+          <p className="text-gray-500 dark:text-zinc-400 text-sm mt-1 flex flex-wrap items-center gap-1.5">
+            Acompanhe a pontuação de confiabilidade dos seus clientes atualizada automaticamente
             <span className="group relative inline-flex">
-              <HelpCircle className="h-5 w-5 text-primary cursor-help" />
+              <HelpCircle className="h-4 w-4 text-primary cursor-help" />
               <div className="absolute left-0 top-full z-50 hidden pt-2 group-hover:block">
                 <div className="w-[20rem] rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-4 text-left shadow-xl">
                   <p className="mb-3 text-sm font-semibold text-gray-900 dark:text-zinc-100">Como funciona o scoring?</p>
@@ -290,9 +293,6 @@ export default function ScorePage() {
                 </div>
               </div>
             </span>
-          </h1>
-          <p className="text-gray-500 dark:text-zinc-400 text-sm mt-1">
-            Acompanhe a pontuação de confiabilidade dos seus clientes atualizada automaticamente
           </p>
         </div>
         <div className="relative w-full sm:w-64">

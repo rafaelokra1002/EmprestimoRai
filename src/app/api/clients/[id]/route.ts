@@ -104,6 +104,7 @@ export async function PUT(
         neighborhood: data.neighborhood || null,
         complement: data.complement || null,
         number: data.number || null,
+        housingType: data.housingType || null,
         notes: data.notes || null,
         status: data.status ?? "ACTIVE",
       },

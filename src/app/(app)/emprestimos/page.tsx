@@ -242,9 +242,9 @@ export default function EmprestimosPage() {
     }
   }, [firstInstallmentDate, installmentCount, modality, skipSaturday, skipSunday, skipHolidays])
 
-  // Clientes filtrados na busca
+  // Clientes filtrados na busca (só aprovados — exclui pendentes de aprovação e desaparecidos)
   const filteredClients = useMemo(() => {
-    const active = clients.filter(c => c.status !== "DESAPARECIDO")
+    const active = clients.filter(c => c.status === "ACTIVE")
     if (!clientSearch.trim()) return active
     const q = clientSearch.toLowerCase()
     return active.filter(
