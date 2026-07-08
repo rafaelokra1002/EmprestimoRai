@@ -97,6 +97,10 @@ export default function EmprestimosPage() {
   const [batchOpen, setBatchOpen] = useState(false)
   const [batchSending, setBatchSending] = useState(false)
   const [batchResult, setBatchResult] = useState<{ sent: number; failed: number; noPhone: number } | null>(null)
+  // Confirmação centralizada dos envios em lote (atrasados / vence hoje)
+  const [bulkConfirm, setBulkConfirm] = useState<{ kind: "overdue" | "dueToday"; count: number } | null>(null)
+  // Aviso centralizado quando o WhatsApp não está conectado
+  const [whatsappOffline, setWhatsappOffline] = useState(false)
 
   // Profile PIX key & phone
   const [profilePixKey, setProfilePixKey] = useState("")
@@ -805,7 +809,17 @@ export default function EmprestimosPage() {
     })
   }, [loans, twoDaysStr])
 
+  // Usa o template configurado em Configurações (com variante _PARCELADO);
+  // se não houver template salvo, cai no builder padrão do sistema.
+  const buildTemplatedMessage = (loan: Loan, templateKey: string, fallback: (l: Loan) => string) => {
+    const isParcelado = loan.installmentCount > 1
+    const parceladoKey = `${templateKey}_PARCELADO`
+    const tpl = (isParcelado && savedTemplates[parceladoKey]) ? savedTemplates[parceladoKey] : savedTemplates[templateKey]
+    return tpl ? applyTemplate(tpl, loan) : fallback(loan)
+  }
+
   const handleBatchCobranca = async () => {
+    if (!(await ensureWhatsappConnected())) return
     setBatchSending(true)
     setBatchResult(null)
     let sent = 0, failed = 0, noPhone = 0
@@ -814,11 +828,7 @@ export default function EmprestimosPage() {
       const phone = getClientPhone(loan)
       if (!phone) { noPhone++; continue }
 
-      const next = loan.installments
-        .filter((i: any) => i.status !== "PAID")
-        .sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0]
-
-      const message = `Olá ${loan.client.name}, sua parcela de ${formatCurrency(next.amount)} vence em 2 dias (${formatDate(next.dueDate)}). Entre em contato para efetuar o pagamento.`
+      const message = buildTemplatedMessage(loan, "ANTECIPADA", buildLembreteSimpleMessage)
 
       try {
         const res = await fetch("/api/whatsapp/send", {
@@ -989,6 +999,7 @@ export default function EmprestimosPage() {
     if (!whatsappLoan || !whatsappMessage.trim()) return
     const phone = getClientPhone(whatsappLoan)
     if (!phone) return
+    if (!(await ensureWhatsappConnected())) return
 
     setWhatsappSending(true)
     try {
@@ -1009,10 +1020,22 @@ export default function EmprestimosPage() {
     }
   }
 
+  // Verifica se o WhatsApp está conectado; se não, abre o aviso centralizado
+  const ensureWhatsappConnected = async (): Promise<boolean> => {
+    try {
+      const res = await fetch("/api/whatsapp/status")
+      const data = await res.json()
+      if (data?.connected) return true
+    } catch { /* trata como desconectado */ }
+    setWhatsappOffline(true)
+    return false
+  }
+
   // Envia mensagem direto pelo WhatsApp conectado (Baileys), sem abrir wa.me
   const sendWhatsappDirect = async (rawPhone: string, message: string) => {
     const phone = (rawPhone || "").replace(/\D/g, "")
     if (!phone) { showToast("Cliente sem telefone cadastrado", "error"); return }
+    if (!(await ensureWhatsappConnected())) return
     try {
       const res = await fetch("/api/whatsapp/send", {
         method: "POST",
@@ -1048,10 +1071,17 @@ export default function EmprestimosPage() {
     })
   }
 
+  // Abre a confirmação centralizada
   const sendBulkOverdue = async () => {
     const overdueLoans = getOverdueLoans()
-    if (overdueLoans.length === 0) { alert("Nenhum cliente atrasado encontrado."); return }
-    if (!confirm(`Enviar cobrança para ${new Set(overdueLoans.map(l => l.client.id)).size} cliente(s) atrasado(s)?`)) return
+    if (overdueLoans.length === 0) { showToast("Nenhum cliente atrasado encontrado.", "info", "center"); return }
+    if (!(await ensureWhatsappConnected())) return
+    setBulkConfirm({ kind: "overdue", count: new Set(overdueLoans.map(l => l.client.id)).size })
+  }
+
+  const runBulkOverdue = async () => {
+    setBulkConfirm(null)
+    const overdueLoans = getOverdueLoans()
     setBulkSendingOverdue(true)
     let sent = 0, failed = 0
     const sentClients = new Set<string>()
@@ -1060,7 +1090,7 @@ export default function EmprestimosPage() {
       const phone = clients.find(c => c.id === loan.client.id)?.phone
       if (!phone) { failed++; sentClients.add(loan.client.id); continue }
       try {
-        const msg = buildDefaultWhatsappMessage(loan)
+        const msg = buildTemplatedMessage(loan, "ATRASO", buildDefaultWhatsappMessage)
         const res = await fetch("/api/whatsapp/send", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -1121,19 +1151,28 @@ export default function EmprestimosPage() {
     return `👤 ${loan.client.name}\n\n───────────────\n\n🟡 VENCIMENTO HOJE\n\n📅 Data: ${vencimento}\n\n💰 Valor total: ${formatCurrency(loan.totalAmount)}\n📈 Juros: ${juros}\n\n🔄 Renove seu prazo\nPague apenas os juros e tenha mais 30 dias para quitar o valor total.\n\n⚠️ Em caso de atraso:\nSerá cobrado R$ 15,00 por dia.\n\n───────────────\n\n👤 ${profileChargeName || "Titular"}\n\n💠 Chave Pix: ${profilePixKey || "Não cadastrada"}`
   }
 
-  const sendBulkDueToday = async () => {
-    const dueTodayLoans = getDueTodayLoans()
-    if (dueTodayLoans.length === 0) { alert("Nenhum cliente com vencimento hoje."); return }
-
-    // Group loans by client — one message per client
+  // Agrupa empréstimos por cliente — uma mensagem por cliente
+  const groupDueTodayByClient = () => {
     const byClient = new Map<string, Loan[]>()
-    for (const loan of dueTodayLoans) {
+    for (const loan of getDueTodayLoans()) {
       const arr = byClient.get(loan.client.id) || []
       arr.push(loan)
       byClient.set(loan.client.id, arr)
     }
+    return byClient
+  }
 
-    if (!confirm(`Enviar lembrete para ${byClient.size} cliente(s) com vencimento hoje?`)) return
+  // Abre a confirmação centralizada
+  const sendBulkDueToday = async () => {
+    const dueTodayLoans = getDueTodayLoans()
+    if (dueTodayLoans.length === 0) { showToast("Nenhum cliente com vencimento hoje.", "info", "center"); return }
+    if (!(await ensureWhatsappConnected())) return
+    setBulkConfirm({ kind: "dueToday", count: groupDueTodayByClient().size })
+  }
+
+  const runBulkDueToday = async () => {
+    setBulkConfirm(null)
+    const byClient = groupDueTodayByClient()
     setBulkSendingDueToday(true)
     let sent = 0, failed = 0
 
@@ -1143,7 +1182,7 @@ export default function EmprestimosPage() {
       // Prefer parcelado loan for the message; fallback to first
       const loan = clientLoans.find(l => l.installmentCount > 1) || clientLoans[0]
       try {
-        const msg = buildDueTodayMessage(loan)
+        const msg = buildTemplatedMessage(loan, "VENCE_HOJE", buildDueTodayMessage)
         const res = await fetch("/api/whatsapp/send", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -1769,9 +1808,9 @@ export default function EmprestimosPage() {
       ) : groupedByClient.length === 0 ? (
         <div className="text-center py-8 text-gray-500 dark:text-zinc-400">Nenhum empréstimo encontrado</div>
       ) : viewMode === "list" ? (
-        <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-900/40 p-4 space-y-3">
+        <div className="rounded-2xl border border-green-500/50 dark:border-green-800/50 bg-gray-50/50 dark:bg-zinc-900/40 p-4 space-y-3">
         <div className="flex items-center gap-4">
-          <div className="flex flex-1 items-center gap-3 rounded-xl border border-gray-200 dark:border-zinc-800 border-l-4 border-l-blue-500 bg-white dark:bg-zinc-900 px-5 py-4">
+          <div className="flex flex-1 items-center gap-3 rounded-xl border border-green-500/50 dark:border-green-800/50 bg-white dark:bg-zinc-900 px-5 py-4">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-950/40">
               <DollarSign className="h-5 w-5 text-blue-500" />
             </div>
@@ -1780,7 +1819,7 @@ export default function EmprestimosPage() {
               <p className="text-xl font-bold tabular-nums text-blue-600 dark:text-blue-400 mt-1">{formatCurrency(filteredLoans.reduce((s, l) => s + l.amount, 0))}</p>
             </div>
           </div>
-          <div className="flex flex-1 items-center gap-3 rounded-xl border border-gray-200 dark:border-zinc-800 border-l-4 border-l-green-500 bg-white dark:bg-zinc-900 px-5 py-4">
+          <div className="flex flex-1 items-center gap-3 rounded-xl border border-green-500/50 dark:border-green-800/50 bg-white dark:bg-zinc-900 px-5 py-4">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 dark:bg-primary/15">
               <TrendingUp className="h-5 w-5 text-primary" />
             </div>
@@ -1789,7 +1828,7 @@ export default function EmprestimosPage() {
               <p className="text-xl font-bold tabular-nums text-primary mt-1">{formatCurrency(filteredLoans.reduce((s, l) => s + l.totalAmount, 0))}</p>
             </div>
           </div>
-          <div className="flex flex-1 items-center gap-3 rounded-xl border border-gray-200 dark:border-zinc-800 border-l-4 border-l-purple-500 bg-white dark:bg-zinc-900 px-5 py-4">
+          <div className="flex flex-1 items-center gap-3 rounded-xl border border-green-500/50 dark:border-green-800/50 bg-white dark:bg-zinc-900 px-5 py-4">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-950/40">
               <Percent className="h-5 w-5 text-purple-600 dark:text-purple-400" />
             </div>
@@ -1800,7 +1839,7 @@ export default function EmprestimosPage() {
           </div>
         </div>
         <p className="text-sm text-gray-500 dark:text-zinc-400">{filteredLoans.length} empréstimo{filteredLoans.length !== 1 ? "s" : ""}</p>
-        <div className="rounded-xl border border-gray-200 dark:border-zinc-800 overflow-hidden">
+        <div className="rounded-xl border border-green-500/50 dark:border-green-800/50 overflow-hidden">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 dark:bg-zinc-800/60 text-left text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
@@ -4437,6 +4476,76 @@ export default function EmprestimosPage() {
               <button onClick={confirmDelete} disabled={deleting} className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-50">
                 {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                 Excluir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* WhatsApp não conectado (centralizado) */}
+      {whatsappOffline && (
+        <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/55 p-4">
+          <button type="button" aria-label="Fechar" className="absolute inset-0 cursor-default" onClick={() => setWhatsappOffline(false)} />
+          <div className="relative z-10 w-full max-w-sm rounded-2xl border border-amber-300 dark:border-amber-800/60 bg-white dark:bg-zinc-900 p-6 shadow-2xl space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-950/40">
+                <MessageCircle className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-amber-700 dark:text-amber-400">WhatsApp não conectado</h3>
+                <p className="text-xs text-gray-500 dark:text-zinc-400">Não é possível enviar mensagens</p>
+              </div>
+            </div>
+            <p className="text-sm text-gray-600 dark:text-zinc-400">
+              Conecte seu WhatsApp em <span className="font-semibold text-gray-800 dark:text-zinc-200">Perfil</span> (escaneando o QR Code) para enviar cobranças e lembretes.
+            </p>
+            <div className="flex gap-2 pt-1">
+              <button onClick={() => setWhatsappOffline(false)} className="flex-1 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-zinc-300 transition hover:bg-gray-50 dark:hover:bg-zinc-700">Fechar</button>
+              <button
+                onClick={() => { setWhatsappOffline(false); router.push("/perfil") }}
+                className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-amber-600"
+              >
+                Conectar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmação de envio em lote (centralizado) */}
+      {bulkConfirm && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/55 p-4">
+          <button type="button" aria-label="Fechar" className="absolute inset-0 cursor-default" onClick={() => setBulkConfirm(null)} />
+          <div className={`relative z-10 w-full max-w-sm rounded-2xl border bg-white dark:bg-zinc-900 p-6 shadow-2xl space-y-4 ${bulkConfirm.kind === "overdue" ? "border-red-300 dark:border-red-800/60" : "border-amber-300 dark:border-amber-800/60"}`}>
+            <div className="flex items-center gap-3">
+              <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${bulkConfirm.kind === "overdue" ? "bg-red-100 dark:bg-red-950/40" : "bg-amber-100 dark:bg-amber-950/40"}`}>
+                <MessageCircle className={`h-6 w-6 ${bulkConfirm.kind === "overdue" ? "text-red-600 dark:text-red-400" : "text-amber-600 dark:text-amber-400"}`} />
+              </div>
+              <div>
+                <h3 className={`text-lg font-bold ${bulkConfirm.kind === "overdue" ? "text-red-700 dark:text-red-400" : "text-amber-700 dark:text-amber-400"}`}>
+                  {bulkConfirm.kind === "overdue" ? "Enviar cobrança?" : "Enviar lembrete?"}
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-zinc-400">Envio via WhatsApp</p>
+              </div>
+            </div>
+            <p className="text-sm text-gray-600 dark:text-zinc-400">
+              {bulkConfirm.kind === "overdue" ? (
+                <>Será enviada uma cobrança para <span className="font-semibold text-gray-800 dark:text-zinc-200">{bulkConfirm.count} cliente(s) atrasado(s)</span>.</>
+              ) : (
+                <>Será enviado um lembrete para <span className="font-semibold text-gray-800 dark:text-zinc-200">{bulkConfirm.count} cliente(s) com vencimento hoje</span>.</>
+              )}
+            </p>
+            <p className="text-xs text-gray-400 dark:text-zinc-500">
+              O envio é espaçado (90s a 150s por cliente) para reduzir risco de bloqueio. Mantenha esta página aberta.
+            </p>
+            <div className="flex gap-2 pt-1">
+              <button onClick={() => setBulkConfirm(null)} className="flex-1 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-zinc-300 transition hover:bg-gray-50 dark:hover:bg-zinc-700">Cancelar</button>
+              <button
+                onClick={bulkConfirm.kind === "overdue" ? runBulkOverdue : runBulkDueToday}
+                className={`flex-1 inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition ${bulkConfirm.kind === "overdue" ? "bg-red-600 hover:bg-red-700" : "bg-amber-500 hover:bg-amber-600"}`}
+              >
+                <MessageCircle className="h-4 w-4" />
+                Enviar
               </button>
             </div>
           </div>

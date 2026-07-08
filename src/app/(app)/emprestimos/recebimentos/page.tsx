@@ -326,19 +326,19 @@ export default function RecebimentosPage() {
       )}
 
       <div className="grid md:grid-cols-4 gap-3">
-        <div className="rounded-xl border border-green-200 dark:border-green-800 bg-white dark:bg-zinc-900 p-4 border-l-4 border-l-green-500">
+        <div className="rounded-xl border border-green-200 dark:border-green-800 bg-white dark:bg-zinc-900 p-4">
           <p className="text-gray-500 dark:text-zinc-400 text-sm flex items-center gap-1"><DollarSign className="h-4 w-4 text-green-500" /> Total Recebido</p>
           <p className="text-2xl font-semibold tabular-nums tracking-tight text-green-500 dark:text-green-400 mt-1">{formatCurrency(stats.totalReceived)}</p>
         </div>
-        <div className="rounded-xl border border-violet-200 dark:border-violet-800 bg-white dark:bg-zinc-900 p-4 border-l-4 border-l-violet-500">
+        <div className="rounded-xl border border-violet-200 dark:border-violet-800 bg-white dark:bg-zinc-900 p-4">
           <p className="text-gray-500 dark:text-zinc-400 text-sm flex items-center gap-1"><TrendingUp className="h-4 w-4 text-violet-500" /> Juros Recebido</p>
           <p className="text-2xl font-semibold tabular-nums tracking-tight text-violet-600 dark:text-violet-400 mt-1">{formatCurrency(stats.interestReceived)}</p>
         </div>
-        <div className="rounded-xl border border-blue-200 dark:border-blue-800 bg-white dark:bg-zinc-900 p-4 border-l-4 border-l-blue-500">
+        <div className="rounded-xl border border-blue-200 dark:border-blue-800 bg-white dark:bg-zinc-900 p-4">
           <p className="text-gray-500 dark:text-zinc-400 text-sm flex items-center gap-1"><Percent className="h-4 w-4 text-blue-500" /> Principal Pago</p>
           <p className="text-2xl font-semibold tabular-nums tracking-tight text-blue-600 dark:text-blue-400 mt-1">{formatCurrency(stats.principalPaid)}</p>
         </div>
-        <div className="rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-4 border-l-4 border-l-gray-400">
+        <div className="rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-4">
           <p className="text-gray-500 dark:text-zinc-400 text-sm flex items-center gap-1"><Hash className="h-4 w-4 text-gray-400" /> Qtd. Pagamentos</p>
           <p className="text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100 mt-1">{stats.count}</p>
         </div>
