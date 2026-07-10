@@ -111,10 +111,14 @@ export default function TabelaPricePage() {
     if (!amount || !installments || installments < 1) return []
     const rate = monthlyRate / 100
     const rows: Array<{ n: number; payment: number; amort: number; interest: number; balance: number; date: string }> = []
+    // Última parcela absorve o arredondamento para que a soma bata com o total
+    // gravado (mesma regra da API), evitando 1 centavo a mais que o total.
+    const sumOthers = Math.round(preview.installmentValue * (installments - 1) * 100) / 100
+    const lastPayment = Math.round((preview.totalAmount - sumOthers) * 100) / 100
     let balance = amount
     for (let i = 0; i < installments; i++) {
       const interest = Math.round(balance * rate * 100) / 100
-      const payment = preview.installmentValue
+      const payment = i === installments - 1 ? lastPayment : preview.installmentValue
       const amort = Math.round((payment - interest) * 100) / 100
       balance = Math.max(0, Math.round((balance - amort) * 100) / 100)
       rows.push({
@@ -127,7 +131,7 @@ export default function TabelaPricePage() {
       })
     }
     return rows
-  }, [amount, monthlyRate, installments, preview.installmentValue, installmentDates])
+  }, [amount, monthlyRate, installments, preview.installmentValue, preview.totalAmount, installmentDates])
 
   const loadData = async () => {
     const [clientsRes, loansRes] = await Promise.all([fetch("/api/clients"), fetch("/api/loans")])

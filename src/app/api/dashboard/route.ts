@@ -103,8 +103,9 @@ export async function GET(request: Request) {
       }),
       // Pagamentos do mês (recebimentos). Conta TODOS os recebimentos que existem —
       // inclusive de empréstimos apagados — porque o "Recebido" só some quando o
-      // recebimento é excluído em Recebimentos.
-      prisma.payment.aggregate({
+      // recebimento é excluído em Recebimentos. Traz os dados do empréstimo para
+      // calcular só a parcela de JUROS de cada recebimento (card "Recebido no Mês").
+      prisma.payment.findMany({
         where: {
           loan: { userId },
           date: {
@@ -112,7 +113,17 @@ export async function GET(request: Request) {
             lte: new Date(filterYear, filterMonth + 1, 0, 23, 59, 59),
           },
         },
-        _sum: { amount: true },
+        select: {
+          amount: true,
+          notes: true,
+          loan: {
+            select: {
+              totalAmount: true,
+              profit: true,
+              installments: { select: { paidAmount: true } },
+            },
+          },
+        },
       }),
     ]))
 
@@ -145,8 +156,22 @@ export async function GET(request: Request) {
       0
     )
 
-    // Métricas do mês selecionado — inclui pagamentos de empréstimos excluídos
-    const monthReceived = Number(allPaymentsMonthResult._sum.amount || 0)
+    // Métricas do mês selecionado — inclui pagamentos de empréstimos excluídos.
+    // "Recebido no Mês" mostra apenas a parcela de JUROS de cada recebimento
+    // (mesma lógica de monthlyReceivedInterest): se o capital ainda está intacto,
+    // o pagamento é 100% juros; senão, aplica-se a proporção juros/total, e
+    // recebimentos "só juros" contam integralmente.
+    const monthReceived = (allPaymentsMonthResult || []).reduce((acc, p: any) => {
+      const loanTotal = Number(p.loan?.totalAmount || 0)
+      const loanProfit = Number(p.loan?.profit || 0)
+      if (loanTotal <= 0) return acc
+      const capitalIntact = (p.loan?.installments || []).every((i: any) => Number(i.paidAmount || 0) === 0)
+      if (capitalIntact) return acc + Number(p.amount || 0)
+      const notes = (p.notes || "").toLowerCase()
+      const isSoJuros = notes.includes("só juros") || notes.includes("so juros") || notes.includes("parcial de juros")
+      const interestRatio = loanProfit / loanTotal
+      return acc + (isSoJuros ? Number(p.amount || 0) : Number(p.amount || 0) * interestRatio)
+    }, 0)
 
     // Card "Saiu (Empréstimos Concedidos)": total emprestado no mês ATUAL (ou no mês
     // selecionado, se houver filtro), pela DATA DE CADASTRO (createdAt). Inclui empréstimos

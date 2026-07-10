@@ -588,7 +588,7 @@ export default function DashboardPage() {
           </p>
           <Delta pct={data?.weeklySummary?.deltas?.receivedPct} />
           <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">
-            pagamentos recebidos em {periodLabel}
+            juros recebidos em {periodLabel}
           </p>
         </div>
 
@@ -601,10 +601,10 @@ export default function DashboardPage() {
             <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Histórico de Pagamento</p>
           </div>
           <p className="text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">
-            {formatCurrency(data?.financials?.totalPaymentsReceived || 0)}
+            {formatCurrency(data?.financials?.monthlyReceivedInterest || 0)}
           </p>
           <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">
-            total de pagamentos recebidos
+            total de juros recebidos
           </p>
         </div>
 

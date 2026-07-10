@@ -123,13 +123,17 @@ export default function RecebimentosPage() {
         // Determine type from notes first
         let type: "Pagamento" | "Parcela" | "Só Juros" = "Pagamento"
         let installmentInfo: string | null = null
+        let installmentNumber: number | null = null
         const n = payment.notes || ""
         if (n.includes("[OVERDUE_CONFIG") || n.toLowerCase().includes("juros") || n.toLowerCase().includes("só juros") || n.toLowerCase().includes("parcial de juros")) {
           type = "Só Juros"
         } else if (n.includes("Parcela") || n.includes("parcela")) {
           type = "Parcela"
-          const match = n.match(/Parcela\s+(\d+\s+de\s+\d+)/i)
-          if (match) installmentInfo = `Parcela ${match[1]}`
+          const match = n.match(/Parcela\s+(\d+)\s+de\s+(\d+)/i)
+          if (match) {
+            installmentInfo = `Parcela ${match[1]} de ${match[2]}`
+            installmentNumber = parseInt(match[1], 10)
+          }
         }
 
         // For "Só Juros" payments, base is interest; any excess = daily late fee
@@ -151,8 +155,17 @@ export default function RecebimentosPage() {
           interest = payment.amount
         } else {
           const numInstallments = Math.max(1, loan.installmentCount || 1)
-          principal = Math.round((loan.amount / numInstallments) * 100) / 100
-          pureInterest = Math.round((loan.profit / numInstallments) * 100) / 100
+          const principalPerInstallment = Math.round((loan.amount / numInstallments) * 100) / 100
+          const pureInterestPerInstallment = Math.round((loan.profit / numInstallments) * 100) / 100
+          // A última parcela absorve o arredondamento (mesma regra da criação),
+          // para que a soma do principal bata com o capital emprestado.
+          if (installmentNumber === numInstallments) {
+            principal = Math.round((loan.amount - principalPerInstallment * (numInstallments - 1)) * 100) / 100
+            pureInterest = Math.round((loan.profit - pureInterestPerInstallment * (numInstallments - 1)) * 100) / 100
+          } else {
+            principal = principalPerInstallment
+            pureInterest = pureInterestPerInstallment
+          }
           interest = Math.max(0, Math.round((payment.amount - principal) * 100) / 100)
         }
 

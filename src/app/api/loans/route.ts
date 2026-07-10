@@ -66,6 +66,19 @@ export async function POST(request: Request) {
       data.modality
     )
 
+    // Valores por parcela. Para tipos de parcela igual, a última parcela absorve
+    // a diferença de arredondamento para que a soma bata exatamente com totalAmount
+    // (evita, p.ex., 3× R$166,67 = R$500,01 quando o total é R$500,00).
+    const installmentAmounts: number[] = Array.from({ length: data.installmentCount }, (_, index) => {
+      if (data.interestType === "SAC" && sacInstallments) return sacInstallments[index]
+      if (data.interestType === "CUSTOM" && data.customInstallmentAmounts) return data.customInstallmentAmounts[index]
+      if (index === data.installmentCount - 1) {
+        const sumOthers = Math.round(installmentAmount * (data.installmentCount - 1) * 100) / 100
+        return Math.round((totalAmount - sumOthers) * 100) / 100
+      }
+      return installmentAmount
+    })
+
     const firstDate = new Date(data.firstInstallmentDate + (data.firstInstallmentDate.includes("T") ? "" : "T12:00:00"))
     const contractDate = new Date(data.contractDate + (data.contractDate.includes("T") ? "" : "T12:00:00"))
 
@@ -115,11 +128,7 @@ export async function POST(request: Request) {
           installments: {
             create: installmentDates.map((date, index) => ({
               number: index + 1,
-              amount: data.interestType === "SAC" && sacInstallments
-                ? sacInstallments[index]
-                : data.interestType === "CUSTOM" && data.customInstallmentAmounts
-                ? data.customInstallmentAmounts[index]
-                : installmentAmount,
+              amount: installmentAmounts[index],
               dueDate: date,
             })),
           },

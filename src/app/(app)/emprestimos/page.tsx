@@ -12,7 +12,7 @@ import {
   Plus, Trash2, DollarSign, Search, Clock, Pencil, FolderOpen,
   LayoutGrid, List, Filter, ChevronDown, Receipt, Calendar, Eye, FileText, RotateCcw,
   ExternalLink, Download, CheckCircle2, User, Lock, TrendingUp, ArrowRight, MoreHorizontal, Check, Tag, X,
-  MessageCircle, Send, Loader2, Percent
+  MessageCircle, Send, Loader2, Percent, Bell
 } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import { LoanRenegotiationContent } from "./_components/loan-renegotiation-content"
@@ -64,6 +64,15 @@ interface Client {
   document: string | null
   photo: string | null
   status?: string
+  score?: number
+}
+
+// Mesmo ícone por faixa usado na página de Score
+const getScoreIcon = (score: number) => {
+  if (score >= 120) return "⭐"
+  if (score >= 100) return "👍"
+  if (score >= 70) return "🔥"
+  return "⚠️"
 }
 
 const today = () => localDateStr()
@@ -1859,6 +1868,7 @@ export default function EmprestimosPage() {
                 const paid = getPaidTotal(loan)
                 const remaining = getRemaining(loan)
                 const nextInst = getNextDueInst(loan)
+                const isDueToday = nextInst && toDateStr(new Date(nextInst.dueDate)) === todayStr
                 return (
                   <tr key={loan.id} className={`${status.label === "Atrasado" ? "bg-red-50 dark:bg-red-950/20" : status.label === "Só Juros" ? "bg-purple-50 dark:bg-purple-950/20" : "bg-white dark:bg-zinc-900"} hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-colors`}>
                     <td className="px-4 py-3">
@@ -1894,6 +1904,14 @@ export default function EmprestimosPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => openWhatsappDialog(loan)}
+                        title={isDueToday ? "Lembrar via WhatsApp" : "Cobrar via WhatsApp"}
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-white transition-colors ${status.label === "Atrasado" || status.label === "Inadimplente" ? "bg-red-600 hover:bg-red-700" : isDueToday ? "bg-orange-500 hover:bg-orange-600" : "bg-green-600 hover:bg-green-700"}`}
+                      >
+                        {isDueToday ? <Bell className="h-3.5 w-3.5" /> : <MessageCircle className="h-3.5 w-3.5" />} {isDueToday ? "Lembrar" : "Cobrar"}
+                      </button>
                       <div className="relative">
                         <button onClick={() => setDropdownOpen(dropdownOpen === loan.id ? null : loan.id)} className="p-1.5 rounded-lg border border-gray-200 dark:border-zinc-700 text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors">
                           <MoreHorizontal className="h-4 w-4" />
@@ -1925,6 +1943,7 @@ export default function EmprestimosPage() {
                             </div>
                           </>
                         )}
+                      </div>
                       </div>
                     </td>
                   </tr>
@@ -2097,6 +2116,45 @@ export default function EmprestimosPage() {
                     </div>
                   )}
 
+                  {/* Juros por parcela */}
+                  {(() => {
+                    const interestPayments = loan.payments.filter((p: any) => {
+                      const notes = (p.notes || "").toLowerCase()
+                      return notes.includes("parcial de juros")
+                    })
+                    const totalPartialPaid = interestPayments.reduce((s: number, p: any) => s + p.amount, 0)
+                    const jurosPago = intPerInst > 0 ? totalPartialPaid % intPerInst : 0
+                    const jurosPendente = intPerInst > 0 ? intPerInst - jurosPago : 0
+                    const hasPartialInterest = jurosPago > 0
+                    const overdueMonths = Math.floor(getCurrentOverdueDays(loan) / 30)
+                    const jurosMultiplier = overdueMonths >= 1 ? overdueMonths : 0
+                    return (
+                      <div className="mx-4 mt-3 px-3 py-2 rounded-lg bg-gray-50 dark:bg-zinc-800/60 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-gray-500 dark:text-zinc-400">Só Juros (por parcela):</span>
+                          <span className="text-sm font-bold tabular-nums text-gray-900 dark:text-zinc-100">
+                            {jurosMultiplier >= 1 && (
+                              <span className="mr-1 relative -top-0.5 text-[9px] font-medium text-orange-500 dark:text-orange-400">{jurosMultiplier + 1}x</span>
+                            )}
+                            {formatCurrency(intPerInst)}
+                          </span>
+                        </div>
+                        {hasPartialInterest && (
+                          <>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-yellow-600 dark:text-yellow-400 flex items-center gap-1">💳 Juros já pago:</span>
+                              <span className="text-sm font-bold tabular-nums text-yellow-600 dark:text-yellow-400">{formatCurrency(jurosPago)}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-red-500 dark:text-red-400">Juros pendente:</span>
+                              <span className="text-sm font-bold tabular-nums text-red-500 dark:text-red-400">{formatCurrency(jurosPendente)}</span>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )
+                  })()}
+
                   {/* Info row */}
                   {isDueToday && nextInst ? (
                     <div className="mx-4 mt-3 rounded-2xl border border-orange-300 bg-orange-50/90 px-4 py-3 dark:border-orange-800 dark:bg-orange-950/20">
@@ -2134,45 +2192,6 @@ export default function EmprestimosPage() {
                       </div>
                     </div>
                   )}
-
-                  {/* Juros por parcela */}
-                  {(() => {
-                    const interestPayments = loan.payments.filter((p: any) => {
-                      const notes = (p.notes || "").toLowerCase()
-                      return notes.includes("parcial de juros")
-                    })
-                    const totalPartialPaid = interestPayments.reduce((s: number, p: any) => s + p.amount, 0)
-                    const jurosPago = intPerInst > 0 ? totalPartialPaid % intPerInst : 0
-                    const jurosPendente = intPerInst > 0 ? intPerInst - jurosPago : 0
-                    const hasPartialInterest = jurosPago > 0
-                    const overdueMonths = Math.floor(getCurrentOverdueDays(loan) / 30)
-                    const jurosMultiplier = overdueMonths >= 1 ? overdueMonths : 0
-                    return (
-                      <div className="mx-4 mt-2 px-3 py-2 rounded-lg bg-gray-50 dark:bg-zinc-800/60 space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-gray-500 dark:text-zinc-400">Só Juros (por parcela):</span>
-                          <span className="text-sm font-bold tabular-nums text-gray-900 dark:text-zinc-100">
-                            {jurosMultiplier >= 1 && (
-                              <span className="mr-1 relative -top-0.5 text-[9px] font-medium text-orange-500 dark:text-orange-400">{jurosMultiplier + 1}x</span>
-                            )}
-                            {formatCurrency(intPerInst)}
-                          </span>
-                        </div>
-                        {hasPartialInterest && (
-                          <>
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs text-yellow-600 dark:text-yellow-400 flex items-center gap-1">💳 Juros já pago:</span>
-                              <span className="text-sm font-bold tabular-nums text-yellow-600 dark:text-yellow-400">{formatCurrency(jurosPago)}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs text-red-500 dark:text-red-400">Juros pendente:</span>
-                              <span className="text-sm font-bold tabular-nums text-red-500 dark:text-red-400">{formatCurrency(jurosPendente)}</span>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    )
-                  })()}
 
                   {/* Parcelas em atraso - Breakdown */}
                   {(() => {
@@ -2239,13 +2258,19 @@ export default function EmprestimosPage() {
 
                   {/* Ações */}
                   <div className="px-4 pt-3 pb-4 mt-2 border-t border-gray-100 dark:border-zinc-800 space-y-3">
-                    {(status.label === "Atrasado" || status.label === "Inadimplente") && (
+                    {(status.label === "Atrasado" || status.label === "Inadimplente") ? (
                       <div>
                           <Button size="sm" onClick={() => openWhatsappDialog(loan)} className="w-full h-9 text-sm bg-red-600 hover:bg-red-700 text-white transition-colors">
                             <MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Cobrar via WhatsApp
                           </Button>
                       </div>
-                    )}
+                    ) : isDueToday ? (
+                      <div>
+                          <Button size="sm" onClick={() => openWhatsappDialog(loan)} className="w-full h-9 text-sm bg-orange-500 hover:bg-orange-600 text-white transition-colors">
+                            <MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Cobrar Hoje
+                          </Button>
+                      </div>
+                    ) : null}
                     <div className="grid w-full min-w-0 gap-1.5 pb-1 grid-cols-[minmax(0,1.6fr)_minmax(0,2.4fr)_repeat(5,minmax(0,1fr))]">
                       <button onClick={() => openPaymentDialog(loan)} className="group relative inline-flex min-w-0 h-10 items-center justify-center rounded-md px-2 text-xs border border-primary/15 bg-primary/10 font-medium text-primary transition-colors hover:bg-primary/15 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20">
                         <Receipt className="mr-1 h-4 w-4 shrink-0" /> <span className="whitespace-nowrap">Pagar</span>
@@ -2595,7 +2620,13 @@ export default function EmprestimosPage() {
                               <div className="flex min-w-0 items-center gap-3">
                                 <Avatar name={client.name} src={client.photo} size="sm" />
                                 <div className="min-w-0">
-                                  <p className="truncate text-sm font-medium text-gray-900 dark:text-zinc-100">{client.name}</p>
+                                  <div className="flex items-center gap-2">
+                                    <p className="truncate text-sm font-medium text-gray-900 dark:text-zinc-100">{client.name}</p>
+                                    <span className="inline-flex shrink-0 -translate-y-0.5 items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold leading-none text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
+                                      <span className="text-[10px] leading-none">{getScoreIcon(client.score ?? 0)}</span>
+                                      <span className="leading-none">{client.score ?? 0}</span>
+                                    </span>
+                                  </div>
                                   <p className="truncate text-xs text-gray-500 dark:text-zinc-400">
                                     {client.phone || client.document || "Sem telefone ou CPF"}
                                   </p>
