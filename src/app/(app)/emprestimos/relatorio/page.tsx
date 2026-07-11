@@ -483,6 +483,9 @@ export default function RelatorioEmprestimosPage() {
 
   const jurosMultaRecebidos = useMemo(() => {
     return filtered.reduce((total, l) => {
+      // Sem pagamento registrado nada foi recebido -> sem multa realizada. Evita a
+      // "multa fantasma" de parcelas que continuam PAID apos excluir o recebimento.
+      if (l.payments.length === 0) return total
       const dailyRate = getOverdueDailyAmountBRL(buildLoanData({
         amount: l.amount, interestRate: l.interestRate, interestType: l.interestType,
         totalAmount: l.totalAmount, dailyInterest: l.dailyInterest,
