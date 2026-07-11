@@ -3034,7 +3034,9 @@ export default function EmprestimosPage() {
             cycleStart.setHours(0, 0, 0, 0)
             const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0)
             const daysFromCycle = Math.max(0, Math.floor((todayStart.getTime() - cycleStart.getTime()) / 86400000))
-            proporcionalCycles = Math.floor(daysFromCycle / 30)
+            // Sempre cobra ao menos 1 ciclo de juros (ciclo corrente) na quitação,
+            // mais os ciclos de 30 dias já vencidos desde o último pagamento de juros
+            proporcionalCycles = Math.max(1, Math.floor(daysFromCycle / 30))
             proporcional = Math.round(proporcionalCycles * interestPerInst * 100) / 100
             displayBase = Math.max(0, paymentDialog.amount - paidPrincipal)
           } else {
@@ -3043,7 +3045,13 @@ export default function EmprestimosPage() {
             displayBase = unpaidBase
           }
 
-          const totalWithPenalty = displayBase + proporcional + overdueCharge + penalty
+          // Juros de ciclos já vencidos (empréstimo MENSAL de 1 parcela em atraso).
+          // É o mesmo componente que o card "Restante" soma via getExtraCyclesInterest.
+          // Não soma no caso "só juros", pois ali os ciclos já entram em `proporcional`.
+          const extraCyclesInterest = hasSoJuros ? 0 : getExtraCyclesInterest(paymentDialog)
+          const extraCyclesCount = interestPerInst > 0 ? Math.round(extraCyclesInterest / interestPerInst) : 0
+
+          const totalWithPenalty = displayBase + proporcional + extraCyclesInterest + overdueCharge + penalty
 
           return (
             <div className="space-y-5">
@@ -3353,12 +3361,18 @@ export default function EmprestimosPage() {
                   <p className="text-xs font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-wide mb-1">Detalhamento da Quitação</p>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-600 dark:text-zinc-400">Capital:</span>
-                    <span className="font-medium text-gray-900 dark:text-zinc-100">{formatCurrency(displayBase)}</span>
+                    <span className="font-medium text-gray-900 dark:text-zinc-100">{formatCurrency(hasSoJuros ? displayBase : Math.max(0, displayBase - paymentDialog.profit))}</span>
                   </div>
                   {!hasSoJuros && (
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-600 dark:text-zinc-400">Juros do contrato:</span>
                       <span className="font-medium text-gray-900 dark:text-zinc-100">{formatCurrency(paymentDialog.profit)}</span>
+                    </div>
+                  )}
+                  {extraCyclesInterest > 0 && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-blue-600 dark:text-blue-400">📊 Juros ({extraCyclesCount} ciclo{extraCyclesCount !== 1 ? "s" : ""} vencido{extraCyclesCount !== 1 ? "s" : ""}):</span>
+                      <span className="font-bold text-blue-600 dark:text-blue-400">+ {formatCurrency(extraCyclesInterest)}</span>
                     </div>
                   )}
                   {hasSoJuros && proporcionalCycles > 0 && (
