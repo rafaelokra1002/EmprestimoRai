@@ -215,6 +215,9 @@ export default function RelatorioEmprestimosPage() {
   // Lucro realizado do empréstimo = juros + multa efetivamente recebidos (proporcional
   // aos pagamentos). Retorna 0 enquanto não houver pagamento.
   const getRealizedProfit = (l: Loan) => {
+    // Sem pagamento registrado, nada foi recebido -> lucro realizado 0. Evita "multa
+    // fantasma" de parcelas que continuam PAID depois que o recebimento foi excluído.
+    if (l.payments.length === 0) return 0
     const dailyRate = getOverdueDailyAmountBRL(buildLoanData({
       amount: l.amount, interestRate: l.interestRate, interestType: l.interestType,
       totalAmount: l.totalAmount, dailyInterest: l.dailyInterest,
