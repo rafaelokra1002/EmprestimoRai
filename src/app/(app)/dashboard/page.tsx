@@ -54,6 +54,7 @@ interface DashboardData {
   monthNewLoansProfit: number
   monthNewLoansCapitalPct: number
   monthInstallmentsDue: { total: number; interest: number; capital: number }
+  totalReceberGeral: number
   totalProfit: number
   overdueCount: number
   overdueAmount: number
@@ -496,10 +497,10 @@ export default function DashboardPage() {
               <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Total a Receber</p>
             </div>
             <p className="text-2xl font-semibold tabular-nums tracking-tight text-green-500">
-              {formatCurrency(data?.monthInstallmentsDue?.total || 0)}
+              {formatCurrency(data?.totalReceberGeral || 0)}
             </p>
             <p className="mt-1.5 text-xs text-gray-400 dark:text-zinc-500">
-              parcelas com venc. em {periodLabel}
+              parcelas em aberto (todos os meses)
             </p>
             <Delta pct={data?.weeklySummary?.deltas?.receivedPct} />
           </div>

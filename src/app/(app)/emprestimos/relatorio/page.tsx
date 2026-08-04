@@ -64,6 +64,7 @@ interface Expense {
 
 export default function RelatorioEmprestimosPage() {
   const [loans, setLoans] = useState<Loan[]>([])
+  const [deletedLoans, setDeletedLoans] = useState<Loan[]>([])
   const [clients, setClients] = useState<Array<{ id: string; phone: string | null }>>([])
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [loading, setLoading] = useState(true)
@@ -90,17 +91,20 @@ export default function RelatorioEmprestimosPage() {
     setLoading(true)
     setFetchError(null)
     try {
-      const [loansRes, expensesRes, clientsRes] = await Promise.all([
+      const [loansRes, allLoansRes, expensesRes, clientsRes] = await Promise.all([
         fetch("/api/loans"),
+        fetch("/api/loans?includeDeleted=true"),
         fetch("/api/expenses"),
         fetch("/api/clients"),
       ])
       if (!loansRes.ok) throw new Error(`Erro ao buscar empréstimos (${loansRes.status})`)
       if (!expensesRes.ok) throw new Error(`Erro ao buscar despesas (${expensesRes.status})`)
       const loansData = await loansRes.json()
+      const allLoansData = await allLoansRes.json()
       const expensesData = await expensesRes.json()
       const clientsData = await clientsRes.json()
       setLoans(Array.isArray(loansData) ? loansData : [])
+      setDeletedLoans(Array.isArray(allLoansData) ? allLoansData.filter((l: any) => l.deleted === true) : [])
       setExpenses(Array.isArray(expensesData) ? expensesData : [])
       setClients(Array.isArray(clientsData) ? clientsData : [])
       setUpdatedAt(new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }))
@@ -268,23 +272,45 @@ export default function RelatorioEmprestimosPage() {
     return juros + multa
   }
 
+  // Lucro realizado de empréstimos APAGADOS (soft-delete): as parcelas foram removidas,
+  // mas os recebimentos continuam salvos — só somem quando o próprio recebimento é
+  // excluído em Recebimentos. Conta apenas a parte de JUROS (pagamento "só juros" = valor
+  // cheio; pagamento normal = proporção juros/total). Filtro opcional por data de pagamento.
+  const sumDeletedProfit = (subset: Loan[], from?: string, to?: string) =>
+    subset.reduce((total, l) => {
+      const interestRatio = l.totalAmount > 0 ? l.profit / l.totalAmount : 0
+      return total + l.payments.reduce((s: number, p: any) => {
+        const payStr = localDateStr(new Date(p.date))
+        if (from && payStr < from) return s
+        if (to && payStr > to) return s
+        const notes = (p.notes || "").toLowerCase()
+        const isSoJuros = notes.includes("só juros") || notes.includes("so juros") || notes.includes("parcial de juros")
+        return s + (isSoJuros ? Number(p.amount) : Number(p.amount) * interestRatio)
+      }, 0)
+    }, 0)
+
+  const deletedByType = (subset: Loan[]) =>
+    paymentFilter === "monthly" ? subset.filter(l => l.installmentCount === 1)
+      : paymentFilter === "installment" ? subset.filter(l => l.installmentCount > 1)
+      : subset
+
   const modalityStats = useMemo(() => {
     const allActive = loans.filter(l => l.status === "ACTIVE")
     // Lucro precisa continuar contando os empréstimos quitados (COMPLETED); senão o
     // lucro do card zera assim que o empréstimo é quitado. Na Rua e Contratos ficam
     // só com os ativos (um quitado não tem capital na rua nem é contrato ativo).
     const allWithProfit = loans.filter(l => l.status === "ACTIVE" || l.status === "COMPLETED")
-    const calc = (activeSubset: Loan[], profitSubset: Loan[]) => ({
+    const calc = (activeSubset: Loan[], profitSubset: Loan[], deletedSubset: Loan[]) => ({
       capitalNaRua: activeSubset.reduce((s, l) => s + remainingCapital(l), 0),
-      lucro: profitSubset.reduce((s, l) => s + getRealizedProfit(l), 0),
+      lucro: profitSubset.reduce((s, l) => s + getRealizedProfit(l), 0) + sumDeletedProfit(deletedSubset),
       contratos: activeSubset.length,
     })
     return {
-      all: calc(allActive, allWithProfit),
-      installment: calc(allActive.filter(l => l.installmentCount > 1), allWithProfit.filter(l => l.installmentCount > 1)),
-      monthly: calc(allActive.filter(l => l.installmentCount === 1), allWithProfit.filter(l => l.installmentCount === 1)),
+      all: calc(allActive, allWithProfit, deletedLoans),
+      installment: calc(allActive.filter(l => l.installmentCount > 1), allWithProfit.filter(l => l.installmentCount > 1), deletedLoans.filter(l => l.installmentCount > 1)),
+      monthly: calc(allActive.filter(l => l.installmentCount === 1), allWithProfit.filter(l => l.installmentCount === 1), deletedLoans.filter(l => l.installmentCount === 1)),
     }
-  }, [loans])
+  }, [loans, deletedLoans])
 
   const filteredExpenses = useMemo(() => {
     return expenses.filter((e) => {
@@ -510,7 +536,8 @@ export default function RelatorioEmprestimosPage() {
     }, 0)
   }, [filtered, startDate, endDate])
 
-  const lucroRealizado = jurosRecebidos + jurosMultaRecebidos
+  // Inclui os juros recebidos de empréstimos apagados dentro do período selecionado
+  const lucroRealizado = jurosRecebidos + jurosMultaRecebidos + sumDeletedProfit(deletedByType(deletedLoans), startDate, endDate)
 
   // Versões TOTAIS (sem filtro de período) usadas nos cards "Em Atraso" e "Lucro Realizado"
   const emAtrasoTotal = useMemo(() => {
@@ -556,8 +583,8 @@ export default function RelatorioEmprestimosPage() {
       : paymentFilter === "installment" ? base.filter(l => l.installmentCount > 1)
       : base
 
-    return typeFiltered.reduce((total, l) => total + getRealizedProfit(l), 0)
-  }, [loans, paymentFilter])
+    return typeFiltered.reduce((total, l) => total + getRealizedProfit(l), 0) + sumDeletedProfit(deletedByType(deletedLoans))
+  }, [loans, deletedLoans, paymentFilter])
 
   const entradas = pagamentosNoPeriodo
   // Despesas NÃO entram em nenhum cálculo (ficam só na aba Despesas)

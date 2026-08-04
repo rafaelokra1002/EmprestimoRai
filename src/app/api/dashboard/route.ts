@@ -50,21 +50,21 @@ export async function GET(request: Request) {
     const thirtyDaysAgo = new Date(startOfToday)
     thirtyDaysAgo.setUTCDate(thirtyDaysAgo.getUTCDate() - 30)
 
-    const [loansResult, overdueCountResult, overdueAmountResult, dueTodayCountResult, activeClientsResult, inactiveClientsResult, totalClientsResult, salesResult, vehiclesResult, monthlyExpensesResult, allLoansForInterestResult, totalPaymentsResult, allPaymentsMonthResult] = await withRetry(() => Promise.all([
+    const [loansResult, overdueCountResult, overdueAmountResult, dueTodayCountResult, activeClientsResult, inactiveClientsResult, totalClientsResult, salesResult, vehiclesResult, monthlyExpensesResult, allLoansForInterestResult, totalPaymentsResult, allPaymentsMonthResult, deletedLoansForInterestResult] = await withRetry(() => Promise.all([
       prisma.loan.findMany({
-        where: { userId, status: "ACTIVE", deleted: false, client: { status: { not: "DESAPARECIDO" } } },
+        where: { userId, status: "ACTIVE", deleted: false, client: { deleted: false, status: { not: "DESAPARECIDO" } } },
         include: { installments: true, payments: true, client: { select: { name: true } } },
       }),
       prisma.installment.count({
         where: {
-          loan: { userId, deleted: false, client: { status: { not: "DESAPARECIDO" } } },
+          loan: { userId, deleted: false, client: { deleted: false, status: { not: "DESAPARECIDO" } } },
           status: { not: "PAID" },
           dueDate: { lt: startOfToday },
         },
       }),
       prisma.installment.aggregate({
         where: {
-          loan: { userId, deleted: false, client: { status: { not: "DESAPARECIDO" } } },
+          loan: { userId, deleted: false, client: { deleted: false, status: { not: "DESAPARECIDO" } } },
           status: { not: "PAID" },
           dueDate: { lt: startOfToday },
         },
@@ -72,7 +72,7 @@ export async function GET(request: Request) {
       }),
       prisma.installment.count({
         where: {
-          loan: { userId, deleted: false, client: { status: { not: "DESAPARECIDO" } } },
+          loan: { userId, deleted: false, client: { deleted: false, status: { not: "DESAPARECIDO" } } },
           status: "PENDING",
           dueDate: { gte: startOfToday, lt: endOfToday },
         },
@@ -94,11 +94,11 @@ export async function GET(request: Request) {
         _sum: { amount: true },
       }),
       prisma.loan.findMany({
-        where: { userId, deleted: false, client: { status: { not: "DESAPARECIDO" } } },
+        where: { userId, deleted: false, client: { deleted: false, status: { not: "DESAPARECIDO" } } },
         select: { amount: true, totalAmount: true, profit: true, status: true, createdAt: true, contractDate: true, payments: { select: { amount: true, notes: true } }, installments: { select: { paidAmount: true } } },
       }),
       prisma.payment.aggregate({
-        where: { loan: { userId, deleted: false, client: { status: { not: "DESAPARECIDO" } } } },
+        where: { loan: { userId, deleted: false, client: { deleted: false, status: { not: "DESAPARECIDO" } } } },
         _sum: { amount: true },
       }),
       // Pagamentos do mês (recebimentos). Conta TODOS os recebimentos que existem —
@@ -107,7 +107,7 @@ export async function GET(request: Request) {
       // calcular só a parcela de JUROS de cada recebimento (card "Recebido no Mês").
       prisma.payment.findMany({
         where: {
-          loan: { userId },
+          loan: { userId, client: { deleted: false } },
           date: {
             gte: new Date(filterYear, filterMonth, 1),
             lte: new Date(filterYear, filterMonth + 1, 0, 23, 59, 59),
@@ -124,6 +124,13 @@ export async function GET(request: Request) {
             },
           },
         },
+      }),
+      // Empréstimos APAGADOS (soft-delete): parcelas removidas, mas recebimentos preservados.
+      // Usados para manter o "total de juros recebidos" (card Histórico de Pagamento) somando
+      // o que já foi realmente recebido mesmo depois do empréstimo ser excluído.
+      prisma.loan.findMany({
+        where: { userId, deleted: true, client: { deleted: false, status: { not: "DESAPARECIDO" } } },
+        select: { totalAmount: true, profit: true, payments: { select: { amount: true, notes: true } } },
       }),
     ]))
 
@@ -207,6 +214,16 @@ export async function GET(request: Request) {
         capital: acc.capital + monthInsts.reduce((s, i) => s + Math.max(0, Number(i.amount) - interestPerInst), 0),
       }
     }, { total: 0, interest: 0, capital: 0 })
+    // "Total a Receber" (card): soma de TODAS as parcelas em aberto de todos os meses,
+    // ignorando o filtro de mês — igual ao "Capital na Rua". Não depende de startOfMonth/endOfMonth.
+    const totalReceberGeral = loans.reduce(
+      (acc, loan) =>
+        acc +
+        loan.installments
+          .filter((i) => i.status !== "PAID")
+          .reduce((s, i) => s + Number(i.amount || 0), 0),
+      0
+    )
     const dueTodayInstallments = loans.flatMap((loan) =>
       loan.installments
         .filter(
@@ -397,6 +414,19 @@ export async function GET(request: Request) {
       }, 0)
     }, 0)
 
+    // Soma os juros recebidos de empréstimos apagados (soft-delete) — parte de juros de
+    // cada recebimento preservado. Assim o "total de juros recebidos" não zera ao excluir.
+    const deletedRealizedInterest = (deletedLoansForInterestResult || []).reduce((acc: number, loan: any) => {
+      const loanTotal = Number(loan.totalAmount || 0)
+      const interestRatio = loanTotal > 0 ? Number(loan.profit || 0) / loanTotal : 0
+      return acc + (loan.payments || []).reduce((sum: number, p: any) => {
+        const notes = (p.notes || "").toLowerCase()
+        const isSoJuros = notes.includes("só juros") || notes.includes("so juros") || notes.includes("parcial de juros")
+        return sum + (isSoJuros ? Number(p.amount || 0) : Number(p.amount || 0) * interestRatio)
+      }, 0)
+    }, 0)
+    const monthlyReceivedInterestTotal = monthlyReceivedInterest + deletedRealizedInterest
+
     const activeInstallments = loans.reduce(
       (acc, loan) => acc + loan.installments.filter((inst) => inst.status !== "PAID").length,
       0
@@ -527,7 +557,23 @@ export async function GET(request: Request) {
         return i.status !== "PAID" && d >= monthStartStr && d <= monthEndStr
       })
 
-      const interest = monthInstallments.length * interestPerInstallment
+      // Juros já recebidos neste mês (pagamentos "só juros" contam 100%; pagamentos
+      // normais contam só a parcela de juros). Assim, se o cliente pagou os juros do
+      // mês, o "Falta Receber" zera em vez de continuar mostrando o valor cheio.
+      const loanTotal = Number(loan.totalAmount || 0)
+      const interestRatio = loanTotal > 0 ? Number(loan.profit || 0) / loanTotal : 0
+      const interestReceivedThisMonth = loan.payments
+        .filter((p) => {
+          const pd = new Date(p.date).toISOString().slice(0, 10)
+          return pd >= monthStartStr && pd <= monthEndStr
+        })
+        .reduce((s, p) => {
+          const n = (p.notes || "").toLowerCase()
+          const isSoJuros = n.includes("só juros") || n.includes("so juros") || n.includes("parcial de juros")
+          return s + (isSoJuros ? Number(p.amount || 0) : Number(p.amount || 0) * interestRatio)
+        }, 0)
+
+      const interest = Math.max(0, monthInstallments.length * interestPerInstallment - interestReceivedThisMonth)
       const lateFees = monthInstallments
         .filter((i) => new Date(i.dueDate).toISOString().slice(0, 10) < todayStr)
         .reduce((sum, i) => {
@@ -590,6 +636,7 @@ export async function GET(request: Request) {
       monthNewLoansProfit,
       monthNewLoansCapitalPct: toPercentDelta(monthNewLoansCapital, prevMonthNewLoansCapital),
       monthInstallmentsDue,
+      totalReceberGeral,
       totalProfit,
       overdueCount,
       overdueAmount: overdueAmount + totalPendingLateFees + totalExtraCyclesInterest,
@@ -619,7 +666,7 @@ export async function GET(request: Request) {
       financials: {
         pendingInterest,
         monthlyExpenses,
-        monthlyReceivedInterest,
+        monthlyReceivedInterest: monthlyReceivedInterestTotal,
         totalPaymentsReceived,
       },
       charts: {

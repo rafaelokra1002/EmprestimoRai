@@ -178,11 +178,14 @@ export async function DELETE(
       return NextResponse.json({ error: "Sessão inválida" }, { status: 401 })
     }
 
-    // Soft delete: preserve payment history in recebimentos
-    await (prisma.client as any).updateMany({
-      where: { id: params.id, userId },
-      data: { deleted: true },
-    })
+    // Soft delete do cliente + dos empréstimos dele. Os recebimentos continuam no banco,
+    // mas empréstimo de cliente apagado nunca mais aparece no dashboard/calendário/relatório
+    // (todas as queries filtram client.deleted:false). Assim, apagar o cliente zera de fato
+    // os valores dele em todas as telas.
+    await prisma.$transaction([
+      prisma.loan.updateMany({ where: { clientId: params.id, userId }, data: { deleted: true } }),
+      (prisma.client as any).updateMany({ where: { id: params.id, userId }, data: { deleted: true } }),
+    ])
 
     return NextResponse.json({ success: true })
   } catch (error: any) {
