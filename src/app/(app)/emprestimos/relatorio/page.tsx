@@ -64,7 +64,9 @@ interface Expense {
 
 export default function RelatorioEmprestimosPage() {
   const [loans, setLoans] = useState<Loan[]>([])
-  const [deletedLoans, setDeletedLoans] = useState<Loan[]>([])
+  // Empréstimos "ocultos" com histórico preservado: apagados (loan.deleted) OU de clientes
+  // DESAPARECIDO. Não entram nas telas ativas, mas o lucro já recebido deles continua contando.
+  const [hiddenLoans, setHiddenLoans] = useState<Loan[]>([])
   const [clients, setClients] = useState<Array<{ id: string; phone: string | null }>>([])
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [loading, setLoading] = useState(true)
@@ -93,7 +95,7 @@ export default function RelatorioEmprestimosPage() {
     try {
       const [loansRes, allLoansRes, expensesRes, clientsRes] = await Promise.all([
         fetch("/api/loans"),
-        fetch("/api/loans?includeDeleted=true"),
+        fetch("/api/loans?includeHidden=true"),
         fetch("/api/expenses"),
         fetch("/api/clients"),
       ])
@@ -104,7 +106,8 @@ export default function RelatorioEmprestimosPage() {
       const expensesData = await expensesRes.json()
       const clientsData = await clientsRes.json()
       setLoans(Array.isArray(loansData) ? loansData : [])
-      setDeletedLoans(Array.isArray(allLoansData) ? allLoansData.filter((l: any) => l.deleted === true) : [])
+      // Só os ocultos (apagados OU cliente DESAPARECIDO). Os ativos normais já vêm em `loans`.
+      setHiddenLoans(Array.isArray(allLoansData) ? allLoansData.filter((l: any) => l.deleted === true || l.client?.status === "DESAPARECIDO") : [])
       setExpenses(Array.isArray(expensesData) ? expensesData : [])
       setClients(Array.isArray(clientsData) ? clientsData : [])
       setUpdatedAt(new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }))
@@ -272,10 +275,10 @@ export default function RelatorioEmprestimosPage() {
     return juros + multa
   }
 
-  // Lucro realizado de empréstimos APAGADOS (soft-delete): as parcelas foram removidas,
-  // mas os recebimentos continuam salvos — só somem quando o próprio recebimento é
-  // excluído em Recebimentos. Conta apenas a parte de JUROS (pagamento "só juros" = valor
-  // cheio; pagamento normal = proporção juros/total). Filtro opcional por data de pagamento.
+  // Lucro realizado de empréstimos OCULTOS (apagados ou de cliente DESAPARECIDO): o contrato
+  // some das telas ativas, mas os recebimentos já confirmados continuam contando. Conta apenas
+  // a parte de JUROS (pagamento "só juros" = valor cheio; pagamento normal = proporção
+  // juros/total). Filtro opcional por data de pagamento.
   const sumDeletedProfit = (subset: Loan[], from?: string, to?: string) =>
     subset.reduce((total, l) => {
       const interestRatio = l.totalAmount > 0 ? l.profit / l.totalAmount : 0
@@ -306,11 +309,11 @@ export default function RelatorioEmprestimosPage() {
       contratos: activeSubset.length,
     })
     return {
-      all: calc(allActive, allWithProfit, deletedLoans),
-      installment: calc(allActive.filter(l => l.installmentCount > 1), allWithProfit.filter(l => l.installmentCount > 1), deletedLoans.filter(l => l.installmentCount > 1)),
-      monthly: calc(allActive.filter(l => l.installmentCount === 1), allWithProfit.filter(l => l.installmentCount === 1), deletedLoans.filter(l => l.installmentCount === 1)),
+      all: calc(allActive, allWithProfit, hiddenLoans),
+      installment: calc(allActive.filter(l => l.installmentCount > 1), allWithProfit.filter(l => l.installmentCount > 1), hiddenLoans.filter(l => l.installmentCount > 1)),
+      monthly: calc(allActive.filter(l => l.installmentCount === 1), allWithProfit.filter(l => l.installmentCount === 1), hiddenLoans.filter(l => l.installmentCount === 1)),
     }
-  }, [loans, deletedLoans])
+  }, [loans, hiddenLoans])
 
   const filteredExpenses = useMemo(() => {
     return expenses.filter((e) => {
@@ -537,7 +540,7 @@ export default function RelatorioEmprestimosPage() {
   }, [filtered, startDate, endDate])
 
   // Inclui os juros recebidos de empréstimos apagados dentro do período selecionado
-  const lucroRealizado = jurosRecebidos + jurosMultaRecebidos + sumDeletedProfit(deletedByType(deletedLoans), startDate, endDate)
+  const lucroRealizado = jurosRecebidos + jurosMultaRecebidos + sumDeletedProfit(deletedByType(hiddenLoans), startDate, endDate)
 
   // Versões TOTAIS (sem filtro de período) usadas nos cards "Em Atraso" e "Lucro Realizado"
   const emAtrasoTotal = useMemo(() => {
@@ -583,8 +586,8 @@ export default function RelatorioEmprestimosPage() {
       : paymentFilter === "installment" ? base.filter(l => l.installmentCount > 1)
       : base
 
-    return typeFiltered.reduce((total, l) => total + getRealizedProfit(l), 0) + sumDeletedProfit(deletedByType(deletedLoans))
-  }, [loans, deletedLoans, paymentFilter])
+    return typeFiltered.reduce((total, l) => total + getRealizedProfit(l), 0) + sumDeletedProfit(deletedByType(hiddenLoans))
+  }, [loans, hiddenLoans, paymentFilter])
 
   const entradas = pagamentosNoPeriodo
   // Despesas NÃO entram em nenhum cálculo (ficam só na aba Despesas)
@@ -606,6 +609,7 @@ export default function RelatorioEmprestimosPage() {
         const isOverdue = nextInst && toDateStr(new Date(nextInst.dueDate)) < todayStr
         return {
           id: l.id,
+          clientId: l.client.id,
           clientName: l.client.name,
           emprestado: l.amount,
           pago: paid,
@@ -657,6 +661,7 @@ export default function RelatorioEmprestimosPage() {
 
         return {
           id: loan.id,
+          clientId: loan.client.id,
           clientName: loan.client.name,
           atraso,
           emprestado: loan.amount,
@@ -667,6 +672,25 @@ export default function RelatorioEmprestimosPage() {
       .filter((loan): loan is NonNullable<typeof loan> => loan !== null)
       .sort((a, b) => new Date(a.vencimento).getTime() - new Date(b.vencimento).getTime())
   }, [loans, paymentFilter, startDate, endDate, clients])
+
+  // Lista de "Na Rua" mostra só contratos em dia/renovados (atrasados vão para a outra lista)
+  const contratosAtivosLista = useMemo(
+    () => contratosAtivos.filter((c) => c.status === "ON_TIME"),
+    [contratosAtivos]
+  )
+  // Contador "Na Rua": total de CLIENTES com contrato em aberto (em dia + renovado + atrasado).
+  // Contador "Em Atraso": só os clientes atrasados.
+  const totalClientesAtraso = useMemo(
+    () => new Set(contratosEmAtraso.map((c) => c.clientId)).size,
+    [contratosEmAtraso]
+  )
+  const totalClientesAtivos = useMemo(
+    () => new Set([
+      ...contratosAtivosLista.map((c) => c.clientId),
+      ...contratosEmAtraso.map((c) => c.clientId),
+    ]).size,
+    [contratosAtivosLista, contratosEmAtraso]
+  )
 
   // Monthly evolution chart data (last 6 months)
   const monthlyEvolution = useMemo(() => {
@@ -1089,7 +1113,7 @@ export default function RelatorioEmprestimosPage() {
               <h3 className="font-bold text-gray-900 dark:text-zinc-100">Contratos Ativos (Na Rua)</h3>
             </div>
             <div className="h-7 w-7 rounded-full border border-gray-300 dark:border-zinc-700 flex items-center justify-center">
-              <span className="text-xs text-gray-700 dark:text-zinc-300">{contratosAtivos.length}</span>
+              <span className="text-xs text-gray-700 dark:text-zinc-300">{totalClientesAtivos}</span>
             </div>
           </div>
 
@@ -1110,12 +1134,12 @@ export default function RelatorioEmprestimosPage() {
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-8 text-gray-500 dark:text-zinc-400">Carregando...</TableCell>
                   </TableRow>
-                ) : contratosAtivos.length === 0 ? (
+                ) : contratosAtivosLista.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-8 text-gray-500 dark:text-zinc-400">Nenhum contrato ativo</TableCell>
                   </TableRow>
                 ) : (
-                  contratosAtivos.map((c) => (
+                  contratosAtivosLista.map((c) => (
                     <TableRow key={c.id} className="border-gray-200 dark:border-zinc-800/50">
                       <TableCell className="font-medium text-gray-900 dark:text-zinc-100">{c.clientName}</TableCell>
                       <TableCell className="text-center text-gray-700 dark:text-zinc-300">{formatCurrency(c.emprestado)}</TableCell>
@@ -1150,7 +1174,7 @@ export default function RelatorioEmprestimosPage() {
               <h3 className="font-bold text-red-500 dark:text-red-400">Contratos em Atraso</h3>
             </div>
             <div className="flex h-7 min-w-7 items-center justify-center rounded-full bg-red-500 px-2 text-xs font-semibold text-white">
-              {contratosEmAtraso.length}
+              {totalClientesAtraso}
             </div>
           </div>
 

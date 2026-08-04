@@ -125,11 +125,16 @@ export async function GET(request: Request) {
           },
         },
       }),
-      // Empréstimos APAGADOS (soft-delete): parcelas removidas, mas recebimentos preservados.
-      // Usados para manter o "total de juros recebidos" (card Histórico de Pagamento) somando
-      // o que já foi realmente recebido mesmo depois do empréstimo ser excluído.
+      // Empréstimos OCULTOS com histórico preservado: apagados (soft-delete de loan) OU de
+      // clientes DESAPARECIDO. O contrato some das telas ativas, mas os recebimentos já
+      // confirmados continuam somando no "total de juros recebidos" (card Histórico de
+      // Pagamento). Só exclui cliente apagado.
       prisma.loan.findMany({
-        where: { userId, deleted: true, client: { deleted: false, status: { not: "DESAPARECIDO" } } },
+        where: {
+          userId,
+          client: { deleted: false },
+          OR: [{ deleted: true }, { client: { status: "DESAPARECIDO" } }],
+        },
         select: { totalAmount: true, profit: true, payments: { select: { amount: true, notes: true } } },
       }),
     ]))
@@ -414,8 +419,9 @@ export async function GET(request: Request) {
       }, 0)
     }, 0)
 
-    // Soma os juros recebidos de empréstimos apagados (soft-delete) — parte de juros de
-    // cada recebimento preservado. Assim o "total de juros recebidos" não zera ao excluir.
+    // Soma os juros recebidos de empréstimos ocultos (apagados OU de cliente DESAPARECIDO) —
+    // parte de juros de cada recebimento preservado. Assim o "total de juros recebidos" não
+    // zera ao excluir o empréstimo nem ao marcar o cliente como desaparecido.
     const deletedRealizedInterest = (deletedLoansForInterestResult || []).reduce((acc: number, loan: any) => {
       const loanTotal = Number(loan.totalAmount || 0)
       const interestRatio = loanTotal > 0 ? Number(loan.profit || 0) / loanTotal : 0

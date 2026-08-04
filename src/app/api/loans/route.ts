@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { Prisma } from "@prisma/client"
 import { loanSchema } from "@/lib/validations"
 import { calculateLoan, generateInstallmentDates, resolveDailyInterestAmount } from "@/lib/utils"
 import { normalizeInstallmentsFromPayments } from "@/lib/loan-logic"
@@ -15,9 +16,18 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url)
     const includeDeleted = searchParams.get("includeDeleted") === "true"
+    // Modo histórico (Recebimentos/Relatório): traz TAMBÉM clientes DESAPARECIDO e
+    // empréstimos apagados — só exclui cliente apagado. Assim os recebimentos já
+    // confirmados continuam aparecendo mesmo com o contrato oculto. Nas telas ativas
+    // (lista de Empréstimos, Calendário) NÃO se usa includeHidden, então o DESAPARECIDO
+    // continua oculto.
+    const includeHidden = searchParams.get("includeHidden") === "true"
+    const clientWhere: Prisma.ClientWhereInput = includeHidden
+      ? { deleted: false }
+      : { deleted: false, status: { not: "DESAPARECIDO" } }
 
     const loans = await prisma.loan.findMany({
-      where: { userId: (session.user as any).id, ...(includeDeleted ? {} : { deleted: false }), client: { deleted: false, status: { not: "DESAPARECIDO" } } },
+      where: { userId: (session.user as any).id, ...((includeDeleted || includeHidden) ? {} : { deleted: false }), client: clientWhere },
       include: {
         client: { select: { id: true, name: true, photo: true, city: true, status: true } },
         installments: { orderBy: { number: "asc" } },
