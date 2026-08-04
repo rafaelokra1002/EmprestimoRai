@@ -2,9 +2,27 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { calculateClientScore } from "@/lib/score"
 
 function parsePaymentDate(value: string) {
   return new Date(value.includes("T") ? value : `${value}T12:00:00`)
+}
+
+/** Recalcula e persiste o score do cliente a partir de todos os seus empréstimos. */
+async function recalcClientScore(clientId: string) {
+  const loans = await prisma.loan.findMany({
+    where: { clientId, deleted: false },
+    select: {
+      status: true,
+      profit: true,
+      installments: {
+        select: { status: true, dueDate: true, paidDate: true, amount: true, paidAmount: true },
+      },
+      payments: { select: { amount: true, notes: true } },
+    },
+  })
+  const newScore = calculateClientScore(loans)
+  await prisma.client.update({ where: { id: clientId }, data: { score: newScore } })
 }
 
 function extractTaggedAmount(notes: string | undefined, tag: string) {
@@ -91,28 +109,14 @@ export async function POST(request: Request) {
           })
         }
 
-        // Recompute client score from all paid installments across all loans
+        // Recalcula o score do cliente seguindo a referência documentada
         const loan = await prisma.loan.findUnique({
           where: { id: loanId },
           select: { clientId: true },
         })
 
         if (loan) {
-          const paidInstallments = await prisma.installment.findMany({
-            where: { loan: { clientId: loan.clientId }, status: "PAID" },
-            select: { paidDate: true, dueDate: true },
-          })
-          let newScore = 100
-          for (const inst of paidInstallments) {
-            if (inst.paidDate) {
-              newScore += new Date(inst.paidDate) <= new Date(inst.dueDate) ? 10 : -15
-            }
-          }
-          newScore = Math.min(150, Math.max(0, newScore))
-          await prisma.client.update({
-            where: { id: loan.clientId },
-            data: { score: newScore },
-          })
+          await recalcClientScore(loan.clientId)
         }
       }
     }
@@ -180,6 +184,11 @@ export async function DELETE(request: Request) {
         where: { id: payment.loanId },
         data: { status: "ACTIVE" },
       })
+    }
+
+    // Recalcula o score do cliente após remover o pagamento
+    if (payment.loan?.clientId) {
+      await recalcClientScore(payment.loan.clientId)
     }
 
     return NextResponse.json({ success: true })

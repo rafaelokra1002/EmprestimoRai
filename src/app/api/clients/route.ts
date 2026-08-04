@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { clientSchema } from "@/lib/validations"
 import { calculateLoan } from "@/lib/utils"
+import { calculateClientScore } from "@/lib/score"
 import { ZodError } from "zod"
 
 async function resolveSessionUserId(session: any) {
@@ -70,6 +71,7 @@ export async function GET(request: Request) {
                     paidAmount: true,
                     status: true,
                     dueDate: true,
+                    paidDate: true,
                   },
                 },
               },
@@ -91,6 +93,22 @@ export async function GET(request: Request) {
       const { documents: _docs, ...rest } = c
       return { ...rest, photo }
     })
+
+    // Recalcula o score automaticamente (reflete atrasos que surgiram com o tempo).
+    // Só é possível com os dados das parcelas carregados (página de Score).
+    if (includeInstallments) {
+      const updates: Promise<any>[] = []
+      for (const c of clientsWithPhoto) {
+        const newScore = calculateClientScore(c.loans || [])
+        if (newScore !== c.score) {
+          c.score = newScore
+          updates.push(
+            prisma.client.update({ where: { id: c.id }, data: { score: newScore } }).catch(() => {})
+          )
+        }
+      }
+      if (updates.length) await Promise.all(updates)
+    }
 
     return NextResponse.json(clientsWithPhoto)
   } catch (error: any) {
