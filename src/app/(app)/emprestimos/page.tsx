@@ -2133,7 +2133,7 @@ export default function EmprestimosPage() {
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-gray-500 dark:text-zinc-400">Só Juros (por parcela):</span>
                           <span className="text-sm font-bold tabular-nums text-gray-900 dark:text-zinc-100">
-                            {jurosMultiplier >= 1 && (
+                            {jurosMultiplier >= 1 && loan.installmentCount === 1 && (
                               <span className="mr-1 relative -top-0.5 text-[9px] font-medium text-orange-500 dark:text-orange-400">{jurosMultiplier + 1}x</span>
                             )}
                             {formatCurrency(intPerInst)}

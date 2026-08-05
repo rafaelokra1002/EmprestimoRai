@@ -554,20 +554,26 @@ export async function GET(request: Request) {
       // Subtrai 3h para obter hora local Brasil (UTC-3) e evitar cruzamento da meia-noite UTC
       const nowBrazil = new Date(now.getTime() - 3 * 60 * 60 * 1000)
       const todayStr = nowBrazil.toISOString().slice(0, 10)
-      const mStart = filterMonth + 1
-      const monthStartStr = showAll ? "0000-01-01" : `${filterYear}-${String(mStart).padStart(2, "0")}-01`
-      const lastDay = new Date(Date.UTC(filterYear, filterMonth + 1, 0)).getUTCDate()
-      const monthEndStr = showAll ? "2100-12-31" : `${filterYear}-${String(mStart).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`
+      // "Falta Receber" é sempre do MÊS vigente (sem filtro) ou do mês selecionado (com filtro):
+      // conta juros+multas de parcelas em aberto com vencimento ATÉ o fim desse mês — NÃO pega
+      // parcelas de meses futuros. Sem filtro, inclui também as vencidas de meses anteriores
+      // (ainda devidas). Antes, sem filtro, o intervalo ia até 2100 e somava parcelas futuras.
+      const frYear = showAll ? bY : filterYear
+      const frMonth = showAll ? bM : filterMonth
+      const mStart = frMonth + 1
+      const monthStartStr = showAll ? "0000-01-01" : `${frYear}-${String(mStart).padStart(2, "0")}-01`
+      const lastDay = new Date(Date.UTC(frYear, frMonth + 1, 0)).getUTCDate()
+      const monthEndStr = `${frYear}-${String(mStart).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`
       const monthInstallments = loan.installments.filter((i) => {
         const d = new Date(i.dueDate).toISOString().slice(0, 10)
         return i.status !== "PAID" && d >= monthStartStr && d <= monthEndStr
       })
 
-      // Juros já recebidos neste mês (pagamentos "só juros" contam 100%; pagamentos
-      // normais contam só a parcela de juros). Assim, se o cliente pagou os juros do
-      // mês, o "Falta Receber" zera em vez de continuar mostrando o valor cheio.
-      const loanTotal = Number(loan.totalAmount || 0)
-      const interestRatio = loanTotal > 0 ? Number(loan.profit || 0) / loanTotal : 0
+      // Desconta só os pagamentos "só juros" do mês. Esses renovam a parcela (que continua
+      // sendo contada em monthInstallments), então sem o desconto o "Falta Receber" mostraria
+      // o valor cheio mesmo após o cliente pagar os juros. Pagamento de parcela normal NÃO é
+      // descontado: a parcela paga já sai do cálculo (fica PAID), então descontá-la também
+      // subtraía o valor em dobro.
       const interestReceivedThisMonth = loan.payments
         .filter((p) => {
           const pd = new Date(p.date).toISOString().slice(0, 10)
@@ -576,19 +582,44 @@ export async function GET(request: Request) {
         .reduce((s, p) => {
           const n = (p.notes || "").toLowerCase()
           const isSoJuros = n.includes("só juros") || n.includes("so juros") || n.includes("parcial de juros")
-          return s + (isSoJuros ? Number(p.amount || 0) : Number(p.amount || 0) * interestRatio)
+          return s + (isSoJuros ? Number(p.amount || 0) : 0)
         }, 0)
 
-      const interest = Math.max(0, monthInstallments.length * interestPerInstallment - interestReceivedThisMonth)
-      const lateFees = monthInstallments
-        .filter((i) => new Date(i.dueDate).toISOString().slice(0, 10) < todayStr)
-        .reduce((sum, i) => {
-          const dueStr = new Date(i.dueDate).toISOString().slice(0, 10)
+      // Juros de ciclos extras: empréstimo mensal (1 parcela) vencido há 30+ dias acumula
+      // um novo período de juros a cada 30 dias — igual ao card "Em Atraso" e à tela de
+      // renegociação (ex.: 31 dias vencido = 2 ciclos de juros). Sem isso o "Falta Receber"
+      // mostrava só 1 ciclo.
+      let extraCyclesInterest = 0
+      if (loan.installmentCount === 1) {
+        const overdueInst = monthInstallments.find(
+          (i) => new Date(i.dueDate).toISOString().slice(0, 10) < todayStr
+        )
+        if (overdueInst) {
+          const dueStr = new Date(overdueInst.dueDate).toISOString().slice(0, 10)
           const daysOver = Math.max(0, Math.floor(
             (new Date(todayStr).getTime() - new Date(dueStr).getTime()) / 86400000
           ))
-          return sum + dailyRate * daysOver + (daysOver > 0 ? Number(loan.penaltyFee || 0) : 0)
-        }, 0)
+          const extraCycles = Math.floor(daysOver / 30)
+          if (extraCycles > 0) extraCyclesInterest = extraCycles * interestPerInstallment
+        }
+      }
+
+      // Só conta as parcelas que JÁ VENCERAM (vencimento anterior a hoje). Parcela que vence
+      // hoje ou mais pra frente no mês ainda não é "falta receber" (ex.: parcela de agosto que
+      // ainda não chegou no vencimento não entra). A multa já usava essa regra; agora os juros
+      // seguem a mesma — assim o card bate com o que está de fato vencido.
+      const overdueMonthInstallments = monthInstallments.filter(
+        (i) => new Date(i.dueDate).toISOString().slice(0, 10) < todayStr
+      )
+
+      const interest = Math.max(0, overdueMonthInstallments.length * interestPerInstallment + extraCyclesInterest - interestReceivedThisMonth)
+      const lateFees = overdueMonthInstallments.reduce((sum, i) => {
+        const dueStr = new Date(i.dueDate).toISOString().slice(0, 10)
+        const daysOver = Math.max(0, Math.floor(
+          (new Date(todayStr).getTime() - new Date(dueStr).getTime()) / 86400000
+        ))
+        return sum + dailyRate * daysOver + (daysOver > 0 ? Number(loan.penaltyFee || 0) : 0)
+      }, 0)
 
       return acc + interest + lateFees
     }, 0)
