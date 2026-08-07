@@ -46,6 +46,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Dados incompletos" }, { status: 400 })
     }
 
+    // Segurança: só permite registrar pagamento em empréstimo do próprio usuário.
+    const userId = (session.user as any).id
+    const ownedLoan = await prisma.loan.findFirst({
+      where: { id: loanId, userId },
+      select: { id: true },
+    })
+    if (!ownedLoan) {
+      return NextResponse.json({ error: "Empréstimo não encontrado" }, { status: 404 })
+    }
+
     const paymentDate = parsePaymentDate(date)
 
     // Register payment
@@ -60,8 +70,9 @@ export async function POST(request: Request) {
 
     // Update installment if provided
     if (installmentId) {
-      const installment = await prisma.installment.findUnique({
-        where: { id: installmentId },
+      // Escopo ao empréstimo já validado como do usuário — evita mexer em parcela de outro contrato.
+      const installment = await prisma.installment.findFirst({
+        where: { id: installmentId, loanId },
       })
 
       if (installment) {
@@ -165,10 +176,11 @@ export async function DELETE(request: Request) {
 
     const payment = await prisma.payment.findUnique({
       where: { id },
-      include: { loan: { select: { id: true, clientId: true } } },
+      include: { loan: { select: { id: true, clientId: true, userId: true } } },
     })
 
-    if (!payment) {
+    // Segurança: só permite excluir recebimento de empréstimo do próprio usuário.
+    if (!payment || payment.loan?.userId !== (session.user as any).id) {
       return NextResponse.json({ error: "Pagamento não encontrado" }, { status: 404 })
     }
 
