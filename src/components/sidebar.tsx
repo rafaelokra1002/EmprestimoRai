@@ -112,7 +112,7 @@ export function Sidebar() {
         )}
         style={{ background: "linear-gradient(180deg, var(--sidebar-from) 0%, var(--sidebar-via) 50%, var(--sidebar-to) 100%)" }}
       >
-        <div className="flex flex-col border-b border-white/10 p-6">
+        <div className="flex flex-col p-6">
           <div className="flex items-center gap-2.5">
             <img src="/logo.svg" alt="SP Cobrança Fácil" className="h-9 w-9 shrink-0" />
             <span className="text-lg font-bold text-white leading-tight">SP Cobrança Fácil</span>
@@ -120,7 +120,7 @@ export function Sidebar() {
           <span className="pl-[2.875rem] text-[11px] text-violet-200 leading-tight">Gestão Financeira</span>
         </div>
 
-        <nav className="p-3 space-y-1 flex-1 overflow-y-auto">
+        <nav className="p-3 space-y-1">
           {/* Top special items */}
           <div className="space-y-2.5 mb-3">
             {topItems.map((item) => {

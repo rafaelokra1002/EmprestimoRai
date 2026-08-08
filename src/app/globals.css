@@ -82,23 +82,82 @@
 
 /* Scrollbar styling */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 10px;
+  height: 10px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #d1d5db;
-  border-radius: 3px;
+  background: #cbd5e1;
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 .dark ::-webkit-scrollbar-thumb {
-  background: #3f3f46;
+  background: #52525b;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #9ca3af;
 }
 .dark ::-webkit-scrollbar-thumb:hover {
-  background: #52525b;
+  background: #71717a;
+}
+/* Setas (↑ ↓) no fim da barra — traço grosso e bem visível */
+::-webkit-scrollbar-button:single-button:vertical:decrement {
+  height: 14px;
+  background: no-repeat center / 11px 11px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'><path d='M6 15l6-6 6 6'/></svg>");
+}
+::-webkit-scrollbar-button:single-button:vertical:increment {
+  height: 14px;
+  background: no-repeat center / 11px 11px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>");
+}
+.dark ::-webkit-scrollbar-button:single-button:vertical:decrement {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23f4f4f5' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'><path d='M6 15l6-6 6 6'/></svg>");
+}
+.dark ::-webkit-scrollbar-button:single-button:vertical:increment {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23f4f4f5' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>");
+}
+::-webkit-scrollbar-button:single-button:vertical:decrement:hover,
+::-webkit-scrollbar-button:single-button:vertical:increment:hover {
+  background-color: rgba(148, 163, 184, 0.18);
+}
+
+/* Barra de rolagem visível (diálogos, ex.: Registrar Pagamento) */
+.scrollbar-visible {
+  scrollbar-width: auto;
+  scrollbar-color: #a1a1aa transparent;
+}
+.dark .scrollbar-visible {
+  scrollbar-color: #6b7280 transparent;
+}
+.scrollbar-visible::-webkit-scrollbar {
+  width: 12px;
+}
+.scrollbar-visible::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 6px;
+}
+.dark .scrollbar-visible::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.06);
+}
+.scrollbar-visible::-webkit-scrollbar-thumb {
+  background: #a1a1aa;
+  border-radius: 6px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+.dark .scrollbar-visible::-webkit-scrollbar-thumb {
+  background: #6b7280;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+.scrollbar-visible::-webkit-scrollbar-thumb:hover {
+  background: #71717a;
 }
 
 /* Selection color */
