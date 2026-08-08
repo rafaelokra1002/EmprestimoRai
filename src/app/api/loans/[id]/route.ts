@@ -282,6 +282,9 @@ export async function PUT(
     if (typeof body.dailyInterestAmount === "number") {
       updateData.dailyInterestAmount = body.dailyInterestAmount
     }
+    if (typeof body.penaltyFee === "number" && body.penaltyFee >= 0) {
+      updateData.penaltyFee = body.penaltyFee
+    }
     if (Array.isArray(body.tags)) {
       updateData.tags = body.tags.filter((t: unknown) => typeof t === "string" && (t as string).trim())
     }
