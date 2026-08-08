@@ -1,5 +1,3 @@
-import { resolveDailyInterestAmount } from "@/lib/utils"
-
 /**
  * Lógica de empréstimos - 4 camadas de cálculo
  *
@@ -88,21 +86,13 @@ export function calculateOverdueInterest(
 // ─── 3. Multa Diária ─────────────────────────────────────────────────
 
 /**
- * Retorna o valor da multa diária em R$.
- * Prioridade: loan.dailyInterestAmount → fallback calculado → 0
+ * Retorna o valor da multa/juros diário de atraso em R$.
+ * Vale SÓ quando configurado (dailyInterestAmount > 0). Não há mais padrão automático:
+ * empréstimo sem configuração não tem juro de atraso (0), e o "Excluir multa" zera de fato.
  */
 export function getOverdueDailyAmountBRL(loan: Pick<LoanData, "dailyInterest" | "dailyInterestAmount" | "amount" | "interestRate" | "modality">): number {
-  if (!loan.dailyInterest && (loan.dailyInterestAmount ?? 0) <= 0 && loan.interestRate > 0) {
-    return resolveDailyInterestAmount(true, undefined, loan.amount, loan.interestRate, loan.modality)
-  }
-
-  return resolveDailyInterestAmount(
-    loan.dailyInterest,
-    loan.dailyInterestAmount,
-    loan.amount,
-    loan.interestRate,
-    loan.modality
-  )
+  const amount = loan.dailyInterestAmount ?? 0
+  return amount > 0 ? Math.round(amount * 100) / 100 : 0
 }
 
 function atStartOfDay(value: Date | string): Date {
