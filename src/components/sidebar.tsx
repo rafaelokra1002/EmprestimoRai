@@ -33,6 +33,11 @@ import {
   MapPin,
   GraduationCap,
   MessageSquareText,
+  Search,
+  Headphones,
+  FileCheck,
+  LifeBuoy,
+  Crown,
 } from "lucide-react"
 import { useState } from "react"
 
@@ -41,11 +46,14 @@ const cardColors: Record<string, { card: string; badge: string; icon: string }> 
   blue: { card: "border-blue-500/30 bg-gradient-to-br from-blue-900/60 to-blue-950/20", badge: "bg-blue-500/20 ring-blue-500/30", icon: "text-blue-400" },
   green: { card: "border-green-500/30 bg-gradient-to-br from-green-900/60 to-green-950/20", badge: "bg-green-500/20 ring-green-500/30", icon: "text-green-400" },
   amber: { card: "border-amber-500/30 bg-gradient-to-br from-amber-900/60 to-amber-950/20", badge: "bg-amber-500/20 ring-amber-500/30", icon: "text-amber-400" },
+  purple: { card: "border-purple-500/30 bg-gradient-to-br from-purple-900/60 to-purple-950/20", badge: "bg-purple-500/20 ring-purple-500/30", icon: "text-purple-400" },
 }
 
 const topItems = [
   { href: "/perfil", label: "Meu Perfil", subtitle: "Ver informações", icon: User, color: "blue" },
   { href: "/funcionarios", label: "Funcionários", subtitle: "Cadastrar funcionários", icon: UserCog, color: "green" },
+  { href: "#", label: "Meus Planos", subtitle: "Assinatura e upgrades", icon: Crown, color: "amber" },
+  { href: "#", label: "Consultas", subtitle: "SPC, Serasa, CPF e mais", icon: Search, color: "purple" },
 ]
 
 const highlightItem = {
@@ -56,19 +64,24 @@ const highlightItem = {
   color: "amber",
 }
 
-const menuItems = [
+const menuItems: { href: string; label: string; icon: any; badge?: string }[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutGrid },
+  { href: "#", label: "Central de Atendimento", icon: Headphones, badge: "Beta" },
   { href: "/clientes", label: "Clientes", icon: Users },
+  { href: "#", label: "Consultas", icon: Search },
   { href: "/score", label: "Score de Clientes", icon: Award },
   { href: "/emprestimos", label: "Empréstimos", icon: DollarSign },
+  { href: "/vendas", label: "Vendas e Contratos", icon: ShoppingCart },
   { href: "/emprestimos/relatorio", label: "Relatório Empréstimos", icon: BarChart3 },
   { href: "/calendario", label: "Calendário de Cobranças", icon: Calendar },
   { href: "/simulador", label: "Simulador", icon: Calculator },
   { href: "/contas", label: "Caixa", icon: CreditCard },
   { href: "/despesas", label: "Despesas", icon: Receipt },
+  { href: "#", label: "Desconto de Cheque", icon: FileCheck },
   { href: "/templates", label: "Templates", icon: MessageSquareText },
   { href: "/backup", label: "Backup", icon: Download },
   { href: "/clientes/desaparecido", label: "Desaparecido", icon: XCircle },
+  { href: "#", label: "Suporte", icon: LifeBuoy },
   { href: "/aulas", label: "Aulas", icon: GraduationCap },
   { href: "/configuracoes", label: "Configurações", icon: Settings },
 ]
@@ -126,7 +139,7 @@ export function Sidebar() {
             {topItems.map((item) => {
               return (
                 <Link
-                  key={item.href}
+                  key={item.label}
                   href={item.href}
                   onClick={() => setIsOpen(false)}
                   className={cn(
@@ -186,7 +199,7 @@ export function Sidebar() {
             if (hardNavigationRoutes.has(item.href)) {
               return (
                 <a
-                  key={item.href}
+                  key={item.label}
                   href={item.href}
                   onClick={() => setIsOpen(false)}
                   className={className}
@@ -200,13 +213,16 @@ export function Sidebar() {
 
             return (
               <Link
-                key={item.href}
+                key={item.label}
                 href={item.href}
                 onClick={() => setIsOpen(false)}
                 className={className}
               >
                 <item.icon className={iconCls} />
                 <span className="whitespace-nowrap">{item.label}</span>
+                {item.badge && (
+                  <span className="ml-auto rounded-full bg-green-500/20 px-1.5 py-0.5 text-[9px] font-semibold text-green-300">{item.badge}</span>
+                )}
                 {isActive && <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-amber-400" />}
               </Link>
             )

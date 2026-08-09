@@ -6,12 +6,15 @@ import {
   AlertTriangle,
   Bell,
   Calendar,
+  Car,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Clock3,
   DollarSign,
+  FileText,
   Filter,
+  Package,
   Percent,
   Plus,
   Receipt,
@@ -160,8 +163,8 @@ export default function DashboardPage() {
     boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)",
     color: isDark ? "#f4f4f5" : "#374151",
   }
-  const axisColor = isDark ? "#71717a" : "#6b7280"
-  const gridColor = isDark ? "#3f3f46" : "#e5e7eb"
+  const axisColor = isDark ? "#a1a1aa" : "#6b7280"
+  const gridColor = isDark ? "rgba(255,255,255,0.08)" : "#e5e7eb"
 
   const fetchDashboard = () => {
     const url = filterActive
@@ -305,17 +308,17 @@ export default function DashboardPage() {
         ? { label: "Sem dados", cls: "bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400" }
         : { label: "Crítico", cls: "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400" }
   const healthBar = healthLevel === "good" ? "bg-primary" : healthLevel === "warn" ? "bg-orange-400" : healthLevel === "empty" ? "bg-gray-300 dark:bg-zinc-600" : "bg-red-500"
-  // Fundo do card inteiro conforme o nível (vermelho no Crítico, igual ao exemplo)
+  // Fundo do card inteiro conforme o nível (gradiente forte, igual ao CobraFácil)
   const healthCardCls = healthLevel === "good"
-    ? "border-primary/30 bg-gradient-to-br from-primary/15 to-primary/5 dark:from-green-950/70 dark:to-green-900/30"
+    ? "border-[#10b981]/30 bg-gradient-to-br from-[#0e6b4d] via-[#0a3527] to-[#062418]"
     : healthLevel === "warn"
-      ? "border-orange-400 dark:border-orange-700 bg-orange-100 dark:bg-orange-950/30"
+      ? "border-[#d4a574]/30 bg-gradient-to-br from-[#6b5228] via-[#3a2b14] to-[#1f1408]"
       : healthLevel === "empty"
-        ? "border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900/40"
-        : "border-red-400 dark:border-red-900/60 bg-gradient-to-br from-red-100 to-red-50 dark:from-red-950/80 dark:to-red-900/40"
-  // Estilos dos sub-cards: verde (bom) usa primary; vermelho (ruim)
-  const goodCardCls = "border-primary/30 bg-primary/5 dark:bg-primary/15"
-  const badCardCls = "border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30"
+        ? "border-white/10 bg-gradient-to-br from-[#3a3a40] via-[#1f1f22] to-[#111114]"
+        : "border-[#ef4444]/35 bg-gradient-to-br from-[#7f1d1d] via-[#3a0f0f] to-[#1f0608]"
+  // Sub-cards translúcidos escuros para contrastar sobre o gradiente
+  const goodCardCls = "border-[#10b981]/30 bg-black/25"
+  const badCardCls = "border-[#ef4444]/30 bg-black/25"
   const overdueAmt = data?.overdueAmount || 0
   const monthlyInterest = data?.charts?.interestTrend || []
   const interestChartData = monthlyInterest.map((item, index) => {
@@ -484,262 +487,251 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* ── Row 1 — 4 colored KPI cards ────────────────────────────────────── */}
+      {/* ── Resumo da Semana ───────────────────────────────────────────────── */}
+      <div className="rounded-xl border border-[#10b981]/25 dark:border-[#10b981]/20 bg-[#e8f6ef] dark:bg-gradient-to-br dark:from-[#0e2a1c] dark:via-[#0a1f14] dark:to-[#07150e] p-4 sm:p-5">
+        <div className="mb-4 flex items-center gap-2">
+          <Calendar className="h-4 w-4 text-[#059669] dark:text-[#34d399]" />
+          <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Resumo da Semana</p>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div className="rounded-lg border border-[#10b981]/15 dark:border-[#10b981]/15 bg-white dark:bg-black/25 p-4">
+            <div className="mb-1 flex items-center gap-1.5 text-xs text-gray-500 dark:text-white/60"><FileText className="h-3.5 w-3.5" /> Contratos</div>
+            <p className="text-2xl font-bold tabular-nums text-[#059669] dark:text-[#34d399]">{data?.weeklySummary?.contractsThisWeek || 0}</p>
+            <p className="text-xs text-gray-400 dark:text-white/50">esta semana</p>
+          </div>
+          <div className="rounded-lg border border-[#10b981]/15 dark:border-[#10b981]/15 bg-white dark:bg-black/25 p-4">
+            <div className="mb-1 flex items-center gap-1.5 text-xs text-gray-500 dark:text-white/60"><DollarSign className="h-3.5 w-3.5" /> Recebido</div>
+            <p className="text-2xl font-bold tabular-nums text-[#059669] dark:text-[#34d399]">{formatCurrency(data?.weeklySummary?.receivedThisWeek || 0)}</p>
+            <p className="text-xs text-gray-400 dark:text-white/50">esta semana</p>
+          </div>
+          <div className="rounded-lg border border-[#10b981]/15 dark:border-[#10b981]/15 bg-white dark:bg-black/25 p-4">
+            <div className="mb-1 flex items-center gap-1.5 text-xs text-gray-500 dark:text-white/60"><Clock3 className="h-3.5 w-3.5" /> Vence Hoje</div>
+            <p className="text-2xl font-bold tabular-nums text-[#c2841c] dark:text-[#e0b878]">{data?.weeklySummary?.dueToday || 0}</p>
+            <p className="text-xs text-gray-400 dark:text-white/50">cobranças</p>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Contadores — Empréstimos / Produtos / Veículos / Contratos ──────── */}
+      <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
+        {/* Empréstimos — verde */}
+        <div className="rounded-xl border border-[#10b981]/25 bg-gradient-to-br from-[#0e6b4d] via-[#0a3527] to-[#062418] p-4">
+          <div className="mb-3 inline-flex rounded-lg bg-white/10 p-2"><DollarSign className="h-5 w-5 text-[#34d399]" /></div>
+          <p className="text-xs font-medium text-white/70">Empréstimos</p>
+          <p className="mt-1 text-2xl font-bold tabular-nums text-white">{data?.counters?.activeLoans || 0}</p>
+          <p className="mt-1 text-xs text-white/50">+{data?.weeklySummary?.contractsThisWeek || 0} esta semana</p>
+        </div>
+        {/* Produtos — azul */}
+        <div className="rounded-xl border border-[#3b82f6]/25 bg-gradient-to-br from-[#1e3a6b] via-[#132844] to-[#0b1020] p-4">
+          <div className="mb-3 inline-flex rounded-lg bg-white/10 p-2"><Package className="h-5 w-5 text-[#60a5fa]" /></div>
+          <p className="text-xs font-medium text-white/70">Produtos</p>
+          <p className="mt-1 text-2xl font-bold tabular-nums text-white">{data?.counters?.totalSales || 0}</p>
+          <p className="mt-1 text-xs text-white/50">cadastrados</p>
+        </div>
+        {/* Veículos — âmbar */}
+        <div className="rounded-xl border border-[#d4a574]/25 bg-gradient-to-br from-[#6b5228] via-[#3a2b14] to-[#1f1408] p-4">
+          <div className="mb-3 inline-flex rounded-lg bg-white/10 p-2"><Car className="h-5 w-5 text-[#e0b878]" /></div>
+          <p className="text-xs font-medium text-white/70">Veículos</p>
+          <p className="mt-1 text-2xl font-bold tabular-nums text-white">{data?.counters?.totalVehicles || 0}</p>
+          <p className="mt-1 text-xs text-white/50">cadastrados</p>
+        </div>
+        {/* Contratos — roxo */}
+        <div className="rounded-xl border border-[#a855f7]/25 bg-gradient-to-br from-[#4a1d6e] via-[#2b0a3d] to-[#1a0b2e] p-4">
+          <div className="mb-3 inline-flex rounded-lg bg-white/10 p-2"><FileText className="h-5 w-5 text-[#c084fc]" /></div>
+          <p className="text-xs font-medium text-white/70">Contratos</p>
+          <p className="mt-1 text-2xl font-bold tabular-nums text-white">{data?.counters?.totalContracts || 0}</p>
+          <p className="mt-1 text-xs text-white/50">no total</p>
+        </div>
+      </div>
+
+      {/* ── Row 1 — 4 KPI cards com gradiente ──────────────────────────────── */}
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
 
-        {/* Total a Receber */}
-        <div className="rounded-xl border border-green-100 dark:border-green-900/30 bg-white dark:bg-zinc-900 overflow-hidden flex flex-col">
-          <div className="p-4 pb-2 flex-1">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="rounded-xl bg-green-100 dark:bg-green-950/50 p-2">
-                <TrendingUp className="h-5 w-5 text-green-500" />
-              </div>
-              <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Total a Receber</p>
-            </div>
-            <p className="text-2xl font-semibold tabular-nums tracking-tight text-green-500">
-              {formatCurrency(data?.totalReceberGeral || 0)}
-            </p>
-            <p className="mt-1.5 text-xs text-gray-400 dark:text-zinc-500">
-              parcelas em aberto (todos os meses)
-            </p>
-            <Delta pct={data?.weeklySummary?.deltas?.receivedPct} />
+        {/* Total a Receber — azul */}
+        <div className="rounded-xl border border-[#3b82f6]/25 bg-gradient-to-br from-[#1e3a6b] via-[#132844] to-[#0b1020] p-4">
+          <div className="mb-3 inline-flex rounded-lg bg-white/10 p-2">
+            <TrendingUp className="h-5 w-5 text-[#60a5fa]" />
           </div>
-          <div className="h-14">
-            <AreaSparkline values={sparkRecebido} color="#22c55e" gradientId="grad-recebido" />
-          </div>
+          <p className="text-xs font-medium text-white/70">Total a Receber</p>
+          <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-white">
+            {formatCurrency(data?.totalReceberGeral || 0)}
+          </p>
+          <p className="mt-1 text-xs text-white/50">parcelas em aberto (todos os meses)</p>
         </div>
 
-        {/* Capital na Rua */}
-        <div className="rounded-xl border border-orange-100 dark:border-orange-900/30 bg-white dark:bg-zinc-900 overflow-hidden flex flex-col">
-          <div className="p-4 pb-2 flex-1">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="rounded-xl bg-orange-100 dark:bg-orange-950/50 p-2">
-                <DollarSign className="h-5 w-5 text-orange-500" />
-              </div>
-              <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Capital na Rua</p>
-            </div>
-            <p className="text-2xl font-semibold tabular-nums tracking-tight text-orange-500">
-              {formatCurrency(data?.capitalOnStreet || 0)}
-            </p>
-            <p className="mt-1.5 text-xs text-gray-400 dark:text-zinc-500">
-              capital ativo em contratos
-            </p>
+        {/* Capital na Rua — âmbar/dourado */}
+        <div className="rounded-xl border border-[#d4a574]/25 bg-gradient-to-br from-[#6b5228] via-[#3a2b14] to-[#1f1408] p-4">
+          <div className="mb-3 inline-flex rounded-lg bg-white/10 p-2">
+            <DollarSign className="h-5 w-5 text-[#e0b878]" />
           </div>
-          <div className="h-14">
-            <AreaSparkline values={sparkEmprestado} color="#f97316" gradientId="grad-capital" />
-          </div>
+          <p className="text-xs font-medium text-white/70">Capital na Rua</p>
+          <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-white">
+            {formatCurrency(data?.capitalOnStreet || 0)}
+          </p>
+          <p className="mt-1 text-xs text-white/50">capital ativo em contratos</p>
         </div>
 
-        {/* Juros do Mês */}
-        <div className="rounded-xl border border-violet-100 dark:border-violet-900/30 bg-white dark:bg-zinc-900 overflow-hidden flex flex-col">
-          <div className="p-4 pb-2 flex-1">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="rounded-xl bg-violet-100 dark:bg-violet-950/50 p-2">
-                <Percent className="h-5 w-5 text-violet-600" />
-              </div>
-              <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Juros do Mês</p>
-            </div>
-            <p className="text-2xl font-semibold tabular-nums tracking-tight text-violet-600">
-              {formatCurrency(data?.monthInstallmentsDue?.interest || 0)}
-            </p>
-            <p className="mt-1.5 text-xs text-gray-400 dark:text-zinc-500">
-              juros das parcelas de {periodLabel}
-            </p>
+        {/* Juros do Mês — roxo */}
+        <div className="rounded-xl border border-[#a855f7]/25 bg-gradient-to-br from-[#4a1d6e] via-[#2b0a3d] to-[#1a0b2e] p-4">
+          <div className="mb-3 inline-flex rounded-lg bg-white/10 p-2">
+            <Percent className="h-5 w-5 text-[#c084fc]" />
           </div>
-          <div className="h-14">
-            <AreaSparkline values={sparkJuros} color="#7c3aed" gradientId="grad-juros" />
-          </div>
+          <p className="text-xs font-medium text-white/70">Juros do Mês</p>
+          <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-white">
+            {formatCurrency(data?.monthInstallmentsDue?.interest || 0)}
+          </p>
+          <p className="mt-1 text-xs text-white/50">juros das parcelas de {periodLabel}</p>
         </div>
 
-        {/* Falta Receber */}
-        <div className="rounded-xl border border-green-100 dark:border-green-900/30 bg-white dark:bg-zinc-900 overflow-hidden flex flex-col">
-          <div className="p-4 pb-2 flex-1">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="rounded-xl bg-green-100 dark:bg-green-950/50 p-2">
-                <Wallet className="h-5 w-5 text-green-500" />
-              </div>
-              <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Falta Receber</p>
-            </div>
-            <p className="text-2xl font-semibold tabular-nums tracking-tight text-green-500">
-              {formatCurrency(data?.faltaReceberMes || 0)}
-            </p>
-            <p className="mt-1.5 text-xs text-gray-400 dark:text-zinc-500">
-              juros + multas de {faltaReceberMonthLabel}
-            </p>
+        {/* Falta Receber — verde */}
+        <div className="rounded-xl border border-[#10b981]/25 bg-gradient-to-br from-[#0e6b4d] via-[#0a3527] to-[#062418] p-4">
+          <div className="mb-3 inline-flex rounded-lg bg-white/10 p-2">
+            <Wallet className="h-5 w-5 text-[#34d399]" />
           </div>
-          <div className="h-14">
-            <AreaSparkline values={sparkJuros} color="#22c55e" gradientId="grad-falta" />
-          </div>
+          <p className="text-xs font-medium text-white/70">Falta Receber</p>
+          <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-white">
+            {formatCurrency(data?.faltaReceberMes || 0)}
+          </p>
+          <p className="mt-1 text-xs text-white/50">juros + multas de {faltaReceberMonthLabel}</p>
         </div>
       </div>
 
       {/* ── Row 2 — 4 white cards ──────────────────────────────────────────── */}
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
 
-        {/* Recebido no Mês */}
-        <div className="rounded-xl border border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="rounded-xl bg-green-100 dark:bg-green-950/40 p-2">
-              <Receipt className="h-4 w-4 text-green-500" />
-            </div>
-            <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Recebido no Mês</p>
+        {/* Recebido no Mês — verde */}
+        <div className="rounded-xl border border-[#10b981]/25 bg-gradient-to-br from-[#0e6b4d] via-[#0a3527] to-[#062418] p-4">
+          <div className="mb-3 inline-flex rounded-lg bg-white/10 p-2">
+            <Receipt className="h-4 w-4 text-[#34d399]" />
           </div>
-          <p className="text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">
+          <p className="text-xs font-medium text-white/70">Recebido no Mês</p>
+          <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-white">
             {formatCurrency(data?.monthReceived || 0)}
           </p>
-          <Delta pct={data?.weeklySummary?.deltas?.receivedPct} />
-          <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">
-            juros recebidos em {periodLabel}
-          </p>
+          <p className="mt-1 text-xs text-white/50">juros recebidos em {periodLabel}</p>
         </div>
 
-        {/* Histórico de Pagamento */}
-        <div className="rounded-xl border border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="rounded-xl bg-green-100 dark:bg-green-950/40 p-2">
-              <TrendingUp className="h-4 w-4 text-green-500" />
-            </div>
-            <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Histórico de Pagamento</p>
+        {/* Histórico de Pagamento — azul */}
+        <div className="rounded-xl border border-[#3b82f6]/25 bg-gradient-to-br from-[#1e3a6b] via-[#132844] to-[#0b1020] p-4">
+          <div className="mb-3 inline-flex rounded-lg bg-white/10 p-2">
+            <TrendingUp className="h-4 w-4 text-[#60a5fa]" />
           </div>
-          <p className="text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">
+          <p className="text-xs font-medium text-white/70">Histórico de Pagamento</p>
+          <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-white">
             {formatCurrency(data?.financials?.monthlyReceivedInterest || 0)}
           </p>
-          <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">
-            total de juros recebidos
-          </p>
+          <p className="mt-1 text-xs text-white/50">total de juros recebidos</p>
         </div>
 
-        {/* Gasto Mensal — apenas informativo, não entra em nenhum cálculo */}
-        <div className="rounded-xl border border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="rounded-xl bg-red-100 dark:bg-red-950/40 p-2">
-              <Receipt className="h-4 w-4 text-red-500" />
-            </div>
-            <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Gasto Mensal</p>
+        {/* Gasto Mensal — vermelho */}
+        <div className="rounded-xl border border-[#ef4444]/25 bg-gradient-to-br from-[#7f1d1d] via-[#3a0f0f] to-[#1f0608] p-4">
+          <div className="mb-3 inline-flex rounded-lg bg-white/10 p-2">
+            <Receipt className="h-4 w-4 text-[#f87171]" />
           </div>
-          <p className="text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">
+          <p className="text-xs font-medium text-white/70">Gasto Mensal</p>
+          <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-white">
             {formatCurrency(data?.financials?.monthlyExpenses || 0)}
           </p>
-          <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">despesas de {periodLabel}</p>
+          <p className="mt-1 text-xs text-white/50">despesas de {periodLabel}</p>
         </div>
 
-        {/* Clientes */}
-        <div className="rounded-xl border border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="rounded-xl bg-green-100 dark:bg-green-950/40 p-2">
-              <Users className="h-4 w-4 text-green-500" />
-            </div>
-            <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Clientes</p>
+        {/* Clientes — verde-azulado */}
+        <div className="rounded-xl border border-[#14b8a6]/25 bg-gradient-to-br from-[#0e5f57] via-[#08302c] to-[#04211f] p-4">
+          <div className="mb-3 inline-flex rounded-lg bg-white/10 p-2">
+            <Users className="h-4 w-4 text-[#2dd4bf]" />
           </div>
-          <p className="text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">
+          <p className="text-xs font-medium text-white/70">Clientes</p>
+          <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-white">
             {data?.counters?.totalClients || 0}
           </p>
-          <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">cadastrados</p>
+          <p className="mt-1 text-xs text-white/50">cadastrados</p>
         </div>
       </div>
 
       {/* ── Row 3 — 4 white cards ──────────────────────────────────────────── */}
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
 
-        {/* Contrato Ativo */}
-        <div className="rounded-xl border border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="rounded-xl bg-blue-100 dark:bg-blue-950/40 p-2">
-              <Shield className="h-4 w-4 text-blue-600" />
-            </div>
-            <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Contrato Ativo</p>
+        {/* Contrato Ativo — azul */}
+        <div className="rounded-xl border border-[#3b82f6]/25 bg-gradient-to-br from-[#1e3a6b] via-[#132844] to-[#0b1020] p-4">
+          <div className="mb-3 inline-flex rounded-lg bg-white/10 p-2">
+            <Shield className="h-4 w-4 text-[#60a5fa]" />
           </div>
-          <p className="text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">
+          <p className="text-xs font-medium text-white/70">Contrato Ativo</p>
+          <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-white">
             {data?.counters?.activeLoans || 0}
           </p>
-          <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">contratos ativos</p>
+          <p className="mt-1 text-xs text-white/50">contratos ativos</p>
         </div>
 
-        {/* Vencendo Hoje */}
-        <div className="rounded-xl border border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="rounded-xl bg-orange-100 dark:bg-orange-950/40 p-2">
-              <Clock3 className="h-4 w-4 text-orange-500" />
-            </div>
-            <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Vencendo Hoje</p>
+        {/* Vencendo Hoje — âmbar */}
+        <div className="rounded-xl border border-[#d4a574]/25 bg-gradient-to-br from-[#6b5228] via-[#3a2b14] to-[#1f1408] p-4">
+          <div className="mb-3 inline-flex rounded-lg bg-white/10 p-2">
+            <Clock3 className="h-4 w-4 text-[#e0b878]" />
           </div>
-          <p className="text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">
+          <p className="text-xs font-medium text-white/70">Vencendo Hoje</p>
+          <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-white">
             {formatCurrency(data?.weeklySummary?.dueTodayAmount || 0)}
           </p>
-          <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">
-            {data?.weeklySummary?.dueTodayClients || 0} cliente(s)
-          </p>
+          <p className="mt-1 text-xs text-white/50">{data?.weeklySummary?.dueTodayClients || 0} cliente(s)</p>
         </div>
 
-        {/* Em Atraso */}
-        <div className="rounded-xl border border-red-100 dark:border-red-900/30 bg-white dark:bg-zinc-900 p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="rounded-xl bg-red-100 dark:bg-red-950/40 p-2">
-              <AlertTriangle className="h-4 w-4 text-red-500" />
-            </div>
-            <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Em Atraso</p>
+        {/* Em Atraso — vermelho */}
+        <div className="rounded-xl border border-[#ef4444]/30 bg-gradient-to-br from-[#7f1d1d] via-[#3a0f0f] to-[#1f0608] p-4">
+          <div className="mb-3 inline-flex rounded-lg bg-white/10 p-2">
+            <AlertTriangle className="h-4 w-4 text-[#f87171]" />
           </div>
-          <p className="text-2xl font-semibold tabular-nums tracking-tight text-red-500">
+          <p className="text-xs font-medium text-white/70">Em Atraso</p>
+          <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-white">
             {formatCurrency(data?.overdueAmount || 0)}
           </p>
-          <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">
-            {data?.overdueCount || 0} parcela(s) vencida(s)
-          </p>
+          <p className="mt-1 text-xs text-white/50">{data?.overdueCount || 0} parcela(s) vencida(s)</p>
         </div>
 
-        {/* Clientes Inativos */}
-        <div className="rounded-xl border border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="rounded-xl bg-gray-100 dark:bg-zinc-800 p-2">
-              <UserX className="h-4 w-4 text-gray-500" />
-            </div>
-            <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Clientes Inativos</p>
+        {/* Clientes Inativos — neutro */}
+        <div className="rounded-xl border border-white/10 bg-gradient-to-br from-[#3a3a40] via-[#1f1f22] to-[#111114] p-4">
+          <div className="mb-3 inline-flex rounded-lg bg-white/10 p-2">
+            <UserX className="h-4 w-4 text-zinc-300" />
           </div>
-          <p className="text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">
+          <p className="text-xs font-medium text-white/70">Clientes Inativos</p>
+          <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-white">
             {data?.inactiveClients || 0}
           </p>
-          <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">sem empréstimo ativo</p>
+          <p className="mt-1 text-xs text-white/50">sem empréstimo ativo</p>
         </div>
       </div>
 
       {/* ── Row 4 — 2 cards side by side ───────────────────────────────────── */}
       <div className="grid gap-4 sm:grid-cols-2">
 
-        {/* Multa de Atraso */}
-        <div className="relative overflow-hidden rounded-xl border border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="rounded-xl bg-primary/10 dark:bg-primary/20 p-2">
-              <Calendar className="h-4 w-4 text-primary" />
-            </div>
-            <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Multa de Atraso</p>
+        {/* Multa de Atraso — âmbar */}
+        <div className="relative overflow-hidden rounded-xl border border-[#d4a574]/25 bg-gradient-to-br from-[#6b5228] via-[#3a2b14] to-[#1f1408] p-4">
+          <div className="mb-3 inline-flex rounded-lg bg-white/10 p-2">
+            <Calendar className="h-4 w-4 text-[#e0b878]" />
           </div>
-          <p className="text-2xl font-semibold tabular-nums tracking-tight text-green-500">
+          <p className="text-xs font-medium text-white/70">Multa de Atraso</p>
+          <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-white">
             {formatCurrency(data?.totalPendingLateFees || 0)}
           </p>
-          <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">a receber</p>
-          {/* Decorative % badge */}
+          <p className="mt-1 text-xs text-white/50">a receber</p>
           <div className="absolute right-4 bottom-4">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-green-100 dark:bg-green-950/40">
-              <Percent className="h-5 w-5 text-green-500" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10">
+              <Percent className="h-5 w-5 text-[#e0b878]" />
             </div>
           </div>
         </div>
 
-        {/* Saiu — Empréstimos Concedidos */}
-        <div className="rounded-xl border border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
+        {/* Saiu — Empréstimos Concedidos — verde */}
+        <div className="rounded-xl border border-[#10b981]/25 bg-gradient-to-br from-[#0e6b4d] via-[#0a3527] to-[#062418] p-4">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="rounded-xl bg-green-100 dark:bg-green-950/40 p-2">
-                  <TrendingUp className="h-4 w-4 text-green-500" />
-                </div>
-                <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Saiu (Empréstimos Concedidos)</p>
+              <div className="mb-2 inline-flex rounded-lg bg-white/10 p-2">
+                <TrendingUp className="h-4 w-4 text-[#34d399]" />
               </div>
-              <p className="text-2xl font-semibold tabular-nums tracking-tight text-green-500">
+              <p className="text-xs font-medium text-white/70">Saiu (Empréstimos Concedidos)</p>
+              <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-white">
                 {formatCurrency(data?.monthNewLoansCapital || 0)}
               </p>
-              <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">total emprestado neste mês</p>
-              <Delta pct={data?.monthNewLoansCapitalPct} />
+              <p className="mt-1 text-xs text-white/50">total emprestado neste mês</p>
             </div>
             {saiuBarData.length > 0 && (
               <div className="h-24 w-44 shrink-0">
@@ -773,7 +765,7 @@ export default function DashboardPage() {
 
       {/* ── Gráficos ────────────────────────────────────────────────────────── */}
       <div className="grid gap-4 xl:grid-cols-2">
-        <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5">
+        <div className="rounded-xl border border-gray-200 dark:border-white/5 bg-white dark:bg-[#0f1621] p-5">
           <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200 mb-4">Evolução Financeira (Últimos 6 meses)</p>
           <div className="h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -790,7 +782,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5">
+        <div className="rounded-xl border border-gray-200 dark:border-white/5 bg-white dark:bg-[#0f1621] p-5">
           <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200 mb-4">Tendência de Juros Recebidos</p>
           <div className="h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -845,10 +837,10 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-green-700/50 dark:border-green-900/60 bg-gradient-to-br from-primary/10 to-primary/5 dark:from-green-950 dark:to-green-900/40 overflow-hidden">
-          <div className="flex items-center gap-2 px-5 py-4 border-b border-green-700/20 dark:border-green-900/40">
-            <AlertTriangle className="h-4 w-4 text-primary" />
-            <span className="text-sm font-bold text-primary">Precisa de Atenção</span>
+        <div className="overflow-hidden rounded-xl border border-[#d4a574]/30 bg-gradient-to-br from-[#6b5228] via-[#3a2b14] to-[#1f1408]">
+          <div className="flex items-center gap-2 px-5 py-4 border-b border-white/10">
+            <AlertTriangle className="h-4 w-4 text-[#e0b878]" />
+            <span className="text-sm font-bold text-[#e0b878]">Precisa de Atenção</span>
           </div>
           <div className="space-y-2 p-3">
             <div className="flex items-center gap-4 rounded-xl border border-orange-400 dark:border-orange-700 bg-orange-100 dark:bg-orange-950/30 px-5 py-4">
