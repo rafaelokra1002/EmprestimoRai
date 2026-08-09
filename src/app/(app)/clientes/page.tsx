@@ -14,7 +14,7 @@ import { FilterDropdown } from "@/components/ui/filter-dropdown"
 import { Textarea } from "@/components/ui/textarea"
 import { Avatar } from "@/components/avatar"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Search, Pencil, Trash2, User, MapPin, FileText, Users, Camera, Upload, Eye, Image, DollarSign, Briefcase, LayoutGrid, Rows3, Filter, CheckCircle2, MoreVertical, UserCheck, Phone, Mail, XCircle, Share2, MessageCircle, Copy, Info, Key, Home } from "lucide-react"
+import { Plus, Search, Pencil, Trash2, User, MapPin, FileText, Users, Camera, Upload, Eye, Image, DollarSign, Briefcase, LayoutGrid, Rows3, Filter, CheckCircle2, MoreVertical, UserCheck, Phone, Mail, XCircle, Share2, MessageCircle, Copy, Info, Key, Home, ChevronRight } from "lucide-react"
 import { useSession } from "next-auth/react"
 
 interface Client {
@@ -543,7 +543,7 @@ export default function ClientesPage() {
 
   const getScoreColor = (score: number) => {
     if (score >= 120) return "bg-violet-50 dark:bg-violet-950/20 text-violet-600 dark:text-violet-400"
-    if (score >= 100) return "bg-green-500/10 dark:bg-green-500/15 text-green-800 dark:text-green-400"
+    if (score >= 100) return "bg-[#3B7060] text-white dark:bg-[#0B4030]"
     if (score >= 70) return "bg-yellow-50 dark:bg-yellow-950/20 text-yellow-600 dark:text-yellow-400"
     return "bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400"
   }
@@ -594,6 +594,25 @@ export default function ClientesPage() {
 
   return (
     <div className="space-y-4 pt-6">
+      {/* Banner de Consultas (SPC/Serasa/CPF) */}
+      <div className="flex items-center justify-between gap-4 overflow-hidden rounded-xl bg-gradient-to-r from-[#6A2385] to-[#4A105B] p-4 sm:p-5">
+        <div className="flex items-center gap-4">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-white/10">
+            <Search className="h-7 w-7 text-white" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-base font-bold text-white sm:text-lg">Faça consultas de SPC, Serasa e CPF</p>
+            <p className="text-sm text-white/70">Score, protestos, SCR BACEN e muito mais — a partir de R$ 5,00</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-white/15 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/25"
+        >
+          Consultar <ChevronRight className="h-4 w-4" />
+        </button>
+      </div>
+
       {/* Title + actions */}
       <div className="space-y-5">
         {/* Linha 1: título + botões de ação */}
@@ -628,13 +647,13 @@ export default function ClientesPage() {
 
         {/* Linha 2: tabs à esquerda + toggle à direita */}
         <div className="flex items-center justify-between">
-          <div className="inline-flex items-center rounded-lg border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-1">
+          <div className="inline-flex items-center rounded-lg border border-gray-200 dark:border-white/10 bg-gray-100 dark:bg-[#222A26] p-1">
             <button
               type="button"
               onClick={() => setClientesView("clientes")}
               className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                 clientesView === "clientes"
-                  ? "bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
+                  ? "bg-white dark:bg-[#121614] text-gray-900 dark:text-zinc-100"
                   : "text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200"
               }`}
             >
@@ -646,7 +665,7 @@ export default function ClientesPage() {
               onClick={() => setClientesView("aprovacoes")}
               className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                 clientesView === "aprovacoes"
-                  ? "bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
+                  ? "bg-white dark:bg-[#121614] text-gray-900 dark:text-zinc-100"
                   : "text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200"
               }`}
             >
@@ -665,7 +684,7 @@ export default function ClientesPage() {
               onClick={() => setViewMode("table")}
               className={`inline-flex items-center justify-center rounded-md px-2.5 py-1.5 text-sm transition-colors ${
                 viewMode === "table"
-                  ? "bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
+                  ? "bg-white dark:bg-[#121614] text-gray-900 dark:text-zinc-100"
                   : "text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200"
               }`}
               title="Visualizar em tabela"
@@ -677,7 +696,7 @@ export default function ClientesPage() {
               onClick={() => setViewMode("cards")}
               className={`inline-flex items-center justify-center rounded-md px-2.5 py-1.5 text-sm transition-colors ${
                 viewMode === "cards"
-                  ? "bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
+                  ? "bg-white dark:bg-[#121614] text-gray-900 dark:text-zinc-100"
                   : "text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200"
               }`}
               title="Visualizar em cards"
@@ -856,9 +875,9 @@ export default function ClientesPage() {
 
       {/* Listing */}
       {clientesView === "clientes" && (viewMode === "table" ? (
-        <div className="rounded-xl overflow-hidden border border-primary/50 dark:border-primary/40 bg-white dark:bg-zinc-900">
+        <div className="rounded-xl overflow-hidden border border-[#10b981]/30 dark:border-[#10b981]/25 bg-[#f4faf7] dark:bg-[#1D2421]">
           {/* Search bar */}
-          <div className="flex items-center gap-3 px-5 py-4 bg-white dark:bg-zinc-900">
+          <div className="flex items-center gap-3 px-5 py-4 bg-transparent">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-zinc-500" />
               <Input
@@ -881,7 +900,7 @@ export default function ClientesPage() {
               ]}
               minWidthClassName="min-w-[190px]"
             />
-            <div className="flex h-10 items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm text-gray-500 whitespace-nowrap dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-400">
+            <div className="flex h-10 items-center gap-2 rounded-lg border border-[#10b981]/30 bg-[#10b981]/10 px-3 text-sm font-medium text-[#059669] whitespace-nowrap dark:text-[#34d399]">
               <Users className="h-4 w-4" />
               {filtered.length} clientes
             </div>
@@ -895,6 +914,7 @@ export default function ClientesPage() {
                 <TableHead>Telefone</TableHead>
                 <TableHead>Renda</TableHead>
                 <TableHead>Valor Solicitado</TableHead>
+                <TableHead>Tipo</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Score</TableHead>
                 <TableHead>Cadastrado em</TableHead>
@@ -904,11 +924,11 @@ export default function ClientesPage() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-gray-500 dark:text-zinc-400">Carregando...</TableCell>
+                  <TableCell colSpan={10} className="text-center py-8 text-gray-500 dark:text-zinc-400">Carregando...</TableCell>
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-gray-500 dark:text-zinc-400">Nenhum cliente encontrado</TableCell>
+                  <TableCell colSpan={10} className="text-center py-8 text-gray-500 dark:text-zinc-400">Nenhum cliente encontrado</TableCell>
                 </TableRow>
               ) : (
                 filtered.map((client) => {
@@ -916,14 +936,14 @@ export default function ClientesPage() {
 
                   return (
                   <TableRow key={client.id}>
-                    <TableCell>
+                    <TableCell className="border-l-[3px] border-l-[#10b981]">
                       <div className="flex items-center gap-3">
                         <span
                           onClick={() => client.photo && setProfileImagePreview({ name: client.name, src: client.photo })}
                           className={client.photo ? "cursor-zoom-in" : "cursor-default"}
                           title={client.photo ? "Ampliar foto" : undefined}
                         >
-                          <Avatar name={client.name} src={client.photo} size="sm" />
+                          <Avatar name={client.name} src={client.photo} size="sm" className="bg-primary text-white dark:bg-primary dark:text-white" />
                         </span>
                         <span className="font-medium">{client.name}</span>
                       </div>
@@ -933,7 +953,13 @@ export default function ClientesPage() {
                     <TableCell className="text-gray-700 dark:text-zinc-300">{client.income ? `R$ ${client.income.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "-"}</TableCell>
                     <TableCell className="text-gray-700 dark:text-zinc-300">{displayedRequestedAmount ? `R$ ${displayedRequestedAmount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "-"}</TableCell>
                     <TableCell>
-                      <Badge variant={getDisplayedClientStatus(client) === "ACTIVE" ? "success" : "warning"}>
+                      <Badge variant="success" className="text-[#407767] dark:text-[#407767]">Empréstimo</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={getDisplayedClientStatus(client) === "ACTIVE" ? "success" : "warning"}
+                        className={getDisplayedClientStatus(client) === "ACTIVE" ? "border-transparent bg-[#3B7060] text-white dark:bg-[#0B4030]" : ""}
+                      >
                         {getDisplayedClientStatus(client) === "ACTIVE" ? "Ativo" : "Inativo"}
                       </Badge>
                     </TableCell>
@@ -944,13 +970,13 @@ export default function ClientesPage() {
                     </TableCell>
                     <TableCell className="text-gray-500 dark:text-zinc-400">{formatDate(client.createdAt)}</TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="icon" onClick={() => handleEdit(client)}>
+                      <div className="flex justify-end gap-4">
+                        <button type="button" onClick={() => handleEdit(client)} title="Editar" className="text-gray-400 transition-colors hover:text-gray-700 dark:text-zinc-400 dark:hover:text-zinc-200">
                           <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(client.id)}>
-                          <Trash2 className="h-4 w-4 text-red-600" />
-                        </Button>
+                        </button>
+                        <button type="button" onClick={() => handleDelete(client.id)} title="Excluir" className="text-red-500 transition-colors hover:text-red-600">
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -960,9 +986,9 @@ export default function ClientesPage() {
           </Table>
         </div>
       ) : (
-        <div className="rounded-xl overflow-hidden border border-primary/50 dark:border-primary/40 bg-white dark:bg-zinc-900">
+        <div className="rounded-xl overflow-hidden border border-[#10b981]/30 dark:border-[#10b981]/25 bg-[#f4faf7] dark:bg-[#1D2421]">
           {/* Search bar */}
-          <div className="flex items-center gap-3 px-5 py-4 bg-white dark:bg-zinc-900">
+          <div className="flex items-center gap-3 px-5 py-4 bg-transparent">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-zinc-500" />
               <Input
@@ -985,7 +1011,7 @@ export default function ClientesPage() {
               ]}
               minWidthClassName="min-w-[190px]"
             />
-            <div className="flex h-10 items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm text-gray-500 whitespace-nowrap dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-400">
+            <div className="flex h-10 items-center gap-2 rounded-lg border border-[#10b981]/30 bg-[#10b981]/10 px-3 text-sm font-medium text-[#059669] whitespace-nowrap dark:text-[#34d399]">
               <Users className="h-4 w-4" />
               {filtered.length} clientes
             </div>

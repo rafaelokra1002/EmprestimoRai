@@ -24,9 +24,9 @@
     --input: 268 24% 88%;
     --ring: 142 80% 36%;
     --radius: 0.75rem;
-    --sidebar-from: #14532d;
-    --sidebar-via: #166534;
-    --sidebar-to: #0d3f24;
+    --sidebar-from: #16A249;
+    --sidebar-via: #16A249;
+    --sidebar-to: #16A249;
     /* Accent color shades (default: violet) — updated by applyAccentColor() */
     --ac-50: #f5f3ff; --ac-100: #ede9fe; --ac-200: #ddd6fe; --ac-300: #c4b5fd;
     --ac-400: #a78bfa; --ac-500: #8b5cf6; --ac-600: #7c3aed; --ac-700: #6d28d9;
@@ -58,9 +58,9 @@
     --input: 260 14% 24%;
     --ring: 142 68% 55%;
     /* Sidebar preto no modo escuro */
-    --sidebar-from: #171a20;
-    --sidebar-via: #13151b;
-    --sidebar-to: #0d0e12;
+    --sidebar-from: #0F141A;
+    --sidebar-via: #0F141A;
+    --sidebar-to: #0F141A;
   }
 }
 
@@ -74,7 +74,7 @@
   body {
     color: hsl(var(--foreground));
     background: hsl(var(--background));
-    @apply antialiased font-sans dark:text-zinc-100 dark:bg-zinc-950;
+    @apply antialiased font-sans bg-[#FAFAFA] dark:text-zinc-100 dark:bg-[#121614];
     font-feature-settings: "tnum" 1, "lnum" 1;
     font-weight: 400;
   }

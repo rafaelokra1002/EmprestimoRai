@@ -38,31 +38,27 @@ import {
   FileCheck,
   LifeBuoy,
   Crown,
+  UserPlus,
 } from "lucide-react"
 import { useState } from "react"
 
 // Cor de fundo (gradiente) + badge do ícone por card
 const cardColors: Record<string, { card: string; badge: string; icon: string }> = {
-  blue: { card: "border-blue-500/30 bg-gradient-to-br from-blue-900/60 to-blue-950/20", badge: "bg-blue-500/20 ring-blue-500/30", icon: "text-blue-400" },
-  green: { card: "border-green-500/30 bg-gradient-to-br from-green-900/60 to-green-950/20", badge: "bg-green-500/20 ring-green-500/30", icon: "text-green-400" },
-  amber: { card: "border-amber-500/30 bg-gradient-to-br from-amber-900/60 to-amber-950/20", badge: "bg-amber-500/20 ring-amber-500/30", icon: "text-amber-400" },
-  purple: { card: "border-purple-500/30 bg-gradient-to-br from-purple-900/60 to-purple-950/20", badge: "bg-purple-500/20 ring-purple-500/30", icon: "text-purple-400" },
+  blue: { card: "border-white/10 bg-[#0A7B86] dark:border-blue-500/30 dark:bg-gradient-to-br dark:from-blue-900/60 dark:to-blue-950/20", badge: "bg-white/15 ring-white/20 dark:bg-blue-500/20 dark:ring-blue-500/30", icon: "text-white dark:text-blue-400" },
+  green: { card: "border-white/10 bg-[#08573D] dark:border-green-500/30 dark:bg-gradient-to-br dark:from-green-900/60 dark:to-green-950/20", badge: "bg-white/15 ring-white/20 dark:bg-green-500/20 dark:ring-green-500/30", icon: "text-white dark:text-green-400" },
+  amber: { card: "border-white/10 bg-[#4A431A] dark:border-amber-500/30 dark:bg-gradient-to-br dark:from-amber-900/60 dark:to-amber-950/20", badge: "bg-white/15 ring-white/20 dark:bg-amber-500/20 dark:ring-amber-500/30", icon: "text-white dark:text-amber-400" },
+  purple: { card: "border-white/10 bg-[#58255E] dark:border-purple-500/30 dark:bg-gradient-to-br dark:from-purple-900/60 dark:to-purple-950/20", badge: "bg-white/15 ring-white/20 dark:bg-purple-500/20 dark:ring-purple-500/30", icon: "text-white dark:text-purple-400" },
 }
 
 const topItems = [
-  { href: "/perfil", label: "Meu Perfil", subtitle: "Ver informações", icon: User, color: "blue" },
-  { href: "/funcionarios", label: "Funcionários", subtitle: "Cadastrar funcionários", icon: UserCog, color: "green" },
+  { href: "/funcionarios", label: "Funcionários", subtitle: "Cadastrar funcionários", icon: UserPlus, color: "green" },
+  { href: "/whatsapp", label: "Relatórios Diário", subtitle: "Relatórios via WhatsApp", icon: FileCheck, color: "amber" },
+  { href: "/perfil", label: "Meu Perfil", subtitle: "Gerenciar dados e plano", icon: User, color: "blue" },
   { href: "#", label: "Meus Planos", subtitle: "Assinatura e upgrades", icon: Crown, color: "amber" },
   { href: "#", label: "Consultas", subtitle: "SPC, Serasa, CPF e mais", icon: Search, color: "purple" },
 ]
 
-const highlightItem = {
-  href: "/whatsapp",
-  label: "Relatórios Diário",
-  subtitle: "Relatórios via WhatsApp",
-  icon: FileText,
-  color: "amber",
-}
+const highlightItem = null
 
 const menuItems: { href: string; label: string; icon: any; badge?: string }[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutGrid },
@@ -103,8 +99,7 @@ export function Sidebar() {
       {/* Mobile toggle */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        style={{ background: "linear-gradient(180deg, var(--sidebar-from) 0%, var(--sidebar-via) 50%, var(--sidebar-to) 100%)" }}
-        className="fixed top-4 left-4 z-50 rounded-md border border-white/20 p-2 text-white shadow-lg shadow-black/30 lg:hidden"
+        className="fixed top-4 left-4 z-50 rounded-md border border-white/20 bg-[#16A249] p-2 text-white shadow-lg shadow-black/30 dark:bg-[#0F141A] lg:hidden"
       >
         {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </button>
@@ -120,10 +115,9 @@ export function Sidebar() {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed top-0 left-0 z-40 flex h-full w-64 flex-col overflow-y-auto transition-transform duration-300 ease-in-out",
+          "fixed top-0 left-0 z-40 flex h-full w-72 flex-col overflow-y-auto bg-[#16A249] transition-transform duration-300 ease-in-out dark:bg-[#0F141A]",
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
-        style={{ background: "linear-gradient(180deg, var(--sidebar-from) 0%, var(--sidebar-via) 50%, var(--sidebar-to) 100%)" }}
       >
         <div className="flex flex-col p-6">
           <div className="flex items-center gap-2.5">
@@ -159,28 +153,6 @@ export function Sidebar() {
               )
             })}
 
-            {/* Highlighted item */}
-            {highlightItem && (() => {
-              return (
-                <Link
-                  href={highlightItem.href}
-                  onClick={() => setIsOpen(false)}
-                  className={cn(
-                    "flex items-center gap-2 rounded-xl px-2.5 py-3 text-sm transition-all border",
-                    cardColors[highlightItem.color].card
-                  )}
-                >
-                  <span className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ring-1", cardColors[highlightItem.color].badge)}>
-                    <highlightItem.icon className={cn("h-4 w-4", cardColors[highlightItem.color].icon)} />
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="truncate font-semibold text-[13px] leading-tight text-white">{highlightItem.label}</p>
-                    <p className="truncate text-[10px] leading-tight text-white/60">{highlightItem.subtitle}</p>
-                  </div>
-                  <ChevronRight className="h-4 w-4 shrink-0 text-white/40" />
-                </Link>
-              )
-            })()}
           </div>
 
           <p className="px-3 pb-2 pt-1 text-[10px] font-semibold uppercase tracking-widest text-violet-200/80">Menu</p>
