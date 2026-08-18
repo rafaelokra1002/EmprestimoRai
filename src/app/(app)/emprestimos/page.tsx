@@ -1750,9 +1750,20 @@ export default function EmprestimosPage() {
   return (
     <div className="space-y-6 pt-6">
       {/* Title + Vence Hoje / Atrasados */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">Empréstimos</h1>
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">Empréstimos</h1>
+          <p className="mt-0.5 text-sm text-gray-500 dark:text-zinc-400">Gerencie seus empréstimos</p>
+        </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => router.push("/emprestimos/relatorio")}
+            className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+          >
+            <Download className="h-4 w-4" />
+            Baixar Relatório
+          </button>
           {/* Vence Hoje */}
           <div className="relative group">
             <Button onClick={sendBulkDueToday} disabled={bulkSendingDueToday} className="rounded-xl border border-amber-400 bg-white px-4 py-2 text-sm font-semibold text-amber-600 transition hover:bg-amber-50 hover:brightness-100 dark:bg-zinc-900 dark:border-amber-500 dark:text-amber-400 dark:hover:bg-zinc-800">
@@ -1839,6 +1850,13 @@ export default function EmprestimosPage() {
         >
           Empréstimos ({tabCounts.all})
         </button>
+        <button
+          type="button"
+          onClick={() => showToast("Empréstimo diário em breve", "info")}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 transition-colors whitespace-nowrap"
+        >
+          <Clock className="h-3.5 w-3.5" /> Diário (0)
+        </button>
         <a
           href="/emprestimos/tabela-price"
           className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
@@ -1855,6 +1873,13 @@ export default function EmprestimosPage() {
         >
           <DollarSign className="h-3.5 w-3.5" /> Recebimentos
         </a>
+        <button
+          type="button"
+          onClick={() => showToast("Lixeira em breve", "info")}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 transition-colors whitespace-nowrap"
+        >
+          <Trash2 className="h-3.5 w-3.5" /> Lixeira
+        </button>
       </div>
 
       {/* Search + New Button */}
@@ -1864,6 +1889,13 @@ export default function EmprestimosPage() {
           <Input placeholder="Buscar cliente ou etiqueta..." className="pl-10" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center lg:flex-none">
+          <button
+            type="button"
+            onClick={() => showToast("Empréstimo diário em breve", "info")}
+            className="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+          >
+            <Clock className="h-4 w-4 mr-2" /> Novo Diário
+          </button>
           <Button onClick={() => { resetForm(); setDialogOpen(true) }} className="bg-primary hover:bg-primary/90 text-white">
             <Plus className="h-4 w-4 mr-2" /> Novo Empréstimo
           </Button>
@@ -2165,16 +2197,16 @@ export default function EmprestimosPage() {
               const oldLoan = isRenegotiada && oldLoanIdMatch ? loans.find((l) => l.id === oldLoanIdMatch[1]) : null
 
               // Cores: Renegociada=rosa, Vence hoje=laranja, Atrasado=vermelho, Só Juros/Pago no mês=roxo, Quitado=azul, resto=branco
-              const cardBorder = isRenegotiada ? "border-pink-300 dark:border-pink-800" : isAtrasado ? "border-red-400 dark:border-red-700" : isDueTodayHighlight ? "border-orange-400 dark:border-orange-700" : (isSoJuros || isPagoNoMes) ? "border-purple-400 dark:border-purple-700" : (isQuitado || isParceladoCardBlue) ? "border-blue-400 dark:border-blue-700" : isDueToday ? "border-orange-400 dark:border-orange-700" : "border-gray-200 dark:border-zinc-700"
-              const cardBg = isRenegotiada ? "bg-pink-100 dark:bg-pink-950/30" : isAtrasado ? "bg-red-100 dark:bg-red-950/30" : isDueTodayHighlight ? "bg-orange-100 dark:bg-orange-950/30" : (isSoJuros || isPagoNoMes) ? "bg-purple-100 dark:bg-purple-950/30" : (isQuitado || isParceladoCardBlue) ? "bg-blue-100 dark:bg-blue-950/30" : isDueToday ? "bg-orange-100 dark:bg-orange-950/30" : "bg-white dark:bg-zinc-900"
-              const remainingColor = isRenegotiada ? "text-primary" : isAtrasado ? "text-red-700 dark:text-red-400" : isDueTodayHighlight ? "text-orange-700 dark:text-orange-400" : (isSoJuros || isPagoNoMes) ? "text-purple-700 dark:text-purple-400" : (isQuitado || isParceladoCardBlue) ? "text-blue-700 dark:text-blue-400" : isDueToday ? "text-orange-700 dark:text-orange-400" : "text-[#16a34a] dark:text-green-400"
-              const remainingBg = isRenegotiada ? "bg-pink-50 dark:bg-pink-900/30" : isAtrasado ? "bg-red-100 dark:bg-red-900/40" : isDueTodayHighlight ? "bg-orange-100 dark:bg-orange-900/40" : (isSoJuros || isPagoNoMes) ? "bg-purple-100 dark:bg-purple-900/40" : (isQuitado || isParceladoCardBlue) ? "bg-blue-100 dark:bg-blue-900/40" : isDueToday ? "bg-orange-100 dark:bg-orange-900/40" : "bg-gray-50 dark:bg-zinc-800/50"
-              const cellBg = isRenegotiada ? "bg-pink-50 dark:bg-pink-950/20" : isAtrasado ? "bg-red-50 dark:bg-red-950/20" : isDueTodayHighlight ? "bg-orange-50 dark:bg-orange-950/20" : (isSoJuros || isPagoNoMes) ? "bg-purple-50 dark:bg-purple-950/20" : (isQuitado || isParceladoCardBlue) ? "bg-blue-50 dark:bg-blue-950/20" : isDueToday ? "bg-orange-50 dark:bg-orange-950/20" : "bg-gray-50 dark:bg-zinc-800/50"
+              const cardBorder = isRenegotiada ? "border-pink-500/20 border-l-4 border-l-[#EC4899] shadow-lg shadow-pink-950/40" : isAtrasado ? "border-red-500/20 border-l-4 border-l-[#E5484D] shadow-lg shadow-red-950/40" : isDueTodayHighlight ? "border-amber-500/20 border-l-4 border-l-[#F59E0B] shadow-lg shadow-amber-950/40" : (isSoJuros || isPagoNoMes) ? "border-purple-500/20 border-l-4 border-l-[#a855f7] shadow-lg shadow-purple-950/40" : (isQuitado || isParceladoCardBlue) ? "border-blue-400 dark:border-blue-700" : isDueToday ? "border-amber-500/20 border-l-4 border-l-[#F59E0B] shadow-lg shadow-amber-950/40" : "border-gray-200 dark:border-zinc-700"
+              const cardBg = isRenegotiada ? "bg-[radial-gradient(circle_at_top_left,rgba(255,120,190,0.22),transparent_55%),linear-gradient(135deg,#3A0F24_0%,#8E2F58_55%,#3A0F24_100%)]" : isAtrasado ? "bg-[radial-gradient(circle_at_top_left,rgba(255,92,92,0.18),transparent_55%),linear-gradient(135deg,#1F0608_0%,rgba(122,31,14,0.85)_55%,#1F0608_100%)]" : isDueTodayHighlight ? "bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.20),transparent_55%),linear-gradient(135deg,#332812_0%,#8A6E2A_55%,#332812_100%)]" : (isSoJuros || isPagoNoMes) ? "bg-[radial-gradient(circle_at_top_left,rgba(190,123,255,0.28),transparent_55%),linear-gradient(135deg,#2C1544_0%,#6B399E_55%,#2C1544_100%)]" : (isQuitado || isParceladoCardBlue) ? "bg-blue-100 dark:bg-blue-950/30" : isDueToday ? "bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.20),transparent_55%),linear-gradient(135deg,#332812_0%,#8A6E2A_55%,#332812_100%)]" : "bg-white dark:bg-zinc-900"
+              const remainingColor = "text-[#16a34a] dark:text-green-400"
+              // Cards com fundo escuro (atrasado = vinho, só juros = roxo): texto direto no card precisa ser claro
+              const isDarkCard = isRenegotiada || isAtrasado || isSoJuros || isPagoNoMes || isDueToday || isDueTodayHighlight
 
               return (
                 <div key={group.clientId} className={`rounded-xl border overflow-hidden shadow-sm hover:shadow-md transition-shadow ${cardBorder} ${cardBg}`}>
                   {/* Header - etiqueta em cima, nome embaixo */}
-                  <div className="flex flex-col border-b border-gray-100 dark:border-zinc-800 px-3 pt-3 pb-3">
+                  <div className={`flex flex-col border-b px-3 pt-3 pb-3 ${isDarkCard ? "border-white/10" : "border-gray-100 dark:border-zinc-800"}`}>
                     <div className="flex justify-end min-h-[26px]">
                       {(() => {
                         const visibleTag = (loan.tags || []).find((t: string) => t.split("|")[0] !== "Renegociacao")
@@ -2188,8 +2220,8 @@ export default function EmprestimosPage() {
                         )
                       })()}
                     </div>
-                    <div className="mt-2 rounded-lg bg-black/5 dark:bg-black/20 px-4 py-2 text-center">
-                      <h3 className="truncate font-semibold text-base text-gray-900 dark:text-zinc-100">{group.clientName}</h3>
+                    <div className={`mt-2 rounded-lg border px-4 py-2 text-center ${isDarkCard ? "bg-white/10 border-white/10" : "bg-accent/60 border-border"}`}>
+                      <h3 className={`truncate font-bold text-base sm:text-lg ${isDarkCard ? "text-white" : "text-foreground"}`}>{group.clientName}</h3>
                     </div>
                   </div>
 
@@ -2219,14 +2251,14 @@ export default function EmprestimosPage() {
                       </button>
                       <button
                         onClick={() => setExpandedLoan(expandedLoan === loan.id ? null : loan.id)}
-                        className={`flex shrink-0 items-center gap-1 whitespace-nowrap px-1.5 py-1 rounded-lg text-[11px] transition-colors ${expandedLoan === loan.id ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800" : "text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800"}`}
+                        className={`flex shrink-0 items-center gap-1 whitespace-nowrap px-1.5 py-1 rounded-lg text-[11px] transition-colors ${expandedLoan === loan.id ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800" : isDarkCard ? "text-white/80 hover:bg-white/10" : "text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800"}`}
                         title="Detalhes"
                       >
                         <Eye className="h-3 w-3" /> Detalhes
                       </button>
                       <button
                         onClick={() => setComprovanteLoanId(loan.id)}
-                        className="flex shrink-0 items-center gap-1 whitespace-nowrap px-1.5 py-1 rounded-lg text-[11px] text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+                        className={`flex shrink-0 items-center gap-1 whitespace-nowrap px-1.5 py-1 rounded-lg text-[11px] transition-colors ${isDarkCard ? "text-white/80 hover:bg-white/10" : "text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800"}`}
                         title="Comprovante"
                       >
                         <FileText className="h-3 w-3" /> Comprovante
@@ -2234,49 +2266,53 @@ export default function EmprestimosPage() {
                     </div>
                   </div>
 
-                  {/* Valor Restante */}
-                  <div className="px-4 pb-3">
-                    <div className={`${remainingBg} rounded-2xl border border-white/50 px-4 py-3 text-center shadow-sm dark:border-white/5`}>
-                      <p className={`mt-1 text-[1.65rem] font-bold tabular-nums leading-none tracking-tight ${remainingColor}`}>{formatCurrency(remaining)}</p>
-                      <p className="mt-1 text-[11px] text-gray-500 dark:text-zinc-400">restante a receber</p>
+                  {/* Valor Restante (sem caixa, igual referência) */}
+                  <div className="px-4 pb-3 text-center">
+                    <p className={`text-2xl sm:text-3xl font-bold tabular-nums leading-none tracking-tight ${remainingColor}`}>{formatCurrency(remaining)}</p>
+                    <p className={`mt-1 text-[11px] ${isDarkCard ? "text-white/60" : "text-gray-500 dark:text-zinc-400"}`}>restante a receber</p>
+                  </div>
+
+                  {/* Emprestado / Total a Receber (caixa neutra, igual referência) */}
+                  <div className={`mx-4 grid grid-cols-2 gap-3 p-3 rounded-lg ${isDarkCard ? "bg-white/5" : "bg-muted/30"}`}>
+                    <div>
+                      <p className={`text-[11px] ${isDarkCard ? "text-white/60" : "text-muted-foreground"}`}>Emprestado</p>
+                      <p className={`text-sm font-bold tabular-nums truncate ${isDarkCard ? "text-white" : "text-foreground"}`}>{formatCurrency(loan.amount)}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className={`text-[11px] ${isDarkCard ? "text-white/60" : "text-muted-foreground"}`}>Total a Receber</p>
+                      <p className={`text-sm font-bold tabular-nums truncate ${isDarkCard ? "text-white" : "text-foreground"}`}>{formatCurrency(currentTotalReceivable)}</p>
                     </div>
                   </div>
 
-                  {/* Grid de valores */}
-                  <div className="mx-4 grid grid-cols-2 gap-px bg-gray-100 dark:bg-zinc-800 rounded-lg overflow-hidden border border-gray-100 dark:border-zinc-800">
-                    <div className={`${cellBg} px-3 py-2.5`}>
-                      <p className="text-[11px] text-gray-400 dark:text-zinc-500">Emprestado</p>
-                      <p className="text-sm font-bold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(loan.amount)}</p>
-                    </div>
-                    <div className={`${cellBg} px-3 py-2.5 text-right`}>
-                      <p className="text-[11px] text-gray-400 dark:text-zinc-500">Total a Receber</p>
-                      <p className="text-sm font-bold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(currentTotalReceivable)}</p>
-                    </div>
-                    <div className={`${cellBg} px-3 py-2.5`}>
-                      <p className="text-[11px] text-gray-400 dark:text-zinc-500 flex items-center gap-1"><Lock className="h-3 w-3" /> Lucro Previsto</p>
-                      <p className="text-sm font-bold tabular-nums text-primary">{formatCurrency(lucroPrevistoTotal)}</p>
-                      <div className="mt-1.5 flex flex-wrap items-center gap-1">
-                        <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 dark:bg-blue-950/30 px-1.5 py-0.5 text-[10px] font-medium text-blue-600 dark:text-blue-400">
-                          <DollarSign className="h-2.5 w-2.5" /> Juros: {formatCurrency(loan.profit)}
-                        </span>
-                        {multaAtraso > 0 && (
-                          <span className="inline-flex items-center gap-1 rounded-md bg-yellow-50 dark:bg-yellow-950/30 px-1.5 py-0.5 text-[10px] font-medium text-yellow-700 dark:text-yellow-500">
-                            <AlertTriangle className="h-2.5 w-2.5" /> Multas: {formatCurrency(multaAtraso)}
+                  {/* Lucro Previsto / Realizado (caixa própria, igual referência) */}
+                  <div className={`mx-4 mt-2 p-2 rounded-lg ${isDarkCard ? "bg-white/5 border border-white/10" : "bg-primary/5 border border-primary/20"}`}>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <p className={`text-[11px] flex items-center gap-1 ${isDarkCard ? "text-white/60" : "text-muted-foreground"}`}><Lock className="h-3 w-3" /> Lucro Previsto</p>
+                        <p className="text-sm font-bold tabular-nums text-primary">{formatCurrency(lucroPrevistoTotal)}</p>
+                        <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                          <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 dark:bg-blue-950/30 px-1.5 py-0.5 text-[10px] font-medium text-blue-600 dark:text-blue-400">
+                            <DollarSign className="h-2.5 w-2.5" /> Juros: {formatCurrency(loan.profit)}
                           </span>
-                        )}
+                          {multaAtraso > 0 && (
+                            <span className="inline-flex items-center gap-1 rounded-md bg-yellow-50 dark:bg-yellow-950/30 px-1.5 py-0.5 text-[10px] font-medium text-yellow-700 dark:text-yellow-500">
+                              <AlertTriangle className="h-2.5 w-2.5" /> Multas: {formatCurrency(multaAtraso)}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    <div className={`${cellBg} px-3 py-2.5 text-right`}>
-                      <p className="text-[11px] text-gray-400 dark:text-zinc-500 flex items-center gap-1 justify-end"><Check className="h-3 w-3" /> Lucro Realizado</p>
-                      <p className="text-sm font-bold tabular-nums text-primary">{formatCurrency(receivedProfit)} <span className="text-gray-400 dark:text-zinc-500 text-xs">{profitPct}%</span></p>
+                      <div className="text-right">
+                        <p className={`text-[11px] flex items-center gap-1 justify-end ${isDarkCard ? "text-white/60" : "text-muted-foreground"}`}><Check className="h-3 w-3" /> Lucro Realizado</p>
+                        <p className="text-sm font-bold tabular-nums text-primary">{formatCurrency(receivedProfit)} <span className={`text-xs ${isDarkCard ? "text-white/50" : "text-muted-foreground"}`}>{profitPct}%</span></p>
+                      </div>
                     </div>
                   </div>
 
                   {/* Contrato Anterior (renegociada) */}
                   {isRenegotiada && oldLoan && (
-                    <div className="mx-4 mt-3 rounded-lg border border-amber-300 dark:border-amber-700/50 bg-amber-50/50 dark:bg-amber-950/15 px-3 py-2.5">
-                      <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-1.5 mb-2">📜 Contrato Anterior</p>
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+                    <div className="mx-4 mt-2 rounded-lg border border-amber-300 dark:border-amber-700/50 bg-amber-50/50 dark:bg-amber-950/15 px-3 py-2">
+                      <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-1.5 mb-1.5">📜 Contrato Anterior</p>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs leading-tight">
                         <div>
                           <p className="text-gray-500 dark:text-zinc-400">Emprestado:</p>
                           <p className="font-semibold text-gray-900 dark:text-zinc-100 tabular-nums">{formatCurrency(oldLoan.amount)}</p>
@@ -2294,7 +2330,7 @@ export default function EmprestimosPage() {
                           <p className="font-semibold text-gray-900 dark:text-zinc-100 tabular-nums">{oldLoan.installmentCount}x</p>
                         </div>
                       </div>
-                      <div className="mt-2 pt-2 border-t border-amber-200 dark:border-amber-800/40 space-y-1 text-xs">
+                      <div className="mt-1.5 pt-1.5 border-t border-amber-200 dark:border-amber-800/40 space-y-0.5 text-xs leading-tight">
                         <div className="flex items-center justify-between">
                           <span className="text-gray-500 dark:text-zinc-400">Total recebido:</span>
                           <span className="font-semibold text-primary tabular-nums">{formatCurrency(getPaidTotal(oldLoan))}</span>
@@ -2324,10 +2360,10 @@ export default function EmprestimosPage() {
                     const overdueMonths = Math.floor(getCurrentOverdueDays(loan) / 30)
                     const jurosMultiplier = overdueMonths >= 1 ? overdueMonths : 0
                     return (
-                      <div className="mx-4 mt-3 px-3 py-2 rounded-lg bg-gray-50 dark:bg-zinc-800/60 space-y-1">
+                      <div className="mx-4 mt-3 px-3 py-2 rounded-lg bg-purple-500/15 border border-purple-400/40 space-y-1">
                         <div className="flex items-center justify-between">
-                          <span className="text-xs text-gray-500 dark:text-zinc-400">Só Juros (por parcela):</span>
-                          <span className="text-sm font-bold tabular-nums text-gray-900 dark:text-zinc-100">
+                          <span className={`text-xs ${isDarkCard ? "text-purple-200" : "text-purple-700 dark:text-purple-200"}`}>Só Juros (por parcela):</span>
+                          <span className={`text-sm font-bold tabular-nums ${isDarkCard ? "text-purple-100" : "text-purple-800 dark:text-purple-100"}`}>
                             {jurosMultiplier >= 1 && loan.installmentCount === 1 && (
                               <span className="mr-1 relative -top-0.5 text-[9px] font-medium text-orange-500 dark:text-orange-400">{jurosMultiplier + 1}x</span>
                             )}
@@ -2337,12 +2373,12 @@ export default function EmprestimosPage() {
                         {hasPartialInterest && (
                           <>
                             <div className="flex items-center justify-between">
-                              <span className="text-xs text-yellow-600 dark:text-yellow-400 flex items-center gap-1">💳 Juros já pago:</span>
-                              <span className="text-sm font-bold tabular-nums text-yellow-600 dark:text-yellow-400">{formatCurrency(jurosPago)}</span>
+                              <span className={`text-xs flex items-center gap-1 ${isDarkCard ? "text-yellow-200" : "text-yellow-700 dark:text-yellow-300"}`}>💳 Juros já pago:</span>
+                              <span className={`text-sm font-bold tabular-nums ${isDarkCard ? "text-yellow-200" : "text-yellow-700 dark:text-yellow-300"}`}>{formatCurrency(jurosPago)}</span>
                             </div>
                             <div className="flex items-center justify-between">
-                              <span className="text-xs text-red-500 dark:text-red-400">Juros pendente:</span>
-                              <span className="text-sm font-bold tabular-nums text-red-500 dark:text-red-400">{formatCurrency(jurosPendente)}</span>
+                              <span className={`text-xs ${isDarkCard ? "text-red-200" : "text-red-600 dark:text-red-300"}`}>Juros pendente:</span>
+                              <span className={`text-sm font-bold tabular-nums ${isDarkCard ? "text-red-200" : "text-red-600 dark:text-red-300"}`}>{formatCurrency(jurosPendente)}</span>
                             </div>
                           </>
                         )}
@@ -2352,24 +2388,24 @@ export default function EmprestimosPage() {
 
                   {/* Info row */}
                   {isDueToday && nextInst ? (
-                    <div className="mx-4 mt-3 rounded-2xl border border-orange-300 bg-orange-50/90 px-4 py-3 dark:border-orange-800 dark:bg-orange-950/20">
+                    <div className="mx-4 mt-3 rounded-2xl border-2 border-orange-300 bg-orange-50 px-4 py-3">
                       <div className="flex items-start justify-between gap-4">
                         <div>
-                          <div className="flex items-center gap-2 text-orange-700 dark:text-orange-300">
-                            <Clock className="h-4 w-4" />
+                          <div className="flex items-center gap-2 text-orange-700">
+                            <Bell className="h-4 w-4" />
                             <span className="text-base font-semibold">Vence Hoje!</span>
                           </div>
-                          <p className="mt-1 text-xs text-orange-600 dark:text-orange-300/90">Parcela {nextInst.number}/{loan.installmentCount}</p>
+                          <p className="mt-1 text-xs text-orange-600">Parcela {nextInst.number}/{loan.installmentCount}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-xl font-bold tabular-nums text-orange-700 dark:text-orange-300">{formatCurrency(nextInst.amount)}</p>
-                          <p className="mt-1 text-xs text-orange-600 dark:text-orange-300/90">Vencimento: {formatDate(nextInst.dueDate)}</p>
+                          <p className="text-xl font-bold tabular-nums text-orange-700">{formatCurrency(nextInst.amount)}</p>
+                          <p className="mt-1 text-xs text-orange-600">Vencimento: {formatDate(nextInst.dueDate)}</p>
                         </div>
                       </div>
-                      <p className="mt-3 text-xs text-orange-500 dark:text-orange-300/80">Lembre o cliente para evitar atrasos</p>
+                      <p className="mt-3 text-xs text-orange-500">Lembre o cliente para evitar atrasos</p>
                     </div>
                   ) : (
-                    <div className="mx-4 mt-3 flex flex-col gap-2 text-xs text-gray-500 dark:text-zinc-400 sm:flex-row sm:items-center sm:justify-between">
+                    <div className={`mx-4 mt-3 flex flex-col gap-2 text-xs sm:flex-row sm:items-center sm:justify-between ${isDarkCard ? "text-white/70" : "text-gray-500 dark:text-zinc-400"}`}>
                       <div className="flex flex-wrap items-center gap-1.5">
                         <Calendar className="h-3.5 w-3.5" />
                         <span>Venc: {nextInst ? formatDate(nextInst.dueDate) : "—"}</span>
@@ -2392,7 +2428,7 @@ export default function EmprestimosPage() {
                       </div>
                       <div className="flex flex-wrap items-center gap-1.5 sm:justify-end">
                         <DollarSign className="h-3.5 w-3.5 text-primary" />
-                        <span className="font-medium text-gray-700 dark:text-zinc-300">Pago: {formatCurrency(paid)}</span>
+                        <span className={`font-medium ${isDarkCard ? "text-white" : "text-gray-700 dark:text-zinc-300"}`}>Pago: {formatCurrency(paid)}</span>
                       </div>
                     </div>
                   )}
@@ -2419,7 +2455,7 @@ export default function EmprestimosPage() {
                       : overdueInsts
 
                     return (
-                      <div className="mx-4 mt-2 px-3 py-2.5 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/50 space-y-2">
+                      <div className="mx-4 mt-3 p-3 rounded-lg bg-red-50 border-2 border-red-300 dark:bg-red-500/20 dark:border-red-400/30 space-y-2">
                         {visibleOverdueInsts.map((inst: any, idx: number) => {
                           const instDue = new Date(inst.dueDate)
                           const todayStartInst = new Date(); todayStartInst.setHours(0, 0, 0, 0)
@@ -2432,18 +2468,18 @@ export default function EmprestimosPage() {
                           return (
                             <div key={inst.id} className="space-y-1">
                               <div className="flex items-center justify-between">
-                                <span className="text-xs font-medium text-red-700 dark:text-red-400">
+                                <span className="text-xs font-medium text-red-700 dark:text-red-300">
                                   Parcela {inst.number}/{loan.installmentCount} em atraso
                                 </span>
-                                <span className="text-xs font-bold text-red-700 dark:text-red-400">{instDays} dias</span>
+                                <span className="text-xs font-bold text-red-800 dark:text-red-200">{instDays} dias</span>
                               </div>
-                              <div className="flex items-center justify-between text-xs">
-                                <span className="text-gray-600 dark:text-zinc-400">Vencimento: {formatDate(inst.dueDate)}</span>
-                                <span className="text-gray-700 dark:text-zinc-300 font-medium">Valor: {formatCurrency(baseAmount)}</span>
+                              <div className="flex items-center justify-between text-xs mt-1 text-red-600 dark:text-red-300/70">
+                                <span>Vencimento: {formatDate(inst.dueDate)}</span>
+                                <span className="font-medium">Valor: {formatCurrency(baseAmount)}</span>
                               </div>
                               {instOverdueCharge > 0 && (
-                                <div className="flex items-center justify-between text-xs">
-                                  <span className="flex items-center gap-1.5 text-red-600 dark:text-red-400">
+                                <div className="flex items-center justify-between text-xs mt-1">
+                                  <span className="flex items-center gap-1.5 text-red-600 dark:text-red-300">
                                     Multa Aplicada:
                                     {(loan.penaltyFee > 0 || (loan.dailyInterest && (loan.dailyInterestAmount || 0) > 0)) && (
                                       <button
@@ -2456,12 +2492,12 @@ export default function EmprestimosPage() {
                                       </button>
                                     )}
                                   </span>
-                                  <span className="text-red-600 dark:text-red-400 font-bold">+{formatCurrency(instOverdueCharge)}</span>
+                                  <span className="text-red-600 dark:text-red-300 font-bold">+{formatCurrency(instOverdueCharge)}</span>
                                 </div>
                               )}
-                              <div className="flex items-center justify-between text-xs">
-                                <span className="font-medium text-red-700 dark:text-red-300">Valor total com atraso:</span>
-                                <span className="font-bold text-red-700 dark:text-red-300">{formatCurrency(payableAmount)}</span>
+                              <div className="flex items-center justify-between text-xs mt-2 border-t border-red-300 dark:border-red-400/30 pt-2">
+                                <span className="text-red-600 dark:text-red-300/80">Total com Atraso:</span>
+                                <span className="font-bold text-gray-900 dark:text-white">{formatCurrency(payableAmount)}</span>
                               </div>
                               {idx < visibleOverdueInsts.length - 1 && (
                                 <div className="border-b border-red-200 dark:border-red-800/40 pt-1" />
@@ -2470,22 +2506,23 @@ export default function EmprestimosPage() {
                           )
                         })}
                         {/* Configurar juros por atraso / aplicar multa */}
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="flex flex-wrap gap-2 mt-3">
                           <button
                             type="button"
                             onClick={() => openJurosDialog(loan)}
-                            className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-blue-500/40 bg-blue-500/10 py-2 text-xs font-medium text-blue-600 transition-colors hover:bg-blue-500/20 dark:text-blue-400"
+                            className="inline-flex flex-1 min-w-0 basis-[45%] items-center justify-center gap-1.5 rounded-md border py-2 text-xs font-medium transition-colors border-blue-500/50 text-blue-700 hover:bg-blue-500/10 dark:border-blue-400/50 dark:text-blue-300 dark:hover:bg-blue-500/20"
                           >
                             <Percent className="h-3.5 w-3.5" /> Juros por Atraso
                           </button>
                           <button
                             type="button"
                             onClick={() => openMultaDialog(loan)}
-                            className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-yellow-500/40 bg-yellow-500/10 py-2 text-xs font-medium text-yellow-700 transition-colors hover:bg-yellow-500/20 dark:text-yellow-400"
+                            className="inline-flex flex-1 min-w-0 basis-[45%] items-center justify-center gap-1.5 rounded-md border py-2 text-xs font-medium transition-colors border-orange-500/50 text-orange-700 hover:bg-orange-500/10 dark:border-orange-400/50 dark:text-orange-300 dark:hover:bg-orange-500/20"
                           >
                             <DollarSign className="h-3.5 w-3.5" /> Aplicar Multa
                           </button>
                         </div>
+                        <p className="text-[10px] text-red-600 dark:text-red-300/60 mt-2">Pague a parcela em atraso para regularizar o empréstimo</p>
                       </div>
                     )
                   })()}
@@ -2640,8 +2677,8 @@ export default function EmprestimosPage() {
                 return ni && toDateStr(new Date(ni.dueDate)) === todayStr
               })
 
-              const fCardBorder = isGroupRed ? "border-red-300 dark:border-red-800" : isGroupDueToday ? "border-orange-400 dark:border-orange-700" : isGroupPurple ? "border-purple-300 dark:border-purple-800" : isGroupBlue ? "border-blue-400 dark:border-blue-700" : isGroupOrange ? "border-orange-300 dark:border-orange-800" : isGroupGreen ? "border-gray-200 dark:border-zinc-700" : "border-primary/30 dark:border-primary/30"
-              const fCardBg = isGroupRed ? "bg-red-50 dark:bg-red-950/20" : isGroupDueToday ? "bg-orange-100 dark:bg-orange-950/30" : isGroupPurple ? "bg-purple-50 dark:bg-purple-950/20" : isGroupBlue ? "bg-blue-100 dark:bg-blue-950/30" : isGroupOrange ? "bg-orange-50 dark:bg-orange-950/20" : isGroupGreen ? "bg-white dark:bg-zinc-900" : "bg-white dark:bg-zinc-900"
+              const fCardBorder = isGroupRed ? "border-red-300 dark:border-red-800" : isGroupDueToday ? "border-amber-500/20 border-l-4 border-l-[#F59E0B] shadow-lg shadow-amber-950/40" : isGroupPurple ? "border-purple-300 dark:border-purple-800" : isGroupBlue ? "border-blue-400 dark:border-blue-700" : isGroupOrange ? "border-orange-300 dark:border-orange-800" : isGroupGreen ? "border-gray-200 dark:border-zinc-700" : "border-primary/30 dark:border-primary/30"
+              const fCardBg = isGroupRed ? "bg-red-50 dark:bg-red-950/20" : isGroupDueToday ? "bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.20),transparent_55%),linear-gradient(135deg,#332812_0%,#8A6E2A_55%,#332812_100%)]" : isGroupPurple ? "bg-purple-50 dark:bg-purple-950/20" : isGroupBlue ? "bg-blue-100 dark:bg-blue-950/30" : isGroupOrange ? "bg-orange-50 dark:bg-orange-950/20" : isGroupGreen ? "bg-white dark:bg-zinc-900" : "bg-white dark:bg-zinc-900"
               const fRemainingColor = isGroupRed ? "text-red-600 dark:text-red-400" : isGroupDueToday ? "text-orange-700 dark:text-orange-400" : isGroupPurple ? "text-purple-600 dark:text-purple-400" : isGroupBlue ? "text-blue-700 dark:text-blue-400" : isGroupOrange ? "text-orange-600 dark:text-orange-400" : isGroupGreen ? "text-[#16a34a] dark:text-green-400" : "text-primary"
               const fRemainingBg = isGroupRed ? "bg-red-50 dark:bg-red-950/30" : isGroupDueToday ? "bg-orange-100 dark:bg-orange-900/40" : isGroupPurple ? "bg-purple-50 dark:bg-purple-950/30" : isGroupBlue ? "bg-blue-100 dark:bg-blue-900/40" : isGroupOrange ? "bg-orange-50 dark:bg-orange-950/30" : isGroupGreen ? "bg-gray-50 dark:bg-zinc-800/50" : "bg-primary/10 dark:bg-primary/20"
               const fCellBg = isGroupRed ? "bg-red-50 dark:bg-red-950/20" : isGroupDueToday ? "bg-orange-50 dark:bg-orange-950/20" : isGroupPurple ? "bg-purple-50 dark:bg-purple-950/20" : isGroupBlue ? "bg-blue-50 dark:bg-blue-950/20" : isGroupOrange ? "bg-orange-50 dark:bg-orange-950/20" : isGroupGreen ? "bg-gray-50 dark:bg-zinc-800/50" : "bg-gray-50 dark:bg-zinc-800/50"

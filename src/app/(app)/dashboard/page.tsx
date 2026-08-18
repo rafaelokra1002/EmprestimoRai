@@ -334,7 +334,7 @@ export default function DashboardPage() {
 
       {/* ── Banner notificações push ───────────────────────────────────────── */}
       {showPushBanner && (
-        <div className="relative flex flex-col gap-3 rounded-xl border border-green-500/30 dark:border-green-800/50 bg-green-500/10 dark:bg-green-950/20 p-4 sm:flex-row sm:items-center sm:gap-4">
+        <div className="relative flex flex-col gap-3 rounded-xl border border-green-500/30 dark:border-green-800/50 bg-green-500/10 dark:bg-[#192B21] p-4 sm:flex-row sm:items-center sm:gap-4">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-green-500/15 dark:bg-green-900/40">
             <Bell className="h-5 w-5 text-[#16a34a] dark:text-green-400" />
           </div>
@@ -361,7 +361,7 @@ export default function DashboardPage() {
 
       {/* ── Banner slider (backup / instalar app) ──────────────────────────── */}
       {showBackupAlert && (
-        <div className={`relative overflow-hidden rounded-xl border p-4 pb-6 transition-colors ${bannerSlide === 0 ? "border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/20" : "border-blue-200 dark:border-blue-800/50 bg-blue-50 dark:bg-blue-950/20"}`}>
+        <div className={`relative overflow-hidden rounded-xl border p-4 pb-6 transition-colors ${bannerSlide === 0 ? "border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/20" : "border-blue-200 dark:border-blue-800/50 bg-blue-50 dark:bg-[#1E3578]"}`}>
           {bannerSlide === 0 ? (
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4 animate-in fade-in duration-300">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/40">
