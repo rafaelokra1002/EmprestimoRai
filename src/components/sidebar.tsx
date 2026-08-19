@@ -44,20 +44,21 @@ import {
 } from "lucide-react"
 import { useState } from "react"
 
-// Cor de fundo (gradiente) + badge do ícone por card
+// Cards de atalho (gradiente + borda + sombra + ícone) — valores exatos do style guide da referência.
 const cardColors: Record<string, { card: string; badge: string; icon: string }> = {
-  blue: { card: "border-white/10 bg-gradient-to-br from-[#0E9BA8] to-[#0A7B86] dark:border-blue-500/30 dark:from-blue-900/60 dark:to-blue-950/20", badge: "bg-black/20 ring-white/10 dark:bg-blue-500/20 dark:ring-blue-500/30", icon: "text-white dark:text-blue-400" },
-  green: { card: "border-white/10 bg-gradient-to-br from-[#0A6E4C] to-[#08573D] dark:border-green-500/30 dark:from-green-900/60 dark:to-green-950/20", badge: "bg-black/20 ring-white/10 dark:bg-green-500/20 dark:ring-green-500/30", icon: "text-white dark:text-green-400" },
-  amber: { card: "border-white/10 bg-gradient-to-br from-[#635826] to-[#4A431A] dark:border-amber-500/30 dark:from-amber-900/60 dark:to-amber-950/20", badge: "bg-black/20 ring-white/10 dark:bg-amber-500/20 dark:ring-amber-500/30", icon: "text-white dark:text-amber-400" },
-  purple: { card: "border-white/10 bg-gradient-to-br from-[#71317A] to-[#58255E] dark:border-purple-500/30 dark:from-purple-900/60 dark:to-purple-950/20", badge: "bg-black/20 ring-white/10 dark:bg-purple-500/20 dark:ring-purple-500/30", icon: "text-white dark:text-purple-400" },
+  emerald: { card: "border-[#34d399]/30 shadow-lg shadow-[#022c22]/40 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.28),transparent_55%),linear-gradient(135deg,#062418_0%,rgba(6,95,70,0.75)_55%,#062418_100%)]", badge: "bg-[#10b981]/25", icon: "text-[#6ee7b7]" },
+  amber: { card: "border-[#fbbf24]/30 shadow-lg shadow-[#451a03]/40 bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.22),transparent_55%),linear-gradient(135deg,#1F1408_0%,rgba(122,85,31,0.65)_55%,#1F1408_100%)]", badge: "bg-[#f59e0b]/25", icon: "text-[#fcd34d]" },
+  cyan: { card: "border-[#22d3ee]/30 shadow-lg shadow-[#083344]/40 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.22),transparent_55%),linear-gradient(135deg,#0a1f2e_0%,rgba(8,145,178,0.65)_55%,#0a1f2e_100%)]", badge: "bg-[#06b6d4]/25", icon: "text-[#67e8f9]" },
+  yellow: { card: "border-[#facc15]/30 shadow-lg shadow-[#422006]/40 bg-[radial-gradient(circle_at_top_left,rgba(250,204,21,0.22),transparent_55%),linear-gradient(135deg,#1F1408_0%,rgba(161,98,7,0.65)_55%,#1F1408_100%)]", badge: "bg-[#eab308]/25", icon: "text-[#fde047]" },
+  fuchsia: { card: "border-[#e879f9]/30 shadow-lg shadow-[#4a044e]/40 bg-[radial-gradient(circle_at_top_left,rgba(217,70,239,0.28),transparent_55%),linear-gradient(135deg,#2b0a3d_0%,rgba(124,29,111,0.7)_55%,#2b0a3d_100%)]", badge: "bg-[#d946ef]/25", icon: "text-[#f5d0fe]" },
 }
 
 const topItems = [
-  { href: "/funcionarios", label: "Funcionários", subtitle: "Cadastrar funcionários", icon: UserPlus, color: "green" },
+  { href: "/funcionarios", label: "Funcionários", subtitle: "Cadastrar funcionários", icon: UserPlus, color: "emerald" },
   { href: "/whatsapp", label: "Relatórios Diário", subtitle: "Relatórios via WhatsApp", icon: FileCheck, color: "amber" },
-  { href: "/perfil", label: "Meu Perfil", subtitle: "Gerenciar dados e plano", icon: User, color: "blue" },
-  { href: "#", label: "Meus Planos", subtitle: "Assinatura e upgrades", icon: Crown, color: "amber" },
-  { href: "#", label: "Consultas", subtitle: "SPC, Serasa, CPF e mais", icon: Search, color: "purple" },
+  { href: "/perfil", label: "Meu Perfil", subtitle: "Gerenciar dados e plano", icon: User, color: "cyan" },
+  { href: "#", label: "Meus Planos", subtitle: "Assinatura e upgrades", icon: Crown, color: "yellow" },
+  { href: "/consultas", label: "Consultas", subtitle: "CNPJ, CPF e mais", icon: Search, color: "fuchsia" },
 ]
 
 const highlightItem = null
@@ -69,7 +70,7 @@ const menuItems: MenuItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutGrid },
   { href: "#", label: "Central de Atendimento", icon: Headphones, badge: "Beta" },
   { href: "/clientes", label: "Clientes", icon: Users },
-  { href: "#", label: "Consultas", icon: Search },
+  { href: "/consultas", label: "Consultas", icon: Search },
   {
     label: "Empréstimos",
     icon: DollarSign,
@@ -119,11 +120,11 @@ export function Sidebar() {
   const renderLeaf = (item: LeafItem, sub = false) => {
     const isActive = item.href === activeHref
     const className = cn(
-      "flex items-center gap-2 rounded-lg text-[13px] transition-all overflow-hidden",
+      "flex items-center gap-2 rounded-lg text-[13px] transition-all overflow-hidden border-l-[3px] border-l-transparent",
       sub ? "px-2 py-2" : "px-2 py-2.5",
       isActive
-        ? "border-l-[3px] border-l-amber-400 bg-gradient-to-r from-amber-500/10 via-white/[0.03] to-transparent text-white font-semibold"
-        : "font-normal text-violet-50/90 hover:bg-white/10 hover:text-white"
+        ? "border-l-[#D4A574] text-white font-semibold shadow-md shadow-black/30 bg-[radial-gradient(circle_at_left,rgba(212,165,116,0.18),transparent_60%),linear-gradient(135deg,#0F1419_0%,rgba(30,41,59,0.85)_55%,#0F1419_100%)]"
+        : "font-normal text-white/80 hover:bg-white/10 hover:text-white hover:border-l-[#D4A574]/40"
     )
     const iconCls = cn(sub ? "h-5 w-5" : "h-6 w-6", "shrink-0")
     const inner = (
@@ -167,7 +168,7 @@ export function Sidebar() {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed top-0 left-0 z-40 flex h-full w-72 flex-col overflow-y-auto bg-[#16A249] transition-transform duration-300 ease-in-out dark:bg-[#0F141A]",
+          "fixed top-0 left-0 z-40 flex h-full w-72 flex-col overflow-y-auto border-r border-[#17823E] bg-[#16A249] transition-transform duration-300 ease-in-out dark:border-[#323E38] dark:bg-[radial-gradient(circle_at_top,rgba(212,165,116,0.08),transparent_60%),linear-gradient(180deg,#0F1419_0%,#0B0F17_100%)]",
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
@@ -176,7 +177,7 @@ export function Sidebar() {
             <img src="/logo.svg" alt="SP Cobrança Fácil" className="h-9 w-9 shrink-0" />
             <span className="text-lg font-bold text-white leading-tight">SP Cobrança Fácil</span>
           </div>
-          <span className="pl-[2.875rem] text-[11px] text-violet-200 leading-tight">Gestão Financeira</span>
+          <span className="pl-[2.875rem] text-[11px] text-white/70 leading-tight">Gestão Financeira</span>
         </div>
 
         <nav className="p-3 space-y-1">
@@ -193,8 +194,8 @@ export function Sidebar() {
                     cardColors[item.color].card
                   )}
                 >
-                  <span className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ring-1", cardColors[item.color].badge)}>
-                    <item.icon className={cn("h-4 w-4", cardColors[item.color].icon)} />
+                  <span className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-full", cardColors[item.color].badge)}>
+                    <item.icon className={cn("h-[18px] w-[18px]", cardColors[item.color].icon)} />
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className="truncate font-semibold text-[13px] leading-tight text-white">{item.label}</p>
@@ -207,7 +208,7 @@ export function Sidebar() {
 
           </div>
 
-          <p className="px-3 pb-2 pt-1 text-[10px] font-semibold uppercase tracking-widest text-violet-200/80">Menu</p>
+          <p className="px-4 pb-2 pt-1 text-[12px] font-medium uppercase tracking-[0.6px] text-white/50">Menu</p>
 
           {/* Regular menu items */}
           {menuItems.map((item) => {
@@ -221,7 +222,7 @@ export function Sidebar() {
                     onClick={() => setOpenGroups((g) => ({ ...g, [item.label]: !isGroupOpen }))}
                     className={cn(
                       "flex w-full items-center gap-2 rounded-lg px-2 py-2.5 text-[13px] transition-all",
-                      groupActive ? "text-white font-semibold" : "font-normal text-violet-50/90 hover:bg-white/10 hover:text-white"
+                      groupActive ? "text-white font-semibold" : "font-normal text-white/80 hover:bg-white/10 hover:text-white"
                     )}
                   >
                     <item.icon className="h-6 w-6 shrink-0" />

@@ -1362,7 +1362,7 @@ export default function ClientesPage() {
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
         title={editing ? "Editar Cliente" : "Novo Cliente"}
-        className="max-w-2xl"
+        className="max-w-2xl dark:bg-[#121614]"
       >
         {/* Tabs */}
         <div className="grid grid-cols-1 gap-1 rounded-xl bg-gray-100 dark:bg-zinc-800 p-1 mb-6 sm:grid-cols-3">
@@ -1434,7 +1434,7 @@ export default function ClientesPage() {
                 {errors.name && <p className="text-red-600 text-xs mt-1">{errors.name.message}</p>}
               </div>
 
-              {/* CPF + Telefone */}
+              {/* CPF + RG */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <Label>CPF</Label>
@@ -1442,22 +1442,46 @@ export default function ClientesPage() {
                     {...register("document")}
                     placeholder="000.000.000-00"
                     className="mt-1"
-                    onChange={(e) => setValue("document", cpfMask(e.target.value))}
+                    onChange={(e) => setValue("document", cpfMask(e.target.value), { shouldValidate: true })}
+                  />
+                  {errors.document && <p className="text-red-600 text-xs mt-1">{errors.document.message}</p>}
+                </div>
+                <div>
+                  <Label>RG</Label>
+                  <Input
+                    {...register("rg")}
+                    placeholder="00.000.000-0"
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+
+              {/* E-mail + Telefone (+55) */}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <Label>E-mail</Label>
+                  <Input
+                    {...register("email")}
+                    type="email"
+                    placeholder="email@exemplo.com"
+                    className="mt-1"
                   />
                 </div>
                 <div>
                   <Label>Telefone (com DDD)</Label>
-                  <Input
-                    {...register("phone")}
-                    placeholder="(00) 00000-0000"
-                    className="mt-1"
-                    onChange={(e) => setValue("phone", phoneMask(e.target.value))}
-                  />
-                  <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">Inclua o DDD para WhatsApp</p>
+                  <div className="mt-1 flex gap-2">
+                    <span className="flex h-10 shrink-0 items-center rounded-md border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800/60 px-3 text-sm font-medium text-gray-600 dark:text-zinc-300">+55</span>
+                    <Input
+                      {...register("phone")}
+                      placeholder="(15) 98104-6991"
+                      onChange={(e) => setValue("phone", phoneMask(e.target.value))}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">+55 já incluso. Digite DDD + número para envio via WhatsApp.</p>
                 </div>
               </div>
 
-              {/* Instagram + Email */}
+              {/* Instagram + Facebook */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <Label>Instagram</Label>
@@ -1468,11 +1492,10 @@ export default function ClientesPage() {
                   />
                 </div>
                 <div>
-                  <Label>E-mail</Label>
+                  <Label>Facebook</Label>
                   <Input
-                    {...register("email")}
-                    type="email"
-                    placeholder="email@exemplo.com"
+                    {...register("facebook")}
+                    placeholder="Nome ou URL do perfil"
                     className="mt-1"
                   />
                 </div>

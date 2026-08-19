@@ -1896,7 +1896,7 @@ export default function EmprestimosPage() {
           >
             <Clock className="h-4 w-4 mr-2" /> Novo Diário
           </button>
-          <Button onClick={() => { resetForm(); setDialogOpen(true) }} className="bg-primary hover:bg-primary/90 text-white">
+          <Button onClick={() => { resetForm(); setDialogOpen(true) }} className="text-white border border-[#10b981]/30 shadow-lg shadow-[#022c22]/40 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.35),transparent_55%),linear-gradient(135deg,#062418_0%,rgba(6,95,70,0.85)_55%,#062418_100%)] hover:bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.45),transparent_55%),linear-gradient(135deg,#083324_0%,rgba(6,95,70,0.95)_55%,#083324_100%)]">
             <Plus className="h-4 w-4 mr-2" /> Novo Empréstimo
           </Button>
         </div>
@@ -1961,13 +1961,13 @@ export default function EmprestimosPage() {
           <div className="flex bg-gray-50 dark:bg-zinc-800 rounded-lg p-1 border border-gray-200 dark:border-zinc-800">
             <button
               onClick={() => setViewMode("grid")}
-              className={`p-1.5 rounded-md transition-colors ${viewMode === "grid" ? "bg-gray-200 dark:bg-zinc-700 text-gray-900 dark:text-zinc-100" : "text-gray-400 dark:text-zinc-500 hover:text-gray-700 dark:text-zinc-300"}`}
+              className={`p-1.5 rounded-md transition-colors ${viewMode === "grid" ? "bg-green-500 text-white shadow-sm" : "text-gray-400 dark:text-zinc-400 dark:bg-[#171C1A] hover:text-gray-700 dark:hover:text-zinc-200"}`}
             >
               <LayoutGrid className="h-4 w-4" />
             </button>
             <button
               onClick={() => setViewMode("list")}
-              className={`p-1.5 rounded-md transition-colors ${viewMode === "list" ? "bg-gray-200 dark:bg-zinc-700 text-gray-900 dark:text-zinc-100" : "text-gray-400 dark:text-zinc-500 hover:text-gray-700 dark:text-zinc-300"}`}
+              className={`p-1.5 rounded-md transition-colors ${viewMode === "list" ? "bg-green-500 text-white shadow-sm" : "text-gray-400 dark:text-zinc-400 dark:bg-[#171C1A] hover:text-gray-700 dark:hover:text-zinc-200"}`}
             >
               <List className="h-4 w-4" />
             </button>
@@ -2207,7 +2207,7 @@ export default function EmprestimosPage() {
                 <div key={group.clientId} className={`rounded-xl border overflow-hidden shadow-sm hover:shadow-md transition-shadow ${cardBorder} ${cardBg}`}>
                   {/* Header - etiqueta em cima, nome embaixo */}
                   <div className={`flex flex-col border-b px-3 pt-3 pb-3 ${isDarkCard ? "border-white/10" : "border-gray-100 dark:border-zinc-800"}`}>
-                    <div className="flex justify-end min-h-[26px]">
+                    <div className="flex justify-end empty:hidden mb-2">
                       {(() => {
                         const visibleTag = (loan.tags || []).find((t: string) => t.split("|")[0] !== "Renegociacao")
                         if (!visibleTag) return null
@@ -2220,7 +2220,7 @@ export default function EmprestimosPage() {
                         )
                       })()}
                     </div>
-                    <div className={`mt-2 rounded-lg border px-4 py-2 text-center ${isDarkCard ? "bg-white/10 border-white/10" : "bg-accent/60 border-border"}`}>
+                    <div className={`rounded-lg border px-4 py-2 text-center ${isDarkCard ? "bg-white/10 border-white/10" : "bg-accent/60 border-border"}`}>
                       <h3 className={`truncate font-bold text-base sm:text-lg ${isDarkCard ? "text-white" : "text-foreground"}`}>{group.clientName}</h3>
                     </div>
                   </div>
@@ -2290,21 +2290,21 @@ export default function EmprestimosPage() {
                       <div>
                         <p className={`text-[11px] flex items-center gap-1 ${isDarkCard ? "text-white/60" : "text-muted-foreground"}`}><Lock className="h-3 w-3" /> Lucro Previsto</p>
                         <p className="text-sm font-bold tabular-nums text-primary">{formatCurrency(lucroPrevistoTotal)}</p>
-                        <div className="mt-1.5 flex flex-wrap items-center gap-1">
-                          <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 dark:bg-blue-950/30 px-1.5 py-0.5 text-[10px] font-medium text-blue-600 dark:text-blue-400">
-                            <DollarSign className="h-2.5 w-2.5" /> Juros: {formatCurrency(loan.profit)}
-                          </span>
-                          {multaAtraso > 0 && (
-                            <span className="inline-flex items-center gap-1 rounded-md bg-yellow-50 dark:bg-yellow-950/30 px-1.5 py-0.5 text-[10px] font-medium text-yellow-700 dark:text-yellow-500">
-                              <AlertTriangle className="h-2.5 w-2.5" /> Multas: {formatCurrency(multaAtraso)}
-                            </span>
-                          )}
-                        </div>
                       </div>
                       <div className="text-right">
                         <p className={`text-[11px] flex items-center gap-1 justify-end ${isDarkCard ? "text-white/60" : "text-muted-foreground"}`}><Check className="h-3 w-3" /> Lucro Realizado</p>
                         <p className="text-sm font-bold tabular-nums text-primary">{formatCurrency(receivedProfit)} <span className={`text-xs ${isDarkCard ? "text-white/50" : "text-muted-foreground"}`}>{profitPct}%</span></p>
                       </div>
+                    </div>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                      <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 dark:bg-blue-950/30 px-1.5 py-0.5 text-[10px] font-medium text-blue-600 dark:text-blue-400">
+                        <DollarSign className="h-2.5 w-2.5" /> Juros: {formatCurrency(loan.profit)}
+                      </span>
+                      {multaAtraso > 0 && (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-yellow-50 dark:bg-yellow-950/30 px-1.5 py-0.5 text-[10px] font-medium text-yellow-700 dark:text-yellow-500">
+                          <AlertTriangle className="h-2.5 w-2.5" /> Multas: {formatCurrency(multaAtraso)}
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -2346,45 +2346,6 @@ export default function EmprestimosPage() {
                       </div>
                     </div>
                   )}
-
-                  {/* Juros por parcela */}
-                  {(() => {
-                    const interestPayments = loan.payments.filter((p: any) => {
-                      const notes = (p.notes || "").toLowerCase()
-                      return notes.includes("parcial de juros")
-                    })
-                    const totalPartialPaid = interestPayments.reduce((s: number, p: any) => s + p.amount, 0)
-                    const jurosPago = intPerInst > 0 ? totalPartialPaid % intPerInst : 0
-                    const jurosPendente = intPerInst > 0 ? intPerInst - jurosPago : 0
-                    const hasPartialInterest = jurosPago > 0
-                    const overdueMonths = Math.floor(getCurrentOverdueDays(loan) / 30)
-                    const jurosMultiplier = overdueMonths >= 1 ? overdueMonths : 0
-                    return (
-                      <div className="mx-4 mt-3 px-3 py-2 rounded-lg bg-purple-500/15 border border-purple-400/40 space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className={`text-xs ${isDarkCard ? "text-purple-200" : "text-purple-700 dark:text-purple-200"}`}>Só Juros (por parcela):</span>
-                          <span className={`text-sm font-bold tabular-nums ${isDarkCard ? "text-purple-100" : "text-purple-800 dark:text-purple-100"}`}>
-                            {jurosMultiplier >= 1 && loan.installmentCount === 1 && (
-                              <span className="mr-1 relative -top-0.5 text-[9px] font-medium text-orange-500 dark:text-orange-400">{jurosMultiplier + 1}x</span>
-                            )}
-                            {formatCurrency(intPerInst)}
-                          </span>
-                        </div>
-                        {hasPartialInterest && (
-                          <>
-                            <div className="flex items-center justify-between">
-                              <span className={`text-xs flex items-center gap-1 ${isDarkCard ? "text-yellow-200" : "text-yellow-700 dark:text-yellow-300"}`}>💳 Juros já pago:</span>
-                              <span className={`text-sm font-bold tabular-nums ${isDarkCard ? "text-yellow-200" : "text-yellow-700 dark:text-yellow-300"}`}>{formatCurrency(jurosPago)}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className={`text-xs ${isDarkCard ? "text-red-200" : "text-red-600 dark:text-red-300"}`}>Juros pendente:</span>
-                              <span className={`text-sm font-bold tabular-nums ${isDarkCard ? "text-red-200" : "text-red-600 dark:text-red-300"}`}>{formatCurrency(jurosPendente)}</span>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    )
-                  })()}
 
                   {/* Info row */}
                   {isDueToday && nextInst ? (
@@ -2432,6 +2393,45 @@ export default function EmprestimosPage() {
                       </div>
                     </div>
                   )}
+
+                  {/* Juros por parcela */}
+                  {(() => {
+                    const interestPayments = loan.payments.filter((p: any) => {
+                      const notes = (p.notes || "").toLowerCase()
+                      return notes.includes("parcial de juros")
+                    })
+                    const totalPartialPaid = interestPayments.reduce((s: number, p: any) => s + p.amount, 0)
+                    const jurosPago = intPerInst > 0 ? totalPartialPaid % intPerInst : 0
+                    const jurosPendente = intPerInst > 0 ? intPerInst - jurosPago : 0
+                    const hasPartialInterest = jurosPago > 0
+                    const overdueMonths = Math.floor(getCurrentOverdueDays(loan) / 30)
+                    const jurosMultiplier = overdueMonths >= 1 ? overdueMonths : 0
+                    return (
+                      <div className="mx-4 mt-3 px-3 py-2 rounded-lg bg-purple-500/15 border border-purple-400/40 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className={`text-xs ${isDarkCard ? "text-purple-200" : "text-purple-700 dark:text-purple-200"}`}>Só Juros (por parcela):</span>
+                          <span className={`text-sm font-bold tabular-nums ${isDarkCard ? "text-purple-100" : "text-purple-800 dark:text-purple-100"}`}>
+                            {jurosMultiplier >= 1 && loan.installmentCount === 1 && (
+                              <span className="mr-1 relative -top-0.5 text-[9px] font-medium text-orange-500 dark:text-orange-400">{jurosMultiplier + 1}x</span>
+                            )}
+                            {formatCurrency(intPerInst)}
+                          </span>
+                        </div>
+                        {hasPartialInterest && (
+                          <>
+                            <div className="flex items-center justify-between">
+                              <span className={`text-xs flex items-center gap-1 ${isDarkCard ? "text-yellow-200" : "text-yellow-700 dark:text-yellow-300"}`}>💳 Juros já pago:</span>
+                              <span className={`text-sm font-bold tabular-nums ${isDarkCard ? "text-yellow-200" : "text-yellow-700 dark:text-yellow-300"}`}>{formatCurrency(jurosPago)}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className={`text-xs ${isDarkCard ? "text-red-200" : "text-red-600 dark:text-red-300"}`}>Juros pendente:</span>
+                              <span className={`text-sm font-bold tabular-nums ${isDarkCard ? "text-red-200" : "text-red-600 dark:text-red-300"}`}>{formatCurrency(jurosPendente)}</span>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )
+                  })()}
 
                   {/* Parcelas em atraso - Breakdown */}
                   {(() => {
@@ -2788,7 +2788,7 @@ export default function EmprestimosPage() {
       )}
 
       {/* ===== NOVO EMPRÉSTIMO DIALOG ===== */}
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} title="Novo Empréstimo" className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} title="Novo Empréstimo" className="max-w-lg max-h-[90vh] overflow-y-auto dark:bg-[#121614]">
         <div className="space-y-5">
           {/* Cliente */}
           <div className="space-y-2">

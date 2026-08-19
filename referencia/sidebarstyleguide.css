@@ -1,0 +1,203 @@
+/* =========================================================
+   CobraFácil — Guia de Estilo do Sidebar (extraído da app)
+   Fonte: https://cobrafacil.online/loans (modo escuro / "dark")
+   ========================================================= */
+
+/* -----------------------------------------------------------
+   1. TOKENS DE DESIGN (variáveis HSL usadas no :root.dark)
+   ----------------------------------------------------------- */
+:root.dark {
+  --background: 150 10% 8%;          /* fundo geral da app */
+  --foreground: 0 0% 98%;            /* texto principal */
+
+  --sidebar-foreground: 0 0% 98%;    /* texto do sidebar */
+  --sidebar-border: 150 10% 22%;     /* borda direita do sidebar */
+  --sidebar-primary: 142 70% 45%;    /* verde de destaque (marca) */
+  --sidebar-accent: 150 10% 16%;     /* fundo de hover/realce sutil */
+
+  --radius: 0.75rem;                 /* raio padrão (rounded-xl = 12px) */
+}
+
+/* -----------------------------------------------------------
+   2. TIPOGRAFIA
+   ----------------------------------------------------------- */
+/* Corpo / itens de menu */
+body,
+.sidebar-nav-item {
+  font-family: "Inter", sans-serif;
+}
+
+/* Logo / títulos de destaque */
+.sidebar-logo-text {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.sidebar-logo-subtitle {
+  font-family: "Inter", sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.sidebar-section-label {
+  /* rótulo "MENU" acima dos itens simples */
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+  padding: 0 16px;
+  margin: 0 0 8px;
+}
+
+/* -----------------------------------------------------------
+   3. ESTRUTURA / ESPAÇAMENTO
+   ----------------------------------------------------------- */
+.sidebar {
+  width: 288px;                       /* w-72 */
+  border-right: 1px solid hsl(var(--sidebar-border));
+  background: radial-gradient(circle at top, rgba(212,165,116,0.08), transparent 60%),
+              linear-gradient(180deg, #0F1419 0%, #0B0F17 100%);
+}
+
+.sidebar-nav {
+  padding: 0 12px;                    /* px-3 no container do nav */
+}
+
+.sidebar-nav-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;                           /* space-y-1 */
+}
+
+.sidebar-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;                          /* gap-3 entre ícone e texto */
+  padding: 12px 16px;                 /* py-3 px-4 */
+  border-radius: 12px;                /* rounded-xl */
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+  border-left: 3px solid transparent;
+  transition: all 200ms ease;
+}
+
+.sidebar-nav-item .icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* item ativo (ex.: "Empréstimos" dentro do submenu) */
+.sidebar-nav-item.active {
+  margin-left: 16px;                  /* ml-4 */
+  padding: 8px 16px;                  /* py-2 px-4 */
+  border-left: 3px solid #D4A574;     /* dourado/areia */
+  color: #ffffff;
+  box-shadow: 0 4px 6px -1px rgba(2, 6, 23, 0.3);
+  background:
+    radial-gradient(circle at left, rgba(212,165,116,0.18), transparent 60%),
+    linear-gradient(135deg, #0F1419 0%, rgba(30,41,59,0.85) 55%, #0F1419 100%);
+}
+
+.sidebar-nav-item:hover {
+  border-left-color: rgba(212, 165, 116, 0.4);
+  color: #ffffff;
+  background:
+    radial-gradient(circle at left, rgba(212,165,116,0.08), transparent 60%),
+    linear-gradient(135deg, rgba(15,20,25,0.5) 0%, rgba(30,41,59,0.3) 55%, rgba(15,20,25,0.5) 100%);
+}
+
+/* -----------------------------------------------------------
+   4. CARDS DE ATALHO (topo do sidebar) — um "gradient card"
+   por item, com ícone circular colorido
+   ----------------------------------------------------------- */
+.sidebar-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid;
+  color: #ffffff;
+}
+
+.sidebar-card .icon-wrap {
+  width: 36px;
+  height: 36px;
+  border-radius: 9999px;              /* circular */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Funcionários — verde esmeralda */
+.sidebar-card--emerald {
+  border-color: rgba(52, 211, 153, 0.3);
+  box-shadow: 0 10px 15px -3px rgba(2, 44, 34, 0.4);
+  background:
+    radial-gradient(circle at top left, rgba(16,185,129,0.28), transparent 55%),
+    linear-gradient(135deg, #062418 0%, rgba(6,95,70,0.75) 55%, #062418 100%);
+}
+.sidebar-card--emerald .icon-wrap { background: rgba(16, 185, 129, 0.25); }
+.sidebar-card--emerald .icon { color: #6ee7b7; }
+
+/* Relatórios Diário — âmbar */
+.sidebar-card--amber {
+  border-color: rgba(251, 191, 36, 0.3);
+  box-shadow: 0 10px 15px -3px rgba(69, 26, 3, 0.4);
+  background:
+    radial-gradient(circle at top left, rgba(251,191,36,0.22), transparent 55%),
+    linear-gradient(135deg, #1F1408 0%, rgba(122,85,31,0.65) 55%, #1F1408 100%);
+}
+.sidebar-card--amber .icon-wrap { background: rgba(245, 158, 11, 0.25); }
+.sidebar-card--amber .icon { color: #fcd34d; }
+
+/* Meu Perfil — ciano */
+.sidebar-card--cyan {
+  border-color: rgba(34, 211, 238, 0.3);
+  box-shadow: 0 10px 15px -3px rgba(8, 51, 68, 0.4);
+  background:
+    radial-gradient(circle at top left, rgba(34,211,238,0.22), transparent 55%),
+    linear-gradient(135deg, #0a1f2e 0%, rgba(8,145,178,0.65) 55%, #0a1f2e 100%);
+}
+.sidebar-card--cyan .icon-wrap { background: rgba(6, 182, 212, 0.25); }
+.sidebar-card--cyan .icon { color: #67e8f9; }
+
+/* Meus Planos — amarelo */
+.sidebar-card--yellow {
+  border-color: rgba(250, 204, 21, 0.3);
+  box-shadow: 0 10px 15px -3px rgba(66, 32, 6, 0.4);
+  background:
+    radial-gradient(circle at top left, rgba(250,204,21,0.22), transparent 55%),
+    linear-gradient(135deg, #1F1408 0%, rgba(161,98,7,0.65) 55%, #1F1408 100%);
+}
+.sidebar-card--yellow .icon-wrap { background: rgba(234, 179, 8, 0.25); }
+.sidebar-card--yellow .icon { color: #fde047; }
+
+/* Consultas — fúcsia */
+.sidebar-card--fuchsia {
+  border-color: rgba(232, 121, 249, 0.3);
+  box-shadow: 0 10px 15px -3px rgba(74, 4, 78, 0.4);
+  background:
+    radial-gradient(circle at top left, rgba(217,70,239,0.28), transparent 55%),
+    linear-gradient(135deg, #2b0a3d 0%, rgba(124,29,111,0.7) 55%, #2b0a3d 100%);
+}
+.sidebar-card--fuchsia .icon-wrap { background: rgba(217, 70, 239, 0.25); }
+.sidebar-card--fuchsia .icon { color: #f5d0fe; }
+
+/* -----------------------------------------------------------
+   5. LOGO (topo do sidebar)
+   ----------------------------------------------------------- */
+.sidebar-logo-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 9999px;
+  background: rgba(16, 185, 129, 0.25); /* emerald-500/25 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

@@ -1,0 +1,130 @@
+/* =========================================================
+   CobraFácil — Guia de Estilo MODO CLARO
+   Fonte: https://cobrafacil.online (html.class = "light")
+   Complementa: sidebar-style-guide.css e dashboard-style-guide.css
+   (que documentam o modo escuro)
+   ========================================================= */
+
+/* -----------------------------------------------------------
+   0. IMPORTANTE
+   -----------------------------------------------------------
+   Os cards com gradiente colorido (cards de estatística do
+   dashboard, cards de atalho do sidebar, banners promocionais,
+   card ativo do menu, cards de status "Crítico"/"Tudo em ordem")
+   usam classes Tailwind arbitrárias SEM prefixo "dark:" — ou
+   seja, eles são IDÊNTICOS no claro e no escuro. Só mudam:
+   fundo da página, fundo dos cards neutros (bg-card), texto,
+   bordas, header e o fundo sólido do sidebar (via var --sidebar).
+   ----------------------------------------------------------- */
+
+/* -----------------------------------------------------------
+   1. TOKENS DE DESIGN (variáveis HSL em :root.light)
+   ----------------------------------------------------------- */
+:root.light {
+  --background: 0 0% 98%;             /* fundo geral da página (quase branco) */
+  --foreground: 150 10% 15%;          /* texto principal (verde-carvão escuro) */
+
+  --card: 0 0% 100%;                  /* fundo dos cards neutros */
+  --card-foreground: 150 10% 15%;
+
+  --border: 150 10% 90%;              /* bordas sutis */
+  --muted: 150 10% 95%;
+  --muted-foreground: 150 10% 45%;
+
+  --primary: 142 76% 36%;             /* verde de marca */
+  --primary-foreground: 0 0% 100%;
+  --success: 142 76% 36%;
+  --warning: 38 92% 50%;
+  --destructive: 0 84% 60%;
+
+  --sidebar-foreground: 0 0% 100%;    /* texto do sidebar continua branco */
+  --sidebar-border: 142 70% 30%;      /* verde escuro */
+  --sidebar-accent: 142 70% 30%;
+
+  --radius: 0.75rem;
+}
+
+/* -----------------------------------------------------------
+   2. SIDEBAR — a única grande mudança visual
+   ----------------------------------------------------------- */
+/* No escuro o fundo é um gradiente quase preto; no claro vira
+   um verde sólido (a var --sidebar resolve para essa cor). */
+.sidebar {
+  background-color: rgb(22, 162, 73);   /* #16A249 */
+  border-right: 1px solid rgb(23, 130, 62); /* #17823E */
+}
+/* Itens do menu (texto, ícones, item ativo, cards de atalho
+   coloridos) permanecem EXATAMENTE iguais ao sidebar-style-guide.css —
+   não têm variante de tema. */
+
+/* -----------------------------------------------------------
+   3. TOPO / HEADER DA PÁGINA
+   ----------------------------------------------------------- */
+.topbar {
+  background-color: #ffffff;            /* bg-card */
+  border-bottom: 1px solid rgb(227, 232, 230);
+  padding: 16px 32px;                   /* py-4 px-8 */
+}
+
+.badge-dono {
+  color: rgb(22, 101, 52);              /* text-green-800 */
+  font-size: 14px;
+  font-weight: 500;
+  background: transparent;
+}
+
+/* -----------------------------------------------------------
+   4. CONTEÚDO DO DASHBOARD
+   ----------------------------------------------------------- */
+body {
+  background-color: rgb(250, 250, 250);
+}
+
+.dashboard-title {
+  color: rgb(34, 42, 38);
+  font-size: 24px;
+  font-weight: 700;
+  font-family: "Plus Jakarta Sans", sans-serif;
+}
+
+.dashboard-subtitle {
+  color: rgb(103, 126, 115);
+  font-size: 16px;
+}
+
+.dashboard-update-btn {
+  background: rgb(250, 250, 250);
+  color: rgb(34, 42, 38);
+  border: 1px solid rgb(227, 232, 230);
+  border-radius: 10px;
+}
+
+/* Bloco "Resumo da Semana" */
+.summary-block {
+  background-color: #ffffff;
+  background-image: linear-gradient(to right, rgba(22,162,73,0.05), rgba(22,162,73,0.1));
+  border: 1px solid rgba(22, 162, 73, 0.3);
+}
+
+.summary-mini-card {
+  background: rgba(250, 250, 250, 0.6);   /* bg-background/60 */
+  border-radius: 8px;
+  padding: 16px;
+}
+.summary-mini-card--primary { border: 1px solid rgba(22, 162, 73, 0.2); }
+.summary-mini-card--success { border: 1px solid rgba(22, 162, 73, 0.2); }
+.summary-mini-card--warning { border: 1px solid rgba(245, 159, 10, 0.2); }
+
+/* -----------------------------------------------------------
+   5. O QUE NÃO MUDA (referência rápida)
+   -----------------------------------------------------------
+   - stat-card--emerald / --blue / --amber / --purple
+   - promo-banner--fuchsia / --blue
+   - status-card--critical / --ok
+   - chart-card
+   - .sidebar-card--emerald/amber/cyan/yellow/fuchsia
+   - .sidebar-nav-item.active (borda dourada #D4A574)
+   Todos esses continuam com o MESMO gradiente escuro definido
+   em sidebar-style-guide.css e dashboard-style-guide.css,
+   independente do tema claro/escuro selecionado.
+   ----------------------------------------------------------- */

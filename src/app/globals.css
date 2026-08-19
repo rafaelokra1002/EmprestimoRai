@@ -5,24 +5,24 @@
 @layer base {
   :root {
     --background: 0 0% 98%;
-    --foreground: 258 30% 13%;
+    --foreground: 150 10% 15%;
     --card: 0 0% 100%;
-    --card-foreground: 258 30% 13%;
+    --card-foreground: 150 10% 15%;
     --popover: 0 0% 100%;
-    --popover-foreground: 258 30% 13%;
-    --primary: 142 80% 36%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 270 24% 95%;
-    --secondary-foreground: 258 30% 13%;
-    --muted: 270 24% 96%;
-    --muted-foreground: 255 16% 38%;
-    --accent: 276 44% 93%;
-    --accent-foreground: 258 22% 18%;
+    --popover-foreground: 150 10% 15%;
+    --primary: 142 76% 36%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 142 40% 95%;
+    --secondary-foreground: 142 76% 25%;
+    --muted: 150 10% 95%;
+    --muted-foreground: 150 10% 45%;
+    --accent: 142 40% 90%;
+    --accent-foreground: 142 76% 25%;
     --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 268 24% 88%;
-    --input: 268 24% 88%;
-    --ring: 142 80% 36%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 150 10% 90%;
+    --input: 150 10% 90%;
+    --ring: 142 76% 36%;
     --radius: 0.75rem;
     --sidebar-from: #16A249;
     --sidebar-via: #16A249;
@@ -38,25 +38,25 @@
   }
 
   .dark {
-    --background: 260 28% 10%;
+    --background: 150 10% 8%;
     --foreground: 0 0% 98%;
-    --card: 260 24% 13%;
+    --card: 150 10% 11%;
     --card-foreground: 0 0% 98%;
-    --popover: 260 24% 13%;
+    --popover: 150 10% 10%;
     --popover-foreground: 0 0% 98%;
-    --primary: 142 68% 55%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 260 16% 19%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 260 16% 19%;
-    --muted-foreground: 258 10% 72%;
-    --accent: 260 16% 19%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 260 14% 24%;
-    --input: 260 14% 24%;
-    --ring: 142 68% 55%;
+    --primary: 142 70% 45%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 150 10% 16%;
+    --secondary-foreground: 142 70% 60%;
+    --muted: 150 10% 15%;
+    --muted-foreground: 150 10% 65%;
+    --accent: 150 10% 18%;
+    --accent-foreground: 142 70% 60%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 150 10% 18%;
+    --input: 150 10% 18%;
+    --ring: 142 70% 45%;
     /* Sidebar preto no modo escuro */
     --sidebar-from: #0F141A;
     --sidebar-via: #0F141A;

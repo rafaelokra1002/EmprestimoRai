@@ -3,6 +3,23 @@ import { z } from "zod"
 const emptyToUndefined = (val: unknown) =>
   typeof val === "string" && val.trim() === "" ? undefined : val
 
+// Valida CPF pelos dígitos verificadores (aceita com ou sem máscara).
+export function isValidCPF(value: string): boolean {
+  const cpf = (value || "").replace(/\D/g, "")
+  if (cpf.length !== 11) return false
+  if (/^(\d)\1{10}$/.test(cpf)) return false // rejeita sequências iguais (000..., 111...)
+  let sum = 0
+  for (let i = 0; i < 9; i++) sum += parseInt(cpf[i], 10) * (10 - i)
+  let d1 = 11 - (sum % 11)
+  if (d1 >= 10) d1 = 0
+  if (d1 !== parseInt(cpf[9], 10)) return false
+  sum = 0
+  for (let i = 0; i < 10; i++) sum += parseInt(cpf[i], 10) * (11 - i)
+  let d2 = 11 - (sum % 11)
+  if (d2 >= 10) d2 = 0
+  return d2 === parseInt(cpf[10], 10)
+}
+
 export const clientSchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
   email: z.preprocess(
@@ -10,7 +27,7 @@ export const clientSchema = z.object({
     z.string().email("Email inválido").optional()
   ),
   phone: z.preprocess(emptyToUndefined, z.string().optional()),
-  document: z.preprocess(emptyToUndefined, z.string().optional()),
+  document: z.preprocess(emptyToUndefined, z.string().refine(isValidCPF, "CPF inválido").optional()),
   rg: z.preprocess(emptyToUndefined, z.string().optional()),
   instagram: z.preprocess(emptyToUndefined, z.string().optional()),
   facebook: z.preprocess(emptyToUndefined, z.string().optional()),

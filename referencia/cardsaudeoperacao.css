@@ -1,0 +1,217 @@
+/* =========================================================
+   CobraFácil — Card "Saúde da Operação" (Dashboard)
+   Ícone, texto e espaçamento completos
+   Obs.: o card tem 2 variantes de cor (mesmo layout):
+     - Crítico/Alerta → vermelho (extraído abaixo)
+     - Ok/Saudável     → esmeralda (mesmas classes de
+       .status-card--ok do dashboard-style-guide.css)
+   ========================================================= */
+
+/* -----------------------------------------------------------
+   1. CONTAINER DO CARD
+   ----------------------------------------------------------- */
+.health-card {
+  border-radius: 12px;                 /* rounded-lg (0.75rem) */
+  color: #ffffff;
+  border: 1px solid rgba(239, 68, 68, 0.3);      /* red-500/30 */
+  box-shadow: 0 10px 15px -3px rgba(69, 10, 10, 0.4); /* shadow-red-950/40 */
+  background:
+    radial-gradient(circle at top left, rgba(255,92,92,0.18), transparent 55%),
+    linear-gradient(135deg, #1F0608 0%, rgba(122,31,14,0.85) 55%, #1F0608 100%);
+}
+
+.health-card__inner {
+  padding: 24px;                        /* p-6 (desktop) / p-4 no mobile */
+}
+
+/* -----------------------------------------------------------
+   2. CABEÇALHO: círculo de score + título + badge + descrição
+   ----------------------------------------------------------- */
+.health-card__header {
+  display: flex;
+  align-items: center;
+  gap: 16px;                            /* gap-4 */
+}
+
+/* Círculo do score (6/100) */
+.health-card__score-circle {
+  width: 96px;                          /* w-24 (desktop) / 80px no mobile */
+  height: 96px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 4px solid rgba(248, 113, 113, 0.4);   /* border-red-400/40 */
+  background-color: rgba(239, 68, 68, 0.1);      /* bg-red-500/10 */
+  position: relative;
+}
+
+.health-card__score-icon {
+  /* ícone de "pulso/atividade" no canto do círculo */
+  width: 20px;
+  height: 20px;
+  color: rgb(252, 165, 165);            /* red-300 */
+  position: absolute;
+}
+
+.health-card__score-value {
+  font-size: 30px;
+  font-weight: 700;
+  color: rgb(252, 165, 165);            /* red-300 */
+  line-height: 1;
+}
+
+.health-card__score-suffix {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Título + badge + descrição (coluna ao lado do círculo) */
+.health-card__title-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;                            /* gap-4 sm:gap-6 */
+}
+
+.health-card__title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+/* Badge "Crítico" (pill) */
+.health-card__badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;                     /* px-2 py-0.5 */
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: rgb(254, 202, 202);            /* red-200 */
+  background:
+    radial-gradient(circle at top left, rgba(255,92,92,0.22), transparent 60%),
+    linear-gradient(135deg, #1F0608 0%, rgba(122,31,14,0.7) 100%);
+}
+
+.health-card__desc {
+  font-size: 12px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: 2px;
+}
+
+/* -----------------------------------------------------------
+   3. BARRA DE PROGRESSO
+   ----------------------------------------------------------- */
+.health-card__progress-track {
+  position: relative;
+  width: 100%;
+  height: 8px;                          /* h-2 */
+  margin-top: 8px;
+  overflow: hidden;
+  border-radius: 9999px;
+  background-color: hsl(var(--secondary));  /* trilho neutro do tema */
+}
+
+.health-card__progress-fill {
+  height: 100%;
+  background-color: hsl(var(--primary));    /* verde da marca, mesmo em card vermelho */
+  transition: all 0.3s ease;
+  /* largura definida via transform: translateX(-X%), onde X = 100 - valor(%) */
+}
+
+/* -----------------------------------------------------------
+   4. GRID DE 4 MINI-CARDS (métricas)
+   ----------------------------------------------------------- */
+.health-card__metrics {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);   /* 2 colunas no mobile */
+  gap: 12px;
+  margin-top: 16px;
+}
+@media (min-width: 640px) {
+  .health-card__metrics { grid-template-columns: repeat(4, 1fr); }
+}
+
+.health-card__metric {
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid;
+}
+
+.health-card__metric-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.health-card__metric-label {
+  font-size: 12px;                      /* text-[10px] sm:text-xs */
+  color: rgba(255, 255, 255, 0.7);       /* text-white/70 */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 4px;                    /* mb-1, junto ao ícone */
+}
+
+.health-card__metric-value {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* Variante negativa (Taxa de Recebimento, Inadimplência, Em Atraso) */
+.health-card__metric--bad {
+  border-color: rgba(239, 68, 68, 0.3);
+  color: rgb(254, 202, 202);
+  background:
+    radial-gradient(circle at top left, rgba(255,92,92,0.22), transparent 60%),
+    linear-gradient(135deg, #1F0608 0%, rgba(122,31,14,0.7) 100%);
+}
+.health-card__metric--bad .health-card__metric-icon { color: rgb(254, 202, 202); }
+.health-card__metric--bad .health-card__metric-value { color: rgb(254, 202, 202); }
+
+/* Variante positiva (Recebido) */
+.health-card__metric--good {
+  border-color: rgba(16, 185, 129, 0.3);
+  color: rgb(167, 243, 208);
+  background:
+    radial-gradient(circle at top left, rgba(16,185,129,0.22), transparent 60%),
+    linear-gradient(135deg, #062418 0%, rgba(6,95,70,0.7) 100%);
+}
+.health-card__metric--good .health-card__metric-icon { color: rgb(167, 243, 208); }
+.health-card__metric--good .health-card__metric-value { color: rgb(167, 243, 208); }
+
+/* -----------------------------------------------------------
+   5. EXEMPLO DE MARCAÇÃO (referência)
+   -----------------------------------------------------------
+<div class="health-card">
+  <div class="health-card__inner">
+    <div class="health-card__header">
+      <div class="health-card__score-circle">
+        <svg class="health-card__score-icon">...</svg>
+        <span class="health-card__score-value">6</span>
+        <span class="health-card__score-suffix">/100</span>
+      </div>
+      <div>
+        <div class="health-card__title-row">
+          <h3 class="health-card__title">Saúde da Operação</h3>
+          <span class="health-card__badge">Crítico</span>
+        </div>
+        <div class="health-card__progress-track">
+          <div class="health-card__progress-fill" style="transform: translateX(-94%)"></div>
+        </div>
+        <p class="health-card__desc">Baseado em taxa de recebimento, inadimplência e margem de lucro</p>
+      </div>
+    </div>
+    <div class="health-card__metrics">
+      <div class="health-card__metric health-card__metric--bad">
+        <div class="health-card__metric-label"><svg class="health-card__metric-icon"></svg> Taxa de Recebimento</div>
+        <div class="health-card__metric-value">7.6%</div>
+      </div>
+      <div class="health-card__metric health-card__metric--bad">... Inadimplência 57.1%</div>
+      <div class="health-card__metric health-card__metric--good">... Recebido R$ 567,50</div>
+      <div class="health-card__metric health-card__metric--bad">... Em Atraso R$ 4.030,00</div>
+    </div>
+  </div>
+</div>
+   ----------------------------------------------------------- */
