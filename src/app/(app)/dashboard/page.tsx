@@ -26,6 +26,7 @@ import {
   Users,
   Wallet,
   X,
+  Activity,
 } from "lucide-react"
 import { formatCurrency, localDateStr } from "@/lib/utils"
 import { useTheme } from "@/lib/theme-provider"
@@ -156,15 +157,17 @@ export default function DashboardPage() {
   const { theme } = useTheme()
   const isDark = theme === "dark"
 
+  // Os cards de gráfico são escuros nos dois modos (guia da referência),
+  // então as cores do gráfico são sempre as do fundo escuro.
   const tooltipStyle = {
-    backgroundColor: isDark ? "#18181b" : "#ffffff",
-    border: `1px solid ${isDark ? "#27272a" : "#e5e7eb"}`,
+    backgroundColor: "#0f1621",
+    border: "1px solid #334155",
     borderRadius: "8px",
-    boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)",
-    color: isDark ? "#f4f4f5" : "#374151",
+    boxShadow: "0 4px 6px -1px rgba(0,0,0,0.3)",
+    color: "#f4f4f5",
   }
-  const axisColor = isDark ? "#a1a1aa" : "#6b7280"
-  const gridColor = isDark ? "rgba(255,255,255,0.08)" : "#e5e7eb"
+  const axisColor = "#94a3b8"
+  const gridColor = "rgba(148,163,184,0.15)"
 
   const fetchDashboard = () => {
     const url = filterActive
@@ -299,26 +302,31 @@ export default function DashboardPage() {
   // Nível de saúde da operação (cores e rótulo dinâmicos pelo score)
   const healthHasData = data?.operationHealth?.hasData !== false
   const healthLevel = !healthHasData ? "empty" : healthScore >= 70 ? "good" : healthScore >= 40 ? "warn" : "bad"
-  const healthRing = healthLevel === "good" ? "border-green-600 text-green-500" : healthLevel === "warn" ? "border-orange-400 text-orange-500" : healthLevel === "empty" ? "border-gray-300 text-gray-400 dark:border-zinc-700 dark:text-zinc-500" : "border-red-500 text-red-500"
-  const healthBadge = healthLevel === "good"
-    ? { label: "Saudável", cls: "bg-primary/10 text-primary" }
+  const healthRing = healthLevel === "good"
+    ? "border-[#34d399]/40 bg-[#10b981]/10 text-[#6ee7b7]"
     : healthLevel === "warn"
-      ? { label: "Atenção", cls: "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400" }
+      ? "border-amber-400/40 bg-amber-500/10 text-amber-300"
       : healthLevel === "empty"
-        ? { label: "Sem dados", cls: "bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400" }
-        : { label: "Crítico", cls: "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400" }
-  const healthBar = healthLevel === "good" ? "bg-primary" : healthLevel === "warn" ? "bg-orange-400" : healthLevel === "empty" ? "bg-gray-300 dark:bg-zinc-600" : "bg-red-500"
+        ? "border-white/20 bg-white/5 text-white/60"
+        : "border-[#f87171]/40 bg-[#ef4444]/10 text-[#fca5a5]"
+  const healthBadge = healthLevel === "good"
+    ? { label: "Saudável", cls: "bg-[#10b981]/20 text-[#6ee7b7] border border-[#10b981]/30" }
+    : healthLevel === "warn"
+      ? { label: "Atenção", cls: "bg-amber-500/20 text-amber-200 border border-amber-400/30" }
+      : healthLevel === "empty"
+        ? { label: "Sem dados", cls: "bg-white/10 text-white/70 border border-white/20" }
+        : { label: "Crítico", cls: "bg-red-500/20 text-red-200 border border-red-400/30" }
   // Fundo do card inteiro conforme o nível (gradiente forte, igual ao CobraFácil)
   const healthCardCls = healthLevel === "good"
-    ? "border-[#10b981]/30 bg-gradient-to-br from-[#0e6b4d] via-[#0a3527] to-[#062418]"
+    ? "border-[#10b981]/30 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.18),transparent_55%),linear-gradient(135deg,#062418_0%,rgba(6,95,70,0.85)_55%,#062418_100%)]"
     : healthLevel === "warn"
-      ? "border-[#d4a574]/30 bg-gradient-to-br from-[#6b5228] via-[#3a2b14] to-[#1f1408]"
+      ? "border-[#d4a574]/30 bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.18),transparent_55%),linear-gradient(135deg,#1F1408_0%,rgba(122,85,31,0.75)_55%,#1F1408_100%)]"
       : healthLevel === "empty"
         ? "border-white/10 bg-gradient-to-br from-[#3a3a40] via-[#1f1f22] to-[#111114]"
-        : "border-[#ef4444]/35 bg-gradient-to-br from-[#7f1d1d] via-[#3a0f0f] to-[#1f0608]"
-  // Sub-cards translúcidos escuros para contrastar sobre o gradiente
-  const goodCardCls = "border-[#10b981]/30 bg-black/25"
-  const badCardCls = "border-[#ef4444]/30 bg-black/25"
+        : "border-[#ef4444]/35 bg-[radial-gradient(circle_at_top_left,rgba(255,92,92,0.18),transparent_55%),linear-gradient(135deg,#1F0608_0%,rgba(122,31,14,0.85)_55%,#1F0608_100%)]"
+  // Mini-cards de métrica — gradientes exatos da referência (cardsaudeoperacao.css)
+  const goodCardCls = "border-[#10b981]/30 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.22),transparent_60%),linear-gradient(135deg,#062418_0%,rgba(6,95,70,0.7)_100%)]"
+  const badCardCls = "border-[#ef4444]/30 bg-[radial-gradient(circle_at_top_left,rgba(255,92,92,0.22),transparent_60%),linear-gradient(135deg,#1F0608_0%,rgba(122,31,14,0.7)_100%)]"
   const overdueAmt = data?.overdueAmount || 0
   const monthlyInterest = data?.charts?.interestTrend || []
   const interestChartData = monthlyInterest.map((item, index) => {
@@ -488,7 +496,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Resumo da Semana ───────────────────────────────────────────────── */}
-      <div className="rounded-xl border border-[#10b981]/25 dark:border-[#10b981]/20 bg-[#e8f6ef] dark:bg-gradient-to-br dark:from-[#0e2a1c] dark:via-[#0a1f14] dark:to-[#07150e] p-4 sm:p-5">
+      <div className="rounded-xl border border-[#16A249]/30 dark:border-[#10b981]/20 bg-white bg-gradient-to-r from-[#16A249]/5 to-[#16A249]/10 dark:bg-gradient-to-br dark:from-[#0e2a1c] dark:via-[#0a1f14] dark:to-[#07150e] p-4 sm:p-5">
         <div className="mb-4 flex items-center gap-2">
           <Calendar className="h-4 w-4 text-[#059669] dark:text-[#34d399]" />
           <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Resumo da Semana</p>
@@ -515,28 +523,28 @@ export default function DashboardPage() {
       {/* ── Contadores — Empréstimos / Produtos / Veículos / Contratos ──────── */}
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
         {/* Empréstimos — verde */}
-        <div className="rounded-xl border border-[#10b981]/25 bg-gradient-to-br from-[#0e6b4d] via-[#0a3527] to-[#062418] p-4">
+        <div className="rounded-xl border border-[#10b981]/25 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.18),transparent_55%),linear-gradient(135deg,#062418_0%,rgba(6,95,70,0.85)_55%,#062418_100%)] p-4">
           <div className="mb-3 inline-flex rounded-lg bg-white/10 p-2"><DollarSign className="h-5 w-5 text-[#34d399]" /></div>
           <p className="text-xs font-medium text-white/70">Empréstimos</p>
           <p className="mt-1 text-2xl font-bold tabular-nums text-white">{data?.counters?.activeLoans || 0}</p>
           <p className="mt-1 text-xs text-white/50">+{data?.weeklySummary?.contractsThisWeek || 0} esta semana</p>
         </div>
         {/* Produtos — azul */}
-        <div className="rounded-xl border border-[#3b82f6]/25 bg-gradient-to-br from-[#1e3a6b] via-[#132844] to-[#0b1020] p-4">
+        <div className="rounded-xl border border-[#3b82f6]/25 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.18),transparent_55%),linear-gradient(135deg,#0B1020_0%,rgba(30,58,138,0.85)_55%,#0B1020_100%)] p-4">
           <div className="mb-3 inline-flex rounded-lg bg-white/10 p-2"><Package className="h-5 w-5 text-[#60a5fa]" /></div>
           <p className="text-xs font-medium text-white/70">Produtos</p>
           <p className="mt-1 text-2xl font-bold tabular-nums text-white">{data?.counters?.totalSales || 0}</p>
           <p className="mt-1 text-xs text-white/50">cadastrados</p>
         </div>
         {/* Veículos — âmbar */}
-        <div className="rounded-xl border border-[#d4a574]/25 bg-gradient-to-br from-[#6b5228] via-[#3a2b14] to-[#1f1408] p-4">
+        <div className="rounded-xl border border-[#d4a574]/25 bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.18),transparent_55%),linear-gradient(135deg,#1F1408_0%,rgba(122,85,31,0.75)_55%,#1F1408_100%)] p-4">
           <div className="mb-3 inline-flex rounded-lg bg-white/10 p-2"><Car className="h-5 w-5 text-[#e0b878]" /></div>
           <p className="text-xs font-medium text-white/70">Veículos</p>
           <p className="mt-1 text-2xl font-bold tabular-nums text-white">{data?.counters?.totalVehicles || 0}</p>
           <p className="mt-1 text-xs text-white/50">cadastrados</p>
         </div>
         {/* Contratos — roxo */}
-        <div className="rounded-xl border border-[#a855f7]/25 bg-gradient-to-br from-[#4a1d6e] via-[#2b0a3d] to-[#1a0b2e] p-4">
+        <div className="rounded-xl border border-[#a855f7]/25 bg-[radial-gradient(circle_at_top_left,rgba(168,85,247,0.18),transparent_55%),linear-gradient(135deg,#1A0B2E_0%,rgba(88,28,135,0.85)_55%,#1A0B2E_100%)] p-4">
           <div className="mb-3 inline-flex rounded-lg bg-white/10 p-2"><FileText className="h-5 w-5 text-[#c084fc]" /></div>
           <p className="text-xs font-medium text-white/70">Contratos</p>
           <p className="mt-1 text-2xl font-bold tabular-nums text-white">{data?.counters?.totalContracts || 0}</p>
@@ -548,7 +556,7 @@ export default function DashboardPage() {
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
 
         {/* Total a Receber — azul */}
-        <div className="rounded-xl border border-[#3b82f6]/25 bg-gradient-to-br from-[#1e3a6b] via-[#132844] to-[#0b1020] p-4">
+        <div className="rounded-xl border border-[#3b82f6]/25 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.18),transparent_55%),linear-gradient(135deg,#0B1020_0%,rgba(30,58,138,0.85)_55%,#0B1020_100%)] p-4">
           <div className="mb-3 inline-flex rounded-lg bg-white/10 p-2">
             <TrendingUp className="h-5 w-5 text-[#60a5fa]" />
           </div>
@@ -560,7 +568,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Capital na Rua — âmbar/dourado */}
-        <div className="rounded-xl border border-[#d4a574]/25 bg-gradient-to-br from-[#6b5228] via-[#3a2b14] to-[#1f1408] p-4">
+        <div className="rounded-xl border border-[#d4a574]/25 bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.18),transparent_55%),linear-gradient(135deg,#1F1408_0%,rgba(122,85,31,0.75)_55%,#1F1408_100%)] p-4">
           <div className="mb-3 inline-flex rounded-lg bg-white/10 p-2">
             <DollarSign className="h-5 w-5 text-[#e0b878]" />
           </div>
@@ -572,7 +580,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Juros do Mês — roxo */}
-        <div className="rounded-xl border border-[#a855f7]/25 bg-gradient-to-br from-[#4a1d6e] via-[#2b0a3d] to-[#1a0b2e] p-4">
+        <div className="rounded-xl border border-[#a855f7]/25 bg-[radial-gradient(circle_at_top_left,rgba(168,85,247,0.18),transparent_55%),linear-gradient(135deg,#1A0B2E_0%,rgba(88,28,135,0.85)_55%,#1A0B2E_100%)] p-4">
           <div className="mb-3 inline-flex rounded-lg bg-white/10 p-2">
             <Percent className="h-5 w-5 text-[#c084fc]" />
           </div>
@@ -584,7 +592,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Falta Receber — verde */}
-        <div className="rounded-xl border border-[#10b981]/25 bg-gradient-to-br from-[#0e6b4d] via-[#0a3527] to-[#062418] p-4">
+        <div className="rounded-xl border border-[#10b981]/25 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.18),transparent_55%),linear-gradient(135deg,#062418_0%,rgba(6,95,70,0.85)_55%,#062418_100%)] p-4">
           <div className="mb-3 inline-flex rounded-lg bg-white/10 p-2">
             <Wallet className="h-5 w-5 text-[#34d399]" />
           </div>
@@ -600,7 +608,7 @@ export default function DashboardPage() {
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
 
         {/* Recebido no Mês — verde */}
-        <div className="rounded-xl border border-[#10b981]/25 bg-gradient-to-br from-[#0e6b4d] via-[#0a3527] to-[#062418] p-4">
+        <div className="rounded-xl border border-[#10b981]/25 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.18),transparent_55%),linear-gradient(135deg,#062418_0%,rgba(6,95,70,0.85)_55%,#062418_100%)] p-4">
           <div className="mb-3 inline-flex rounded-lg bg-white/10 p-2">
             <Receipt className="h-4 w-4 text-[#34d399]" />
           </div>
@@ -612,7 +620,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Histórico de Pagamento — azul */}
-        <div className="rounded-xl border border-[#3b82f6]/25 bg-gradient-to-br from-[#1e3a6b] via-[#132844] to-[#0b1020] p-4">
+        <div className="rounded-xl border border-[#3b82f6]/25 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.18),transparent_55%),linear-gradient(135deg,#0B1020_0%,rgba(30,58,138,0.85)_55%,#0B1020_100%)] p-4">
           <div className="mb-3 inline-flex rounded-lg bg-white/10 p-2">
             <TrendingUp className="h-4 w-4 text-[#60a5fa]" />
           </div>
@@ -624,7 +632,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Gasto Mensal — vermelho */}
-        <div className="rounded-xl border border-[#ef4444]/25 bg-gradient-to-br from-[#7f1d1d] via-[#3a0f0f] to-[#1f0608] p-4">
+        <div className="rounded-xl border border-[#ef4444]/25 bg-[radial-gradient(circle_at_top_left,rgba(255,92,92,0.18),transparent_55%),linear-gradient(135deg,#1F0608_0%,rgba(122,31,14,0.85)_55%,#1F0608_100%)] p-4">
           <div className="mb-3 inline-flex rounded-lg bg-white/10 p-2">
             <Receipt className="h-4 w-4 text-[#f87171]" />
           </div>
@@ -652,7 +660,7 @@ export default function DashboardPage() {
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
 
         {/* Contrato Ativo — azul */}
-        <div className="rounded-xl border border-[#3b82f6]/25 bg-gradient-to-br from-[#1e3a6b] via-[#132844] to-[#0b1020] p-4">
+        <div className="rounded-xl border border-[#3b82f6]/25 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.18),transparent_55%),linear-gradient(135deg,#0B1020_0%,rgba(30,58,138,0.85)_55%,#0B1020_100%)] p-4">
           <div className="mb-3 inline-flex rounded-lg bg-white/10 p-2">
             <Shield className="h-4 w-4 text-[#60a5fa]" />
           </div>
@@ -664,7 +672,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Vencendo Hoje — âmbar */}
-        <div className="rounded-xl border border-[#d4a574]/25 bg-gradient-to-br from-[#6b5228] via-[#3a2b14] to-[#1f1408] p-4">
+        <div className="rounded-xl border border-[#d4a574]/25 bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.18),transparent_55%),linear-gradient(135deg,#1F1408_0%,rgba(122,85,31,0.75)_55%,#1F1408_100%)] p-4">
           <div className="mb-3 inline-flex rounded-lg bg-white/10 p-2">
             <Clock3 className="h-4 w-4 text-[#e0b878]" />
           </div>
@@ -676,7 +684,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Em Atraso — vermelho */}
-        <div className="rounded-xl border border-[#ef4444]/30 bg-gradient-to-br from-[#7f1d1d] via-[#3a0f0f] to-[#1f0608] p-4">
+        <div className="rounded-xl border border-[#ef4444]/30 bg-[radial-gradient(circle_at_top_left,rgba(255,92,92,0.18),transparent_55%),linear-gradient(135deg,#1F0608_0%,rgba(122,31,14,0.85)_55%,#1F0608_100%)] p-4">
           <div className="mb-3 inline-flex rounded-lg bg-white/10 p-2">
             <AlertTriangle className="h-4 w-4 text-[#f87171]" />
           </div>
@@ -704,7 +712,7 @@ export default function DashboardPage() {
       <div className="grid gap-4 sm:grid-cols-2">
 
         {/* Multa de Atraso — âmbar */}
-        <div className="relative overflow-hidden rounded-xl border border-[#d4a574]/25 bg-gradient-to-br from-[#6b5228] via-[#3a2b14] to-[#1f1408] p-4">
+        <div className="relative overflow-hidden rounded-xl border border-[#d4a574]/25 bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.18),transparent_55%),linear-gradient(135deg,#1F1408_0%,rgba(122,85,31,0.75)_55%,#1F1408_100%)] p-4">
           <div className="mb-3 inline-flex rounded-lg bg-white/10 p-2">
             <Calendar className="h-4 w-4 text-[#e0b878]" />
           </div>
@@ -721,7 +729,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Saiu — Empréstimos Concedidos — verde */}
-        <div className="rounded-xl border border-[#10b981]/25 bg-gradient-to-br from-[#0e6b4d] via-[#0a3527] to-[#062418] p-4">
+        <div className="rounded-xl border border-[#10b981]/25 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.18),transparent_55%),linear-gradient(135deg,#062418_0%,rgba(6,95,70,0.85)_55%,#062418_100%)] p-4">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 min-w-0">
               <div className="mb-2 inline-flex rounded-lg bg-white/10 p-2">
@@ -765,15 +773,15 @@ export default function DashboardPage() {
 
       {/* ── Gráficos ────────────────────────────────────────────────────────── */}
       <div className="grid gap-4 xl:grid-cols-2">
-        <div className="rounded-xl border border-gray-200 dark:border-white/5 bg-white dark:bg-[#0f1621] p-5">
-          <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200 mb-4">Evolução Financeira (Últimos 6 meses)</p>
+        <div className="rounded-xl border border-[#94a3b8]/20 shadow-lg shadow-black/40 bg-[radial-gradient(circle_at_top_left,rgba(148,163,184,0.18),transparent_55%),linear-gradient(135deg,#0F1419_0%,rgba(30,41,59,0.85)_55%,#0F1419_100%)] p-5">
+          <p className="text-sm font-semibold text-zinc-200 mb-4">Evolução Financeira (Últimos 6 meses)</p>
           <div className="h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data?.monthlyData || []}>
                 <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
                 <XAxis dataKey="month" stroke={axisColor} tick={{ fontSize: 11 }} />
                 <YAxis stroke={axisColor} tick={{ fontSize: 11 }} tickFormatter={(v) => `R$${v}`} />
-                <Legend wrapperStyle={{ color: isDark ? "#d4d4d8" : "#374151", fontSize: 11 }} />
+                <Legend wrapperStyle={{ color: "#d4d4d8", fontSize: 11 }} />
                 <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => [formatCurrency(v)]} />
                 <Bar dataKey="emprestado" fill="#f59e0b" name="Emprestado" radius={[4,4,0,0]} maxBarSize={40} />
                 <Bar dataKey="recebido" fill="#22c55e" name="Recebido" radius={[4,4,0,0]} maxBarSize={40} />
@@ -782,15 +790,15 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-gray-200 dark:border-white/5 bg-white dark:bg-[#0f1621] p-5">
-          <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200 mb-4">Tendência de Juros Recebidos</p>
+        <div className="rounded-xl border border-[#94a3b8]/20 shadow-lg shadow-black/40 bg-[radial-gradient(circle_at_top_left,rgba(148,163,184,0.18),transparent_55%),linear-gradient(135deg,#0F1419_0%,rgba(30,41,59,0.85)_55%,#0F1419_100%)] p-5">
+          <p className="text-sm font-semibold text-zinc-200 mb-4">Tendência de Juros Recebidos</p>
           <div className="h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={interestChartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
                 <XAxis dataKey="month" stroke={axisColor} tick={{ fontSize: 11 }} />
                 <YAxis stroke={axisColor} tick={{ fontSize: 11 }} tickFormatter={(v) => `R$${v}`} />
-                <Legend wrapperStyle={{ color: isDark ? "#d4d4d8" : "#374151", fontSize: 11 }} />
+                <Legend wrapperStyle={{ color: "#d4d4d8", fontSize: 11 }} />
                 <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => [formatCurrency(v)]} />
                 <Line type="monotone" dataKey="jurosMes" stroke="#f59e0b" name="Juros no Mês" strokeWidth={2} dot={{ r: 3 }} />
                 <Line type="monotone" dataKey="jurosAcumulado" stroke="#22c55e" name="Juros Acumulado" strokeWidth={2} dot={{ r: 3 }} />
@@ -802,42 +810,45 @@ export default function DashboardPage() {
 
       {/* ── Saúde da Operação + Precisa de Atenção ───────────────────────────── */}
       <div className="grid gap-4 xl:grid-cols-2">
-        <div className={`rounded-xl border p-5 space-y-4 ${healthCardCls}`}>
+        <div className={`rounded-xl border p-4 text-white shadow-lg shadow-black/40 sm:p-6 ${healthCardCls}`}>
           <div className="flex items-center gap-4">
-            <span className={`inline-flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-full border-4 ${healthRing}`}>
-              <span className="text-2xl font-semibold tabular-nums leading-none">{healthScore}</span>
-              <span className="text-[9px] text-gray-400 dark:text-zinc-500">/100</span>
+            <span className={`relative inline-flex h-20 w-20 shrink-0 flex-col items-center justify-center rounded-full border-4 sm:h-24 sm:w-24 ${healthRing}`}>
+              <Activity className="absolute -right-2 -top-2 h-5 w-5 text-white" />
+              <span className="text-3xl font-bold tabular-nums leading-none">{healthScore}</span>
+              <span className="text-[10px] text-white/60">/100</span>
             </span>
-            <div>
-              <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Saúde da Operação</p>
-              <span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-xs ${healthBadge.cls}`}>{healthBadge.label}</span>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-4">
+                <h3 className="shrink-0 text-lg font-bold text-white">Saúde da Operação</h3>
+                <span className={`shrink-0 inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${healthBadge.cls}`}>{healthBadge.label}</span>
+              </div>
+              <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-[hsl(142_40%_95%)]">
+                <div className="h-full bg-primary transition-all" style={{ width: `${Math.min(100, healthScore)}%` }} />
+              </div>
+              <p className="mt-1.5 text-xs text-white/70">Baseado em taxa de recebimento, inadimplência e margem de lucro</p>
             </div>
           </div>
-          <div className="h-2.5 overflow-hidden rounded-full bg-gray-200 dark:bg-zinc-700">
-            <div className={`h-full ${healthBar} transition-all`} style={{ width: `${Math.min(100, healthScore)}%` }} />
-          </div>
-          <p className="text-xs text-gray-500 dark:text-zinc-400">Baseado em taxa de recebimento, inadimplência e margem de lucro</p>
-          <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-            <div className={`rounded-lg border p-3 ${collectionRate >= 50 ? goodCardCls : badCardCls}`}>
-              <p className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-zinc-400"><TrendingUp className="h-3.5 w-3.5" /> Taxa de Recebimento</p>
-              <p className={`mt-1 text-xl font-semibold tabular-nums ${collectionRate >= 50 ? "text-primary" : "text-red-500"}`}>{collectionRate.toFixed(1)}%</p>
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className={`rounded-xl border p-3 ${collectionRate >= 50 ? goodCardCls : badCardCls}`}>
+              <p className="mb-1 flex items-center gap-1.5 truncate text-xs text-white/70"><TrendingUp className="h-3.5 w-3.5" /> Taxa de Recebimento</p>
+              <p className={`text-base font-bold tabular-nums ${collectionRate >= 50 ? "text-[#a7f3d0]" : "text-[#fecaca]"}`}>{collectionRate.toFixed(1)}%</p>
             </div>
-            <div className={`rounded-lg border p-3 ${defaultRate <= 20 ? goodCardCls : badCardCls}`}>
-              <p className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-zinc-400"><AlertTriangle className="h-3.5 w-3.5" /> Inadimplência</p>
-              <p className={`mt-1 text-xl font-semibold tabular-nums ${defaultRate <= 20 ? "text-primary" : "text-red-500"}`}>{defaultRate.toFixed(1)}%</p>
+            <div className={`rounded-xl border p-3 ${defaultRate <= 20 ? goodCardCls : badCardCls}`}>
+              <p className="mb-1 flex items-center gap-1.5 truncate text-xs text-white/70"><AlertTriangle className="h-3.5 w-3.5" /> Inadimplência</p>
+              <p className={`text-base font-bold tabular-nums ${defaultRate <= 20 ? "text-[#a7f3d0]" : "text-[#fecaca]"}`}>{defaultRate.toFixed(1)}%</p>
             </div>
-            <div className="rounded-lg border border-primary/30 bg-primary/5 dark:bg-primary/15 p-3">
-              <p className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-zinc-400"><CheckCircle2 className="h-3.5 w-3.5 text-primary" /> Recebido</p>
-              <p className="mt-1 text-xl font-semibold tabular-nums text-primary">{formatCurrency(data?.totalReceived || 0)}</p>
+            <div className={`rounded-xl border p-3 ${goodCardCls}`}>
+              <p className="mb-1 flex items-center gap-1.5 truncate text-xs text-white/70"><CheckCircle2 className="h-3.5 w-3.5" /> Recebido</p>
+              <p className="text-base font-bold tabular-nums text-[#a7f3d0]">{formatCurrency(data?.totalReceived || 0)}</p>
             </div>
-            <div className={`rounded-lg border p-3 ${overdueAmt > 0 ? badCardCls : goodCardCls}`}>
-              <p className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-zinc-400"><DollarSign className="h-3.5 w-3.5" /> Em Atraso</p>
-              <p className={`mt-1 text-xl font-semibold tabular-nums ${overdueAmt > 0 ? "text-red-500" : "text-primary"}`}>{formatCurrency(overdueAmt)}</p>
+            <div className={`rounded-xl border p-3 ${overdueAmt > 0 ? badCardCls : goodCardCls}`}>
+              <p className="mb-1 flex items-center gap-1.5 truncate text-xs text-white/70"><DollarSign className="h-3.5 w-3.5" /> Em Atraso</p>
+              <p className={`text-base font-bold tabular-nums ${overdueAmt > 0 ? "text-[#fecaca]" : "text-[#a7f3d0]"}`}>{formatCurrency(overdueAmt)}</p>
             </div>
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-xl border border-[#d4a574]/30 bg-gradient-to-br from-[#6b5228] via-[#3a2b14] to-[#1f1408]">
+        <div className="overflow-hidden rounded-xl border border-[#d4a574]/30 bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.18),transparent_55%),linear-gradient(135deg,#1F1408_0%,rgba(122,85,31,0.75)_55%,#1F1408_100%)]">
           <div className="flex items-center gap-2 px-5 py-4 border-b border-white/10">
             <AlertTriangle className="h-4 w-4 text-[#e0b878]" />
             <span className="text-sm font-bold text-[#e0b878]">Precisa de Atenção</span>
