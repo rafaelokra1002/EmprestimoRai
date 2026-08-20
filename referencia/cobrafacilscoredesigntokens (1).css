@@ -1,0 +1,366 @@
+/* ============================================================
+   CobraFácil — Página "Score de Clientes"
+   VERSÃO COMPLETA — inclui as 4 variantes de card por classificação
+   (Excelente / Bom / Regular / Ruim) com todos os gradientes reais.
+   ============================================================ */
+
+/* ---------------------------------------------------------
+   FONTES USADAS NA PÁGINA
+   Títulos ....: "Plus Jakarta Sans", sans-serif (bold 700)
+   Corpo ......: "Inter", sans-serif (400 / 500 / 600 / 700)
+   --------------------------------------------------------- */
+
+/* ============================================================
+   1. CABEÇALHO DA PÁGINA
+   ============================================================ */
+
+.score-h1 {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 700;
+  color: #222a26;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.score-h1-icon { color: #16a34a; }
+
+.score-subtitle {
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 400;
+  color: #677e73;
+}
+
+/* ============================================================
+   2. BARRA DE RESUMO ("Score: 100 • 0 • 0 • ...")
+   ============================================================ */
+
+.score-summary-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #e3e8e6;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  color: #222a26;
+}
+.score-summary-bar .value { font-weight: 700; }
+.score-summary-bar .muted { color: #677e73; }
+
+/* ============================================================
+   3. INPUT DE BUSCA
+   ============================================================ */
+
+.score-search {
+  height: 40px;
+  padding: 0 12px 0 36px;
+  border-radius: 10px;
+  border: 1px solid #e3e8e6;
+  background: #ffffff;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  color: #222a26;
+}
+.score-search::placeholder { color: #677e73; }
+
+/* ============================================================
+   4. TOGGLE "Por Score" / "Por Lucro"
+   ============================================================ */
+
+.score-toggle {
+  display: inline-flex;
+  padding: 4px;
+  background: #ffffff;
+  border: 1px solid #e3e8e6;
+  border-radius: 12px;
+  gap: 4px;
+}
+
+.score-toggle__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  height: 32px;
+  border-radius: 10px;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color .15s;
+}
+.score-toggle__btn--active   { background: #16a249; color: #ffffff; }
+.score-toggle__btn--inactive { background: #fafafa; color: #222a26; }
+
+/* ============================================================
+   5. CARDS DE CLIENTE — 4 VARIANTES POR CLASSIFICAÇÃO
+   Cada card usa o MESMO padrão de gradiente:
+     radial-gradient(halo no canto sup. esq.),
+     linear-gradient(135deg  escuro → médio → escuro)
+   Só mudam os tons por tier.
+   ============================================================ */
+
+.score-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  border-width: 1px;
+  border-style: solid;
+  color: #ffffff;
+}
+
+/* ---------- 5a. EXCELENTE — verde esmeralda ---------- */
+.score-card--excelente {
+  border-color: rgba(16, 185, 129, 0.30);   /* emerald-500 / 30% */
+  background-image:
+    radial-gradient(circle at 0% 0%,
+        rgba(16, 185, 129, 0.18),
+        rgba(0, 0, 0, 0) 55%),
+    linear-gradient(135deg,
+        #062418,                              /* verde-noite */
+        rgba(6, 95, 70, 0.85) 55%,            /* emerald-800 */
+        #062418);
+  box-shadow:
+    0 10px 15px -3px rgba(2, 44, 34, 0.40),
+    0 4px  6px -4px rgba(2, 44, 34, 0.40);
+}
+
+/* ---------- 5b. BOM — azul céu ---------- */
+.score-card--bom {
+  border-color: rgba(56, 189, 248, 0.30);   /* sky-400 / 30% */
+  background-image:
+    radial-gradient(circle at 0% 0%,
+        rgba(56, 189, 248, 0.18),
+        rgba(0, 0, 0, 0) 55%),
+    linear-gradient(135deg,
+        #082435,                              /* azul-noite */
+        rgba(7, 89, 133, 0.85) 55%,           /* sky-800 */
+        #082435);
+  box-shadow:
+    0 10px 15px -3px rgba(8, 47, 73, 0.40),
+    0 4px  6px -4px rgba(8, 47, 73, 0.40);
+}
+
+/* ---------- 5c. REGULAR — âmbar ---------- */
+.score-card--regular {
+  border-color: rgba(251, 191, 36, 0.30);   /* amber-400 / 30% */
+  background-image:
+    radial-gradient(circle at 0% 0%,
+        rgba(251, 191, 36, 0.18),
+        rgba(0, 0, 0, 0) 55%),
+    linear-gradient(135deg,
+        #1f1408,                              /* marrom-escuro */
+        rgba(122, 85, 31, 0.75) 55%,          /* âmbar médio */
+        #1f1408);
+  box-shadow:
+    0 10px 15px -3px rgba(69, 26, 3, 0.40),
+    0 4px  6px -4px rgba(69, 26, 3, 0.40);
+}
+
+/* ---------- 5d. RUIM — vermelho ---------- */
+.score-card--ruim {
+  border-color: rgba(239, 68, 68, 0.30);    /* red-500 / 30% */
+  background-image:
+    radial-gradient(circle at 0% 0%,
+        rgba(255, 92, 92, 0.18),
+        rgba(0, 0, 0, 0) 55%),
+    linear-gradient(135deg,
+        #1f0608,                              /* vermelho-noite */
+        rgba(122, 31, 14, 0.85) 55%,          /* red-900 */
+        #1f0608);
+  box-shadow:
+    0 10px 15px -3px rgba(69, 10, 10, 0.40),
+    0 4px  6px -4px rgba(69, 10, 10, 0.40);
+}
+
+/* ============================================================
+   6. ELEMENTOS INTERNOS DO CARD (comuns às 4 variantes)
+   ============================================================ */
+
+.score-card__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+}
+
+.score-card__rank {
+  font-family: "Inter", sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.60);
+}
+
+.score-card__initials {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  font-family: "Inter", sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.score-card__name {
+  font-family: "Inter", sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.score-card__body { padding: 0 16px 12px; }
+
+.score-card__label {
+  font-family: "Inter", sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.60);
+}
+
+.score-card__amount {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-top: 2px;
+}
+
+.score-card__meta {
+  font-family: "Inter", sans-serif;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.70);
+  margin-top: 4px;
+}
+.score-card__meta strong { color: #ffffff; font-weight: 600; }
+
+.score-card__footer {
+  padding: 12px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.10);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: "Inter", sans-serif;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+}
+
+/* ============================================================
+   7. ANEL DE SCORE (círculo à direita "100 /150")
+   As cores mudam por tier — segue a mesma matriz das bordas.
+   ============================================================ */
+
+.score-ring {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-width: 3px;
+  border-style: solid;
+}
+.score-ring--excelente { border-color: rgba(16, 185, 129, 0.65); background: rgba(6, 36, 24, 0.60); color: #6ee7b7; }
+.score-ring--bom       { border-color: rgba(56, 189, 248, 0.65); background: rgba(8, 36, 53, 0.60); color: #7dd3fc; }
+.score-ring--regular   { border-color: rgba(251, 191, 36, 0.65); background: rgba(31, 20,  8, 0.60); color: #fcd34d; }
+.score-ring--ruim      { border-color: rgba(239,  68, 68, 0.65); background: rgba(31,  6,  8, 0.60); color: #fca5a5; }
+
+.score-ring__value {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+}
+.score-ring__max {
+  font-family: "Inter", sans-serif;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+/* ============================================================
+   8. BADGES DE CLASSIFICAÇÃO (pill acima do nome)
+   ============================================================ */
+
+.score-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-family: "Inter", sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+}
+.score-badge--excelente { background: rgba( 16, 185, 129, 0.20); color: #6ee7b7; }  /* ⭐ */
+.score-badge--bom       { background: rgba( 56, 189, 248, 0.20); color: #7dd3fc; }  /* 👍 */
+.score-badge--regular   { background: rgba(251, 191,  36, 0.20); color: #fcd34d; }  /* 🟡 */
+.score-badge--ruim      { background: rgba(239,  68,  68, 0.20); color: #fca5a5; }  /* ⚠️ */
+
+/* ============================================================
+   9. REFERÊNCIA RÁPIDA — TODAS AS CORES DA PÁGINA
+   ============================================================
+
+   TEXTO PADRÃO
+   #222a26 ......... texto principal (foreground)
+   #677e73 ......... texto secundário (muted-foreground)
+   #ffffff ......... texto sobre cards coloridos
+
+   VERDE PRIMÁRIO (topo, botão ativo, ícone da medalha)
+   #16a34a / #16a249
+
+   NEUTROS DO LAYOUT
+   #fafafa ......... fundo geral
+   #ffffff ......... barras / inputs / cards brancos
+   #e3e8e6 ......... borda padrão
+
+   ---- CARDS PREMIUM (4 tiers) ----
+
+   EXCELENTE (verde esmeralda)
+   Borda: #10b981 @30%
+   Halo:  rgba(16,185,129,0.18)
+   Base:  #062418 → rgba(6,95,70,0.85) → #062418
+   Sombra: rgba(2,44,34,0.40)
+   Texto do ring/badge: #6ee7b7
+
+   BOM (azul céu)
+   Borda: #38bdf8 @30%
+   Halo:  rgba(56,189,248,0.18)
+   Base:  #082435 → rgba(7,89,133,0.85) → #082435
+   Sombra: rgba(8,47,73,0.40)
+   Texto do ring/badge: #7dd3fc
+
+   REGULAR (âmbar)
+   Borda: #fbbf24 @30%
+   Halo:  rgba(251,191,36,0.18)
+   Base:  #1f1408 → rgba(122,85,31,0.75) → #1f1408
+   Sombra: rgba(69,26,3,0.40)
+   Texto do ring/badge: #fcd34d
+
+   RUIM (vermelho)
+   Borda: #ef4444 @30%
+   Halo:  rgba(255,92,92,0.18)
+   Base:  #1f0608 → rgba(122,31,14,0.85) → #1f0608
+   Sombra: rgba(69,10,10,0.40)
+   Texto do ring/badge: #fca5a5
+
+   TIPOGRAFIA (recap)
+   Títulos / valores ......... "Plus Jakarta Sans", 700
+   Corpo, badges, botões ..... "Inter", 400 / 500 / 600 / 700
+   ============================================================ */

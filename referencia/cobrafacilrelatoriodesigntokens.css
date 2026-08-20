@@ -1,0 +1,165 @@
+/* ============================================================
+   CobraFácil — Relatório Operacional (página de empréstimos)
+   Design tokens extraídos: cores, tipografia e espaçamentos
+   ============================================================ */
+
+:root {
+  /* ---------- Base ---------- */
+  --background: 0 0% 98%;              /* #fafafa  — fundo geral */
+  --foreground: 150 10% 15%;           /* #222a26  — texto principal */
+  --card: 0 0% 100%;                   /* #ffffff  — fundo de cards */
+  --card-foreground: 150 10% 15%;      /* #222a26 */
+  --popover: 0 0% 100%;                /* #ffffff */
+  --popover-foreground: 150 10% 15%;   /* #222a26 */
+
+  /* ---------- Marca / Primária (verde CobraFácil) ---------- */
+  --primary: 142 76% 36%;              /* #16a34a aprox. */
+  --primary-foreground: 0 0% 100%;     /* #ffffff */
+  --secondary: 142 40% 95%;            /* verde bem claro */
+  --secondary-foreground: 142 76% 25%; /* verde escuro */
+  --accent: 142 40% 90%;
+  --accent-foreground: 142 76% 25%;
+
+  /* ---------- Neutros ---------- */
+  --muted: 150 10% 95%;
+  --muted-foreground: 150 10% 45%;
+  --border: 150 10% 90%;               /* #e3e8e6 */
+  --input: 150 10% 90%;
+  --ring: 142 76% 36%;
+
+  /* ---------- Semânticas ---------- */
+  --destructive: 0 84% 60%;            /* #ef4444 — "Saídas", erros */
+  --destructive-foreground: 0 0% 100%;
+  --success: 142 76% 36%;              /* #16a34a — "Entradas", positivos */
+  --success-foreground: 0 0% 100%;
+  --warning: 38 92% 50%;               /* #f59e0b — "Pendente" */
+  --warning-foreground: 0 0% 100%;
+
+  /* ---------- Sidebar (verde escuro) ---------- */
+  --sidebar-background: 142 76% 36%;   /* fundo da sidebar */
+  --sidebar-foreground: 0 0% 100%;     /* branco */
+  --sidebar-primary: 0 0% 100%;
+  --sidebar-primary-foreground: 142 76% 36%;
+  --sidebar-accent: 142 70% 30%;       /* hover/ativo mais escuro */
+
+  /* ---------- Raio de borda ---------- */
+  --radius: 0.75rem;                   /* 12px — base para rounded-xl */
+}
+
+/* ============================================================
+   TIPOGRAFIA
+   ============================================================ */
+
+/* Fonte para títulos */
+.font-heading {
+  font-family: "Plus Jakarta Sans", sans-serif;
+}
+
+/* Fonte para corpo */
+body, .font-body {
+  font-family: "Inter", sans-serif;
+}
+
+/* Título da página ex: "Relatório Operacional" */
+.page-title {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 30px;
+  line-height: 36px;
+  font-weight: 700;
+  color: #222a26;
+  margin: 0;
+}
+
+/* Subtítulo ex: "Acompanhe seus empréstimos em tempo real" */
+.page-subtitle {
+  font-family: "Inter", sans-serif;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+  color: hsl(var(--muted-foreground));
+}
+
+/* Label de categoria — "SAÍDAS", "ENTRADAS" */
+.category-label {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+  letter-spacing: 0.6px;      /* tracking-wider */
+  text-transform: uppercase;
+}
+.category-label--danger { color: #ef4444; }   /* SAÍDAS */
+.category-label--success { color: hsl(var(--success)); } /* ENTRADAS */
+
+/* ============================================================
+   ESPAÇAMENTO / LAYOUT
+   ============================================================ */
+
+/* Padding do conteúdo principal (responsivo) */
+.main-content {
+  padding: 12px;                       /* mobile: p-3 */
+}
+@media (min-width: 640px)  { .main-content { padding: 16px; } }  /* sm:p-4 */
+@media (min-width: 1024px) { .main-content { padding: 32px; } }  /* lg:p-8 */
+
+/* ============================================================
+   CARDS DE FLUXO (Saídas / Entradas)
+   ============================================================ */
+
+/* Card externo — "Saídas" (fundo vermelho muito suave) */
+.flux-card--danger {
+  border-radius: 12px;                 /* rounded-xl */
+  border: 1px solid rgba(239, 68, 68, 0.20);  /* red-500/20 */
+  background: rgba(239, 68, 68, 0.05);        /* red-500/5 */
+  overflow: hidden;
+  margin-top: 12px;
+}
+
+/* Card externo — "Entradas" (fundo verde muito suave) */
+.flux-card--success {
+  border-radius: 12px;
+  border: 1px solid rgba(22, 163, 74, 0.20);
+  background: rgba(22, 163, 74, 0.05);
+  overflow: hidden;
+  margin-top: 12px;
+}
+
+/* Linha de cabeçalho interna do card (o "SAÍDAS  -R$ 4.950,00") */
+.flux-card__header--danger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;                  /* py-2.5 px-4 */
+  border-bottom: 1px solid rgba(239, 68, 68, 0.15);
+  background: rgba(239, 68, 68, 0.10); /* red-500/10 */
+}
+
+.flux-card__header--success {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(22, 163, 74, 0.15);
+  background: rgba(22, 163, 74, 0.10);
+}
+
+/* Gap entre ícone e texto nos labels */
+.flux-card__label {
+  display: flex;
+  align-items: center;
+  gap: 8px;                            /* gap-2 */
+}
+
+/* ============================================================
+   CORES DE APOIO (referência rápida em HEX)
+   ============================================================ */
+
+/*
+   Primária / verde marca ..... #16a34a  (hsl(142 76% 36%))
+   Verde escuro (sidebar hover) hsl(142 70% 30%)
+   Vermelho (Saídas/erro) ..... #ef4444
+   Amarelo (Pendente) ......... #f59e0b
+   Texto principal ............ #222a26
+   Borda padrão ............... #e3e8e6
+   Fundo geral ................ #fafafa
+   Branco de card ............. #ffffff
+*/

@@ -225,44 +225,52 @@ export default function CalendarioPage() {
       {/* ===== HEADER ===== */}
       <div className="pt-3">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">Calendário de Vencimentos</h1>
-        <p className="text-sm text-gray-500 dark:text-zinc-400">Visualize todos os vencimentos dos seus empréstimos</p>
+        <p className="text-base text-gray-500 dark:text-zinc-400">Visualize todos os vencimentos dos seus empréstimos</p>
       </div>
 
       {/* ===== STAT CARDS ===== */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-primary/45 dark:border-primary/40 bg-white dark:bg-zinc-900">
-          <CardContent className="p-5 flex items-start gap-3">
-            <Clock className="h-5 w-5 text-gray-500 dark:text-zinc-400 mt-0.5" />
+        <Card className="border-primary/30 dark:border-primary/30 bg-white dark:bg-zinc-900 shadow-[0_4px_20px_-2px_rgba(22,162,73,0.1)]">
+          <CardContent className="p-5 flex items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/10">
+              <Clock className="h-5 w-5 text-amber-500" />
+            </div>
             <div>
               <p className="text-xs text-gray-500 dark:text-zinc-400">A Vencer</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{aVencer}</p>
+              <p className="text-xl font-bold text-gray-900 dark:text-zinc-100">{aVencer}</p>
             </div>
           </CardContent>
         </Card>
-        <Card className="border-primary/45 dark:border-primary/40 bg-white dark:bg-zinc-900">
-          <CardContent className="p-5 flex items-start gap-3">
-            <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5" />
+        <Card className="border-primary/30 dark:border-primary/30 bg-white dark:bg-zinc-900 shadow-[0_4px_20px_-2px_rgba(22,162,73,0.1)]">
+          <CardContent className="p-5 flex items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-red-500/10">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+            </div>
             <div>
               <p className="text-xs text-gray-500 dark:text-zinc-400">Vencidos</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{vencidos}</p>
+              <p className="text-xl font-bold text-gray-900 dark:text-zinc-100">{vencidos}</p>
             </div>
           </CardContent>
         </Card>
-        <Card className="border-primary/45 dark:border-primary/40 bg-white dark:bg-zinc-900">
-          <CardContent className="p-5 flex items-start gap-3">
-            <CheckCircle2 className="h-5 w-5 text-blue-500 mt-0.5" />
+        <Card className="border-primary/30 dark:border-primary/30 bg-white dark:bg-zinc-900 shadow-[0_4px_20px_-2px_rgba(22,162,73,0.1)]">
+          <CardContent className="p-5 flex items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-500/10">
+              <CheckCircle2 className="h-5 w-5 text-blue-500" />
+            </div>
             <div>
               <p className="text-xs text-gray-500 dark:text-zinc-400">Clientes em dia</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{clientesEmDia}</p>
+              <p className="text-xl font-bold text-gray-900 dark:text-zinc-100">{clientesEmDia}</p>
             </div>
           </CardContent>
         </Card>
-        <Card className="border-primary/45 dark:border-primary/40 bg-white dark:bg-zinc-900">
-          <CardContent className="p-5 flex items-start gap-3">
-            <CalIcon className="h-5 w-5 text-primary mt-0.5" />
+        <Card className="border-primary/30 dark:border-primary/30 bg-white dark:bg-zinc-900 shadow-[0_4px_20px_-2px_rgba(22,162,73,0.1)]">
+          <CardContent className="p-5 flex items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+              <CalIcon className="h-5 w-5 text-primary" />
+            </div>
             <div>
               <p className="text-xs text-gray-500 dark:text-zinc-400">Total no Mês</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{formatCurrency(totalNoMes)}</p>
+              <p className="text-xl font-bold text-gray-900 dark:text-zinc-100">{formatCurrency(totalNoMes)}</p>
             </div>
           </CardContent>
         </Card>
@@ -271,12 +279,12 @@ export default function CalendarioPage() {
       {/* ===== CALENDAR + SIDE PANEL ===== */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-4 lg:items-start">
         {/* Calendar */}
-        <Card className="border-primary/45 dark:border-primary/40 bg-white dark:bg-zinc-900 lg:col-span-3 min-w-0 overflow-hidden">
+        <Card className="border-primary/30 dark:border-primary/30 bg-white dark:bg-zinc-900 shadow-sm lg:col-span-3 min-w-0 overflow-hidden">
           <CardContent className="p-6">
           {/* Month nav */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
-              <CalIcon className="h-5 w-5 text-gray-500 dark:text-zinc-400" />
+              <CalIcon className="h-5 w-5 text-primary" />
               <h2 className="text-lg font-bold text-gray-900 dark:text-zinc-100 capitalize">{monthName}</h2>
             </div>
             <div className="flex items-center gap-1">
@@ -314,8 +322,8 @@ export default function CalendarioPage() {
                 {Array.from({ length: firstDayOfWeek }).map((_, i) => {
                   const d = prevMonthDays - firstDayOfWeek + 1 + i
                   return (
-                    <div key={`prev-${i}`} className="aspect-square rounded-xl border border-primary/25 dark:border-primary/30 bg-white dark:bg-zinc-900 p-2">
-                      <span className="text-sm text-gray-300 dark:text-zinc-700">{d}</span>
+                    <div key={`prev-${i}`} className="flex aspect-square items-center justify-center rounded-xl border border-primary/20 bg-white dark:bg-zinc-900 p-2 opacity-30">
+                      <span className="text-xl font-semibold text-gray-500 dark:text-zinc-500">{d}</span>
                     </div>
                   )
                 })}
@@ -334,16 +342,16 @@ export default function CalendarioPage() {
                     <button
                       key={day}
                       onClick={() => setSelectedDay(day)}
-                      className={`relative aspect-square w-full rounded-xl p-2 text-left transition-all
-                        ${isToday
-                          ? "border-2 border-green-600 shadow-[inset_0_0_0_4px_white,inset_0_0_0_5px_#16a34a] dark:shadow-[inset_0_0_0_4px_#18181b,inset_0_0_0_5px_#16a34a] bg-white dark:bg-zinc-900"
-                          : isSelected
-                          ? "border-2 border-primary/60 bg-white dark:bg-zinc-900 dark:border-primary/50"
-                          : "border border-primary/35 dark:border-primary/40 bg-white dark:bg-zinc-900 hover:border-primary/60"
+                      className={`relative flex aspect-square w-full items-center justify-center rounded-xl p-2 transition-all
+                        ${isSelected
+                          ? "border border-primary bg-primary text-white"
+                          : isToday
+                          ? "border border-primary bg-primary/10 text-primary"
+                          : "border border-primary/20 dark:border-primary/25 bg-white dark:bg-zinc-900 hover:bg-primary/5 dark:hover:bg-primary/10"
                         }`}
                     >
-                      <span className={`text-sm font-medium ${
-                        isToday ? "text-green-500 dark:text-green-400 font-bold" : "text-gray-700 dark:text-zinc-300"
+                      <span className={`text-xl font-semibold ${
+                        isSelected ? "text-white" : isToday ? "text-primary" : "text-gray-900 dark:text-zinc-200"
                       }`}>
                         {day}
                       </span>
@@ -373,8 +381,8 @@ export default function CalendarioPage() {
 
                 {/* Next month leading days */}
                 {Array.from({ length: trailingCells }).map((_, i) => (
-                  <div key={`next-${i}`} className="aspect-square rounded-xl border border-primary/25 dark:border-primary/30 bg-white dark:bg-zinc-900 p-2">
-                    <span className="text-sm text-gray-300 dark:text-zinc-700">{i + 1}</span>
+                  <div key={`next-${i}`} className="flex aspect-square items-center justify-center rounded-xl border border-primary/20 bg-white dark:bg-zinc-900 p-2 opacity-30">
+                    <span className="text-xl font-semibold text-gray-500 dark:text-zinc-500">{i + 1}</span>
                   </div>
                 ))}
               </div>
@@ -401,7 +409,7 @@ export default function CalendarioPage() {
 
         {/* ===== SIDE PANEL - DAY DETAILS ===== */}
         <div className="lg:col-span-1 lg:self-stretch">
-          <Card className="h-full border-primary/45 dark:border-primary/40 bg-white dark:bg-zinc-900 overflow-hidden">
+          <Card className="h-full border-primary/30 dark:border-primary/30 bg-white dark:bg-zinc-900 shadow-[0_4px_20px_-2px_rgba(22,162,73,0.1)] overflow-hidden">
             <CardContent className="flex h-full min-h-0 flex-col p-5 overflow-hidden">
               {(() => {
                 const dateText = selectedDay

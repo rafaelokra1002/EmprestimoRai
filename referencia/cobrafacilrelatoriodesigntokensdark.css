@@ -1,0 +1,145 @@
+/* ============================================================
+   CobraFácil — Relatório Operacional (MODO ESCURO)
+   Design tokens extraídos da página em dark mode
+   ============================================================ */
+
+/* Ative com a classe `.dark` no <html> (ou em qualquer ancestral). */
+
+.dark {
+  /* ---------- Base ---------- */
+  --background: 150 10% 8%;            /* #121614 — fundo geral */
+  --foreground: 0 0% 98%;              /* #fafafa — texto principal */
+  --card: 150 10% 11%;                 /* #191d1b — fundo de cards */
+  --card-foreground: 0 0% 98%;         /* #fafafa */
+  --popover: 150 10% 10%;              /* #171b19 */
+  --popover-foreground: 0 0% 98%;      /* #fafafa */
+
+  /* ---------- Marca / Primária (verde CobraFácil, mais claro no escuro) ---------- */
+  --primary: 142 70% 45%;              /* #22c55e aprox. */
+  --primary-foreground: 0 0% 100%;     /* #ffffff */
+  --secondary: 150 10% 16%;            /* #252b28 */
+  --secondary-foreground: 142 70% 60%; /* verde claro para texto sobre secondary */
+  --accent: 150 10% 18%;               /* #2a312e */
+  --accent-foreground: 142 70% 60%;
+
+  /* ---------- Neutros ---------- */
+  --muted: 150 10% 15%;                /* #23282600 */
+  --muted-foreground: 150 10% 65%;     /* #a2ada8 aprox. */
+  --border: 150 10% 18%;               /* #2a312e */
+  --input: 150 10% 18%;
+  --ring: 142 70% 45%;                 /* verde de foco */
+
+  /* ---------- Semânticas ---------- */
+  --destructive: 0 62% 50%;            /* #cc3333 — versão dessaturada p/ dark */
+  --destructive-foreground: 0 0% 100%;
+  --success: 142 70% 45%;              /* #22c55e */
+  --success-foreground: 0 0% 100%;
+  --warning: 38 92% 50%;               /* #f59e0b (mantém) */
+  --warning-foreground: 0 0% 100%;
+
+  /* ---------- Sidebar (fica escura no dark, não verde) ---------- */
+  --sidebar-background: 150 10% 10%;         /* #171b19 */
+  --sidebar-foreground: 0 0% 98%;            /* #fafafa */
+  --sidebar-primary: 142 70% 45%;            /* verde para ícones/destaques */
+  --sidebar-primary-foreground: 0 0% 100%;   /* #ffffff */
+  --sidebar-accent: 150 10% 16%;             /* #252b28 — hover/ativo */
+  --sidebar-accent-foreground: 0 0% 98%;     /* #fafafa */
+  --sidebar-border: 150 10% 22%;             /* #333a37 */
+  --sidebar-ring: 142 70% 45%;
+}
+
+/* ============================================================
+   TIPOGRAFIA — mesmas fontes e tamanhos do modo claro,
+   só muda a cor do texto (governada por --foreground).
+   ============================================================ */
+
+.dark .page-title {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 30px;
+  line-height: 36px;
+  font-weight: 700;
+  color: hsl(var(--foreground));       /* #fafafa */
+  margin: 0;
+}
+
+.dark .page-subtitle {
+  font-family: "Inter", sans-serif;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+  color: hsl(var(--muted-foreground)); /* cinza claro */
+}
+
+/* Labels "SAÍDAS" / "ENTRADAS" — as cores semânticas
+   (red-500 e green) permanecem as mesmas do modo claro */
+.dark .category-label--danger  { color: #ef4444; }
+.dark .category-label--success { color: hsl(var(--success)); }
+
+/* ============================================================
+   CARDS DE FLUXO (Saídas / Entradas) — dark mode
+   As sobreposições coloridas usam o MESMO tom da cor semântica
+   com opacidade baixa; sobre fundo escuro dá um "vidro" tingido.
+   ============================================================ */
+
+.dark .flux-card--danger {
+  border-radius: 12px;
+  border: 1px solid rgba(239, 68, 68, 0.20);
+  background: rgba(239, 68, 68, 0.05);
+  overflow: hidden;
+  margin-top: 12px;
+}
+
+.dark .flux-card--success {
+  border-radius: 12px;
+  border: 1px solid rgba(34, 197, 94, 0.20);   /* verde do dark */
+  background: rgba(34, 197, 94, 0.05);
+  overflow: hidden;
+  margin-top: 12px;
+}
+
+.dark .flux-card__header--danger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(239, 68, 68, 0.15);
+  background: rgba(239, 68, 68, 0.10);
+}
+
+.dark .flux-card__header--success {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(34, 197, 94, 0.15);
+  background: rgba(34, 197, 94, 0.10);
+}
+
+.dark .flux-card__label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ============================================================
+   REFERÊNCIA RÁPIDA EM HEX (dark mode)
+   ============================================================
+
+   Fundo da página ............ #121614   (hsl 150 10% 8%)
+   Fundo de card .............. #191d1b   (hsl 150 10% 11%)
+   Sidebar .................... #171b19   (hsl 150 10% 10%)
+   Sidebar hover/ativo ........ #252b28   (hsl 150 10% 16%)
+   Sidebar borda .............. #333a37   (hsl 150 10% 22%)
+   Texto principal ............ #fafafa   (hsl 0 0% 98%)
+   Texto secundário ........... #a2ada8   (hsl 150 10% 65%)
+   Borda padrão ............... #2a312e   (hsl 150 10% 18%)
+
+   Verde (primary/success) .... #22c55e   (hsl 142 70% 45%)
+   Verde texto sobre secundário #4ade80   (hsl 142 70% 60%)
+   Vermelho (destructive) ..... #cc3333   (hsl 0 62% 50%)
+   Vermelho SAÍDAS (fixo) ..... #ef4444   (red-500 Tailwind)
+   Amarelo (Pendente) ......... #f59e0b   (mantém do claro)
+
+   Espaçamentos, raios de borda, tipografia e paddings:
+   IDÊNTICOS ao modo claro. Só as cores mudam.
+   ============================================================ */

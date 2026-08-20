@@ -1,0 +1,323 @@
+/* ============================================================
+   CobraFácil — Página "Calendário de Cobranças"
+   Cores, tipografia, componentes e o próprio calendário
+   ============================================================ */
+
+/* ---------------------------------------------------------
+   FONTES
+   Títulos ....: "Plus Jakarta Sans", sans-serif (700)
+   Corpo ......: "Inter", sans-serif (400 / 500 / 700)
+   --------------------------------------------------------- */
+
+/* ============================================================
+   1. CABEÇALHO DA PÁGINA
+   ============================================================ */
+
+.cal-h1 {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 700;
+  color: #222a26;
+  margin: 0;
+}
+
+.cal-subtitle {
+  font-family: "Inter", sans-serif;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+  color: #677e73;              /* muted-foreground */
+}
+
+/* ============================================================
+   2. ABAS SUPERIORES ("Empréstimos / Produtos / Veículos ...")
+   ============================================================ */
+
+.cal-tabs {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  background: #f1f4f2;           /* bg-muted */
+  border-radius: 10px;
+  color: #677e73;
+}
+
+.cal-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .15s;
+}
+.cal-tab--active {
+  background: #fafafa;           /* bg-background */
+  color: #222a26;
+  box-shadow: 0 1px 2px rgba(0,0,0,.06);
+}
+.cal-tab--inactive {
+  background: transparent;
+  color: #677e73;
+}
+
+/* ============================================================
+   3. CARDS DE ESTATÍSTICA (A Vencer / Vencidos / Total no Mês)
+   Todos usam o mesmo shell branco com borda verde translúcida.
+   Só muda a cor do "ícone dentro do quadrado colorido".
+   ============================================================ */
+
+.cal-stat {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid rgba(22, 162, 73, 0.30);    /* primary/30 */
+  box-shadow: 0 4px 20px -2px rgba(22, 162, 73, 0.10);
+  color: #222a26;
+}
+
+.cal-stat__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+}
+.cal-stat__icon--warning     { background: rgba(245, 159, 10, 0.10); color: #f59f0a; }  /* A Vencer */
+.cal-stat__icon--destructive { background: rgba(239,  67, 67, 0.10); color: #ef4343; }  /* Vencidos */
+.cal-stat__icon--primary     { background: rgba(22, 162, 73, 0.10); color: #16a249; }   /* Total */
+
+.cal-stat__label {
+  font-family: "Inter", sans-serif;
+  font-size: 12px;
+  color: #677e73;
+}
+.cal-stat__value {
+  font-family: "Inter", sans-serif;
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 700;
+  color: #222a26;
+}
+
+/* ============================================================
+   4. CARD DO CALENDÁRIO (o "Agosto 2026 + grade")
+   ============================================================ */
+
+.cal-card {
+  background: #ffffff;                                        /* bg-card */
+  border-radius: 12px;                                         /* rounded-lg */
+  border: 1px solid rgba(22, 162, 73, 0.30);                   /* border-primary/30 */
+  box-shadow: 0 1px 2px rgba(0,0,0,.05);                       /* shadow-sm */
+  color: #222a26;
+}
+
+/* Header do card (título do mês + navegação) */
+.cal-card__header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 24px 8px;                                      /* p-6 pb-2 */
+  gap: 8px;
+}
+
+.cal-card__month {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: #222a26;
+}
+.cal-card__month svg { color: #16a249; }                       /* ícone verde */
+
+/* Botões de navegação < Hoje > */
+.cal-nav {
+  display: flex;
+  gap: 4px;
+}
+.cal-nav__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  min-width: 36px;
+  padding: 0 12px;
+  background: #fafafa;
+  border: 1px solid #e3e8e6;
+  border-radius: 10px;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #222a26;
+  cursor: pointer;
+  transition: background .15s;
+}
+.cal-nav__btn:hover { background: #f1f4f2; }
+
+/* Corpo do card = grid do calendário */
+.cal-card__body {
+  padding: 0 24px 24px;                                        /* p-6 pt-0 */
+}
+
+/* ============================================================
+   5. GRADE DO CALENDÁRIO
+   ============================================================ */
+
+/* Linha do topo com "Dom, Seg, Ter…" */
+.cal-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  margin-bottom: 8px;
+}
+.cal-weekday {
+  text-align: center;
+  padding: 8px 0;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #677e73;                                              /* muted-foreground */
+}
+
+/* Grid dos dias — 7 colunas, células quadradas */
+.cal-days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+
+/* Célula de um dia */
+.cal-day {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  padding: 4px;
+  border-radius: 12px;                                         /* rounded-lg */
+  border: 1px solid rgba(22, 162, 73, 0.20);                   /* border-primary/20 */
+  background: transparent;
+  color: #222a26;
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 20px;                                             /* text-xl */
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background .15s;
+}
+.cal-day:hover { background: rgba(241, 244, 242, 0.5); }        /* hover:bg-muted/50 */
+
+.cal-day--outside {                                            /* dias do mês anterior/próximo */
+  opacity: 0.30;
+}
+
+.cal-day--today {
+  background: rgba(22, 162, 73, 0.10);
+  border-color: #16a249;
+  color: #16a249;
+}
+
+.cal-day--selected {
+  background: #16a249;
+  border-color: #16a249;
+  color: #ffffff;
+}
+
+/* Contador (badge vermelho no canto inferior) */
+.cal-day__badge {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #ef4343;                                         /* bg-destructive */
+  color: #ffffff;
+  font-family: "Inter", sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+/* ============================================================
+   6. PAINEL DIREITO — "Selecione uma data"
+   Mesmo shell dos outros cards.
+   ============================================================ */
+
+.cal-side {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid rgba(22, 162, 73, 0.30);
+  box-shadow: 0 4px 20px -2px rgba(22, 162, 73, 0.10);
+  padding: 24px;
+}
+.cal-side__title {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: #222a26;
+  margin: 0 0 24px;
+}
+.cal-side__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 48px 24px;
+  color: #677e73;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  text-align: center;
+}
+.cal-side__empty svg { color: #cdd8d1; }                       /* cinza claro */
+
+/* ============================================================
+   7. REFERÊNCIA RÁPIDA — CORES USADAS NA PÁGINA
+   ============================================================
+
+   TEXTO
+   #222a26 ........ texto principal
+   #677e73 ........ texto secundário (dias da semana, labels)
+   #ffffff ........ texto sobre badges/hoje selecionado
+
+   NEUTROS
+   #ffffff ........ fundo de cards (bg-card)
+   #fafafa ........ botões neutros (Hoje/setas)
+   #f1f4f2 ........ fundo das abas (bg-muted) + hover
+   #e3e8e6 ........ borda padrão neutra
+   #cdd8d1 ........ ícone vazio (calendário do painel direito)
+
+   VERDE PRIMÁRIO
+   #16a249 ........ marca, borda dos cards e das células (com opacidade)
+                    células:      border-color rgba(22,162,73,0.20)
+                    cards:        border-color rgba(22,162,73,0.30)
+                    sombra card:  rgba(22,162,73,0.10)
+                    ícone total:  bg rgba(22,162,73,0.10), color #16a249
+
+   AMARELO / WARNING
+   #f59f0a ........ ícone "A Vencer" (fundo rgba(245,159,10,0.10))
+
+   VERMELHO / DESTRUCTIVE
+   #ef4343 ........ ícone "Vencidos" (fundo rgba(239,67,67,0.10))
+                    badge de dias com vencimento (bola sólida)
+
+   TIPOGRAFIA
+   Títulos / valores / números de dia .. "Plus Jakarta Sans" 600–700
+   Labels, abas, botões, corpo ......... "Inter" 400 / 500 / 700
+   ============================================================ */

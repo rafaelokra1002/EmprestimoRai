@@ -1,13 +1,13 @@
 ﻿"use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Avatar } from "@/components/avatar"
 import { Dialog } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import {
-  Search, Trophy, Pencil, ChevronDown, ChevronUp, Clock, AlertCircle,
+  Search, Trophy, Pencil, ChevronDown, ChevronUp, ChevronRight, Clock, AlertCircle,
   DollarSign, ThumbsUp, ThumbsDown, Sparkles, RefreshCw, Save, Star,
   CheckCircle2, ShieldAlert, BookOpen, HelpCircle,
 } from "lucide-react"
@@ -50,6 +50,7 @@ type SortMode = "score" | "lucro"
 const SCORE_MAX = 150
 
 export default function ScorePage() {
+  const router = useRouter()
   const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -114,8 +115,8 @@ export default function ScorePage() {
   }
 
   const getScoreBadgeColor = (score: number) => {
-    if (score >= 120) return "bg-violet-50 dark:bg-violet-950/20 text-violet-600 dark:text-violet-400"
-    if (score >= 100) return "bg-green-500/10 dark:bg-green-500/15 text-green-800 dark:text-green-400"
+    if (score >= 120) return "bg-green-500/10 dark:bg-green-500/15 text-green-800 dark:text-green-400"
+    if (score >= 100) return "bg-sky-50 dark:bg-sky-950/20 text-sky-600 dark:text-sky-400"
     if (score >= 70) return "bg-yellow-50 dark:bg-yellow-950/20 text-yellow-600 dark:text-yellow-400"
     return "bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400"
   }
@@ -132,6 +133,30 @@ export default function ScorePage() {
     if (score >= 100) return "bg-green-500"
     if (score >= 70) return "bg-yellow-400"
     return "bg-red-500"
+  }
+
+  // Variante de cor do card premium por nível (valores exatos dos design tokens)
+  const getScoreTier = (score: number) => {
+    if (score >= 120) return {
+      card: "border-[#10b981]/30 shadow-[0_10px_15px_-3px_rgba(2,44,34,0.4)] bg-[radial-gradient(circle_at_0%_0%,rgba(16,185,129,0.18),transparent_55%),linear-gradient(135deg,#062418_0%,rgba(6,95,70,0.85)_55%,#062418_100%)]",
+      arc: "#10b981", ringBg: "rgba(6,36,24,0.6)", value: "#6ee7b7", amount: "text-[#34d399]",
+      badge: "bg-[#10b981]/20 text-[#6ee7b7]",
+    }
+    if (score >= 100) return {
+      card: "border-[#38bdf8]/30 shadow-[0_10px_15px_-3px_rgba(8,47,73,0.4)] bg-[radial-gradient(circle_at_0%_0%,rgba(56,189,248,0.18),transparent_55%),linear-gradient(135deg,#082435_0%,rgba(7,89,133,0.85)_55%,#082435_100%)]",
+      arc: "#38bdf8", ringBg: "rgba(8,36,53,0.6)", value: "#7dd3fc", amount: "text-sky-400",
+      badge: "bg-[#38bdf8]/20 text-[#7dd3fc]",
+    }
+    if (score >= 70) return {
+      card: "border-[#fbbf24]/30 shadow-[0_10px_15px_-3px_rgba(69,26,3,0.4)] bg-[radial-gradient(circle_at_0%_0%,rgba(251,191,36,0.18),transparent_55%),linear-gradient(135deg,#1f1408_0%,rgba(122,85,31,0.75)_55%,#1f1408_100%)]",
+      arc: "#fbbf24", ringBg: "rgba(31,20,8,0.6)", value: "#fcd34d", amount: "text-sky-400",
+      badge: "bg-[#fbbf24]/20 text-[#fcd34d]",
+    }
+    return {
+      card: "border-[#ef4444]/30 shadow-[0_10px_15px_-3px_rgba(69,10,10,0.4)] bg-[radial-gradient(circle_at_0%_0%,rgba(255,92,92,0.18),transparent_55%),linear-gradient(135deg,#1f0608_0%,rgba(122,31,14,0.85)_55%,#1f0608_100%)]",
+      arc: "#ef4444", ringBg: "rgba(31,6,8,0.6)", value: "#fca5a5", amount: "text-sky-400",
+      badge: "bg-[#ef4444]/20 text-[#fca5a5]",
+    }
   }
 
   const getClientStats = (client: Client) => {
@@ -246,7 +271,7 @@ export default function ScorePage() {
     const circumference = 2 * Math.PI * radius
     const pct = Math.min(score / SCORE_MAX, 1)
     const offset = circumference * (1 - pct)
-    const color = score >= 120 ? "#8b5cf6" : score >= 100 ? "#22c55e" : score >= 70 ? "#facc15" : "#ef4444"
+    const color = score >= 120 ? "#10b981" : score >= 100 ? "#38bdf8" : score >= 70 ? "#fbbf24" : "#ef4444"
     return (
       <div className="relative flex flex-col items-center justify-center" style={{ width: size, height: size }}>
         <svg width={size} height={size} className="-rotate-90 absolute inset-0">
@@ -259,6 +284,28 @@ export default function ScorePage() {
         <div className="relative flex flex-col items-center justify-center leading-none">
           <span className="text-sm font-bold text-gray-900 dark:text-zinc-100">{Math.min(score, SCORE_MAX)}</span>
           <span className="text-[9px] text-gray-400 dark:text-zinc-500">/{SCORE_MAX}</span>
+        </div>
+      </div>
+    )
+  }
+
+  // Anel de progresso do card premium (arco na cor do tier + disco interno)
+  const CardRing = ({ score, arc, value, ringBg }: { score: number; arc: string; value: string; ringBg: string }) => {
+    const size = 72, sw = 5
+    const r = (size - sw) / 2 - 1
+    const c = 2 * Math.PI * r
+    const offset = c * (1 - Math.min(score / SCORE_MAX, 1))
+    return (
+      <div className="relative flex shrink-0 items-center justify-center" style={{ width: size, height: size }}>
+        <svg width={size} height={size} className="absolute inset-0 -rotate-90">
+          <circle cx={size / 2} cy={size / 2} r={r} stroke="rgba(255,255,255,0.15)" strokeWidth={sw} fill="none" />
+          <circle cx={size / 2} cy={size / 2} r={r} stroke={arc} strokeWidth={sw} fill="none"
+            strokeDasharray={c} strokeDashoffset={offset} strokeLinecap="round" className="transition-all duration-700" />
+        </svg>
+        <div className="absolute inset-[7px] rounded-full" style={{ background: ringBg }} />
+        <div className="relative flex flex-col items-center leading-none">
+          <span className="text-xl font-bold" style={{ color: value }}>{Math.min(score, SCORE_MAX)}</span>
+          <span className="text-[10px] text-white/65">/{SCORE_MAX}</span>
         </div>
       </div>
     )
@@ -564,94 +611,65 @@ export default function ScorePage() {
             const allLucro = clientLoans.reduce((s, l) => s + (l.profit || 0), 0)
             const allLucroRealizado = getClientRealizedProfit(client)
             const allCompleted = clientLoans.length > 0 && activeLoans.length === 0
+            const initials = client.name.split(" ").filter(Boolean).map((w) => w[0]).slice(0, 2).join("").toUpperCase() || "?"
+            const tier = getScoreTier(client.score)
             return (
               <div
                 key={client.id}
-                className={`rounded-xl overflow-hidden border ${getScoreBorderColor(client.score)} bg-white dark:bg-zinc-900`}
+                className={`relative overflow-hidden rounded-xl border text-white shadow-lg ${tier.card}`}
               >
-                <div className={`h-1 w-full ${getScoreBarColor(client.score)}`} />
-                <div className="p-5">
-                {/* Top row: rank + avatar + name + score circle */}
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-3">
-                    <div className="flex flex-col items-center gap-1">
-                      <span className="text-xs text-gray-400 dark:text-zinc-500 font-medium">#{index + 1}</span>
-                      <Avatar name={client.name} src={client.photo} size="sm" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-bold text-gray-900 dark:text-zinc-100">{client.name}</h3>
-                        <button onClick={() => handleEditScore(client)}>
-                          <Pencil className="h-3.5 w-3.5 text-gray-400 dark:text-zinc-500 hover:text-gray-700 dark:hover:text-zinc-300 transition-colors" />
-                        </button>
-                      </div>
-                      <span className={`inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-xs font-semibold ${getScoreBadgeColor(client.score)}`}>
-                        {getScoreIcon(client.score)} {getScoreLabel(client.score)}
-                      </span>
-                    </div>
-                  </div>
-                  <ScoreCircle score={client.score} />
-                </div>
-
-                <div className="my-3 border-t border-gray-100 dark:border-zinc-800" />
-
-                {/* Loan info or empty state */}
-                {clientLoans.length === 0 ? (
-                  <p className="text-center text-xs text-gray-400 dark:text-zinc-500 py-2">Sem empréstimos ativos</p>
-                ) : (
-                  <div>
-                    <p className="text-[10px] uppercase font-semibold text-gray-400 dark:text-zinc-500 tracking-wide">
-                      Lucro
-                    </p>
-                    {allRecebido > 0 && (
-                      <p className="text-xl font-bold text-gray-900 dark:text-zinc-100 mt-0.5">
-                        {formatCurrency(allLucroRealizado)}
-                      </p>
-                    )}
-                    <div className="flex items-center gap-2 mt-1 text-xs text-gray-400 dark:text-zinc-500 flex-wrap">
-                      <span>Emprestado {formatCurrency(allEmprestado)}</span>
-                      <span className="text-gray-300 dark:text-zinc-700">•</span>
-                      <span>Recebido {formatCurrency(allRecebido)}</span>
-                      <span className="text-gray-300 dark:text-zinc-700">•</span>
-                      <span>A receber {formatCurrency(allAReceber)}</span>
-                      {completedLoans.length > 0 && (
-                        <>
-                          <span className="text-gray-300 dark:text-zinc-700">•</span>
-                          <span>{completedLoans.length} quitado{completedLoans.length > 1 ? "s" : ""}</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Extra profit tag */}
-                {stats.lucroExtra > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
-                      <Sparkles className="h-3 w-3" />
-                      Lucro Extra: {formatCurrency(stats.lucroExtra)}
+                {/* Header: rank + iniciais + nome/badge + anel de score */}
+                <div className="flex items-start gap-3 p-4">
+                  <div className="flex flex-col items-center gap-1">
+                    <span className="text-xs font-bold text-white/60">#{index + 1}</span>
+                    <span className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-[13px] font-bold tracking-wide text-white">
+                      {initials}
                     </span>
-                    {stats.recoveryPoints > 0 && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 dark:bg-blue-950/20 text-blue-600 border border-blue-500/20">
-                        <RefreshCw className="h-3 w-3" />
-                        +{stats.recoveryPoints} pts
-                      </span>
-                    )}
                   </div>
-                )}
-
-                {/* Installment stats */}
-                <div className="mt-3 flex items-center gap-4 text-xs text-gray-500 dark:text-zinc-400">
-                  <span className="flex items-center gap-1">
-                    <Clock className="h-3.5 w-3.5 text-green-500" />
-                    {stats.emDia} em dia
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <AlertCircle className="h-3.5 w-3.5 text-red-500" />
-                    {stats.atrasados} atrasados
-                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <h3 className="truncate text-base font-semibold text-white">{client.name}</h3>
+                      <button onClick={() => handleEditScore(client)}>
+                        <Pencil className="h-3.5 w-3.5 text-white/60 hover:text-white transition-colors" />
+                      </button>
+                    </div>
+                    <span className={`mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${tier.badge}`}>
+                      {getScoreIcon(client.score)} {getScoreLabel(client.score)}
+                    </span>
+                  </div>
+                  <CardRing score={client.score} arc={tier.arc} value={tier.value} ringBg={tier.ringBg} />
                 </div>
-                </div>{/* end p-5 */}
+
+                {/* Body: A Receber + meta */}
+                <div className="px-4 pb-3">
+                  {clientLoans.length === 0 ? (
+                    <p className="py-2 text-center text-xs text-white/60">Sem empréstimos ativos</p>
+                  ) : (
+                    <>
+                      <p className="text-[11px] font-medium uppercase tracking-wider text-white/60">A Receber</p>
+                      <p className={`mt-0.5 text-2xl font-bold ${tier.amount}`}>{formatCurrency(allAReceber)}</p>
+                      <p className="mt-1 text-xs text-white/70">
+                        Emprestado <strong className="font-semibold text-white">{formatCurrency(allEmprestado)}</strong>
+                        <span className="text-white/40"> • </span>
+                        Recebido <strong className="font-semibold text-white">{formatCurrency(allRecebido)}</strong>
+                        {completedLoans.length > 0 && (
+                          <>
+                            <span className="text-white/40"> • </span>
+                            {completedLoans.length} quitado{completedLoans.length > 1 ? "s" : ""}
+                          </>
+                        )}
+                      </p>
+                    </>
+                  )}
+                </div>
+
+                {/* Footer: Ver detalhes */}
+                <button
+                  onClick={() => router.push(`/emprestimos/cliente/${client.id}`)}
+                  className="flex w-full items-center justify-center gap-1.5 border-t border-white/10 px-4 py-3 text-[13px] text-white/85 transition-colors hover:bg-white/5 hover:text-white"
+                >
+                  Ver detalhes <ChevronRight className="h-3.5 w-3.5" />
+                </button>
               </div>
             )
           })}

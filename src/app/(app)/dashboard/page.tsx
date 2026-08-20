@@ -16,7 +16,6 @@ import {
   Filter,
   Package,
   Percent,
-  Plus,
   Receipt,
   Shield,
   ShieldAlert,
@@ -340,98 +339,6 @@ export default function DashboardPage() {
   return (
     <div className="space-y-5 pt-6">
 
-      {/* ── Banner notificações push ───────────────────────────────────────── */}
-      {showPushBanner && (
-        <div className="relative flex flex-col gap-3 rounded-xl border border-green-500/30 dark:border-green-800/50 bg-green-500/10 dark:bg-[#192B21] p-4 sm:flex-row sm:items-center sm:gap-4">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-green-500/15 dark:bg-green-900/40">
-            <Bell className="h-5 w-5 text-[#16a34a] dark:text-green-400" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-green-800 dark:text-green-300">Ative as notificações push</p>
-            <p className="text-xs text-gray-500 dark:text-zinc-400">Receba alertas de cobranças em atraso e vencimento do plano diretamente no seu dispositivo.</p>
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <button
-              onClick={handleEnablePush}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-[#16a34a] hover:bg-[#15803d] px-4 py-1.5 text-sm font-medium text-white transition-colors"
-            >
-              Ativar
-            </button>
-            <button
-              onClick={dismissPushBanner}
-              className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 hover:bg-green-500/10 dark:hover:bg-green-900/30 transition-colors"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ── Banner slider (backup / instalar app) ──────────────────────────── */}
-      {showBackupAlert && (
-        <div className={`relative overflow-hidden rounded-xl border p-4 pb-6 transition-colors ${bannerSlide === 0 ? "border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/20" : "border-blue-200 dark:border-blue-800/50 bg-blue-50 dark:bg-[#1E3578]"}`}>
-          {bannerSlide === 0 ? (
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4 animate-in fade-in duration-300">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/40">
-                <ShieldAlert className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">Lembrete de backup</p>
-                <p className="text-xs text-amber-700 dark:text-amber-400">Faça backup dos seus dados a cada 2 dias para evitar perdas. Clique em "Fazer Backup" para baixar o arquivo.</p>
-              </div>
-              <div className="flex shrink-0 items-center gap-2">
-                <button
-                  onClick={() => router.push("/backup")}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-amber-400 bg-white hover:bg-amber-50 dark:bg-zinc-900 dark:hover:bg-amber-950/20 px-4 py-1.5 text-sm font-medium text-amber-600 dark:text-amber-400 transition-colors"
-                >
-                  Ir para Backup
-                </button>
-                <button
-                  onClick={handleBackup}
-                  disabled={backupLoading}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 disabled:opacity-60 px-4 py-1.5 text-sm font-medium text-white transition-colors"
-                >
-                  {backupLoading ? "Baixando..." : "Fazer Backup"}
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4 animate-in fade-in duration-300">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/40">
-                <Smartphone className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">Instale o app no celular</p>
-                <p className="text-xs text-blue-700 dark:text-blue-400">
-                  <span className="font-medium">Android (Chrome):</span> toque no menu <span className="font-semibold">⋮</span> e em "Instalar app" / "Adicionar à tela inicial".{" "}
-                  <span className="font-medium">iPhone (Safari):</span> toque em <span className="font-semibold">Compartilhar</span> e em "Adicionar à Tela de Início".
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Dots de navegação */}
-          <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 items-center gap-1.5">
-            {[0, 1].map((i) => (
-              <button
-                key={i}
-                onClick={() => setBannerSlide(i)}
-                aria-label={`Slide ${i + 1}`}
-                className={`h-1.5 rounded-full transition-all ${bannerSlide === i ? (bannerSlide === 0 ? "w-4 bg-amber-500" : "w-4 bg-blue-500") : (bannerSlide === 0 ? "w-1.5 bg-amber-300 dark:bg-amber-800" : "w-1.5 bg-blue-300 dark:bg-blue-800")}`}
-              />
-            ))}
-          </div>
-
-          {/* Fechar */}
-          <button
-            onClick={() => setShowBackupAlert(false)}
-            className={`absolute right-2 top-2 inline-flex h-7 w-7 items-center justify-center rounded-lg transition-colors ${bannerSlide === 0 ? "text-amber-500 hover:bg-amber-100 dark:hover:bg-amber-900/30" : "text-blue-500 hover:bg-blue-100 dark:hover:bg-blue-900/30"}`}
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      )}
-
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col gap-0.5">
@@ -445,23 +352,6 @@ export default function DashboardPage() {
             <Calendar className="h-3.5 w-3.5 text-gray-400 dark:text-zinc-500" />
             {todayFormatted}
           </div>
-
-          {/* Novo Contrato */}
-          <button
-            onClick={() => router.push("/emprestimos")}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-primary/90 transition-colors"
-          >
-            <Plus className="h-4 w-4" />
-            Novo Contrato
-          </button>
-
-          {/* Relatórios */}
-          <button
-            onClick={() => router.push("/emprestimos/relatorio")}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
-          >
-            Relatórios
-          </button>
 
           {/* Filter */}
           {filterActive ? (
@@ -494,6 +384,98 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+
+      {/* ── Banner notificações push ───────────────────────────────────────── */}
+      {showPushBanner && (
+        <div className="relative flex flex-col gap-3 overflow-hidden rounded-xl border border-[#10b981]/30 border-l-4 border-l-[#34d399] bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.18),transparent_55%),linear-gradient(135deg,#062418_0%,rgba(6,95,70,0.85)_55%,#062418_100%)] p-4 shadow-lg shadow-black/40 sm:flex-row sm:items-center sm:gap-4">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/10">
+            <Bell className="h-5 w-5 text-[#34d399]" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-white">Ative as notificações push</p>
+            <p className="text-xs text-white/70">Receba alertas de cobranças em atraso e vencimento do plano diretamente no seu dispositivo.</p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              onClick={handleEnablePush}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[#16a34a] hover:bg-[#15803d] px-4 py-1.5 text-sm font-medium text-white transition-colors"
+            >
+              Ativar
+            </button>
+            <button
+              onClick={dismissPushBanner}
+              className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-white/70 hover:bg-white/10 transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Banner slider (backup / instalar app) ──────────────────────────── */}
+      {showBackupAlert && (
+        <div className={`relative overflow-hidden rounded-xl border border-l-4 p-4 pb-6 text-white shadow-lg shadow-black/40 transition-colors ${bannerSlide === 0 ? "border-amber-400/30 border-l-amber-400 bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.18),transparent_55%),linear-gradient(135deg,#1F1408_0%,rgba(122,85,31,0.75)_55%,#1F1408_100%)]" : "border-blue-400/30 border-l-blue-400 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.18),transparent_55%),linear-gradient(135deg,#0B1020_0%,rgba(30,58,138,0.85)_55%,#0B1020_100%)]"}`}>
+          {bannerSlide === 0 ? (
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4 animate-in fade-in duration-300">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/10">
+                <ShieldAlert className="h-5 w-5 text-amber-300" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-white">Lembrete de backup</p>
+                <p className="text-xs text-white/70">Faça backup dos seus dados a cada 2 dias para evitar perdas. Clique em "Fazer Backup" para baixar o arquivo.</p>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                <button
+                  onClick={() => router.push("/backup")}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-white/20 bg-white/5 hover:bg-white/10 px-4 py-1.5 text-sm font-medium text-white transition-colors"
+                >
+                  Ir para Backup
+                </button>
+                <button
+                  onClick={handleBackup}
+                  disabled={backupLoading}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 disabled:opacity-60 px-4 py-1.5 text-sm font-medium text-white transition-colors"
+                >
+                  {backupLoading ? "Baixando..." : "Fazer Backup"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4 animate-in fade-in duration-300">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/10">
+                <Smartphone className="h-5 w-5 text-blue-300" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-white">Instale o app no celular</p>
+                <p className="text-xs text-white/70">
+                  <span className="font-medium text-white/85">Android (Chrome):</span> toque no menu <span className="font-semibold">⋮</span> e em "Instalar app" / "Adicionar à tela inicial".{" "}
+                  <span className="font-medium text-white/85">iPhone (Safari):</span> toque em <span className="font-semibold">Compartilhar</span> e em "Adicionar à Tela de Início".
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Dots de navegação */}
+          <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 items-center gap-1.5">
+            {[0, 1].map((i) => (
+              <button
+                key={i}
+                onClick={() => setBannerSlide(i)}
+                aria-label={`Slide ${i + 1}`}
+                className={`h-1.5 rounded-full transition-all ${bannerSlide === i ? (bannerSlide === 0 ? "w-4 bg-amber-400" : "w-4 bg-blue-400") : "w-1.5 bg-white/25"}`}
+              />
+            ))}
+          </div>
+
+          {/* Fechar */}
+          <button
+            onClick={() => setShowBackupAlert(false)}
+            className="absolute right-2 top-2 inline-flex h-7 w-7 items-center justify-center rounded-lg text-white/70 hover:bg-white/10 transition-colors"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       {/* ── Resumo da Semana ───────────────────────────────────────────────── */}
       <div className="rounded-xl border border-[#16A249]/30 dark:border-[#10b981]/20 bg-white bg-gradient-to-r from-[#16A249]/5 to-[#16A249]/10 dark:bg-gradient-to-br dark:from-[#0e2a1c] dark:via-[#0a1f14] dark:to-[#07150e] p-4 sm:p-5">

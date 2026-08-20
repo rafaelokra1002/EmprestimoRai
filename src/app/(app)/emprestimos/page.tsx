@@ -4079,12 +4079,12 @@ export default function EmprestimosPage() {
                         key={day}
                         type="button"
                         onClick={() => setEditDueValue(ds)}
-                        className={`flex h-10 w-full items-center justify-center rounded-lg text-sm font-light transition-colors ${
+                        className={`flex h-10 w-full items-center justify-center rounded-lg text-sm transition-colors ${
                           selected
-                            ? "bg-green-500 text-white"
+                            ? "border-2 border-[#16a34a] font-medium text-[#16a34a] dark:border-[#34d399] dark:text-[#34d399]"
                             : isToday
-                              ? "bg-gray-200 dark:bg-zinc-700 text-gray-900 dark:text-zinc-100"
-                              : "text-gray-900 dark:text-zinc-100 hover:bg-gray-100 dark:hover:bg-zinc-800"
+                              ? "bg-[#16a34a]/15 font-medium text-[#16a34a] dark:text-[#34d399]"
+                              : "font-light text-gray-900 dark:text-zinc-100 hover:bg-gray-100 dark:hover:bg-zinc-800"
                         }`}
                       >
                         {day}

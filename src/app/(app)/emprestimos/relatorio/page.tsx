@@ -13,9 +13,9 @@ import {
 } from "recharts"
 import {
   Calendar, Download, RefreshCw, ChevronDown, ChevronUp,
-  Wallet, TrendingUp, DollarSign, CheckCircle2, Clock, AlertTriangle,
-  Percent, Filter,
-  Users, ToggleLeft, ToggleRight, AlertOctagon, Award, HelpCircle
+  Wallet, TrendingUp, CheckCircle2, Clock, AlertTriangle,
+  Percent, Filter, Briefcase, Scale,
+  Users, HelpCircle
 } from "lucide-react"
 
 const today = () => localDateStr()
@@ -727,8 +727,8 @@ export default function RelatorioEmprestimosPage() {
   // Distribution bar chart
   const distributionData = useMemo(() => {
     return [
-      { name: "Na Rua", value: capitalNaRua, color: "#22c55e" },
-      { name: "Recebido", value: totalRecebidoHistorico, color: "#3b82f6" },
+      { name: "Na Rua", value: capitalNaRua, color: "#16a34a" },
+      { name: "Recebido", value: totalRecebidoHistorico, color: "#33cc6b" },
       { name: "Pendente", value: faltaReceber, color: "#f59e0b" },
       { name: "Atraso", value: emAtraso.total, color: "#ef4444" },
     ]
@@ -813,7 +813,7 @@ export default function RelatorioEmprestimosPage() {
       {/* ===== HEADER ===== */}
       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100 flex items-center gap-2">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-zinc-100 flex items-center gap-2">
             Relatório Operacional
             <span className="group relative inline-flex">
               <HelpCircle className="h-5 w-5 text-primary cursor-help" />
@@ -834,7 +834,7 @@ export default function RelatorioEmprestimosPage() {
               </div>
             </span>
           </h1>
-          <p className="text-sm text-gray-500 dark:text-zinc-400">Acompanhe seus empréstimos em tempo real</p>
+          <p className="text-base text-gray-500 dark:text-zinc-400">Acompanhe seus empréstimos em tempo real</p>
         </div>
         <div className="flex items-center gap-3 text-sm">
           {fetchError && <span className="text-red-500 text-xs">{fetchError}</span>}
@@ -876,7 +876,7 @@ export default function RelatorioEmprestimosPage() {
             <Filter className="h-4 w-4 text-gray-500 dark:text-zinc-400" />
             <span className="text-sm font-medium text-gray-700 dark:text-zinc-300">Tipo de Pagamento:</span>
             <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-primary/10 text-primary">{FILTER_LABELS[paymentFilter]}</span>
-            <span className="text-sm text-primary">Na Rua: {formatCurrency(capitalNaRua)}</span>
+            <span className="text-sm text-gray-500 dark:text-zinc-400">Na Rua: <span className="font-semibold text-blue-500">{formatCurrency(capitalNaRua)}</span></span>
           </div>
           <button
             onClick={() => setShowModalityCards(v => !v)}
@@ -954,24 +954,24 @@ export default function RelatorioEmprestimosPage() {
 
       {/* 3 summary boxes */}
       <div className="grid grid-cols-3 gap-4">
-        <div className="rounded-xl border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/30 p-4 text-center">
-          <DollarSign className="h-5 w-5 text-orange-600 mx-auto mb-1" />
+        <div className="rounded-xl border border-orange-500/20 bg-orange-500/10 p-4 text-center">
+          <Briefcase className="h-5 w-5 text-orange-500 mx-auto mb-1" />
           <p className="text-xs text-gray-500 dark:text-zinc-400">Na Rua</p>
-          <p className="text-lg font-bold tabular-nums tracking-tight text-red-600">{formatCurrency(capitalNaRua)}</p>
+          <p className="text-lg font-bold tabular-nums tracking-tight text-orange-500">{formatCurrency(capitalNaRua)}</p>
         </div>
-        <div className="rounded-xl border border-primary/30 dark:border-primary/30 bg-primary/5 dark:bg-primary/15 p-4 text-center">
+        <div className="rounded-xl border border-primary/20 bg-primary/10 p-4 text-center">
           <TrendingUp className="h-5 w-5 text-primary mx-auto mb-1" />
           <p className="text-xs text-gray-500 dark:text-zinc-400">Lucro</p>
           <p className="text-lg font-bold tabular-nums tracking-tight text-primary">{formatCurrency(lucroRealizado)}</p>
         </div>
         <div className={`rounded-xl border p-4 text-center ${
-          resultadoPeriodo >= 0
-            ? "border-primary/30 dark:border-primary/30 bg-primary/5 dark:bg-primary/15"
-            : "border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30"
+          resultadoAtividade >= 0
+            ? "border-primary/20 bg-primary/10"
+            : "border-red-500/20 bg-red-500/10"
         }`}>
-          <Wallet className="h-5 w-5 text-red-600 mx-auto mb-1" />
+          <Scale className={`h-5 w-5 mx-auto mb-1 ${resultadoAtividade >= 0 ? "text-primary" : "text-red-500"}`} />
           <p className="text-xs text-gray-500 dark:text-zinc-400">Resultado</p>
-          <p className={`text-lg font-bold tabular-nums tracking-tight ${resultadoAtividade >= 0 ? "text-primary" : "text-red-600"}`}>
+          <p className={`text-lg font-bold tabular-nums tracking-tight ${resultadoAtividade >= 0 ? "text-primary" : "text-red-500"}`}>
             {resultadoAtividade < 0 ? "-" : "+"}{formatCurrency(Math.abs(resultadoAtividade))}
           </p>
         </div>
@@ -979,69 +979,93 @@ export default function RelatorioEmprestimosPage() {
 
       {/* ===== 6 STATS CARDS ===== */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <Card className="border-primary/50 dark:border-primary/40">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-base leading-none">💵</span>
-              <span className="text-xs text-gray-500 dark:text-zinc-400">Capital na Rua</span>
+        <Card className="border-primary/30 dark:border-primary/30 shadow-lg hover:shadow-xl transition-shadow dark:bg-[#191F1C]">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="p-2 sm:p-3 rounded-xl shrink-0 bg-blue-500/10">
+                <Wallet className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-xs text-gray-500 dark:text-zinc-400 font-medium truncate">💵 Capital na Rua</p>
+                <p className="mt-0.5 text-sm sm:text-base lg:text-xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100 truncate">{formatCurrency(capitalNaRua)}</p>
+                <p className="mt-0.5 text-[10px] sm:text-xs text-gray-400 dark:text-zinc-500 truncate">{(paymentFilter === "monthly" ? modalityStats.monthly.contratos : paymentFilter === "installment" ? modalityStats.installment.contratos : modalityStats.all.contratos)} contratos ativos</p>
+              </div>
             </div>
-            <p className="text-2xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(capitalNaRua)}</p>
-            <p className="text-xs text-gray-400 dark:text-zinc-500">{(paymentFilter === "monthly" ? modalityStats.monthly.contratos : paymentFilter === "installment" ? modalityStats.installment.contratos : modalityStats.all.contratos)} contratos ativos</p>
           </CardContent>
         </Card>
 
-        <Card className="border-primary/50 dark:border-primary/40">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-base leading-none">💰</span>
-              <span className="text-xs text-gray-500 dark:text-zinc-400">Juros a Receber</span>
+        <Card className="border-primary/30 dark:border-primary/30 shadow-lg hover:shadow-xl transition-shadow dark:bg-[#191F1C]">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="p-2 sm:p-3 rounded-xl shrink-0 bg-primary/10">
+                <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-xs text-gray-500 dark:text-zinc-400 font-medium truncate">💰 Juros a Receber</p>
+                <p className="mt-0.5 text-sm sm:text-base lg:text-xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100 truncate">{formatCurrency(jurosAReceber)}</p>
+                <p className="mt-0.5 text-[10px] sm:text-xs text-gray-400 dark:text-zinc-500 truncate">No período</p>
+              </div>
             </div>
-            <p className="text-2xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(jurosAReceber)}</p>
-            <p className="text-xs text-gray-400 dark:text-zinc-500">No período</p>
           </CardContent>
         </Card>
 
-        <Card className="border-primary/50 dark:border-primary/40">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-base leading-none">✅</span>
-              <span className="text-xs text-gray-500 dark:text-zinc-400">Total Recebido</span>
+        <Card className="border-primary/30 dark:border-primary/30 shadow-lg hover:shadow-xl transition-shadow dark:bg-[#191F1C]">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="p-2 sm:p-3 rounded-xl shrink-0 bg-green-500/10">
+                <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-xs text-gray-500 dark:text-zinc-400 font-medium truncate">✅ Total Recebido</p>
+                <p className="mt-0.5 text-sm sm:text-base lg:text-xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100 truncate">{formatCurrency(totalRecebidoHistorico)}</p>
+                <p className="mt-0.5 text-[10px] sm:text-xs text-gray-400 dark:text-zinc-500 truncate">Total histórico</p>
+              </div>
             </div>
-            <p className="text-2xl font-bold tabular-nums tracking-tight text-primary">{formatCurrency(totalRecebidoHistorico)}</p>
-            <p className="text-xs text-gray-400 dark:text-zinc-500">Total histórico</p>
           </CardContent>
         </Card>
 
-        <Card className="border-primary/50 dark:border-primary/40">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-base leading-none">⏳</span>
-              <span className="text-xs text-gray-500 dark:text-zinc-400">Falta Receber</span>
+        <Card className="border-primary/30 dark:border-primary/30 shadow-lg hover:shadow-xl transition-shadow dark:bg-[#191F1C]">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="p-2 sm:p-3 rounded-xl shrink-0 bg-yellow-500/10">
+                <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-500" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-xs text-gray-500 dark:text-zinc-400 font-medium truncate">⏳ Falta Receber</p>
+                <p className="mt-0.5 text-sm sm:text-base lg:text-xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100 truncate">{formatCurrency(faltaReceber)}</p>
+                <p className="mt-0.5 text-[10px] sm:text-xs text-gray-400 dark:text-zinc-500 truncate">Saldo restante</p>
+              </div>
             </div>
-            <p className="text-2xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(faltaReceber)}</p>
-            <p className="text-xs text-gray-400 dark:text-zinc-500">Saldo restante</p>
           </CardContent>
         </Card>
 
-        <Card className="border-primary/50 dark:border-primary/40">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <AlertOctagon className="h-4 w-4 text-red-500" />
-              <span className="text-xs text-gray-500 dark:text-zinc-400">Em Atraso</span>
+        <Card className="border-primary/30 dark:border-primary/30 shadow-lg hover:shadow-xl transition-shadow dark:bg-[#191F1C]">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="p-2 sm:p-3 rounded-xl shrink-0 bg-red-500/10">
+                <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-red-500" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-xs text-gray-500 dark:text-zinc-400 font-medium truncate">🚨 Em Atraso</p>
+                <p className="mt-0.5 text-sm sm:text-base lg:text-xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100 truncate">{formatCurrency(emAtrasoTotal.total)}</p>
+                <p className="mt-0.5 text-[10px] sm:text-xs text-gray-400 dark:text-zinc-500 truncate">{emAtrasoTotal.count} contratos no total</p>
+              </div>
             </div>
-            <p className="text-2xl font-bold tabular-nums tracking-tight text-red-600">{formatCurrency(emAtrasoTotal.total)}</p>
-            <p className="text-xs text-gray-400 dark:text-zinc-500">{emAtrasoTotal.count} contratos no total</p>
           </CardContent>
         </Card>
 
-        <Card className="border-primary/50 dark:border-primary/40">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Award className="h-4 w-4 text-purple-500" />
-              <span className="text-xs text-gray-500 dark:text-zinc-400">Lucro Realizado</span>
+        <Card className="border-primary/30 dark:border-primary/30 shadow-lg hover:shadow-xl transition-shadow dark:bg-[#191F1C]">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="p-2 sm:p-3 rounded-xl shrink-0 bg-purple-500/10">
+                <Percent className="h-4 w-4 sm:h-5 sm:w-5 text-purple-500" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-xs text-gray-500 dark:text-zinc-400 font-medium truncate">📊 Lucro Realizado</p>
+                <p className="mt-0.5 text-sm sm:text-base lg:text-xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100 truncate">{formatCurrency(lucroRealizadoTotal)}</p>
+                <p className="mt-0.5 text-[10px] sm:text-xs text-gray-400 dark:text-zinc-500 truncate">Juros já recebido</p>
+              </div>
             </div>
-            <p className="text-2xl font-bold tabular-nums tracking-tight text-purple-600">{formatCurrency(lucroRealizadoTotal)}</p>
-            <p className="text-xs text-gray-400 dark:text-zinc-500">Juros já recebido</p>
           </CardContent>
         </Card>
       </div>
@@ -1049,13 +1073,13 @@ export default function RelatorioEmprestimosPage() {
       {/* ===== CHARTS ===== */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Evolução Mensal */}
-        <Card className="border-primary/50 dark:border-primary/40">
-          <CardContent className="p-6">
+        <Card className="border-primary/30 dark:border-primary/30 shadow-sm dark:bg-[#191F1C]">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center gap-2 mb-4">
-              <TrendingUp className="h-5 w-5 text-primary" />
-              <h3 className="font-bold text-gray-900 dark:text-zinc-100">Evolução Mensal</h3>
+              <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+              <h3 className="font-semibold tracking-tight text-sm sm:text-lg text-gray-900 dark:text-zinc-100">Evolução Mensal</h3>
             </div>
-            <div className="h-[280px]">
+            <div className="h-[200px] sm:h-[250px] lg:h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={monthlyEvolution}>
                   <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
@@ -1066,8 +1090,8 @@ export default function RelatorioEmprestimosPage() {
                     formatter={(value: number) => formatCurrency(value)}
                   />
                   <Legend />
-                  <Line type="monotone" dataKey="naRua" name="Na Rua" stroke="#22c55e" strokeWidth={2} dot={{ r: 4 }} />
-                  <Line type="monotone" dataKey="recebido" name="Recebido" stroke="#10b981" strokeWidth={2} dot={{ r: 4 }} />
+                  <Line type="monotone" dataKey="naRua" name="Na Rua" stroke="#16a34a" strokeWidth={2} dot={{ r: 4 }} />
+                  <Line type="monotone" dataKey="recebido" name="Recebido" stroke="#33cc6b" strokeWidth={2} dot={{ r: 4 }} />
                   <Line type="monotone" dataKey="lucro" name="Lucro" stroke="#ef4444" strokeWidth={2} dot={{ r: 4 }} />
                 </LineChart>
               </ResponsiveContainer>
@@ -1076,13 +1100,13 @@ export default function RelatorioEmprestimosPage() {
         </Card>
 
         {/* Distribuição */}
-        <Card className="border-primary/50 dark:border-primary/40">
-          <CardContent className="p-6">
+        <Card className="border-primary/30 dark:border-primary/30 shadow-sm dark:bg-[#191F1C]">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center gap-2 mb-4">
-              <Wallet className="h-5 w-5 text-primary" />
-              <h3 className="font-bold text-gray-900 dark:text-zinc-100">Distribuição</h3>
+              <Wallet className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+              <h3 className="font-semibold tracking-tight text-sm sm:text-lg text-gray-900 dark:text-zinc-100">Distribuição</h3>
             </div>
-            <div className="h-[280px]">
+            <div className="h-[200px] sm:h-[250px] lg:h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={distributionData}>
                   <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
@@ -1105,28 +1129,28 @@ export default function RelatorioEmprestimosPage() {
       </div>
 
       {/* ===== CONTRATOS ATIVOS TABLE ===== */}
-      <Card className="border-primary/50 dark:border-primary/40">
-        <CardContent className="p-6">
+      <Card className="border-primary/30 dark:border-primary/30 shadow-sm dark:bg-[#191F1C]">
+        <CardContent className="p-3 sm:p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-gray-500 dark:text-zinc-400" />
-              <h3 className="font-bold text-gray-900 dark:text-zinc-100">Contratos Ativos (Na Rua)</h3>
+              <Users className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+              <h3 className="font-bold text-gray-900 dark:text-zinc-100 text-sm sm:text-lg">Contratos Ativos (Na Rua)</h3>
             </div>
-            <div className="h-7 w-7 rounded-full border border-gray-300 dark:border-zinc-700 flex items-center justify-center">
-              <span className="text-xs text-gray-700 dark:text-zinc-300">{totalClientesAtivos}</span>
+            <div className="inline-flex items-center rounded-full border border-primary px-2.5 py-0.5 text-[10px] sm:text-xs font-semibold text-primary">
+              {totalClientesAtivos}
             </div>
           </div>
 
-          <div className="rounded-xl border border-gray-200 dark:border-zinc-800 overflow-hidden">
+          <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="border-gray-200 dark:border-zinc-800 hover:bg-transparent">
-                  <TableHead className="text-gray-400 dark:text-zinc-500 font-normal text-xs">Cliente</TableHead>
-                  <TableHead className="text-gray-400 dark:text-zinc-500 font-normal text-xs text-center">Emprestado</TableHead>
-                  <TableHead className="text-gray-400 dark:text-zinc-500 font-normal text-xs text-center">Pago</TableHead>
-                  <TableHead className="text-gray-400 dark:text-zinc-500 font-normal text-xs text-center">Falta</TableHead>
-                  <TableHead className="text-gray-400 dark:text-zinc-500 font-normal text-xs text-center">Status</TableHead>
-                  <TableHead className="text-gray-400 dark:text-zinc-500 font-normal text-xs text-right">Vencimento</TableHead>
+                  <TableHead className="text-gray-400 dark:text-zinc-500 font-medium text-xs">Cliente</TableHead>
+                  <TableHead className="text-gray-400 dark:text-zinc-500 font-medium text-xs text-right hidden sm:table-cell">Emprestado</TableHead>
+                  <TableHead className="text-gray-400 dark:text-zinc-500 font-medium text-xs text-right hidden md:table-cell">Pago</TableHead>
+                  <TableHead className="text-gray-400 dark:text-zinc-500 font-medium text-xs text-right">Falta</TableHead>
+                  <TableHead className="text-gray-400 dark:text-zinc-500 font-medium text-xs text-center">Status</TableHead>
+                  <TableHead className="text-gray-400 dark:text-zinc-500 font-medium text-xs text-right hidden lg:table-cell">Vencimento</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1141,22 +1165,22 @@ export default function RelatorioEmprestimosPage() {
                 ) : (
                   contratosAtivosLista.map((c) => (
                     <TableRow key={c.id} className="border-gray-200 dark:border-zinc-800/50">
-                      <TableCell className="font-medium text-gray-900 dark:text-zinc-100">{c.clientName}</TableCell>
-                      <TableCell className="text-center text-gray-700 dark:text-zinc-300">{formatCurrency(c.emprestado)}</TableCell>
-                      <TableCell className="text-center text-primary">{formatCurrency(c.pago)}</TableCell>
-                      <TableCell className="text-center text-gray-900 dark:text-zinc-100">{formatCurrency(c.falta)}</TableCell>
+                      <TableCell className="font-medium text-gray-900 dark:text-zinc-100 text-xs sm:text-sm max-w-[100px] sm:max-w-none truncate">{c.clientName}</TableCell>
+                      <TableCell className="text-right text-gray-700 dark:text-zinc-300 text-xs sm:text-sm hidden sm:table-cell">{formatCurrency(c.emprestado)}</TableCell>
+                      <TableCell className="text-right text-green-500 text-xs sm:text-sm hidden md:table-cell">{formatCurrency(c.pago)}</TableCell>
+                      <TableCell className="text-right font-medium text-gray-900 dark:text-zinc-100 text-xs sm:text-sm">{formatCurrency(c.falta)}</TableCell>
                       <TableCell className="text-center">
                         <Badge
-                          className={`text-xs px-3 ${
+                          className={`text-xs px-2.5 ${
                             c.status === "ON_TIME"
-                              ? "bg-primary/10 dark:bg-primary/20 text-primary border-primary/30"
-                              : "bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border-red-500/30"
+                              ? "bg-yellow-500/20 text-yellow-500 border-yellow-500/30"
+                              : "bg-red-500/20 text-red-500 border-red-500/30"
                           }`}
                         >
                           {c.status === "ON_TIME" ? "Em Dia" : "Atrasado"}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right text-gray-700 dark:text-zinc-300">{formatDate(c.vencimento)}</TableCell>
+                      <TableCell className="text-right text-gray-500 dark:text-zinc-400 text-xs sm:text-sm hidden lg:table-cell">{formatDate(c.vencimento)}</TableCell>
                     </TableRow>
                   ))
                 )}
@@ -1166,27 +1190,27 @@ export default function RelatorioEmprestimosPage() {
         </CardContent>
       </Card>
 
-      <Card className="border-red-200 bg-red-50/30 dark:border-red-900/40 dark:bg-red-950/10">
-        <CardContent className="p-4 sm:p-6">
+      <Card className="border-red-500/30 bg-red-500/5 shadow-sm dark:bg-[#1B1715]">
+        <CardContent className="p-3 sm:p-4">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-red-500" />
-              <h3 className="font-bold text-red-500 dark:text-red-400">Contratos em Atraso</h3>
+              <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-red-500" />
+              <h3 className="font-bold text-red-500 text-sm sm:text-lg">Contratos em Atraso</h3>
             </div>
-            <div className="flex h-7 min-w-7 items-center justify-center rounded-full bg-red-500 px-2 text-xs font-semibold text-white">
+            <div className="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] sm:text-xs font-semibold bg-red-500 text-white">
               {totalClientesAtraso}
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-xl border border-red-200/80 bg-white/70 dark:border-red-900/30 dark:bg-zinc-900/40">
+          <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow className="border-red-100 dark:border-red-900/20 hover:bg-transparent">
+                <TableRow className="border-gray-200 dark:border-zinc-800 hover:bg-transparent">
                   <TableHead className="text-xs font-medium text-gray-500 dark:text-zinc-400">Cliente</TableHead>
-                  <TableHead className="text-xs font-medium text-center text-gray-500 dark:text-zinc-400">Atraso</TableHead>
-                  <TableHead className="text-xs font-medium text-center text-gray-500 dark:text-zinc-400">Emprestado</TableHead>
-                  <TableHead className="text-xs font-medium text-right text-gray-500 dark:text-zinc-400">Vencimento</TableHead>
-                  <TableHead className="text-xs font-medium text-left text-gray-500 dark:text-zinc-400">Telefone</TableHead>
+                  <TableHead className="text-xs font-medium text-right text-gray-500 dark:text-zinc-400">Atraso</TableHead>
+                  <TableHead className="text-xs font-medium text-right text-gray-500 dark:text-zinc-400 hidden sm:table-cell">Emprestado</TableHead>
+                  <TableHead className="text-xs font-medium text-right text-gray-500 dark:text-zinc-400 hidden md:table-cell">Vencimento</TableHead>
+                  <TableHead className="text-xs font-medium text-left text-gray-500 dark:text-zinc-400 hidden lg:table-cell">Telefone</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1200,12 +1224,12 @@ export default function RelatorioEmprestimosPage() {
                   </TableRow>
                 ) : (
                   contratosEmAtraso.map((contrato) => (
-                    <TableRow key={contrato.id} className="border-red-100/80 dark:border-red-900/20">
-                      <TableCell className="font-semibold text-gray-900 dark:text-zinc-100">{contrato.clientName}</TableCell>
-                      <TableCell className="text-center font-semibold text-red-500 dark:text-red-400">{formatCurrency(contrato.atraso)}</TableCell>
-                      <TableCell className="text-center text-gray-700 dark:text-zinc-300">{formatCurrency(contrato.emprestado)}</TableCell>
-                      <TableCell className="text-right text-gray-700 dark:text-zinc-300">{formatDate(contrato.vencimento)}</TableCell>
-                      <TableCell className="text-gray-600 dark:text-zinc-400">{contrato.telefone || "-"}</TableCell>
+                    <TableRow key={contrato.id} className="border-gray-200 dark:border-zinc-800/50">
+                      <TableCell className="font-medium text-gray-900 dark:text-zinc-100 text-xs sm:text-sm max-w-[100px] sm:max-w-none truncate">{contrato.clientName}</TableCell>
+                      <TableCell className="text-right font-bold text-red-500 text-xs sm:text-sm">{formatCurrency(contrato.atraso)}</TableCell>
+                      <TableCell className="text-right text-gray-700 dark:text-zinc-300 text-xs sm:text-sm hidden sm:table-cell">{formatCurrency(contrato.emprestado)}</TableCell>
+                      <TableCell className="text-right text-gray-500 dark:text-zinc-400 text-xs sm:text-sm hidden md:table-cell">{formatDate(contrato.vencimento)}</TableCell>
+                      <TableCell className="text-gray-500 dark:text-zinc-400 text-xs sm:text-sm hidden lg:table-cell">{contrato.telefone || "-"}</TableCell>
                     </TableRow>
                   ))
                 )}

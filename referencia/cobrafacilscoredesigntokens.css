@@ -1,0 +1,298 @@
+/* ============================================================
+   CobraFácil — Página "Score de Clientes"
+   Cores, tipografia e componentes principais
+   (Baseado no MODO CLARO — para dark, use a mesma paleta
+    da página; só as cores neutras herdadas mudam.)
+   ============================================================ */
+
+/* ---------------------------------------------------------
+   FONTES USADAS NA PÁGINA
+   Títulos ....: "Plus Jakarta Sans", sans-serif (bold 700)
+   Corpo ......: "Inter", sans-serif (400 / 500 / 600)
+   --------------------------------------------------------- */
+
+/* ============================================================
+   1. CABEÇALHO DA PÁGINA
+   ============================================================ */
+
+/* H1 "Score de Clientes" */
+.score-h1 {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 700;
+  color: #222a26;                    /* hsl(150 10% 15%) — foreground */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+/* Subtítulo "Acompanhe a pontuação..." */
+.score-subtitle {
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 400;
+  color: #677e73;                    /* hsl(150 10% 45%) — muted-foreground */
+}
+
+/* Ícone verde do H1 (medalha) usa a cor primária */
+.score-h1-icon { color: #16a34a; }   /* hsl(142 76% 36%) */
+
+/* ============================================================
+   2. BARRA DE RESUMO ("Score: 100  •  ✅ 0  🟡 0  ❌ 0 ...")
+   ============================================================ */
+
+.score-summary-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: #ffffff;               /* card branco */
+  border: 1px solid #e3e8e6;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  color: #222a26;
+}
+.score-summary-bar .value { font-weight: 700; }
+.score-summary-bar .muted { color: #677e73; }
+
+/* ============================================================
+   3. INPUT DE BUSCA
+   ============================================================ */
+
+.score-search {
+  height: 40px;
+  padding: 0 12px 0 36px;            /* espaço para o ícone */
+  border-radius: 10px;
+  border: 1px solid #e3e8e6;
+  background: #ffffff;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  color: #222a26;
+}
+.score-search::placeholder { color: #677e73; }
+
+/* ============================================================
+   4. TOGGLE "Por Score" / "Por Lucro"
+   ============================================================ */
+
+.score-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  background: #ffffff;
+  border: 1px solid #e3e8e6;
+  border-radius: 12px;
+}
+
+.score-toggle__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  height: 32px;
+  border-radius: 10px;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color .15s;
+  cursor: pointer;
+}
+.score-toggle__btn--active {
+  background: #16a249;               /* verde primário */
+  color: #ffffff;
+}
+.score-toggle__btn--inactive {
+  background: #fafafa;               /* transparente/neutro */
+  color: #222a26;
+}
+
+/* ============================================================
+   5. CARD DO CLIENTE (visual "premium" azul)
+   Este é o destaque visual da página.
+   ============================================================ */
+
+.score-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;               /* rounded-lg no tema */
+  border: 1px solid rgba(56, 189, 248, 0.30);   /* sky-400 / 30% */
+  color: #ffffff;
+
+  /* Gradiente composto: halo azul-céu no canto + fundo azul escuro */
+  background-image:
+    radial-gradient(circle at 0% 0%,
+        rgba(56, 189, 248, 0.18),
+        rgba(0, 0, 0, 0) 55%),
+    linear-gradient(135deg,
+        #082435,                      /* azul-noite */
+        rgba(7, 89, 133, 0.85) 55%,   /* azul médio */
+        #082435);
+
+  /* Sombra escura azulada */
+  box-shadow:
+    0 10px 20px -6px rgba(8, 47, 73, 0.40),
+    0 4px 8px  -2px rgba(8, 47, 73, 0.30);
+}
+
+/* Cabeçalho interno do card (rank + nome + iniciais) */
+.score-card__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+}
+
+/* Selo de posição "#1", "#2" ... */
+.score-card__rank {
+  font-family: "Inter", sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.60);
+}
+
+/* Chip com iniciais do cliente ("TE") */
+.score-card__initials {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  font-family: "Inter", sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+/* Nome do cliente */
+.score-card__name {
+  font-family: "Inter", sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+/* Badge de classificação: "Bom" / "Regular" / "Ruim" */
+.score-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-family: "Inter", sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+}
+.score-badge--bom     { background: rgba( 34, 197,  94, 0.20); color: #4ade80; }
+.score-badge--regular { background: rgba(245, 158,  11, 0.20); color: #fbbf24; }
+.score-badge--ruim    { background: rgba(239,  68,  44, 0.20); color: #fca5a5; }
+
+/* Círculo do score à direita ("100 /150") */
+.score-card__ring {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid rgba(56, 189, 248, 0.60);   /* sky-400 */
+  background: rgba(8, 36, 53, 0.60);
+}
+.score-card__ring-value {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #ffffff;
+}
+.score-card__ring-max {
+  font-family: "Inter", sans-serif;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+/* Bloco "A RECEBER  R$ 1.540,00  ..." */
+.score-card__body { padding: 0 16px 12px; }
+
+.score-card__label {
+  font-family: "Inter", sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.60);
+}
+
+.score-card__amount {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-top: 2px;
+}
+
+.score-card__meta {
+  font-family: "Inter", sans-serif;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.70);
+  margin-top: 4px;
+}
+.score-card__meta strong { color: #ffffff; font-weight: 600; }
+
+/* Rodapé "Ver detalhes" */
+.score-card__footer {
+  margin-top: 12px;
+  padding: 12px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.10);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: "Inter", sans-serif;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+}
+.score-card__footer:hover { color: #ffffff; }
+
+/* ============================================================
+   6. REFERÊNCIA RÁPIDA — CORES USADAS NA PÁGINA
+   ============================================================
+
+   TEXTO
+   Título principal ......... #222a26 (foreground padrão)
+   Subtítulo/muted .......... #677e73
+   Card cliente (texto) ..... #ffffff sobre azul
+
+   VERDE (primário / positivo)
+   #16a34a / #16a249 ........ botão "Por Score" ativo, ícones, medalha
+
+   AZUIS DO CARD "PREMIUM"
+   #082435 .................. azul-noite (base do gradiente)
+   rgba(7,89,133,0.85) ...... azul médio (meio do gradiente)
+   #38bdf8 .................. sky-400 (borda e halo, com opacidade)
+   rgba(8,47,73,0.40) ....... sombra azul escura
+
+   NEUTROS DO LAYOUT
+   Fundo geral .............. #fafafa
+   Card branco (barra topo) . #ffffff
+   Borda padrão ............. #e3e8e6
+
+   BADGES DE CLASSIFICAÇÃO (com fundo translúcido no card escuro)
+   Bom ...................... verde #4ade80  (bg rgba(34,197,94,.2))
+   Regular .................. amarelo #fbbf24 (bg rgba(245,158,11,.2))
+   Ruim ..................... vermelho #fca5a5 (bg rgba(239,68,44,.2))
+
+   TIPOGRAFIA (recap)
+   Títulos e valores ........ "Plus Jakarta Sans", 700
+   Corpo, badges, botões .... "Inter", 400 / 500 / 600 / 700
+   ============================================================ */
