@@ -2028,103 +2028,110 @@ export default function EmprestimosPage() {
       ) : groupedByClient.length === 0 ? (
         <div className="text-center py-8 text-gray-500 dark:text-zinc-400">Nenhum empréstimo encontrado</div>
       ) : viewMode === "list" ? (
-        <div className="rounded-2xl border border-green-500/50 dark:border-green-800/50 bg-gray-50/50 dark:bg-zinc-900/40 p-4 space-y-3">
-        <div className="flex items-center gap-4">
-          <div className="flex flex-1 items-center gap-3 rounded-xl border border-green-500/50 dark:border-green-800/50 bg-white dark:bg-zinc-900 px-5 py-4">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-950/40">
-              <DollarSign className="h-5 w-5 text-blue-500" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Total Emprestado</p>
-              <p className="text-xl font-bold tabular-nums text-blue-600 dark:text-blue-400 mt-1">{formatCurrency(filteredLoans.reduce((s, l) => s + l.amount, 0))}</p>
-            </div>
-          </div>
-          <div className="flex flex-1 items-center gap-3 rounded-xl border border-green-500/50 dark:border-green-800/50 bg-white dark:bg-zinc-900 px-5 py-4">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 dark:bg-primary/15">
-              <TrendingUp className="h-5 w-5 text-primary" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Total a Receber</p>
-              <p className="text-xl font-bold tabular-nums text-primary mt-1">{formatCurrency(filteredLoans.reduce((s, l) => s + l.totalAmount, 0))}</p>
+        <div className="rounded-xl border border-primary/30 dark:border-primary/30 bg-white dark:bg-zinc-900 overflow-hidden">
+        {/* Resumo (2 itens) */}
+        <div className="flex flex-wrap items-center gap-x-10 gap-y-3 p-4 border-b border-gray-100 dark:border-zinc-800">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-blue-500/10"><DollarSign className="h-4 w-4 text-blue-600" /></div>
+            <div>
+              <p className="text-xs text-gray-500 dark:text-zinc-400">Total Emprestado</p>
+              <p className="text-sm font-semibold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(filteredLoans.reduce((s, l) => s + l.amount, 0))}</p>
             </div>
           </div>
-          <div className="flex flex-1 items-center gap-3 rounded-xl border border-green-500/50 dark:border-green-800/50 bg-white dark:bg-zinc-900 px-5 py-4">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-950/40">
-              <Percent className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Lucro a Receber</p>
-              <p className="text-xl font-bold tabular-nums text-purple-600 dark:text-purple-400 mt-1">{formatCurrency(filteredLoans.reduce((s, l) => s + l.profit, 0))}</p>
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-amber-500/10"><DollarSign className="h-4 w-4 text-amber-500" /></div>
+            <div>
+              <p className="text-xs text-gray-500 dark:text-zinc-400">Total a Receber</p>
+              <p className="text-sm font-semibold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(filteredLoans.reduce((s, l) => s + l.totalAmount, 0))}</p>
             </div>
           </div>
         </div>
-        <p className="text-sm text-gray-500 dark:text-zinc-400">{filteredLoans.length} empréstimo{filteredLoans.length !== 1 ? "s" : ""}</p>
-        <div className="rounded-xl border border-green-500/50 dark:border-green-800/50 overflow-hidden">
+        {/* Contador */}
+        <div className="flex items-center justify-between p-3 border-b border-gray-100 dark:border-zinc-800 bg-gray-50/60 dark:bg-zinc-800/30">
+          <span className="text-sm text-gray-500 dark:text-zinc-400">{filteredLoans.length} empréstimo{filteredLoans.length !== 1 ? "s" : ""}</span>
+        </div>
+        <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-gray-50 dark:bg-zinc-800/60 text-left text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
-                <th className="px-4 py-3 font-medium">Cliente</th>
-                <th className="px-4 py-3 font-medium">Emprestado</th>
-                <th className="px-4 py-3 font-medium">Total</th>
-                <th className="px-4 py-3 font-medium">Parcelas</th>
-                <th className="px-4 py-3 font-medium">Vencimento</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium">Etiquetas</th>
-                <th className="px-4 py-3 font-medium text-right">Ações</th>
+              <tr className="border-b border-gray-100 dark:border-zinc-800 text-left text-xs font-medium text-gray-500 dark:text-zinc-400">
+                <th className="h-12 px-4">Cliente</th>
+                <th className="h-12 px-4">Status</th>
+                <th className="h-12 px-4 hidden sm:table-cell">Emprestado</th>
+                <th className="h-12 px-4">Restante</th>
+                <th className="h-12 px-4 hidden md:table-cell">Parcelas</th>
+                <th className="h-12 px-4 hidden sm:table-cell">Vencimento</th>
+                <th className="h-12 px-4 hidden lg:table-cell">Etiquetas</th>
+                <th className="h-12 px-4 text-right">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-zinc-800">
+            <tbody>
               {filteredLoans.map((loan) => {
                 const status = getLoanStatusInfo(loan)
-                const paid = getPaidTotal(loan)
                 const remaining = getRemaining(loan)
                 const nextInst = getNextDueInst(loan)
                 const isDueToday = nextInst && toDateStr(new Date(nextInst.dueDate)) === todayStr
+                const isAtraso = status.label === "Atrasado" || status.label === "Inadimplente"
+                const paidCount = loan.installments.filter(i => i.status === "PAID").length
+                const overdueCount = loan.installments.filter(i => i.status !== "PAID" && toDateStr(new Date(i.dueDate)) < todayStr).length
                 return (
-                  <tr key={loan.id} className={`${status.label === "Atrasado" ? "bg-red-50 dark:bg-red-950/20" : status.label === "Só Juros" ? "bg-purple-50 dark:bg-purple-950/20" : "bg-white dark:bg-zinc-900"} hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-colors`}>
-                    <td className="px-4 py-3">
+                  <tr key={loan.id} className={`border-b border-gray-100 dark:border-zinc-800 transition-colors ${isAtraso ? "bg-red-500/5 hover:bg-red-500/10" : status.label === "Só Juros" ? "bg-purple-500/5 hover:bg-purple-500/10" : "hover:bg-gray-50 dark:hover:bg-zinc-800/40"}`}>
+                    <td className="p-4">
                       <div className="flex items-center gap-2">
-                        <Avatar name={loan.client.name} src={loan.client.photo} size="sm" />
-                        <span className="font-medium text-gray-900 dark:text-zinc-100">{loan.client.name}</span>
+                        {loan.client.photo ? (
+                          <img src={loan.client.photo} alt={loan.client.name} className="h-7 w-7 shrink-0 rounded-full object-cover" />
+                        ) : (
+                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-green-500 text-[11px] font-semibold text-white">
+                            {(() => {
+                              const nm = loan.client.name.trim()
+                              const parts = nm.split(/\s+/).filter(Boolean)
+                              if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
+                              const digits = nm.match(/\d+$/)
+                              return (digits ? nm[0] + digits[0] : nm.slice(0, 2)).toUpperCase()
+                            })()}
+                          </span>
+                        )}
+                        <span className="font-medium text-gray-900 dark:text-zinc-100 truncate max-w-[140px] lg:max-w-[220px]" title={loan.client.name}>{loan.client.name}</span>
                         {loans.filter(l => l.client.id === loan.client.id).length >= 2 && (
                           <span className="w-3 h-3 rounded-full bg-yellow-400 inline-block flex-shrink-0" title={`${loans.filter(l => l.client.id === loan.client.id).length} empréstimos`} />
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-3 tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(loan.amount)}</td>
-                    <td className="px-4 py-3 tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(loan.totalAmount)}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1.5">
-                        <CheckCircle2 className="h-4 w-4 text-primary" />
-                        <span className="tabular-nums text-gray-700 dark:text-zinc-300">{loan.installments.filter(i => i.status === "PAID").length}/{loan.installmentCount}</span>
+                    <td className="p-4">
+                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${status.color}`}>{status.label}</span>
+                    </td>
+                    <td className="p-4 hidden sm:table-cell font-medium whitespace-nowrap tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(loan.amount)}</td>
+                    <td className={`p-4 font-semibold whitespace-nowrap tabular-nums ${isAtraso ? "text-red-600 dark:text-red-400" : "text-gray-900 dark:text-zinc-100"}`}>{formatCurrency(remaining)}</td>
+                    <td className="p-4 hidden md:table-cell">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-sm text-[#059669] dark:text-[#34d399]">✅ {paidCount}/{loan.installmentCount}</span>
+                        {overdueCount > 0 && <span className="text-[10px] font-medium text-red-600 dark:text-red-400">🔴 {overdueCount} em atraso</span>}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-gray-500 dark:text-zinc-400">{nextInst ? formatDate(nextInst.dueDate) : "—"}</td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${status.color}`}>{status.label}</span>
+                    <td className="p-4 hidden sm:table-cell">
+                      <span className={isAtraso ? "font-medium text-red-600 dark:text-red-400" : "text-gray-500 dark:text-zinc-400"}>{nextInst ? formatDate(nextInst.dueDate) : "—"}</span>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="p-4 hidden lg:table-cell">
                       <div className="flex flex-wrap gap-1">
                         {(loan.tags || []).map((tag, i) => {
                           const [name, color] = tag.includes("|") ? tag.split("|") : [tag, "#ef4444"]
                           const isActive = selectedTag === name
                           return (
-                            <button key={i} onClick={() => setSelectedTag(isActive ? null : name)} className={`px-3 py-1 rounded-md text-sm font-semibold text-white transition-all cursor-pointer ${isActive ? "ring-2 ring-offset-1 ring-white/80 scale-105" : "hover:opacity-80"}`} style={{ backgroundColor: color }}>{name}</button>
+                            <button key={i} onClick={() => setSelectedTag(isActive ? null : name)} className={`px-2.5 py-0.5 rounded-md text-xs font-semibold text-white transition-all cursor-pointer ${isActive ? "ring-2 ring-offset-1 ring-white/80 scale-105" : "hover:opacity-80"}`} style={{ backgroundColor: color }}>{name}</button>
                           )
                         })}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-2">
+                    <td className="p-4 text-right">
+                      <div className="flex items-center justify-end gap-1">
                       <button
                         onClick={() => openWhatsappDialog(loan)}
                         title={isDueToday ? "Lembrar via WhatsApp" : "Cobrar via WhatsApp"}
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-white transition-colors ${status.label === "Atrasado" || status.label === "Inadimplente" ? "bg-red-600 hover:bg-red-700" : isDueToday ? "bg-orange-500 hover:bg-orange-600" : "bg-green-600 hover:bg-green-700"}`}
+                        className={`inline-flex items-center gap-1 h-7 px-2 rounded-md text-sm font-medium transition-colors ${isAtraso ? "text-red-600 hover:bg-red-500/10" : isDueToday ? "text-amber-600 hover:bg-amber-500/10" : "text-[#16a34a] hover:bg-green-500/10"}`}
                       >
-                        {isDueToday ? <Bell className="h-3.5 w-3.5" /> : <MessageCircle className="h-3.5 w-3.5" />} {isDueToday ? "Lembrar" : "Cobrar"}
+                        {isDueToday ? <Bell className="h-3.5 w-3.5" /> : <MessageCircle className="h-3.5 w-3.5" />} <span className="hidden sm:inline">{isDueToday ? "Lembrar" : "Cobrar"}</span>
                       </button>
                       <div className="relative">
-                        <button onClick={() => setDropdownOpen(dropdownOpen === loan.id ? null : loan.id)} className="p-1.5 rounded-lg border border-gray-200 dark:border-zinc-700 text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors">
+                        <button onClick={() => setDropdownOpen(dropdownOpen === loan.id ? null : loan.id)} className="inline-flex items-center justify-center h-7 w-7 rounded-md text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors">
                           <MoreHorizontal className="h-4 w-4" />
                         </button>
                         {dropdownOpen === loan.id && (
