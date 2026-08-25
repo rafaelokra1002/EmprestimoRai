@@ -69,7 +69,8 @@
     @apply border-border;
   }
   html {
-    font-size: 14px;
+    /* Base do sistema (fiel à referência): 16px */
+    font-size: 16px;
   }
   body {
     color: hsl(var(--foreground));
@@ -77,6 +78,8 @@
     @apply antialiased font-sans bg-[#FAFAFA] dark:text-zinc-100 dark:bg-[#121614];
     font-feature-settings: "tnum" 1, "lnum" 1;
     font-weight: 400;
+    /* Altura de linha base: 24px (1.5 × 16px) */
+    line-height: 1.5;
   }
 }
 

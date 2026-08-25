@@ -120,7 +120,7 @@ export function Sidebar() {
   const renderLeaf = (item: LeafItem, sub = false) => {
     const isActive = item.href === activeHref
     const className = cn(
-      "flex items-center gap-2 rounded-lg text-[13px] transition-all overflow-hidden border-l-[3px] border-l-transparent",
+      "flex items-center gap-2 rounded-lg text-sm transition-all overflow-hidden border-l-[3px] border-l-transparent",
       sub ? "px-2 py-2" : "px-2 py-2.5",
       isActive
         ? "border-l-[#D4A574] text-white font-semibold shadow-md shadow-black/30 bg-[radial-gradient(circle_at_left,rgba(212,165,116,0.18),transparent_60%),linear-gradient(135deg,#0F1419_0%,rgba(30,41,59,0.85)_55%,#0F1419_100%)]"
@@ -132,7 +132,7 @@ export function Sidebar() {
         <item.icon className={iconCls} />
         <span className="whitespace-nowrap">{item.label}</span>
         {item.badge && (
-          <span className="ml-auto rounded-full bg-green-500/20 px-1.5 py-0.5 text-[9px] font-semibold text-green-300">{item.badge}</span>
+          <span className="ml-auto rounded-full bg-green-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-green-300">{item.badge}</span>
         )}
         {isActive && <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-white/60" />}
       </>
@@ -198,7 +198,7 @@ export function Sidebar() {
                     <item.icon className={cn("h-[18px] w-[18px]", cardColors[item.color].icon)} />
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="truncate font-semibold text-[13px] leading-tight text-white">{item.label}</p>
+                    <p className="truncate font-semibold text-sm leading-tight text-white">{item.label}</p>
                     <p className="truncate text-[10px] leading-tight text-white/60">{item.subtitle}</p>
                   </div>
                   <ChevronRight className="h-4 w-4 shrink-0 text-white/40" />
@@ -221,7 +221,7 @@ export function Sidebar() {
                     type="button"
                     onClick={() => setOpenGroups((g) => ({ ...g, [item.label]: !isGroupOpen }))}
                     className={cn(
-                      "flex w-full items-center gap-2 rounded-lg px-2 py-2.5 text-[13px] transition-all",
+                      "flex w-full items-center gap-2 rounded-lg px-2 py-2.5 text-sm transition-all",
                       groupActive ? "text-white font-semibold" : "font-normal text-white/80 hover:bg-white/10 hover:text-white"
                     )}
                   >
