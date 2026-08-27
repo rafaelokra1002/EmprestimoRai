@@ -12,7 +12,7 @@ import {
   Plus, Trash2, DollarSign, Search, Clock, Pencil, FolderOpen,
   LayoutGrid, List, Filter, ChevronDown, Receipt, Calendar, Eye, FileText, RotateCcw,
   ExternalLink, Download, CheckCircle2, User, Lock, TrendingUp, ArrowRight, MoreHorizontal, Check, Tag, X,
-  MessageCircle, Send, Loader2, Percent, Bell, ChevronLeft, ChevronRight, AlertTriangle
+  MessageCircle, Send, Loader2, Percent, Bell, ChevronLeft, ChevronRight, AlertTriangle, Copy, Shield, ChevronsUpDown
 } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import { LoanRenegotiationContent } from "./_components/loan-renegotiation-content"
@@ -121,6 +121,7 @@ export default function EmprestimosPage() {
   const [savedTemplates, setSavedTemplates] = useState<Record<string, string>>({})
 
   // WhatsApp cobrança state
+  const [whatsappChooser, setWhatsappChooser] = useState(false)
   const [whatsappDialog, setWhatsappDialog] = useState(false)
   const [whatsappLoan, setWhatsappLoan] = useState<Loan | null>(null)
   const [whatsappMessage, setWhatsappMessage] = useState("")
@@ -1181,7 +1182,23 @@ export default function EmprestimosPage() {
 
     setWhatsappMessage(msg)
     setWhatsappSent(false)
+    setWhatsappChooser(true)
+  }
+
+  // Abre o card maior (prévia "Visualizar cobrança") a partir do card menor
+  const openWhatsappPreview = () => {
+    setWhatsappChooser(false)
     setWhatsappDialog(true)
+  }
+
+  // "Abrir no meu WhatsApp": abre o wa.me do aparelho com a mensagem já preenchida
+  const openWhatsappManual = () => {
+    if (!whatsappLoan) return
+    const phone = (getClientPhone(whatsappLoan) || "").replace(/\D/g, "")
+    if (!phone) { alert("Cliente sem telefone cadastrado"); return }
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(whatsappMessage)}`, "_blank")
+    setWhatsappChooser(false)
+    setWhatsappDialog(false)
   }
 
   const sendWhatsappMessage = async () => {
@@ -2887,8 +2904,20 @@ export default function EmprestimosPage() {
       )}
 
       {/* ===== NOVO EMPRÉSTIMO DIALOG ===== */}
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} title="Novo Empréstimo" className="max-w-lg max-h-[90vh] overflow-y-auto dark:bg-[#121614]">
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} className="max-w-lg max-h-[90vh] overflow-y-auto dark:bg-[#121614]">
         <div className="space-y-5">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">Novo Empréstimo</h2>
+            <button
+              type="button"
+              onClick={() => setDialogOpen(false)}
+              className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500 text-white transition hover:bg-red-600"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
           {/* Cliente */}
           <div className="space-y-2">
             <Label>Cliente *</Label>
@@ -2943,14 +2972,17 @@ export default function EmprestimosPage() {
               <button
                 type="button"
                 onClick={() => setClientPickerOpen((open) => !open)}
-                className="flex h-10 w-full items-center justify-between rounded-md border border-gray-300 bg-white px-3 text-left text-sm text-gray-900 transition hover:border-primary/50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                className="flex h-10 w-full items-center justify-between gap-2 rounded-md border border-gray-300 bg-white px-3 text-left text-sm text-gray-900 transition hover:border-primary/50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
               >
-                <span className={`${selectedLoanClient ? "text-gray-900 dark:text-zinc-100" : "text-gray-500 dark:text-zinc-400"}`}>
-                  {selectedLoanClient
-                    ? `${selectedLoanClient.name}${selectedLoanClient.phone ? ` - ${selectedLoanClient.phone}` : selectedLoanClient.document ? ` - ${selectedLoanClient.document}` : ""}`
-                    : "Buscar cliente por nome, telefone ou CPF..."}
+                <span className="flex min-w-0 items-center gap-2">
+                  <User className="h-4 w-4 shrink-0 text-gray-400 dark:text-zinc-500" />
+                  <span className={`truncate ${selectedLoanClient ? "text-gray-900 dark:text-zinc-100" : "text-gray-500 dark:text-zinc-400"}`}>
+                    {selectedLoanClient
+                      ? `${selectedLoanClient.name}${selectedLoanClient.phone ? ` - ${selectedLoanClient.phone}` : selectedLoanClient.document ? ` - ${selectedLoanClient.document}` : ""}`
+                      : "Buscar cliente por nome, telefone ou CPF..."}
+                  </span>
                 </span>
-                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform dark:text-zinc-500 ${clientPickerOpen ? "rotate-180" : ""}`} />
+                <ChevronsUpDown className="h-4 w-4 shrink-0 text-gray-400 dark:text-zinc-500" />
               </button>
 
               {clientPickerOpen && (
@@ -2970,7 +3002,7 @@ export default function EmprestimosPage() {
                   <div className="max-h-72 overflow-y-auto p-2">
                     {filteredClients.length === 0 ? (
                       <div className="rounded-lg px-3 py-6 text-center text-sm text-gray-500 dark:text-zinc-400">
-                        Nenhum cliente encontrado.
+                        {clientSearch.trim() ? "Nenhum cliente encontrado." : "Digite para buscar um cliente."}
                       </div>
                     ) : (
                       <div className="space-y-1">
@@ -3283,22 +3315,32 @@ export default function EmprestimosPage() {
             </div>
           </div>
 
+          {/* Garantias (opcional) */}
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
+            <div className="flex items-center justify-between gap-2">
+              <span className="flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-zinc-100">
+                <Shield className="h-4 w-4 text-amber-600" /> Garantias (opcional)
+              </span>
+              <button
+                type="button"
+                onClick={() => showToast("Garantias em breve", "info")}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-gray-700 dark:text-zinc-200 transition hover:bg-gray-50 dark:hover:bg-zinc-800"
+              >
+                <Plus className="h-3.5 w-3.5" /> Adicionar
+              </button>
+            </div>
+            <p className="mt-2 text-xs leading-relaxed text-gray-500 dark:text-zinc-400">Registre bens recebidos como garantia. Não afeta cálculos — apenas aparece no comprovante.</p>
+          </div>
+
           {/* Juros diários */}
           <div
-            className={`flex items-start gap-3 p-4 rounded-lg border cursor-pointer transition ${
-              dailyInterest ? "border-primary/50 bg-primary/10 dark:bg-primary/20" : "border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900"
-            }`}
+            className="flex items-start gap-3 p-4 rounded-xl border border-amber-500/30 bg-amber-500/5 cursor-pointer transition hover:bg-amber-500/10"
             onClick={() => setDailyInterest(!dailyInterest)}
           >
-            <div className={`mt-0.5 h-4 w-4 rounded-full border-2 flex items-center justify-center shrink-0 ${dailyInterest ? "border-primary/50" : "border-gray-300 dark:border-zinc-700"}`}>
-              {dailyInterest && <div className="h-2 w-2 rounded-full bg-primary/10 dark:bg-primary/200" />}
-            </div>
+            <input type="checkbox" checked={dailyInterest} readOnly className="mt-0.5 h-[18px] w-[18px] shrink-0 accent-[#16a249] cursor-pointer" />
             <div>
-              <div className="flex items-center gap-2">
-                <input type="checkbox" checked={dailyInterest} readOnly className="rounded border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 text-primary" />
-                <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">Aplicar juros diários em caso de atraso</span>
-              </div>
-              <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">Se marcado, juros serão aplicados automaticamente por dia de atraso</p>
+              <span className="text-sm font-semibold text-gray-900 dark:text-zinc-100">📈 Aplicar juros diários em caso de atraso</span>
+              <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">Se marcado, juros serão aplicados automaticamente por dia de atraso</p>
             </div>
           </div>
 
@@ -4942,119 +4984,131 @@ export default function EmprestimosPage() {
         )}
       </Dialog>
 
-      {/* Dialog WhatsApp Cobrança */}
+      {/* Card menor: Enviar cobrança (escolha) */}
+      <Dialog
+        open={whatsappChooser}
+        onClose={() => setWhatsappChooser(false)}
+        title="Enviar cobrança"
+        className="max-w-md"
+      >
+        <div className="space-y-3">
+          <p className="text-sm text-gray-500 dark:text-zinc-400">Você verá uma prévia da mensagem antes de qualquer envio.</p>
+
+          {/* Ver cobrança */}
+          <div className="rounded-xl border border-green-600/40 dark:border-green-700/50 bg-green-500/5 p-3">
+            <div className="flex items-start gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-green-500/15 text-green-800 dark:text-green-400"><Eye className="h-5 w-5" /></span>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Visualizar cobrança</p>
+                <p className="text-xs text-gray-500 dark:text-zinc-400">Veja a mensagem completa antes do envio, sem abrir o WhatsApp e sem gerar um novo envio.</p>
+              </div>
+            </div>
+            <button onClick={openWhatsappPreview} className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-lg border border-green-600 py-2 text-sm font-semibold text-green-800 dark:text-green-400 hover:bg-green-500/10 transition">
+              <Eye className="h-4 w-4" /> Ver cobrança
+            </button>
+          </div>
+
+          {/* Enviar pelo CobraFácil */}
+          <div className="rounded-xl border border-blue-500/40 dark:border-blue-800 bg-blue-500/5 p-3">
+            <div className="flex items-start gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-500/15 text-blue-600"><Send className="h-5 w-5" /></span>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Enviar pelo CobraFácil</p>
+                <p className="text-xs text-gray-500 dark:text-zinc-400">Mensagem enviada automaticamente pela plataforma.</p>
+              </div>
+            </div>
+            <button onClick={openWhatsappPreview} className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 py-2 text-sm font-semibold text-white transition">
+              <Send className="h-4 w-4" /> Enviar cobrança de hoje
+            </button>
+          </div>
+
+          {/* Abrir no meu WhatsApp */}
+          <div className="rounded-xl border border-purple-500/40 dark:border-purple-800 bg-purple-500/5 p-3">
+            <div className="flex items-start gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-purple-500/15 text-purple-600"><MessageCircle className="h-5 w-5" /></span>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Abrir no meu WhatsApp</p>
+                <p className="text-xs text-gray-500 dark:text-zinc-400">Envio manual pelo seu aparelho.</p>
+              </div>
+            </div>
+            <button onClick={openWhatsappManual} className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-lg border border-purple-500 py-2 text-sm font-semibold text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/20 transition">
+              <ExternalLink className="h-4 w-4" /> Abrir WhatsApp — cobrança de hoje
+            </button>
+          </div>
+
+          <p className="text-xs text-gray-400 dark:text-zinc-500 pt-1">Todas as opções permitem que você edite a mensagem antes de enviar.</p>
+        </div>
+      </Dialog>
+
+      {/* Card maior: Visualizar cobrança */}
       <Dialog
         open={whatsappDialog}
         onClose={() => { setWhatsappDialog(false); setWhatsappSent(false) }}
-        title="Cobrar via WhatsApp"
         className="max-w-lg"
       >
-        <div className="space-y-4">
-          {whatsappLoan && (
-            <>
-              <div className="flex items-center gap-3 rounded-lg border border-gray-200 dark:border-zinc-700 p-3">
-                <Avatar name={whatsappLoan.client.name} src={whatsappLoan.client.photo} size="sm" />
-                <div>
-                  <p className="font-semibold text-gray-900 dark:text-zinc-100">{whatsappLoan.client.name}</p>
-                  <p className="text-xs text-gray-500 dark:text-zinc-400">{getClientPhone(whatsappLoan) || "Sem telefone"}</p>
-                </div>
-                <div className="ml-auto text-right">
-                  <p className="text-xs text-gray-400 dark:text-zinc-500">Parcelas em atraso</p>
-                  <p className="text-sm font-bold text-red-600">{getOverdueInstallments(whatsappLoan).length}</p>
-                </div>
-              </div>
+        {whatsappLoan && (
+          <div className="space-y-3">
+            {/* Header custom */}
+            <div className="flex items-center justify-between">
+              <h2 className="flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-zinc-100">
+                <Eye className="h-5 w-5 text-[#16a249]" /> Visualizar cobrança
+              </h2>
+              <button
+                onClick={() => setWhatsappDialog(false)}
+                className="flex h-7 w-7 items-center justify-center rounded-md bg-red-500 text-white transition hover:bg-red-600"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
 
-              <div>
-                <Label className="text-sm font-medium">Mensagem de Cobrança</Label>
-                <div className="flex items-center gap-2 mt-1 mb-2">
-                  <span className="text-xs text-gray-400 dark:text-zinc-500">Template:</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const isP = whatsappLoan.installmentCount > 1
-                      const t = (isP && savedTemplates["ATRASO_PARCELADO"]) ? savedTemplates["ATRASO_PARCELADO"] : savedTemplates["ATRASO"]
-                      setWhatsappMessage(t ? applyTemplate(t, whatsappLoan) : buildDefaultWhatsappMessage(whatsappLoan))
-                    }}
-                    className="text-xs px-2.5 py-1 rounded-full border border-gray-300 dark:border-zinc-600 text-gray-600 dark:text-zinc-300 hover:border-primary hover:text-primary transition-colors"
-                  >
-                    Padrão
-                  </button>
-                  {whatsappLoan.installmentCount > 1 ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const t = savedTemplates["ANTECIPADA_PARCELADO"] || savedTemplates["ANTECIPADA"]
-                        setWhatsappMessage(t ? applyTemplate(t, whatsappLoan) : buildParcelamentoMessage(whatsappLoan))
-                      }}
-                      className="text-xs px-2.5 py-1 rounded-full border border-gray-300 dark:border-zinc-600 text-gray-600 dark:text-zinc-300 hover:border-primary hover:text-primary transition-colors"
-                    >
-                      Parcelamento
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const t = savedTemplates["VENCE_HOJE"]
-                        setWhatsappMessage(t ? applyTemplate(t, whatsappLoan) : buildLembreteSimpleMessage(whatsappLoan))
-                      }}
-                      className="text-xs px-2.5 py-1 rounded-full border border-gray-300 dark:border-zinc-600 text-gray-600 dark:text-zinc-300 hover:border-primary hover:text-primary transition-colors"
-                    >
-                      Lembrete
-                    </button>
-                  )}
-                </div>
-                <Textarea
-                  value={whatsappMessage}
-                  onChange={(e) => setWhatsappMessage(e.target.value)}
-                  className="min-h-[200px] text-sm"
-                  placeholder="Digite a mensagem..."
-                />
-              </div>
+            {/* Cliente */}
+            <p className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-zinc-400">
+              <User className="h-4 w-4" /> Cliente: <span className="font-semibold text-gray-900 dark:text-zinc-100">{whatsappLoan.client.name}</span>
+            </p>
 
-              <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-zinc-500">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const freshLoan = whatsappLoan ? (loans.find(l => l.id === whatsappLoan.id) || whatsappLoan) : whatsappLoan
-                    if (freshLoan) { setWhatsappLoan(freshLoan); setWhatsappMessage(buildDefaultWhatsappMessage(freshLoan)) }
-                  }}
-                  className="text-primary hover:underline"
-                >
-                  Restaurar mensagem padrão
-                </button>
+            {/* Modo da mensagem */}
+            <div className="border-b border-gray-100 dark:border-zinc-800 pb-3">
+              <div className="flex rounded-xl bg-gray-100 dark:bg-zinc-800/60 p-1">
+                <span className="inline-flex items-center gap-1.5 rounded-lg border border-green-600 bg-white dark:bg-zinc-900 px-5 py-1.5 text-sm font-semibold text-green-800 dark:text-green-400 shadow-sm">
+                  <FileText className="h-4 w-4" /> Completo
+                </span>
               </div>
+            </div>
 
-              {whatsappSent ? (
-                <div className="rounded-lg border border-primary/20 dark:border-primary/30 bg-primary/10 dark:bg-primary/20 p-4 text-center">
-                  <CheckCircle2 className="h-8 w-8 text-primary mx-auto mb-2" />
-                  <p className="font-semibold text-primary">Mensagem enviada com sucesso!</p>
-                  <p className="text-xs text-gray-500 dark:text-zinc-400 mt-1">A cobrança foi enviada para {whatsappLoan.client.name}</p>
-                </div>
-              ) : !getClientPhone(whatsappLoan) ? (
-                <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 p-4 text-center">
-                  <MessageCircle className="h-8 w-8 text-amber-600 mx-auto mb-2" />
-                  <p className="font-semibold text-amber-700 dark:text-amber-400">Cliente sem telefone cadastrado</p>
-                  <p className="text-xs text-gray-500 dark:text-zinc-400 mt-1">Cadastre o telefone do cliente para enviar cobranças via WhatsApp.</p>
-                  <Button variant="outline" className="mt-3" onClick={() => setWhatsappDialog(false)}>Fechar</Button>
-                </div>
-              ) : (
-                <div className="flex gap-2">
-                  <Button variant="outline" className="flex-1" onClick={() => setWhatsappDialog(false)}>
-                    Cancelar
-                  </Button>
-                  <Button
-                    className="flex-1 gap-2 bg-primary hover:bg-primary/90 text-white"
-                    onClick={sendWhatsappMessage}
-                    disabled={whatsappSending || !whatsappMessage.trim()}
-                  >
-                    {whatsappSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                    {whatsappSending ? "Enviando..." : "Enviar Cobrança"}
-                  </Button>
-                </div>
-              )}
-            </>
-          )}
-        </div>
+            {/* Mensagem (editável) */}
+            <Textarea
+              value={whatsappMessage}
+              onChange={(e) => setWhatsappMessage(e.target.value)}
+              className="h-[280px] resize-none rounded-xl border-l-[3px] border-l-[#16a249] text-sm leading-relaxed"
+              placeholder="Digite a mensagem..."
+            />
+
+            {/* Nota */}
+            <p className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-zinc-500">
+              <span>💡</span> Você pode editar a mensagem antes de enviar
+            </p>
+
+            {/* Ações */}
+            <div className="flex gap-2 border-t border-gray-100 dark:border-zinc-800 pt-3">
+              <Button variant="outline" className="flex-1 gap-2" onClick={() => setWhatsappDialog(false)}>
+                <X className="h-4 w-4" /> Cancelar
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1 gap-2 border-amber-400 text-amber-600 hover:bg-amber-50 dark:border-amber-600 dark:text-amber-400 dark:hover:bg-amber-950/20"
+                onClick={() => { navigator.clipboard.writeText(whatsappMessage).then(() => showToast("Texto copiado!", "success")).catch(() => {}) }}
+              >
+                <Copy className="h-4 w-4" /> Copiar texto
+              </Button>
+              <Button
+                className="flex-1 gap-2 bg-[#16a249] hover:bg-[#128a3d] text-white"
+                onClick={openWhatsappManual}
+              >
+                <MessageCircle className="h-4 w-4" /> Abrir no WhatsApp
+              </Button>
+            </div>
+          </div>
+        )}
       </Dialog>
 
       {/* Modal Cobrança em Lote */}

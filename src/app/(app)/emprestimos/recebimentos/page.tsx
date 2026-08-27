@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Download, HelpCircle, Calendar, RefreshCw, DollarSign, Percent, Hash, TrendingUp, Table2, Trash2, Pencil } from "lucide-react"
+import { Download, HelpCircle, Calendar, RefreshCw, DollarSign, Percent, Hash, TrendingUp, Table2, Trash2, Pencil, Clock, MessageCircle } from "lucide-react"
 import { Dialog } from "@/components/ui/dialog"
 import { formatCurrency, formatDate, localDateStr } from "@/lib/utils"
 
@@ -288,28 +288,41 @@ export default function RecebimentosPage() {
 
   return (
     <div className="space-y-4 pt-6">
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">Empréstimos</h1>
-          <p className="text-gray-500 dark:text-zinc-400">Gerencie seus empréstimos</p>
+          <p className="mt-0.5 text-sm text-gray-500 dark:text-zinc-400">Gerencie seus empréstimos</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" className="gap-2" onClick={() => window.open("https://pt.wikipedia.org/wiki/Juros", "_blank")}>
-            <HelpCircle className="h-4 w-4" /> Tutorial
-          </Button>
-          <Button variant="outline" className="gap-2" onClick={exportPdf}>
-            <Download className="h-4 w-4" /> Baixar Relatório
-          </Button>
+          <button
+            type="button"
+            onClick={exportPdf}
+            className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+          >
+            <Download className="h-4 w-4" />
+            Baixar Relatório
+          </button>
+          <button
+            type="button"
+            onClick={() => { window.location.href = "/emprestimos" }}
+            className="inline-flex items-center gap-2 rounded-xl border border-green-600 bg-white px-4 py-2 text-sm font-semibold text-green-800 transition hover:bg-green-500/10 dark:border-green-700 dark:bg-zinc-900 dark:text-green-400 dark:hover:bg-zinc-800"
+          >
+            <MessageCircle className="h-4 w-4" />
+            Cobrança em Lote
+          </button>
         </div>
       </div>
 
-      <div className="flex items-center gap-1 bg-white dark:bg-zinc-900 rounded-xl p-1 border border-gray-200 dark:border-zinc-800 overflow-x-auto">
-        <a href="/emprestimos" className="px-4 py-2 rounded-lg text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 whitespace-nowrap">Empréstimos ({allLoansCount})</a>
-        <a href="/emprestimos/tabela-price" className="px-4 py-2 rounded-lg text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 whitespace-nowrap flex items-center gap-1.5"><Table2 className="h-3.5 w-3.5" />Tabela Price</a>
-        <button type="button" className="px-4 py-2 rounded-lg text-sm font-medium bg-primary text-white whitespace-nowrap">Recebimentos</button>
+      {/* Tabs */}
+      <div className="flex w-fit max-w-full items-center gap-1 bg-gray-100 dark:bg-zinc-800/60 rounded-xl p-1.5 overflow-x-auto">
+        <a href="/emprestimos" className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 transition-colors whitespace-nowrap">Empréstimos <span className="font-medium opacity-70">({allLoansCount})</span></a>
+        <button type="button" onClick={() => { window.location.href = "/emprestimos" }} className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 transition-colors whitespace-nowrap"><Clock className="h-3.5 w-3.5" /> Diário <span className="font-medium opacity-70">(0)</span></button>
+        <a href="/emprestimos/tabela-price" className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 transition-colors whitespace-nowrap"><Table2 className="h-3.5 w-3.5" /> Tabela Price</a>
+        <button type="button" className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold bg-[#16a34a] text-white whitespace-nowrap"><RefreshCw className="h-3.5 w-3.5" /> Recebimentos</button>
+        <a href="/emprestimos" className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 transition-colors whitespace-nowrap"><Trash2 className="h-3.5 w-3.5" /> Lixeira</a>
       </div>
 
-      <div className="rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-3 flex items-center justify-between gap-3 overflow-x-auto">
+      <div className="rounded-xl border border-primary/30 bg-white dark:bg-zinc-900 p-3 flex items-center justify-between gap-3 overflow-x-auto">
         <div className="flex items-center gap-2">
           <span className="text-gray-700 dark:text-zinc-300 text-sm flex items-center gap-1"><Calendar className="h-4 w-4 text-primary" /> Período:</span>
           <button type="button" onClick={() => setPeriod("today")} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${period === "today" ? "bg-primary text-white" : "bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-700 dark:text-zinc-300"}`}>Hoje</button>
@@ -339,26 +352,26 @@ export default function RecebimentosPage() {
       )}
 
       <div className="grid md:grid-cols-4 gap-3">
-        <div className="rounded-xl border border-green-200 dark:border-green-800 bg-white dark:bg-zinc-900 p-4">
-          <p className="text-gray-500 dark:text-zinc-400 text-sm flex items-center gap-1"><DollarSign className="h-4 w-4 text-green-500" /> Total Recebido</p>
-          <p className="text-2xl font-semibold tabular-nums tracking-tight text-green-500 dark:text-green-400 mt-1">{formatCurrency(stats.totalReceived)}</p>
+        <div className="rounded-xl border border-primary/30 bg-white dark:bg-zinc-900 p-4">
+          <p className="text-gray-500 dark:text-zinc-400 text-sm flex items-center gap-1.5"><DollarSign className="h-4 w-4" /> Total Recebido</p>
+          <p className="text-xl font-bold tabular-nums tracking-tight text-[#16a34a] dark:text-green-400 mt-1">{formatCurrency(stats.totalReceived)}</p>
         </div>
-        <div className="rounded-xl border border-violet-200 dark:border-violet-800 bg-white dark:bg-zinc-900 p-4">
-          <p className="text-gray-500 dark:text-zinc-400 text-sm flex items-center gap-1"><TrendingUp className="h-4 w-4 text-violet-500" /> Juros Recebido</p>
-          <p className="text-2xl font-semibold tabular-nums tracking-tight text-violet-600 dark:text-violet-400 mt-1">{formatCurrency(stats.interestReceived)}</p>
+        <div className="rounded-xl border border-primary/30 bg-white dark:bg-zinc-900 p-4">
+          <p className="text-gray-500 dark:text-zinc-400 text-sm flex items-center gap-1.5"><TrendingUp className="h-4 w-4" /> Juros Recebido</p>
+          <p className="text-xl font-bold tabular-nums tracking-tight text-purple-600 dark:text-purple-400 mt-1">{formatCurrency(stats.interestReceived)}</p>
         </div>
-        <div className="rounded-xl border border-blue-200 dark:border-blue-800 bg-white dark:bg-zinc-900 p-4">
-          <p className="text-gray-500 dark:text-zinc-400 text-sm flex items-center gap-1"><Percent className="h-4 w-4 text-blue-500" /> Principal Pago</p>
-          <p className="text-2xl font-semibold tabular-nums tracking-tight text-blue-600 dark:text-blue-400 mt-1">{formatCurrency(stats.principalPaid)}</p>
+        <div className="rounded-xl border border-primary/30 bg-white dark:bg-zinc-900 p-4">
+          <p className="text-gray-500 dark:text-zinc-400 text-sm flex items-center gap-1.5"><Percent className="h-4 w-4" /> Principal Pago</p>
+          <p className="text-xl font-bold tabular-nums tracking-tight text-blue-600 dark:text-blue-400 mt-1">{formatCurrency(stats.principalPaid)}</p>
         </div>
-        <div className="rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-4">
-          <p className="text-gray-500 dark:text-zinc-400 text-sm flex items-center gap-1"><Hash className="h-4 w-4 text-gray-400" /> Qtd. Pagamentos</p>
-          <p className="text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100 mt-1">{stats.count}</p>
+        <div className="rounded-xl border border-primary/30 bg-white dark:bg-zinc-900 p-4">
+          <p className="text-gray-500 dark:text-zinc-400 text-sm flex items-center gap-1.5"><Hash className="h-4 w-4" /> Qtd. Pagamentos</p>
+          <p className="text-xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100 mt-1">{stats.count}</p>
         </div>
       </div>
 
-      <div className="rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-5 min-h-[220px]">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-zinc-100 mb-4">Pagamentos – {range.label}</h2>
+      <div className="rounded-xl border border-primary/30 bg-white dark:bg-zinc-900 p-5 min-h-[220px]">
+        <h2 className="text-base font-semibold text-gray-900 dark:text-zinc-100 mb-4">Pagamentos – {range.label}</h2>
         {loading ? (
           <div className="text-gray-500 dark:text-zinc-400">Carregando...</div>
         ) : paymentsInRange.length === 0 ? (

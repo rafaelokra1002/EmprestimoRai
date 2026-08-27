@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CobraFácil - Recebimentos</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+  :root{
+    --bg:#fafafa;
+    --text:#222a26;
+    --muted:#6b7280;
+    --card:#ffffff;
+    --primary:#16a34a;
+    --primary-side:#16a249;
+    --primary-30:rgba(22,163,74,.30);
+    --border:#e5e7eb;
+    --green-600:#16a34a;
+    --purple-600:#9333ea;
+    --blue-600:#2563eb;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:'Inter',system-ui,-apple-system,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    display:flex;
+    -webkit-font-smoothing:antialiased;
+  }
+  .icon{width:20px;height:20px;stroke-width:2;stroke:currentColor;fill:none;stroke-linecap:round;stroke-linejoin:round;flex:none}
+  .icon.sm{width:16px;height:16px}
+  .icon.xs{width:14px;height:14px}
+
+  /* ============ SIDEBAR ============ */
+  .sidebar{
+    width:288px;flex:none;
+    background:linear-gradient(180deg,#18a94e 0%, #16a249 55%, #128a3d 100%);
+    color:#fff;
+    padding:16px 14px 20px;
+    display:flex;flex-direction:column;gap:12px;
+    height:100vh;position:sticky;top:0;overflow-y:auto;
+  }
+  .brand{display:flex;align-items:center;gap:10px;padding:6px 6px 2px}
+  .brand .logo{width:34px;height:34px;border-radius:9999px;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center}
+  .brand .logo .icon{width:20px;height:20px;color:#fff}
+  .brand h1{font-size:18px;font-weight:800;line-height:1.1;letter-spacing:-.02em}
+  .brand p{font-size:11px;color:rgba(255,255,255,.8);font-weight:500}
+
+  .nav-card{
+    display:flex;align-items:center;gap:12px;
+    padding:11px 12px;border-radius:12px;
+    border:1px solid transparent;cursor:pointer;text-decoration:none;color:#fff;
+    transition:transform .12s ease, filter .12s ease;
+  }
+  .nav-card:hover{filter:brightness(1.08);transform:translateY(-1px)}
+  .nav-card .ic-wrap{width:34px;height:34px;border-radius:9999px;display:flex;align-items:center;justify-content:center;flex:none}
+  .nav-card .txt{flex:1;min-width:0}
+  .nav-card .txt strong{display:block;font-size:14px;font-weight:700;line-height:1.2}
+  .nav-card .txt span{display:block;font-size:11.5px;color:rgba(255,255,255,.72);line-height:1.2;margin-top:2px}
+  .nav-card .chev{color:rgba(255,255,255,.6)}
+
+  .nc-func{background:radial-gradient(circle at 0% 0%,rgba(16,185,129,.28),rgba(0,0,0,0) 55%),linear-gradient(135deg,#062418,rgba(6,95,70,.75) 55%,#062418);border-color:rgba(52,211,153,.3)}
+  .nc-func .ic-wrap{background:rgba(16,185,129,.25)} .nc-func .ic-wrap .icon{color:#6ee7b7}
+  .nc-rel{background:radial-gradient(circle at 0% 0%,rgba(251,191,36,.22),rgba(0,0,0,0) 55%),linear-gradient(135deg,#1f1408,rgba(122,85,31,.65) 55%,#1f1408);border-color:rgba(251,191,36,.3)}
+  .nc-rel .ic-wrap{background:rgba(245,158,11,.25)} .nc-rel .ic-wrap .icon{color:#fcd34d}
+  .nc-perf{background:radial-gradient(circle at 0% 0%,rgba(34,211,238,.22),rgba(0,0,0,0) 55%),linear-gradient(135deg,#0a1f2e,rgba(8,145,178,.65) 55%,#0a1f2e);border-color:rgba(34,211,238,.3)}
+  .nc-perf .ic-wrap{background:rgba(6,182,212,.25)} .nc-perf .ic-wrap .icon{color:#67e8f9}
+  .nc-plan{background:radial-gradient(circle at 0% 0%,rgba(250,204,21,.22),rgba(0,0,0,0) 55%),linear-gradient(135deg,#1f1408,rgba(161,98,7,.65) 55%,#1f1408);border-color:rgba(250,204,21,.3)}
+  .nc-plan .ic-wrap{background:rgba(234,179,8,.25)} .nc-plan .ic-wrap .icon{color:#fde047}
+  .nc-cons{background:radial-gradient(circle at 0% 0%,rgba(217,70,239,.28),rgba(0,0,0,0) 55%),linear-gradient(135deg,#2b0a3d,rgba(124,29,111,.7) 55%,#2b0a3d);border-color:rgba(217,70,239,.3)}
+  .nc-cons .ic-wrap{background:rgba(192,38,211,.25)} .nc-cons .ic-wrap .icon{color:#f0abfc}
+
+  .menu-label{font-size:10.5px;font-weight:700;letter-spacing:.12em;color:rgba(255,255,255,.55);padding:8px 8px 2px}
+  .menu-item{display:flex;align-items:center;gap:12px;padding:9px 8px;border-radius:8px;color:#fff;text-decoration:none;font-size:14px;font-weight:500;line-height:1.2;cursor:pointer}
+  .menu-item:hover{background:rgba(255,255,255,.12)}
+  .menu-item .icon{color:#fff;width:19px;height:19px}
+
+  .side-foot{margin-top:auto;display:flex;flex-direction:column;gap:8px;padding-top:12px}
+  .install{background:rgba(255,255,255,.12);border-radius:12px;padding:12px;text-align:center}
+  .install strong{display:block;font-size:13px;font-weight:700}
+  .install small{display:block;font-size:11px;color:rgba(255,255,255,.75);margin-top:2px}
+  .install .btn-inst{margin-top:8px;display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.16);border:none;color:#fff;font-family:inherit;font-size:12px;font-weight:600;padding:7px 12px;border-radius:8px;cursor:pointer}
+  .copyright{text-align:center;font-size:11px;color:rgba(255,255,255,.6);padding-top:4px}
+
+  /* ============ MAIN ============ */
+  .main{flex:1;min-width:0;display:flex;flex-direction:column}
+  .topbar{
+    display:flex;align-items:center;gap:16px;
+    padding:14px 28px;background:var(--bg);
+    position:sticky;top:0;z-index:5;
+  }
+  .welcome h2{font-size:17px;font-weight:700;line-height:1.1}
+  .welcome p{font-size:12.5px;color:var(--muted);margin-top:2px}
+  .badge-dono{display:inline-flex;align-items:center;gap:6px;background:#dcfce7;color:#166534;font-size:13px;font-weight:600;padding:6px 12px;border-radius:9999px}
+  .badge-dono .icon{color:#16a34a}
+  .topbar .spacer{flex:1}
+  .icon-btn{width:38px;height:38px;border-radius:9999px;border:1px solid var(--border);background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#4b5563}
+  .email-pill{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);background:#fff;border-radius:9999px;padding:8px 14px;font-size:13.5px;font-weight:500;color:#374151}
+  .email-pill .icon{color:#6b7280}
+
+  .content{padding:6px 28px 40px}
+  .page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px;flex-wrap:wrap}
+  .page-head h1{font-size:26px;font-weight:800;letter-spacing:-.02em}
+  .page-head .sub{font-size:14px;color:var(--muted);margin-top:2px}
+  .head-actions{display:flex;gap:10px}
+  .btn{display:inline-flex;align-items:center;gap:8px;font-family:inherit;font-size:14px;font-weight:600;padding:9px 16px;border-radius:9px;cursor:pointer;border:1px solid var(--border);background:#fff;color:#374151;transition:filter .12s}
+  .btn:hover{filter:brightness(.98)}
+  .btn-outline-green{border-color:var(--primary-30);color:var(--primary)}
+  .btn-outline-green .icon{color:var(--primary)}
+
+  /* tabs */
+  .tabs{display:inline-flex;gap:4px;background:#f3f4f6;padding:5px;border-radius:11px;margin-bottom:16px;flex-wrap:wrap}
+  .tab{display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:8px;font-size:14px;font-weight:600;color:#6b7280;cursor:pointer;border:none;background:transparent;font-family:inherit}
+  .tab .icon{width:16px;height:16px}
+  .tab:hover{color:#374151}
+  .tab.active{background:var(--primary);color:#fff;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+  .tab .count{opacity:.7;font-weight:600}
+
+  /* period card */
+  .card{background:var(--card);border:1px solid var(--primary-30);border-radius:12px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+  .period{padding:14px 16px;margin-bottom:16px}
+  .period-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+  .period-row > .icon{color:#16a34a}
+  .period-label{font-size:14px;font-weight:600}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{display:inline-flex;align-items:center;gap:6px;font-family:inherit;font-size:13.5px;font-weight:600;padding:7px 14px;border-radius:8px;border:1px solid var(--border);background:#fff;color:#374151;cursor:pointer}
+  .chip.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+  .chip .icon{width:15px;height:15px}
+  .period-tools{display:flex;align-items:center;gap:4px;margin-left:auto}
+  .tool-btn{width:36px;height:36px;border-radius:8px;border:1px solid var(--border);background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#4b5563}
+
+  /* stat cards */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+  .stat{background:var(--card);border:1px solid var(--primary-30);border-radius:12px;padding:16px}
+  .stat .top{display:flex;align-items:center;gap:8px;color:var(--muted);margin-bottom:4px}
+  .stat .top .icon{width:16px;height:16px}
+  .stat .top span{font-size:12.5px;font-weight:500}
+  .stat .val{font-size:20px;font-weight:700}
+  .val.green{color:var(--green-600)}
+  .val.purple{color:var(--purple-600)}
+  .val.blue{color:var(--blue-600)}
+
+  /* table card */
+  .tbl-card{padding:0}
+  .tbl-card .tbl-head{padding:20px 24px 8px}
+  .tbl-card .tbl-head h3{font-size:16px;font-weight:600}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  thead th{text-align:left;font-weight:500;color:var(--muted);font-size:13.5px;padding:10px 24px;border-bottom:1px solid var(--border)}
+  thead th.right{text-align:right}
+  tbody td{padding:16px 24px;border-bottom:1px solid #f3f4f6}
+  tbody tr:last-child td{border-bottom:none}
+  td.right{text-align:right}
+  .val-cell{display:inline-flex;align-items:center;gap:6px;justify-content:flex-end;color:var(--green-600);font-weight:600}
+  .pill-tipo{display:inline-flex;align-items:center;background:#f3e8ff;color:#9333ea;font-size:12.5px;font-weight:600;padding:4px 12px;border-radius:9999px}
+
+  @media(max-width:1024px){
+    .sidebar{display:none}
+    .stats{grid-template-columns:repeat(2,1fr)}
+    .content,.topbar{padding-left:16px;padding-right:16px}
+  }
+  @media(max-width:560px){.stats{grid-template-columns:1fr 1fr}.page-head h1{font-size:22px}}
+</style>
+</head>
+<body>
+
+  <!-- ================= SIDEBAR ================= -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+      </div>
+      <div>
+        <h1>CobraFácil</h1>
+        <p>Gestão Financeira</p>
+      </div>
+    </div>
+
+    <a class="nav-card nc-func">
+      <div class="ic-wrap"><svg class="icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg></div>
+      <div class="txt"><strong>Funcionários</strong><span>Cadastrar funcionários</span></div>
+      <svg class="icon sm chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+    </a>
+
+    <a class="nav-card nc-rel">
+      <div class="ic-wrap"><svg class="icon" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="m9 15 2 2 4-4"/></svg></div>
+      <div class="txt"><strong>Relatórios Diário</strong><span>Relatórios via WhatsApp</span></div>
+      <svg class="icon sm chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+    </a>
+
+    <a class="nav-card nc-perf">
+      <div class="ic-wrap"><svg class="icon" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+      <div class="txt"><strong>Meu Perfil</strong><span>Gerenciar dados e plano</span></div>
+      <svg class="icon sm chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+    </a>
+
+    <a class="nav-card nc-plan">
+      <div class="ic-wrap"><svg class="icon" viewBox="0 0 24 24"><path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"/><path d="M5 21h14"/></svg></div>
+      <div class="txt"><strong>Meus Planos</strong><span>Assinatura e upgrades</span></div>
+      <svg class="icon sm chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+    </a>
+
+    <a class="nav-card nc-cons">
+      <div class="ic-wrap"><svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></div>
+      <div class="txt"><strong>Consultas</strong><span>SPC, Serasa, CPF e mais</span></div>
+      <svg class="icon sm chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+    </a>
+
+    <div class="menu-label">MENU</div>
+    <a class="menu-item"><svg class="icon" viewBox="0 0 24 24"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>Dashboard</a>
+    <a class="menu-item"><svg class="icon" viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>Central de Atendimento</a>
+    <a class="menu-item"><svg class="icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Clientes</a>
+    <a class="menu-item"><svg class="icon" viewBox="0 0 24 24"><path d="m8 11 2 2 4-4"/><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>Consultas</a>
+
+    <div class="side-foot">
+      <div class="install">
+        <strong>Instale o App</strong>
+        <small>Acesso rápido no celular</small>
+        <button class="btn-inst"><svg class="icon xs" viewBox="0 0 24 24"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>Como Instalar</button>
+      </div>
+      <div class="copyright">© 2024 CobraFácil</div>
+    </div>
+  </aside>
+
+  <!-- ================= MAIN ================= -->
+  <div class="main">
+    <div class="topbar">
+      <div class="welcome">
+        <h2>Bem-vindo de volta!</h2>
+        <p>Gerencie seus empréstimos</p>
+      </div>
+      <span class="badge-dono">
+        <svg class="icon sm" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></svg>
+        Dono (acesso total)
+      </span>
+      <div class="spacer"></div>
+      <button class="icon-btn"><svg class="icon sm" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg></button>
+      <span class="email-pill">
+        <svg class="icon sm" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        joabeepv19@gmail.com
+      </span>
+    </div>
+
+    <div class="content">
+      <div class="page-head">
+        <div>
+          <h1>Empréstimos</h1>
+          <div class="sub">Gerencie seus empréstimos</div>
+        </div>
+        <div class="head-actions">
+          <button class="btn"><svg class="icon sm" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>Baixar Relatório</button>
+          <button class="btn btn-outline-green"><svg class="icon sm" viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>Cobrança em Lote</button>
+        </div>
+      </div>
+
+      <!-- tabs -->
+      <div class="tabs">
+        <button class="tab"><svg class="icon" viewBox="0 0 24 24"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Empréstimos <span class="count">(7)</span></button>
+        <button class="tab"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Diário <span class="count">(0)</span></button>
+        <button class="tab"><svg class="icon" viewBox="0 0 24 24"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg>Tabela Price</button>
+        <button class="tab active"><svg class="icon" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>Recebimentos</button>
+        <button class="tab"><svg class="icon" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>Lixeira</button>
+      </div>
+
+      <!-- period filter -->
+      <div class="card period">
+        <div class="period-row">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>
+          <span class="period-label">Período:</span>
+          <div class="chips">
+            <button class="chip active">Hoje</button>
+            <button class="chip">Semana</button>
+            <button class="chip">Mês</button>
+            <button class="chip"><svg class="icon xs" viewBox="0 0 24 24"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>Período</button>
+          </div>
+          <div class="period-tools">
+            <button class="tool-btn"><svg class="icon sm" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg></button>
+            <button class="tool-btn"><svg class="icon sm" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- stat cards -->
+      <div class="stats">
+        <div class="stat">
+          <div class="top"><svg class="icon" viewBox="0 0 24 24"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span>Total Recebido</span></div>
+          <div class="val green">R$ 180,00</div>
+        </div>
+        <div class="stat">
+          <div class="top"><svg class="icon" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg><span>Juros Recebido</span></div>
+          <div class="val purple">R$ 180,00</div>
+        </div>
+        <div class="stat">
+          <div class="top"><svg class="icon" viewBox="0 0 24 24"><line x1="19" x2="5" y1="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg><span>Principal Pago</span></div>
+          <div class="val blue">R$ 0,00</div>
+        </div>
+        <div class="stat">
+          <div class="top"><svg class="icon" viewBox="0 0 24 24"><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></svg><span>Qtd. Pagamentos</span></div>
+          <div class="val">1</div>
+        </div>
+      </div>
+
+      <!-- payments table -->
+      <div class="card tbl-card">
+        <div class="tbl-head"><h3>Pagamentos - Hoje</h3></div>
+        <table>
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Cliente</th>
+              <th class="right">Valor</th>
+              <th class="right">Tipo</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>26/08</td>
+              <td>teste 3</td>
+              <td class="right"><span class="val-cell">💵 R$ 180,00</span></td>
+              <td class="right"><span class="pill-tipo">Só Juros</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>

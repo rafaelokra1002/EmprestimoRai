@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CobraFácil - Novo Empréstimo</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  :root{
+    --bg:#fafafa;
+    --text:#222a26;
+    --muted:#6b7280;
+    --primary:#16a249;
+    --border:#e3e8e6;
+    --red:#ef4343;
+    --amber-bg:rgba(245,158,11,.05);
+    --amber-bd:rgba(245,158,11,.3);
+    --amber:#d97706;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:'Inter',system-ui,-apple-system,sans-serif;
+    color:var(--text);
+    min-height:100vh;
+    background:linear-gradient(180deg,#eef3f0,#e3e9e6);
+    display:flex;align-items:center;justify-content:center;
+    padding:24px 12px;
+  }
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(1px)}
+  .icon{stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+  /* ===== MODAL ===== */
+  .modal{
+    position:relative;z-index:10;
+    width:512px;max-width:100%;
+    max-height:92vh;
+    background:var(--bg);
+    border-radius:12px;
+    box-shadow:0 25px 60px -12px rgba(0,0,0,.35);
+    display:flex;flex-direction:column;
+    overflow:hidden;
+  }
+  .modal-head{padding:22px 24px 6px;position:relative}
+  .modal-head h2{font-size:20px;font-weight:600;letter-spacing:-.01em}
+  .close{
+    position:absolute;top:14px;right:14px;
+    width:32px;height:32px;border-radius:10px;
+    background:var(--red);border:none;color:#fff;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;
+  }
+  .close .icon{width:18px;height:18px}
+
+  form{display:flex;flex-direction:column;min-height:0;flex:1}
+  .body{padding:8px 24px 4px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:14px}
+
+  label.fld{display:block;font-size:14px;font-weight:500;margin-bottom:7px}
+  label.fld.sm{font-size:13px}
+  .req{color:inherit}
+
+  .input,.select,textarea.input{
+    width:100%;font-family:inherit;font-size:14px;color:var(--text);
+    background:var(--bg);border:1px solid var(--border);border-radius:10px;
+    padding:10px 12px;outline:none;
+  }
+  .input::placeholder{color:#9ca3af}
+  .input:focus,.select:focus,textarea.input:focus{border-color:var(--primary);box-shadow:0 0 0 2px rgba(22,163,74,.15)}
+  input[type=date].input{color:var(--text)}
+  input[type=date].input::-webkit-calendar-picker-indicator{filter:invert(43%) sepia(89%) saturate(500%) hue-rotate(100deg)}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+
+  /* client */
+  .btn-dashed{
+    width:100%;display:flex;align-items:center;justify-content:center;gap:8px;
+    font-family:inherit;font-size:14px;font-weight:600;
+    color:var(--primary);background:var(--bg);
+    border:1px dashed var(--primary);border-radius:10px;
+    padding:11px;cursor:pointer;
+  }
+  .btn-dashed .icon{width:16px;height:16px}
+  .client-select{
+    width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;
+    background:var(--bg);border:1px solid var(--border);border-radius:10px;
+    padding:10px 12px;cursor:pointer;font-family:inherit;font-size:14px;color:#6b7280;
+  }
+  .client-select .left{display:flex;align-items:center;gap:8px;min-width:0}
+  .client-select .icon{width:16px;height:16px;color:#6b7280}
+  .client-select .txt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+  /* custom select with chevron */
+  .sel-wrap{position:relative}
+  .sel-wrap select{appearance:none;-webkit-appearance:none;padding-right:34px;cursor:pointer;width:100%;font-family:inherit;font-size:14px;color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 34px 10px 12px}
+  .sel-wrap .chev{position:absolute;right:10px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:#6b7280;pointer-events:none}
+
+  .hint{font-size:10.5px;color:var(--muted);margin-top:5px}
+
+  /* section divider */
+  .divider-sec{padding-top:14px;border-top:1px solid var(--border)}
+  .divider-sec > .fld{margin-bottom:10px}
+  .checks{display:flex;gap:22px;flex-wrap:wrap}
+  .check{display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer}
+  .check input{width:16px;height:16px;accent-color:var(--primary);cursor:pointer}
+
+  .sec-title{font-size:14px;font-weight:500;margin-bottom:10px}
+  .venc-box{border:1px solid var(--border);border-radius:12px;padding:14px;background:#fff;min-height:96px}
+  .venc-row{display:flex;align-items:center;gap:12px}
+  .venc-row .plabel{font-size:13px;color:var(--muted);width:52px;flex:none}
+
+  textarea.input{min-height:78px;resize:vertical}
+
+  /* amber cards */
+  .amber-card{background:var(--amber-bg);border:1px solid var(--amber-bd);border-radius:12px;padding:14px 16px}
+  .amber-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .amber-head .title{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600}
+  .amber-head .title .icon{width:17px;height:17px;color:var(--amber)}
+  .btn-add{display:inline-flex;align-items:center;gap:6px;font-family:inherit;font-size:13px;font-weight:600;color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:7px 12px;cursor:pointer}
+  .btn-add .icon{width:14px;height:14px}
+  .amber-desc{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.45}
+
+  .juros-card{display:flex;align-items:flex-start;gap:10px}
+  .juros-card input[type=checkbox]{width:18px;height:18px;margin-top:1px;accent-color:var(--primary);cursor:pointer}
+  .juros-card .jt strong{display:block;font-size:14px;font-weight:600}
+  .juros-card .jt span{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+
+  /* footer */
+  .foot{display:flex;justify-content:flex-end;gap:10px;padding:14px 24px;border-top:1px solid var(--border);background:var(--bg)}
+  .btn{font-family:inherit;font-size:14px;font-weight:600;padding:10px 20px;border-radius:10px;cursor:pointer}
+  .btn-cancel{background:var(--bg);border:1px solid var(--border);color:var(--text)}
+  .btn-criar{background:var(--primary);border:1px solid var(--primary);color:#fff}
+  .btn-criar:hover{filter:brightness(1.05)}
+
+  @media(max-width:520px){.grid2{grid-template-columns:1fr 1fr;gap:10px}}
+</style>
+</head>
+<body>
+  <div class="overlay"></div>
+
+  <div class="modal" role="dialog" aria-label="Novo Empréstimo">
+    <div class="modal-head">
+      <h2>Novo Empréstimo</h2>
+      <button class="close" aria-label="Fechar">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </div>
+
+    <form onsubmit="return false">
+      <div class="body">
+
+        <!-- Cliente -->
+        <div>
+          <label class="fld">Cliente <span class="req">*</span></label>
+          <button type="button" class="btn-dashed">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+            Cadastrar novo cliente
+          </button>
+          <div class="client-select" style="margin-top:8px">
+            <span class="left">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <span class="txt">Buscar cliente por nome, telefone ou CPF...</span>
+            </span>
+            <svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px;color:#6b7280"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg>
+          </div>
+        </div>
+
+        <!-- Valor / Taxa -->
+        <div class="grid2">
+          <div>
+            <label class="fld">Valor <span class="req">*</span></label>
+            <input class="input" type="number" inputmode="decimal">
+          </div>
+          <div>
+            <label class="fld">Taxa de Juros (%) <span class="req">*</span></label>
+            <input class="input" type="number" inputmode="decimal">
+          </div>
+        </div>
+
+        <!-- Juros Aplicado / Modalidade -->
+        <div class="grid2">
+          <div>
+            <label class="fld">Juros Aplicado</label>
+            <div class="sel-wrap">
+              <select>
+                <option>Por Parcela</option>
+                <option>Sobre o Total</option>
+                <option>Juros Compostos Puros</option>
+                <option>SAC (Amort. Constante)</option>
+                <option>Parcelas Personalizadas</option>
+              </select>
+              <svg class="icon chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+            </div>
+          </div>
+          <div>
+            <label class="fld">Modalidade</label>
+            <div class="sel-wrap">
+              <select>
+                <option>Parcelado (Mensal)</option>
+                <option>Quinzenal</option>
+                <option>Semanal</option>
+              </select>
+              <svg class="icon chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Nº Parcelas / Juros Total -->
+        <div class="grid2">
+          <div>
+            <label class="fld">Nº de Parcelas <span class="req">*</span></label>
+            <input class="input" type="number" value="1">
+          </div>
+          <div>
+            <label class="fld">Juros Total (R$)</label>
+            <input class="input" type="number" placeholder="Ex: 160.00">
+          </div>
+        </div>
+
+        <!-- Valor Parcela / Total a Receber -->
+        <div class="grid2">
+          <div>
+            <label class="fld">Valor da Parcela (R$)</label>
+            <input class="input" type="number">
+          </div>
+          <div>
+            <label class="fld">Total a Receber</label>
+            <input class="input" type="text" value="R$ 0,00" readonly>
+          </div>
+        </div>
+
+        <!-- Datas -->
+        <div class="grid2">
+          <div>
+            <label class="fld">Data do Contrato</label>
+            <input class="input" type="date" value="2026-08-26">
+            <p class="hint">Quando foi fechado</p>
+          </div>
+          <div>
+            <label class="fld">1ª Parcela <span class="req">*</span></label>
+            <input class="input" type="date" value="2026-08-26">
+            <p class="hint">Quando começa a pagar</p>
+          </div>
+        </div>
+
+        <!-- Não cobra -->
+        <div class="divider-sec">
+          <label class="fld">Não cobra nos seguintes dias:</label>
+          <div class="checks">
+            <label class="check"><input type="checkbox"> Sábado</label>
+            <label class="check"><input type="checkbox"> Domingo</label>
+            <label class="check"><input type="checkbox"> Feriados</label>
+          </div>
+        </div>
+
+        <!-- Vencimento das Parcelas -->
+        <div>
+          <div class="sec-title">Vencimento das Parcelas</div>
+          <div class="venc-box">
+            <div class="venc-row">
+              <span class="plabel">Parc. 1</span>
+              <input class="input" type="date" value="2026-08-26">
+            </div>
+          </div>
+        </div>
+
+        <!-- Observações -->
+        <div>
+          <div class="sec-title">Observações</div>
+          <textarea class="input"></textarea>
+        </div>
+
+        <!-- Garantias -->
+        <div class="amber-card">
+          <div class="amber-head">
+            <span class="title">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>
+              Garantias (opcional)
+            </span>
+            <button type="button" class="btn-add">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+              Adicionar
+            </button>
+          </div>
+          <p class="amber-desc">Registre bens recebidos como garantia. Não afeta cálculos — apenas aparece no comprovante.</p>
+        </div>
+
+        <!-- Aplicar juros diários -->
+        <div class="amber-card juros-card">
+          <input type="checkbox" checked>
+          <div class="jt">
+            <strong>📈 Aplicar juros diários em caso de atraso</strong>
+            <span>Se marcado, juros serão aplicados automaticamente por dia de atraso</span>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="foot">
+        <button type="button" class="btn btn-cancel">Cancelar</button>
+        <button type="button" class="btn btn-criar">Criar</button>
+      </div>
+    </form>
+  </div>
+</body>
+</html>
