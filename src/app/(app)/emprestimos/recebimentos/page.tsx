@@ -250,38 +250,129 @@ export default function RecebimentosPage() {
     const { default: jsPDF } = await import("jspdf")
     const { default: autoTable } = await import("jspdf-autotable")
 
-    const doc = new jsPDF({ orientation: "landscape" })
-    doc.setFontSize(14)
-    doc.text("Relatório de Recebimentos", 14, 16)
-    doc.setFontSize(10)
-    doc.text(`Gerado em: ${formatDate(todayISO())}`, 14, 23)
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" })
+    const pageW = doc.internal.pageSize.getWidth()
+    const pageH = doc.internal.pageSize.getHeight()
+    const M = 8
 
-    const totAmt = paymentsInRange.reduce((s, p) => s + p.amount, 0)
-    const totPrincipal = paymentsInRange.reduce((s, p) => s + p.principal, 0)
-    const totInterest = paymentsInRange.reduce((s, p) => s + p.interest, 0)
+    const rows = paymentsInRange
+    const totalRecebido = rows.reduce((s, p) => s + p.amount, 0)
+    const principalPago = rows.reduce((s, p) => s + p.principal, 0)
+    const jurosRecebidos = rows.reduce((s, p) => s + p.pureInterest, 0)
+    const multaRecebida = rows.reduce((s, p) => s + Math.max(0, Math.round((p.amount - p.principal - p.pureInterest) * 100) / 100), 0)
+    const qtd = rows.length
 
-    autoTable(doc, {
-      startY: 28,
-      head: [["Data", "Cliente", "Valor", "Principal", "Juros", "Observações"]],
-      body: paymentsInRange.map((p) => [
-        formatDate(p.date),
-        p.clientName,
-        `R$ ${p.amount.toFixed(2).replace(".", ",")}`,
-        `R$ ${p.principal.toFixed(2).replace(".", ",")}`,
-        `R$ ${p.interest.toFixed(2).replace(".", ",")}`,
-        p.notes || "",
-      ]),
-      foot: [[
-        "Total", "",
-        `R$ ${totAmt.toFixed(2).replace(".", ",")}`,
-        `R$ ${totPrincipal.toFixed(2).replace(".", ",")}`,
-        `R$ ${totInterest.toFixed(2).replace(".", ",")}`,
-        "",
-      ]],
-      styles: { fontSize: 9 },
-      headStyles: { fillColor: [41, 128, 185] },
-      footStyles: { fillColor: [220, 220, 220], textColor: [0, 0, 0], fontStyle: "bold" },
+    const meses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
+    const periodoLabel = period === "month"
+      ? `${meses[range.start.getMonth()]} de ${range.start.getFullYear()}`
+      : `${formatDate(localDateStr(range.start))} a ${formatDate(localDateStr(range.end))}`
+
+    // Gradiente horizontal (roxo -> azul)
+    const gradient = (x: number, y: number, w: number, h: number, c1: number[], c2: number[], steps = 80) => {
+      const sw = w / steps
+      for (let i = 0; i < steps; i++) {
+        const t = i / (steps - 1)
+        doc.setFillColor(
+          Math.round(c1[0] + (c2[0] - c1[0]) * t),
+          Math.round(c1[1] + (c2[1] - c1[1]) * t),
+          Math.round(c1[2] + (c2[2] - c1[2]) * t),
+        )
+        doc.rect(x + i * sw, y, sw + 0.4, h, "F")
+      }
+    }
+
+    // ===== Header =====
+    const headH = 26
+    gradient(M, M, pageW - 2 * M, headH, [76, 29, 149], [37, 99, 235])
+    doc.setTextColor(255, 255, 255)
+    doc.setFont("helvetica", "bold"); doc.setFontSize(15)
+    doc.text("CredGestor", M + 6, M + 12)
+    doc.text("RELATÓRIO DE RECEBIMENTOS", pageW / 2, M + 11, { align: "center" })
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9.5)
+    doc.text(periodoLabel, pageW / 2, M + 18, { align: "center" })
+    doc.setFontSize(9)
+    doc.text(formatDate(todayISO()), pageW - M - 6, M + 12, { align: "right" })
+
+    // ===== Cards de resumo =====
+    const cards = [
+      { label: "TOTAL RECEBIDO", value: formatCurrency(totalRecebido), color: [22, 163, 74] },
+      { label: "JUROS RECEBIDOS", value: formatCurrency(jurosRecebidos), color: [22, 163, 74] },
+      { label: "PRINCIPAL PAGO", value: formatCurrency(principalPago), color: [147, 51, 234] },
+      { label: "MULTA RECEBIDA", value: formatCurrency(multaRecebida), color: [239, 68, 68] },
+      { label: "QTD. PAGAMENTOS", value: String(qtd), color: [249, 115, 22] },
+    ]
+    const gap = 3
+    const cardW = (pageW - 2 * M - gap * (cards.length - 1)) / cards.length
+    const cardY = M + headH + 6, cardH = 20
+    cards.forEach((c, i) => {
+      const x = M + i * (cardW + gap)
+      doc.setDrawColor(c.color[0], c.color[1], c.color[2])
+      doc.setFillColor(255, 255, 255)
+      doc.setLineWidth(0.5)
+      doc.roundedRect(x, cardY, cardW, cardH, 2.5, 2.5, "FD")
+      doc.setTextColor(120, 120, 120)
+      doc.setFont("helvetica", "bold"); doc.setFontSize(6)
+      doc.text(c.label, x + cardW / 2, cardY + 7, { align: "center" })
+      doc.setTextColor(c.color[0], c.color[1], c.color[2])
+      doc.setFontSize(9.5)
+      doc.text(c.value, x + cardW / 2, cardY + 14, { align: "center" })
     })
+
+    // ===== Barra de resumo =====
+    const sumY = cardY + cardH + 5, sumH = 9
+    doc.setFillColor(238, 242, 255)
+    doc.roundedRect(M, sumY, pageW - 2 * M, sumH, 1.5, 1.5, "F")
+    doc.setTextColor(37, 99, 235)
+    doc.setFont("helvetica", "bold"); doc.setFontSize(8.5)
+    doc.text(`PAGAMENTOS (${qtd})`, M + 4, sumY + 6)
+    doc.setTextColor(80, 80, 80)
+    doc.setFont("helvetica", "normal"); doc.setFontSize(7.5)
+    doc.text(
+      `Total: ${formatCurrency(totalRecebido)}   |   Juros: ${formatCurrency(jurosRecebidos)}   |   Principal: ${formatCurrency(principalPago)}   |   Multa: ${formatCurrency(multaRecebida)}`,
+      pageW - M - 4, sumY + 6, { align: "right" },
+    )
+
+    // ===== Tabela =====
+    autoTable(doc, {
+      startY: sumY + sumH + 4,
+      margin: { top: 14, left: M, right: M, bottom: 14 },
+      head: [["DATA", "CLIENTE", "PARCELA", "TIPO", "VALOR"]],
+      body: rows.map((p) => {
+        const parcela = p.installmentInfo ? p.installmentInfo.replace(/Parcela\s+/i, "").trim() : "-"
+        return [formatDate(p.date), p.clientName, parcela, p.type, formatCurrency(p.amount)]
+      }),
+      styles: { fontSize: 8, cellPadding: 2, textColor: [40, 40, 40], lineColor: [235, 235, 235], lineWidth: 0.1 },
+      headStyles: { fillColor: [30, 41, 59], textColor: [255, 255, 255], fontStyle: "bold", fontSize: 8 },
+      alternateRowStyles: { fillColor: [248, 249, 251] },
+      columnStyles: {
+        0: { cellWidth: 26 },
+        1: { cellWidth: "auto" },
+        2: { cellWidth: 22, halign: "center" },
+        3: { cellWidth: 26, halign: "center", fontStyle: "bold" },
+        4: { cellWidth: 30, halign: "right", fontStyle: "bold" },
+      },
+      didParseCell: (data: any) => {
+        if (data.section === "body" && data.column.index === 3) {
+          data.cell.styles.textColor = data.cell.raw === "Só Juros" ? [37, 99, 235] : [90, 90, 90]
+        }
+      },
+    })
+
+    // ===== Rodapé (todas as páginas) =====
+    const total = doc.getNumberOfPages()
+    const now = new Date()
+    const hh = String(now.getHours()).padStart(2, "0")
+    const mi = String(now.getMinutes()).padStart(2, "0")
+    for (let i = 1; i <= total; i++) {
+      doc.setPage(i)
+      const fy = pageH - 10
+      gradient(M, fy, pageW - 2 * M, 7, [76, 29, 149], [37, 99, 235])
+      doc.setTextColor(255, 255, 255)
+      doc.setFont("helvetica", "normal"); doc.setFontSize(7.5)
+      doc.text(`Emitido em ${formatDate(todayISO())} às ${hh}:${mi}`, M + 4, fy + 4.6)
+      doc.text(`${i} / ${total}`, pageW / 2, fy + 4.6, { align: "center" })
+      doc.text("CredGestor", pageW - M - 4, fy + 4.6, { align: "right" })
+    }
 
     doc.save(`recebimentos-${todayISO()}.pdf`)
   }
@@ -314,7 +405,7 @@ export default function RecebimentosPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex w-fit max-w-full items-center gap-1 bg-gray-100 dark:bg-zinc-800/60 rounded-xl p-1.5 overflow-x-auto">
+      <div className="flex w-fit max-w-full items-center gap-1 bg-[#F1F4F2] dark:bg-zinc-800/60 rounded-xl p-1.5 overflow-x-auto">
         <a href="/emprestimos" className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 transition-colors whitespace-nowrap">Empréstimos <span className="font-medium opacity-70">({allLoansCount})</span></a>
         <button type="button" onClick={() => { window.location.href = "/emprestimos" }} className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 transition-colors whitespace-nowrap"><Clock className="h-3.5 w-3.5" /> Diário <span className="font-medium opacity-70">(0)</span></button>
         <a href="/emprestimos/tabela-price" className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 transition-colors whitespace-nowrap"><Table2 className="h-3.5 w-3.5" /> Tabela Price</a>

@@ -1779,6 +1779,146 @@ export default function EmprestimosPage() {
 
   const selectClass = "flex h-10 w-full rounded-md border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 px-3 py-2 text-sm text-gray-900 dark:text-zinc-100"
 
+  // Baixa o relatório de empréstimos em PDF (mesmo modelo do relatório de recebimentos)
+  const exportLoansPdf = async () => {
+    const { default: jsPDF } = await import("jspdf")
+    const { default: autoTable } = await import("jspdf-autotable")
+
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" })
+    const pageW = doc.internal.pageSize.getWidth()
+    const pageH = doc.internal.pageSize.getHeight()
+    const M = 8
+
+    const list = filteredLoans
+    const totalEmprestado = list.reduce((s, l) => s + l.amount, 0)
+    const totalReceber = list.reduce((s, l) => s + l.totalAmount, 0)
+    const lucroPrevisto = list.reduce((s, l) => s + l.profit, 0)
+    const totalRecebido = list.reduce((s, l) => s + getPaidTotal(l), 0)
+    const qtd = list.length
+
+    const now = new Date()
+    const meses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
+    const periodoLabel = `${meses[now.getMonth()]} de ${now.getFullYear()}`
+
+    const gradient = (x: number, y: number, w: number, h: number, c1: number[], c2: number[], steps = 80) => {
+      const sw = w / steps
+      for (let i = 0; i < steps; i++) {
+        const t = i / (steps - 1)
+        doc.setFillColor(
+          Math.round(c1[0] + (c2[0] - c1[0]) * t),
+          Math.round(c1[1] + (c2[1] - c1[1]) * t),
+          Math.round(c1[2] + (c2[2] - c1[2]) * t),
+        )
+        doc.rect(x + i * sw, y, sw + 0.4, h, "F")
+      }
+    }
+
+    // Header
+    const headH = 26
+    gradient(M, M, pageW - 2 * M, headH, [76, 29, 149], [37, 99, 235])
+    doc.setTextColor(255, 255, 255)
+    doc.setFont("helvetica", "bold"); doc.setFontSize(15)
+    doc.text("CredGestor", M + 6, M + 12)
+    doc.text("RELATÓRIO DE EMPRÉSTIMOS", pageW / 2, M + 11, { align: "center" })
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9.5)
+    doc.text(periodoLabel, pageW / 2, M + 18, { align: "center" })
+    doc.setFontSize(9)
+    doc.text(formatDate(localDateStr(now)), pageW - M - 6, M + 12, { align: "right" })
+
+    // Cards
+    const cards = [
+      { label: "TOTAL EMPRESTADO", value: formatCurrency(totalEmprestado), color: [37, 99, 235] },
+      { label: "TOTAL A RECEBER", value: formatCurrency(totalReceber), color: [22, 163, 74] },
+      { label: "LUCRO PREVISTO", value: formatCurrency(lucroPrevisto), color: [147, 51, 234] },
+      { label: "TOTAL RECEBIDO", value: formatCurrency(totalRecebido), color: [16, 185, 129] },
+      { label: "QTD. EMPRÉSTIMOS", value: String(qtd), color: [249, 115, 22] },
+    ]
+    const gap = 3
+    const cardW = (pageW - 2 * M - gap * (cards.length - 1)) / cards.length
+    const cardY = M + headH + 6, cardH = 20
+    cards.forEach((c, i) => {
+      const x = M + i * (cardW + gap)
+      doc.setDrawColor(c.color[0], c.color[1], c.color[2])
+      doc.setFillColor(255, 255, 255)
+      doc.setLineWidth(0.5)
+      doc.roundedRect(x, cardY, cardW, cardH, 2.5, 2.5, "FD")
+      doc.setTextColor(120, 120, 120)
+      doc.setFont("helvetica", "bold"); doc.setFontSize(5.8)
+      doc.text(c.label, x + cardW / 2, cardY + 7, { align: "center" })
+      doc.setTextColor(c.color[0], c.color[1], c.color[2])
+      doc.setFontSize(9)
+      doc.text(c.value, x + cardW / 2, cardY + 14, { align: "center" })
+    })
+
+    // Barra de resumo
+    const sumY = cardY + cardH + 5, sumH = 9
+    doc.setFillColor(238, 242, 255)
+    doc.roundedRect(M, sumY, pageW - 2 * M, sumH, 1.5, 1.5, "F")
+    doc.setTextColor(37, 99, 235)
+    doc.setFont("helvetica", "bold"); doc.setFontSize(8.5)
+    doc.text(`EMPRÉSTIMOS (${qtd})`, M + 4, sumY + 6)
+    doc.setTextColor(80, 80, 80)
+    doc.setFont("helvetica", "normal"); doc.setFontSize(7.5)
+    doc.text(
+      `Emprestado: ${formatCurrency(totalEmprestado)}   |   A Receber: ${formatCurrency(totalReceber)}   |   Lucro: ${formatCurrency(lucroPrevisto)}   |   Recebido: ${formatCurrency(totalRecebido)}`,
+      pageW - M - 4, sumY + 6, { align: "right" },
+    )
+
+    // Tabela
+    autoTable(doc, {
+      startY: sumY + sumH + 4,
+      margin: { top: 14, left: M, right: M, bottom: 14 },
+      head: [["DATA", "CLIENTE", "PARCELAS", "STATUS", "VALOR"]],
+      body: list.map((l) => {
+        const paid = l.installments.filter((i: any) => i.status === "PAID").length
+        return [
+          formatDate(l.contractDate || l.createdAt),
+          l.client.name,
+          `${paid}/${l.installmentCount}`,
+          getLoanStatusInfo(l).label,
+          formatCurrency(l.amount),
+        ]
+      }),
+      styles: { fontSize: 8, cellPadding: 2, textColor: [40, 40, 40], lineColor: [235, 235, 235], lineWidth: 0.1 },
+      headStyles: { fillColor: [30, 41, 59], textColor: [255, 255, 255], fontStyle: "bold", fontSize: 8 },
+      alternateRowStyles: { fillColor: [248, 249, 251] },
+      columnStyles: {
+        0: { cellWidth: 26 },
+        1: { cellWidth: "auto" },
+        2: { cellWidth: 24, halign: "center" },
+        3: { cellWidth: 28, halign: "center", fontStyle: "bold" },
+        4: { cellWidth: 30, halign: "right", fontStyle: "bold" },
+      },
+      didParseCell: (data: any) => {
+        if (data.section === "body" && data.column.index === 3) {
+          const label = data.cell.raw
+          data.cell.styles.textColor =
+            (label === "Atrasado" || label === "Inadimplente") ? [239, 68, 68]
+              : label === "Quitado" ? [37, 99, 235]
+                : (label === "Só Juros" || label === "Pago no Mês") ? [147, 51, 234]
+                  : [22, 163, 74]
+        }
+      },
+    })
+
+    // Rodapé
+    const total = doc.getNumberOfPages()
+    const hh = String(now.getHours()).padStart(2, "0")
+    const mi = String(now.getMinutes()).padStart(2, "0")
+    for (let i = 1; i <= total; i++) {
+      doc.setPage(i)
+      const fy = pageH - 10
+      gradient(M, fy, pageW - 2 * M, 7, [76, 29, 149], [37, 99, 235])
+      doc.setTextColor(255, 255, 255)
+      doc.setFont("helvetica", "normal"); doc.setFontSize(7.5)
+      doc.text(`Emitido em ${formatDate(localDateStr(now))} às ${hh}:${mi}`, M + 4, fy + 4.6)
+      doc.text(`${i} / ${total}`, pageW / 2, fy + 4.6, { align: "center" })
+      doc.text("CredGestor", pageW - M - 4, fy + 4.6, { align: "right" })
+    }
+
+    doc.save(`emprestimos-${localDateStr(now)}.pdf`)
+  }
+
   type LoanFilterValue = typeof loanFilter
   const chipTone = (color: string, isActive: boolean) => {
     switch (color) {
@@ -1885,7 +2025,7 @@ export default function EmprestimosPage() {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => router.push("/emprestimos/relatorio")}
+            onClick={exportLoansPdf}
             className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
           >
             <Download className="h-4 w-4" />
