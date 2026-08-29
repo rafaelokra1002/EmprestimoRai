@@ -128,6 +128,12 @@ export default function EmprestimosPage() {
   const [whatsappSending, setWhatsappSending] = useState(false)
   const [whatsappSent, setWhatsappSent] = useState(false)
 
+  // WhatsApp relatório state (fluxo: escolha → prévia)
+  const [reportChooser, setReportChooser] = useState(false)
+  const [reportDialog, setReportDialog] = useState(false)
+  const [reportLoan, setReportLoan] = useState<Loan | null>(null)
+  const [reportMessage, setReportMessage] = useState("")
+
   // WhatsApp bulk send state
   const [bulkSendingOverdue, setBulkSendingOverdue] = useState(false)
   const [bulkSendingDueToday, setBulkSendingDueToday] = useState(false)
@@ -1254,6 +1260,65 @@ export default function EmprestimosPage() {
     } catch (error: any) {
       showToast(error?.message || "Erro ao enviar mensagem", "error")
     }
+  }
+
+  // ── Fluxo de RELATÓRIO pelo WhatsApp (escolha → prévia) ────────────────────
+  const openReportChooser = (loan: Loan) => {
+    const freshLoan = loans.find(l => l.id === loan.id) || loan
+    setReportLoan(freshLoan)
+
+    let msg = buildLoanReportMessage(freshLoan as any, freshLoan.client.name, getRemaining(freshLoan))
+
+    // Mesmos valores exibidos no card do cliente (para bater 100%):
+    // Juros = loan.profit; Multas = encargos das parcelas vencidas; Restante = getRemaining (já inclui atraso)
+    const multaAtraso = freshLoan.installments
+      .filter((i: any) => i.status !== "PAID" && new Date(i.dueDate) < new Date())
+      .reduce((s: number, i: any) => s + getInstallmentOverdueCharge(freshLoan, i), 0)
+
+    const extra: string[] = [`💵 Juros: ${formatCurrency(freshLoan.profit)}`]
+    if (multaAtraso > 0) extra.push(`⚠️ Multa por atraso: ${formatCurrency(multaAtraso)}`)
+    extra.push(`📌 Restante a receber: ${formatCurrency(getRemaining(freshLoan))}`)
+    msg += `\n\n${extra.join("\n")}`
+
+    setReportMessage(msg)
+    setReportChooser(true)
+  }
+
+  const openReportPreview = () => {
+    setReportChooser(false)
+    setReportDialog(true)
+  }
+
+  // "Abrir no meu WhatsApp": abre o wa.me do aparelho com o relatório preenchido
+  const openReportManual = () => {
+    if (!reportLoan) return
+    const phone = (getClientPhone(reportLoan) || "").replace(/\D/g, "")
+    if (!phone) { showToast("Cliente sem telefone cadastrado", "error"); return }
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(reportMessage)}`, "_blank")
+    setReportChooser(false)
+    setReportDialog(false)
+  }
+
+  // Gera o PDF (print) do relatório a partir da mensagem editada
+  const downloadReportPDF = () => {
+    if (!reportLoan) return
+    const bodyLines = reportMessage
+      .split("\n")
+      .map(l => l.replace(/\*/g, "").trim())
+      .filter(l => l.length > 0)
+      .map(l => `<p>${l.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>`)
+      .join("")
+    const printContent = `<html><head><title>Relatório de Pagamento</title>
+      <style>body{font-family:sans-serif;padding:40px;max-width:460px;margin:auto;color:#111827}
+      h2{color:#059669;text-align:center;margin-bottom:4px}
+      p.sub{text-align:center;color:#6b7280;font-size:13px;margin-top:0}
+      .box{border:1px solid #e5e7eb;border-radius:10px;padding:20px 22px;margin-top:16px}
+      .box p{margin:6px 0;font-size:14px;line-height:1.5}</style></head>
+      <body><h2>📋 Relatório de Pagamento</h2><p class="sub">${reportLoan.client.name}</p>
+      <div class="box">${bodyLines}</div>
+      </body></html>`
+    const w = window.open("", "_blank")
+    if (w) { w.document.write(printContent); w.document.close(); w.print() }
   }
 
   const getOverdueLoans = () => {
@@ -2798,7 +2863,7 @@ export default function EmprestimosPage() {
                           </Button>
                       </div>
                     ) : null}
-                    <div className="grid w-full min-w-0 gap-1.5 pb-1 grid-cols-[minmax(0,1.6fr)_minmax(0,2.4fr)_repeat(5,minmax(0,1fr))]">
+                    <div className="grid w-full min-w-0 gap-1.5 pb-1 grid-cols-[minmax(0,1.6fr)_minmax(0,2.4fr)_repeat(4,minmax(0,1fr))]">
                       <button onClick={() => openPaymentDialog(loan)} className="group relative inline-flex min-w-0 h-10 items-center justify-center rounded-md px-2 text-xs border border-primary/15 bg-primary/10 font-medium text-primary transition-colors hover:bg-primary/15 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20">
                         <Receipt className="mr-1 h-4 w-4 shrink-0" /> <span className="whitespace-nowrap">Pagar</span>
                         <span className={tooltipClsLeft}>Registre pagamentos: parcela, valor parcial ou quitação total</span>
@@ -2808,10 +2873,7 @@ export default function EmprestimosPage() {
                         <span className={tooltipClsLeft}>Pague apenas os juros e renove o prazo (+30 dias)</span>
                       </button>
                       <button
-                        onClick={() => {
-                          const text = buildLoanReportMessage(loan, loan.client.name, getRemaining(loan))
-                          sendWhatsappDirect(getClientPhone(loan) || "", text)
-                        }}
+                        onClick={() => openReportChooser(loan)}
                         className="group relative flex min-w-0 w-full items-center justify-center rounded-xl bg-green-50 p-2 text-green-700 transition-colors hover:bg-green-100 dark:bg-green-950/30 dark:text-green-400 dark:hover:bg-green-900/40"
                       >
                         <Send className="h-4 w-4" />
@@ -2828,10 +2890,6 @@ export default function EmprestimosPage() {
                       <button className="group relative flex min-w-0 w-full items-center justify-center rounded-xl bg-amber-50 p-2 text-amber-500 transition-colors hover:bg-amber-100 dark:bg-amber-950/30 dark:text-amber-400 dark:hover:bg-amber-900/40" onClick={() => openRenegotiateDialog(loan)}>
                         <RotateCcw className="h-4 w-4" />
                         <span className={tooltipClsRight}>Renegociar empréstimo / atraso</span>
-                      </button>
-                      <button className="group relative flex min-w-0 w-full items-center justify-center rounded-xl bg-red-50 p-2 text-red-500 transition-colors hover:bg-red-100 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-900/40" onClick={() => handleDelete(loan.id)}>
-                        <Trash2 className="h-4 w-4" />
-                        <span className={tooltipClsRight}>Excluir empréstimo</span>
                       </button>
                     </div>
                   </div>
@@ -5245,6 +5303,130 @@ export default function EmprestimosPage() {
                 onClick={openWhatsappManual}
               >
                 <MessageCircle className="h-4 w-4" /> Abrir no WhatsApp
+              </Button>
+            </div>
+          </div>
+        )}
+      </Dialog>
+
+      {/* Card menor: Enviar relatório (escolha) */}
+      <Dialog
+        open={reportChooser}
+        onClose={() => setReportChooser(false)}
+        title="Enviar relatório"
+        className="max-w-md"
+      >
+        <div className="space-y-3">
+          <p className="text-sm text-gray-500 dark:text-zinc-400">Você verá uma prévia da mensagem antes de qualquer envio.</p>
+
+          {/* Visualizar relatório */}
+          <div className="rounded-xl border border-green-600/40 dark:border-green-700/50 bg-green-500/5 p-3">
+            <div className="flex items-start gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-green-500/15 text-green-800 dark:text-green-400"><Eye className="h-5 w-5" /></span>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Visualizar relatório</p>
+                <p className="text-xs text-gray-500 dark:text-zinc-400">Veja a mensagem completa antes do envio, sem abrir o WhatsApp e sem gerar um novo envio.</p>
+              </div>
+            </div>
+            <button onClick={openReportPreview} className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-lg border border-green-600 py-2 text-sm font-semibold text-green-800 dark:text-green-400 hover:bg-green-500/10 transition">
+              <Eye className="h-4 w-4" /> Ver relatório
+            </button>
+          </div>
+
+          {/* Enviar pelo CobraFácil */}
+          <div className="rounded-xl border border-blue-500/40 dark:border-blue-800 bg-blue-500/5 p-3">
+            <div className="flex items-start gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-500/15 text-blue-600"><Send className="h-5 w-5" /></span>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Enviar pelo CobraFácil</p>
+                <p className="text-xs text-gray-500 dark:text-zinc-400">Mensagem enviada automaticamente pela plataforma.</p>
+              </div>
+            </div>
+            <button onClick={openReportPreview} className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 py-2 text-sm font-semibold text-white transition">
+              <Send className="h-4 w-4" /> Enviar relatório de hoje
+            </button>
+          </div>
+
+          {/* Abrir no meu WhatsApp */}
+          <div className="rounded-xl border border-purple-500/40 dark:border-purple-800 bg-purple-500/5 p-3">
+            <div className="flex items-start gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-purple-500/15 text-purple-600"><MessageCircle className="h-5 w-5" /></span>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Abrir no meu WhatsApp</p>
+                <p className="text-xs text-gray-500 dark:text-zinc-400">Envio manual pelo seu aparelho.</p>
+              </div>
+            </div>
+            <button onClick={openReportManual} className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-lg border border-purple-500 py-2 text-sm font-semibold text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/20 transition">
+              <ExternalLink className="h-4 w-4" /> Abrir WhatsApp — relatório de hoje
+            </button>
+          </div>
+
+          <p className="text-xs text-gray-400 dark:text-zinc-500 pt-1">Todas as opções permitem que você edite a mensagem antes de enviar.</p>
+        </div>
+      </Dialog>
+
+      {/* Card: Visualizar relatório (mesma largura do card de escolha) */}
+      <Dialog
+        open={reportDialog}
+        onClose={() => setReportDialog(false)}
+        className="w-full max-w-md"
+      >
+        {reportLoan && (
+          <div className="space-y-3">
+            {/* Header custom */}
+            <div className="flex items-center justify-between">
+              <h2 className="flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-zinc-100">
+                <Eye className="h-5 w-5 text-[#16a249]" /> Visualizar relatório
+              </h2>
+              <button
+                onClick={() => setReportDialog(false)}
+                className="flex h-7 w-7 items-center justify-center rounded-md bg-red-500 text-white transition hover:bg-red-600"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Cliente */}
+            <p className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-zinc-400">
+              <User className="h-4 w-4" /> Cliente: <span className="font-semibold text-gray-900 dark:text-zinc-100">{reportLoan.client.name}</span>
+            </p>
+
+            {/* Modo da mensagem */}
+            <div className="border-b border-gray-100 dark:border-zinc-800 pb-3">
+              <div className="flex rounded-xl bg-gray-100 dark:bg-zinc-800/60 p-1">
+                <span className="inline-flex items-center gap-1.5 rounded-lg border border-green-600 bg-white dark:bg-zinc-900 px-5 py-1.5 text-sm font-semibold text-green-800 dark:text-green-400 shadow-sm">
+                  <FileText className="h-4 w-4" /> Relatório
+                </span>
+              </div>
+            </div>
+
+            {/* Mensagem (editável) */}
+            <Textarea
+              value={reportMessage}
+              onChange={(e) => setReportMessage(e.target.value)}
+              className="h-[280px] resize-none rounded-xl border-l-[3px] border-l-[#16a249] text-sm leading-relaxed"
+              placeholder="Digite a mensagem..."
+            />
+
+            {/* Nota */}
+            <p className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-zinc-500">
+              <span>💡</span> Você pode editar a mensagem antes de enviar
+            </p>
+
+            {/* Ações */}
+            <div className="grid grid-cols-1 gap-2 border-t border-gray-100 dark:border-zinc-800 pt-3 sm:grid-cols-2">
+              <Button
+                variant="outline"
+                className="gap-2 border-amber-400 text-amber-600 hover:bg-amber-50 dark:border-amber-600 dark:text-amber-400 dark:hover:bg-amber-950/20"
+                onClick={() => { navigator.clipboard.writeText(reportMessage).then(() => showToast("Texto copiado!", "success")).catch(() => {}) }}
+              >
+                <Copy className="h-4 w-4" /> Copiar texto
+              </Button>
+              <Button
+                className="gap-2 bg-[#16a249] hover:bg-[#128a3d] text-white"
+                onClick={downloadReportPDF}
+              >
+                <Download className="h-4 w-4" /> Baixar PDF
               </Button>
             </div>
           </div>
