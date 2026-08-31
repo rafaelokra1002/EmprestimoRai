@@ -1057,77 +1057,62 @@ export default function ClienteEmprestimosPage() {
                   </div>
                 </div>
 
-                {/* Info row */}
-                {isDueToday && nextInst ? (
-                  <div className="mx-4 mt-3 rounded-2xl border border-orange-300 bg-orange-50/90 px-4 py-3 dark:border-orange-800 dark:bg-orange-950/20">
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <div className="flex items-center gap-2 text-orange-700 dark:text-orange-300">
-                          <Clock className="h-4 w-4" />
-                          <span className="text-base font-semibold">Vence Hoje!</span>
-                        </div>
-                        <p className="mt-1 text-xs text-orange-600 dark:text-orange-300/90">Parcela {nextInst.number}/{loan.installmentCount}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xl font-bold tabular-nums text-orange-700 dark:text-orange-300">{formatCurrency(nextInst.amount)}</p>
-                        <p className="mt-1 text-xs text-orange-600 dark:text-orange-300/90">Vencimento: {formatDate(nextInst.dueDate)}</p>
-                      </div>
-                    </div>
-                    <p className="mt-3 text-xs text-orange-500 dark:text-orange-300/80">Lembre o cliente para evitar atrasos</p>
-                    <Button
-                      size="sm"
-                      onClick={() => openWhatsappDialog(loan)}
-                      className="w-full mt-3 h-9 text-sm bg-orange-500 hover:bg-orange-600 text-white transition-colors"
-                    >
-                      <MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Cobrar hoje
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="mx-4 mt-3 flex items-center justify-between text-xs text-gray-500 dark:text-zinc-400">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <Calendar className="h-3.5 w-3.5" />
-                      {editingDateLoanId === loan.id && nextInst ? (
-                        <>
-                          <input
-                            type="date"
-                            value={dateDraft}
-                            onChange={(e) => setDateDraft(e.target.value)}
-                            className="rounded border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-1.5 py-0.5 text-xs text-gray-700 dark:text-zinc-200"
-                          />
-                          <button onClick={() => saveInstallmentDate(loan, nextInst.id)} disabled={savingDate} className="text-primary hover:opacity-80 disabled:opacity-50" title="Salvar">
-                            <Check className="h-3.5 w-3.5" />
+                {/* Info row — vencimento e pago (sempre visível) */}
+                <div className="mx-4 mt-3 flex items-center justify-between text-sm text-gray-500 dark:text-zinc-400">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <Calendar className="h-3.5 w-3.5" />
+                    {editingDateLoanId === loan.id && nextInst ? (
+                      <>
+                        <input
+                          type="date"
+                          value={dateDraft}
+                          onChange={(e) => setDateDraft(e.target.value)}
+                          className="rounded border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-1.5 py-0.5 text-xs text-gray-700 dark:text-zinc-200"
+                        />
+                        <button onClick={() => saveInstallmentDate(loan, nextInst.id)} disabled={savingDate} className="text-primary hover:opacity-80 disabled:opacity-50" title="Salvar">
+                          <Check className="h-3.5 w-3.5" />
+                        </button>
+                        <button onClick={() => setEditingDateLoanId(null)} className="text-gray-400 hover:opacity-80" title="Cancelar">
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        {nextInst ? (
+                          <button
+                            type="button"
+                            onClick={() => { setEditingDateLoanId(loan.id); setDateDraft(toDateStr(new Date(nextInst.dueDate))) }}
+                            className="transition-colors hover:text-primary hover:underline"
+                          >
+                            Venc: {formatDate(nextInst.dueDate)}
                           </button>
-                          <button onClick={() => setEditingDateLoanId(null)} className="text-gray-400 hover:opacity-80" title="Cancelar">
-                            <X className="h-3.5 w-3.5" />
+                        ) : (
+                          <span>Venc: —</span>
+                        )}
+                        {(loan.installmentCount > 1 || loan.interestType === "CUSTOM") && nextInst && (
+                          <>
+                            <span className="text-gray-300 dark:text-zinc-600">•</span>
+                            <span>Parcela {nextInst.number}/{loan.installmentCount}</span>
+                          </>
+                        )}
+                        {nextInst && (
+                          <button
+                            onClick={() => { setEditingDateLoanId(loan.id); setDateDraft(toDateStr(new Date(nextInst.dueDate))) }}
+                            className="text-gray-400 hover:text-primary transition-colors"
+                            title="Alterar data de vencimento"
+                          >
+                            <Pencil className="h-3 w-3" />
                           </button>
-                        </>
-                      ) : (
-                        <>
-                          <span>Venc: {nextInst ? formatDate(nextInst.dueDate) : "—"}</span>
-                          {(loan.installmentCount > 1 || loan.interestType === "CUSTOM") && nextInst && (
-                            <>
-                              <span className="text-gray-300 dark:text-zinc-600">•</span>
-                              <span>Parcela {nextInst.number}/{loan.installmentCount}</span>
-                            </>
-                          )}
-                          {nextInst && (
-                            <button
-                              onClick={() => { setEditingDateLoanId(loan.id); setDateDraft(toDateStr(new Date(nextInst.dueDate))) }}
-                              className="text-gray-400 hover:text-primary transition-colors"
-                              title="Alterar data de vencimento"
-                            >
-                              <Pencil className="h-3 w-3" />
-                            </button>
-                          )}
-                        </>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <DollarSign className="h-3.5 w-3.5 text-primary" />
-                      <span className="font-medium text-gray-700 dark:text-zinc-300">Pago: {formatCurrency(paid)}</span>
-                    </div>
+                        )}
+                      </>
+                    )}
                   </div>
-                )}
+                  <div className="flex items-center gap-1.5">
+                    <span className="inline-flex items-center gap-1.5 rounded-md bg-primary/10 dark:bg-primary/20 px-2 py-0.5 font-medium text-primary">
+                      <DollarSign className="h-3.5 w-3.5" /> Pago: {formatCurrency(paid)}
+                    </span>
+                  </div>
+                </div>
 
                 {/* Juros por parcela */}
                 {(() => {
@@ -1160,6 +1145,33 @@ export default function ClienteEmprestimosPage() {
                     </div>
                   )
                 })()}
+
+                {/* Vence Hoje — lembrete + cobrar (abaixo do Só Juros) */}
+                {isDueToday && nextInst && (
+                  <div className="mx-4 mt-3 rounded-2xl border border-orange-300 bg-orange-50/90 px-4 py-3 dark:border-orange-800 dark:bg-orange-950/20">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <div className="flex items-center gap-2 text-orange-700 dark:text-orange-300">
+                          <Clock className="h-4 w-4" />
+                          <span className="text-base font-semibold">Vence Hoje!</span>
+                        </div>
+                        <p className="mt-1 text-xs text-orange-600 dark:text-orange-300/90">Parcela {nextInst.number}/{loan.installmentCount}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xl font-bold tabular-nums text-orange-700 dark:text-orange-300">{formatCurrency(nextInst.amount)}</p>
+                        <p className="mt-1 text-xs text-orange-600 dark:text-orange-300/90">Vencimento: {formatDate(nextInst.dueDate)}</p>
+                      </div>
+                    </div>
+                    <p className="mt-3 text-xs text-orange-500 dark:text-orange-300/80">Lembre o cliente para evitar atrasos</p>
+                    <Button
+                      size="sm"
+                      onClick={() => openWhatsappDialog(loan)}
+                      className="w-full mt-3 h-9 text-sm bg-orange-500 hover:bg-orange-600 text-white transition-colors"
+                    >
+                      <MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Cobrar hoje
+                    </Button>
+                  </div>
+                )}
 
                 {/* Parcelas em atraso - Breakdown */}
                 {(() => {
@@ -1215,6 +1227,19 @@ export default function ClienteEmprestimosPage() {
                     </div>
                   )
                 })()}
+
+                {/* Cobrar antecipado — cards sem atraso e que não vencem hoje */}
+                {!isAtrasado && !isDueToday && !isQuitado && (
+                  <div className="mx-4 mt-3">
+                    <Button
+                      size="sm"
+                      onClick={() => openWhatsappDialog(loan)}
+                      className="w-full h-10 text-sm bg-primary hover:bg-primary/90 text-white transition-colors"
+                    >
+                      <MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Cobrar antecipado
+                    </Button>
+                  </div>
+                )}
 
                 {/* Ações */}
                 <div className="px-4 pt-3 pb-4 mt-2 border-t border-gray-100 dark:border-zinc-800 space-y-3">

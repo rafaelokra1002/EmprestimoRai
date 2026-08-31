@@ -2045,7 +2045,7 @@ export default function EmprestimosPage() {
           setTagFilterOpen((current) => !current)
           setFilterOpen(false)
         }}
-        className="inline-flex items-center gap-2 rounded-2xl border border-orange-500 bg-white px-4 py-2 text-sm font-semibold text-orange-500 transition hover:bg-orange-50 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+        className="inline-flex items-center gap-2 rounded-[10px] border border-orange-500 bg-white px-3 py-1.5 text-sm font-medium text-orange-500 transition hover:bg-orange-50 dark:border-[#f97316] dark:bg-[#121614] dark:text-[#ea580c] dark:hover:bg-[#1a211d]"
       >
         <Tag className="h-4 w-4" />
         {selectedTag ?? "Etiqueta"}
@@ -2172,12 +2172,12 @@ export default function EmprestimosPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex w-fit max-w-full items-center gap-1 bg-white dark:bg-zinc-900 rounded-xl p-1 border border-gray-200 dark:border-zinc-800 overflow-x-auto">
+      <div className="flex w-fit max-w-full items-center gap-1 bg-white dark:bg-[#222A26] rounded-xl p-1 border border-gray-200 dark:border-zinc-800 overflow-x-auto">
         <button
           type="button"
           onClick={() => setActiveTab("all")}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
-            activeTab === "all" ? "bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-zinc-100" : "text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 dark:text-zinc-200"
+          className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
+            activeTab === "all" ? "bg-gray-100 dark:bg-[#121614] text-gray-900 dark:text-zinc-100" : "text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200"
           }`}
         >
           Empréstimos ({tabCounts.all})
@@ -2185,22 +2185,22 @@ export default function EmprestimosPage() {
         <button
           type="button"
           onClick={() => showToast("Empréstimo diário em breve", "info")}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 transition-colors whitespace-nowrap"
+          className="flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 transition-colors whitespace-nowrap"
         >
           <Clock className="h-3.5 w-3.5" /> Diário (0)
         </button>
         <a
           href="/emprestimos/tabela-price"
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
-            activeTab === "price" ? "bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-zinc-100" : "text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 dark:text-zinc-200"
+          className={`flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
+            activeTab === "price" ? "bg-gray-100 dark:bg-[#121614] text-gray-900 dark:text-zinc-100" : "text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200"
           }`}
         >
           <FileText className="h-3.5 w-3.5" /> Tabela Price
         </a>
         <a
           href="/emprestimos/recebimentos"
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
-            activeTab === "received" ? "bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-zinc-100" : "text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 dark:text-zinc-200"
+          className={`flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
+            activeTab === "received" ? "bg-gray-100 dark:bg-[#121614] text-gray-900 dark:text-zinc-100" : "text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200"
           }`}
         >
           <DollarSign className="h-3.5 w-3.5" /> Recebimentos
@@ -2208,7 +2208,7 @@ export default function EmprestimosPage() {
         <button
           type="button"
           onClick={() => showToast("Lixeira em breve", "info")}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 transition-colors whitespace-nowrap"
+          className="flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 transition-colors whitespace-nowrap"
         >
           <Trash2 className="h-3.5 w-3.5" /> Lixeira
         </button>
@@ -2218,7 +2218,7 @@ export default function EmprestimosPage() {
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-zinc-500" />
-          <Input placeholder="Buscar cliente ou etiqueta..." className="pl-10" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <Input placeholder="Buscar cliente ou etiqueta..." className="pl-10 dark:bg-[#161A18]" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center lg:flex-none">
           <button
@@ -2243,7 +2243,7 @@ export default function EmprestimosPage() {
                 setFilterOpen((current) => !current)
                 setTagFilterOpen(false)
               }}
-              className="inline-flex items-center gap-2 rounded-2xl border border-primary/50 bg-white px-4 py-2 text-sm font-semibold text-primary transition hover:bg-primary/10 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+              className="inline-flex items-center gap-2 rounded-[10px] border border-primary/50 bg-white px-3 py-1.5 text-sm font-medium text-primary transition hover:bg-primary/10 dark:border-[#22c35d] dark:bg-[#121614] dark:text-[#22c35d] dark:hover:bg-[#1a211d]"
             >
               <Filter className="h-4 w-4" />
               Filtros
@@ -2668,52 +2668,44 @@ export default function EmprestimosPage() {
                     </div>
                   )}
 
-                  {/* Info row */}
-                  {isDueToday && nextInst ? (
-                    <div className="mx-4 mt-3 rounded-2xl border-2 border-orange-300 bg-orange-50 px-4 py-3">
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <div className="flex items-center gap-2 text-orange-700">
-                            <Bell className="h-4 w-4" />
-                            <span className="text-base font-semibold">Vence Hoje!</span>
-                          </div>
-                          <p className="mt-1 text-xs text-orange-600">Parcela {nextInst.number}/{loan.installmentCount}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-xl font-bold tabular-nums text-orange-700">{formatCurrency(nextInst.amount)}</p>
-                          <p className="mt-1 text-xs text-orange-600">Vencimento: {formatDate(nextInst.dueDate)}</p>
-                        </div>
-                      </div>
-                      <p className="mt-3 text-xs text-orange-500">Lembre o cliente para evitar atrasos</p>
+                  {/* Info row — vencimento e pago (sempre visível) */}
+                  <div className={`mx-4 mt-3 flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between ${isDarkCard ? "text-white/70" : "text-gray-500 dark:text-zinc-400"}`}>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <Calendar className="h-3.5 w-3.5" />
+                      {nextInst ? (
+                        <button
+                          type="button"
+                          onClick={(e) => openEditDue(loan, nextInst, e)}
+                          className="transition-colors hover:text-primary hover:underline"
+                        >
+                          Venc: {formatDate(nextInst.dueDate)}
+                        </button>
+                      ) : (
+                        <span>Venc: —</span>
+                      )}
+                      {(loan.installmentCount > 1 || loan.interestType === "CUSTOM") && nextInst && (
+                        <>
+                          <span className="text-gray-300 dark:text-zinc-600">•</span>
+                          <span>Parcela {nextInst.number}/{loan.installmentCount}</span>
+                        </>
+                      )}
+                      {nextInst && (
+                        <button
+                          type="button"
+                          onClick={(e) => openEditDue(loan, nextInst, e)}
+                          title="Editar vencimento"
+                          className="inline-flex items-center"
+                        >
+                          <Pencil className="h-3 w-3 text-gray-400 hover:text-gray-600 dark:text-zinc-500 dark:hover:text-zinc-300 transition-colors" />
+                        </button>
+                      )}
                     </div>
-                  ) : (
-                    <div className={`mx-4 mt-3 flex flex-col gap-2 text-xs sm:flex-row sm:items-center sm:justify-between ${isDarkCard ? "text-white/70" : "text-gray-500 dark:text-zinc-400"}`}>
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <Calendar className="h-3.5 w-3.5" />
-                        <span>Venc: {nextInst ? formatDate(nextInst.dueDate) : "—"}</span>
-                        {(loan.installmentCount > 1 || loan.interestType === "CUSTOM") && nextInst && (
-                          <>
-                            <span className="text-gray-300 dark:text-zinc-600">•</span>
-                            <span>Parcela {nextInst.number}/{loan.installmentCount}</span>
-                          </>
-                        )}
-                        {nextInst && (
-                          <button
-                            type="button"
-                            onClick={(e) => openEditDue(loan, nextInst, e)}
-                            title="Editar vencimento"
-                            className="inline-flex items-center"
-                          >
-                            <Pencil className="h-3 w-3 text-gray-400 hover:text-gray-600 dark:text-zinc-500 dark:hover:text-zinc-300 transition-colors" />
-                          </button>
-                        )}
-                      </div>
-                      <div className="flex flex-wrap items-center gap-1.5 sm:justify-end">
-                        <DollarSign className="h-3.5 w-3.5 text-primary" />
-                        <span className={`font-medium ${isDarkCard ? "text-white" : "text-gray-700 dark:text-zinc-300"}`}>Pago: {formatCurrency(paid)}</span>
-                      </div>
+                    <div className="flex flex-wrap items-center gap-1.5 sm:justify-end">
+                      <span className="inline-flex items-center gap-1.5 rounded-md bg-primary/10 dark:bg-primary/20 px-2 py-0.5 font-medium text-primary">
+                        <DollarSign className="h-3.5 w-3.5" /> Pago: {formatCurrency(paid)}
+                      </span>
                     </div>
-                  )}
+                  </div>
 
                   {/* Juros por parcela */}
                   {(() => {
@@ -2753,6 +2745,33 @@ export default function EmprestimosPage() {
                       </div>
                     )
                   })()}
+
+                  {/* Vence Hoje — lembrete + cobrar (abaixo do Só Juros) */}
+                  {isDueToday && nextInst && (
+                    <div className="mx-4 mt-3 rounded-2xl border-2 border-orange-300 bg-orange-50 px-4 py-3 dark:border-orange-800 dark:bg-orange-950/20">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <div className="flex items-center gap-2 text-orange-700 dark:text-orange-300">
+                            <Bell className="h-4 w-4" />
+                            <span className="text-base font-semibold">Vence Hoje!</span>
+                          </div>
+                          <p className="mt-1 text-xs text-orange-600 dark:text-orange-300/90">Parcela {nextInst.number}/{loan.installmentCount}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xl font-bold tabular-nums text-orange-700 dark:text-orange-300">{formatCurrency(nextInst.amount)}</p>
+                          <p className="mt-1 text-xs text-orange-600 dark:text-orange-300/90">Vencimento: {formatDate(nextInst.dueDate)}</p>
+                        </div>
+                      </div>
+                      <p className="mt-3 text-xs text-orange-500 dark:text-orange-300/80">Lembre o cliente para evitar atrasos</p>
+                      <Button
+                        size="sm"
+                        onClick={() => openWhatsappDialog(loan)}
+                        className="w-full mt-3 h-9 text-sm bg-orange-500 hover:bg-orange-600 text-white transition-colors"
+                      >
+                        <MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Cobrar hoje
+                      </Button>
+                    </div>
+                  )}
 
                   {/* Parcelas em atraso - Breakdown */}
                   {(() => {
@@ -2844,52 +2863,63 @@ export default function EmprestimosPage() {
                           </button>
                         </div>
                         <p className="text-[10px] text-red-600 dark:text-red-300/60 mt-2">Pague a parcela em atraso para regularizar o empréstimo</p>
+                        <Button
+                          size="sm"
+                          onClick={() => openWhatsappDialog(loan)}
+                          className="w-full h-10 mt-3 text-sm bg-red-600 hover:bg-red-700 text-white transition-colors"
+                        >
+                          <MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Cobrar atraso
+                        </Button>
                       </div>
                     )
                   })()}
 
+                  {/* Cobrar antecipado — cards sem atraso e que não vencem hoje */}
+                  {!isAtrasado && !isDueToday && !isQuitado && (
+                    <div className="mx-4 mt-3">
+                      <Button
+                        size="sm"
+                        onClick={() => openWhatsappDialog(loan)}
+                        className="w-full h-10 text-sm bg-primary hover:bg-primary/90 text-white transition-colors"
+                      >
+                        <MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Cobrar antecipado
+                      </Button>
+                    </div>
+                  )}
+
                   {/* Ações */}
                   <div className="px-4 pt-3 pb-4 mt-2 border-t border-gray-100 dark:border-zinc-800 space-y-3">
-                    {(status.label === "Atrasado" || status.label === "Inadimplente") ? (
-                      <div>
-                          <Button size="sm" onClick={() => openWhatsappDialog(loan)} className="w-full h-9 text-sm bg-red-600 hover:bg-red-700 text-white transition-colors">
-                            <MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Cobrar via WhatsApp
-                          </Button>
-                      </div>
-                    ) : isDueToday ? (
-                      <div>
-                          <Button size="sm" onClick={() => openWhatsappDialog(loan)} className="w-full h-9 text-sm bg-orange-500 hover:bg-orange-600 text-white transition-colors">
-                            <MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Cobrar Hoje
-                          </Button>
-                      </div>
-                    ) : null}
-                    <div className="grid w-full min-w-0 gap-1.5 pb-1 grid-cols-[minmax(0,1.6fr)_minmax(0,2.4fr)_repeat(4,minmax(0,1fr))]">
-                      <button onClick={() => openPaymentDialog(loan)} className="group relative inline-flex min-w-0 h-10 items-center justify-center rounded-md px-2 text-xs border border-primary/15 bg-primary/10 font-medium text-primary transition-colors hover:bg-primary/15 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20">
+                    <div className="grid w-full min-w-0 gap-1.5 pb-1 grid-cols-[minmax(0,1.6fr)_minmax(0,2.4fr)_repeat(5,2.5rem)]">
+                      <button onClick={() => openPaymentDialog(loan)} className={`group relative inline-flex min-w-0 h-10 items-center justify-center rounded-md px-2 text-xs font-medium transition-colors ${isDarkCard ? "border border-black/5 bg-white text-[#15803d] hover:bg-gray-100 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20" : "border border-primary/15 bg-primary/10 text-primary hover:bg-primary/15 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20"}`}>
                         <Receipt className="mr-1 h-4 w-4 shrink-0" /> <span className="whitespace-nowrap">Pagar</span>
                         <span className={tooltipClsLeft}>Registre pagamentos: parcela, valor parcial ou quitação total</span>
                       </button>
-                      <button onClick={() => openInterestRenegotiateDialog(loan)} className="group relative inline-flex min-w-0 h-10 items-center justify-center rounded-md px-2 text-xs border border-primary/15 bg-primary/10 font-medium text-primary transition-colors hover:bg-primary/15 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20">
+                      <button onClick={() => openInterestRenegotiateDialog(loan)} className={`group relative inline-flex min-w-0 h-10 items-center justify-center rounded-md px-2 text-xs font-medium transition-colors ${isDarkCard ? "border border-black/5 bg-white text-[#15803d] hover:bg-gray-100 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20" : "border border-primary/15 bg-primary/10 text-primary hover:bg-primary/15 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20"}`}>
                         <DollarSign className="mr-1 h-4 w-4 shrink-0" /> <span className="whitespace-nowrap">Pagar Juros</span>
                         <span className={tooltipClsLeft}>Pague apenas os juros e renove o prazo (+30 dias)</span>
                       </button>
                       <button
                         onClick={() => openReportChooser(loan)}
-                        className="group relative flex min-w-0 w-full items-center justify-center rounded-xl bg-green-50 p-2 text-green-700 transition-colors hover:bg-green-100 dark:bg-green-950/30 dark:text-green-400 dark:hover:bg-green-900/40"
+                        className={`group relative flex min-w-0 w-full items-center justify-center rounded-xl h-10 transition-colors ${isDarkCard ? "bg-white text-[#16a34a] hover:bg-gray-100 dark:bg-green-900/50 dark:text-green-300 dark:hover:bg-green-900/70" : "bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-950/30 dark:text-green-400 dark:hover:bg-green-900/40"}`}
                       >
                         <Send className="h-4 w-4" />
                         <span className={tooltipCls}>Enviar relatório ao cliente pelo WhatsApp</span>
                       </button>
-                      <button className="group relative flex min-w-0 w-full items-center justify-center rounded-2xl border border-violet-100 bg-violet-50/80 p-2 text-primary shadow-sm transition-colors hover:bg-violet-100 dark:border-violet-900/40 dark:bg-violet-950/30 dark:text-primary dark:hover:bg-violet-900/40" onClick={() => router.push(`/emprestimos/${loan.id}`)}>
+                      <button className={`group relative flex min-w-0 w-full items-center justify-center rounded-xl h-10 transition-colors ${isDarkCard ? "bg-white text-violet-600 hover:bg-gray-100 dark:bg-violet-900/50 dark:text-violet-300 dark:hover:bg-violet-900/70" : "border border-violet-100 bg-violet-50/80 text-primary shadow-sm hover:bg-violet-100 dark:border-violet-900/40 dark:bg-violet-950/30 dark:text-primary dark:hover:bg-violet-900/40"}`} onClick={() => router.push(`/emprestimos/${loan.id}`)}>
                         <RotateCcw className="h-4 w-4" />
                         <span className={tooltipCls}>Ver histórico de pagamentos</span>
                       </button>
-                      <button className="group relative flex min-w-0 w-full items-center justify-center rounded-xl bg-blue-50 p-2 text-blue-600 transition-colors hover:bg-blue-100 dark:bg-blue-950/30 dark:text-blue-400 dark:hover:bg-blue-900/40" onClick={() => router.push(`/emprestimos/${loan.id}/editar`)}>
+                      <button className={`group relative flex min-w-0 w-full items-center justify-center rounded-xl h-10 transition-colors ${isDarkCard ? "bg-white text-blue-600 hover:bg-gray-100 dark:bg-blue-900/50 dark:text-blue-300 dark:hover:bg-blue-900/70" : "bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-950/30 dark:text-blue-400 dark:hover:bg-blue-900/40"}`} onClick={() => router.push(`/emprestimos/${loan.id}/editar`)}>
                         <Pencil className="h-4 w-4" />
                         <span className={tooltipCls}>Editar empréstimo</span>
                       </button>
-                      <button className="group relative flex min-w-0 w-full items-center justify-center rounded-xl bg-amber-50 p-2 text-amber-500 transition-colors hover:bg-amber-100 dark:bg-amber-950/30 dark:text-amber-400 dark:hover:bg-amber-900/40" onClick={() => openRenegotiateDialog(loan)}>
+                      <button className={`group relative flex min-w-0 w-full items-center justify-center rounded-xl h-10 transition-colors ${isDarkCard ? "bg-white text-amber-500 hover:bg-gray-100 dark:bg-amber-900/50 dark:text-amber-300 dark:hover:bg-amber-900/70" : "bg-amber-50 text-amber-500 hover:bg-amber-100 dark:bg-amber-950/30 dark:text-amber-400 dark:hover:bg-amber-900/40"}`} onClick={() => openRenegotiateDialog(loan)}>
                         <RotateCcw className="h-4 w-4" />
-                        <span className={tooltipClsRight}>Renegociar empréstimo / atraso</span>
+                        <span className={tooltipCls}>Renegociar empréstimo / atraso</span>
+                      </button>
+                      <button className={`group relative flex min-w-0 w-full items-center justify-center rounded-xl h-10 transition-colors ${isDarkCard ? "bg-red-500 text-white hover:bg-red-600" : "bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-900/40"}`} onClick={() => handleDelete(loan.id)}>
+                        <Trash2 className="h-4 w-4" />
+                        <span className={tooltipClsRight}>Excluir empréstimo</span>
                       </button>
                     </div>
                   </div>

@@ -405,12 +405,12 @@ export default function RecebimentosPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex w-fit max-w-full items-center gap-1 bg-[#F1F4F2] dark:bg-zinc-800/60 rounded-xl p-1.5 overflow-x-auto">
-        <a href="/emprestimos" className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 transition-colors whitespace-nowrap">Empréstimos <span className="font-medium opacity-70">({allLoansCount})</span></a>
-        <button type="button" onClick={() => { window.location.href = "/emprestimos" }} className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 transition-colors whitespace-nowrap"><Clock className="h-3.5 w-3.5" /> Diário <span className="font-medium opacity-70">(0)</span></button>
-        <a href="/emprestimos/tabela-price" className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 transition-colors whitespace-nowrap"><Table2 className="h-3.5 w-3.5" /> Tabela Price</a>
-        <button type="button" className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold bg-[#16a34a] text-white whitespace-nowrap"><RefreshCw className="h-3.5 w-3.5" /> Recebimentos</button>
-        <a href="/emprestimos" className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 transition-colors whitespace-nowrap"><Trash2 className="h-3.5 w-3.5" /> Lixeira</a>
+      <div className="flex w-fit max-w-full items-center gap-1 bg-white dark:bg-[#222A26] rounded-xl p-1 border border-gray-200 dark:border-zinc-800 overflow-x-auto">
+        <a href="/emprestimos" className="px-4 py-1.5 rounded-md text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 transition-colors whitespace-nowrap">Empréstimos <span className="font-medium opacity-70">({allLoansCount})</span></a>
+        <button type="button" onClick={() => { window.location.href = "/emprestimos" }} className="flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 transition-colors whitespace-nowrap"><Clock className="h-3.5 w-3.5" /> Diário <span className="font-medium opacity-70">(0)</span></button>
+        <a href="/emprestimos/tabela-price" className="flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 transition-colors whitespace-nowrap"><Table2 className="h-3.5 w-3.5" /> Tabela Price</a>
+        <button type="button" className="flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium bg-gray-100 dark:bg-[#121614] text-gray-900 dark:text-zinc-100 whitespace-nowrap"><RefreshCw className="h-3.5 w-3.5" /> Recebimentos</button>
+        <a href="/emprestimos" className="flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 transition-colors whitespace-nowrap"><Trash2 className="h-3.5 w-3.5" /> Lixeira</a>
       </div>
 
       <div className="rounded-xl border border-primary/30 bg-white dark:bg-zinc-900 p-3 flex items-center justify-between gap-3 overflow-x-auto">

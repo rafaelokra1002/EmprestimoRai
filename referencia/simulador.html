@@ -1,0 +1,372 @@
+<title>Simulador de Empréstimo</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root{
+    --bg:#f1f5f4; --card:#ffffff; --text:#1f2937; --muted:#6b7280;
+    --border:#e5e7eb; --green:#16a34a; --green-d:#15803d; --amber:#f59e0b;
+    --side1:#178a52; --side2:#0f6b3f; --purple:#7c3aed;
+    --card-title:#111827; --input-bg:#ffffff; --input-border:#d1d5db; --track:#e5e7eb;
+    --result-green-bg:#f0fdf4; --result-amber-bg:#fffbeb; --result-gray-bg:#f9fafb;
+    --shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+  }
+  :root[data-theme="dark"]{
+    --bg:#0b1220; --card:#111827; --text:#e5e7eb; --muted:#9ca3af;
+    --border:#1f2937; --card-title:#f3f4f6; --input-bg:#0f172a; --input-border:#374151;
+    --result-green-bg:#0f2a1c; --result-amber-bg:#2a2410; --result-gray-bg:#0f172a;
+    --track:#374151; --shadow:0 1px 3px rgba(0,0,0,.4);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;font-size:14px}
+  .layout{display:flex;min-height:100vh}
+
+  /* Sidebar */
+  .side{width:220px;flex:0 0 220px;background:linear-gradient(180deg,var(--side1),var(--side2));color:#e9fff2;display:flex;flex-direction:column;padding:16px 12px;gap:6px}
+  .brand{display:flex;align-items:center;gap:10px;padding:6px 6px 14px}
+  .brand .logo{width:38px;height:38px;border-radius:12px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:20px}
+  .brand b{font-size:17px;color:#fff;line-height:1.1}
+  .brand small{display:block;font-size:11px;color:#c7f4d9;font-weight:400}
+  .navcard{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.1);cursor:pointer;transition:.15s;text-decoration:none;color:inherit}
+  .navcard:hover{background:rgba(255,255,255,.2)}
+  .navcard.purple{background:#7c3aed}
+  .navcard .ic{font-size:16px}
+  .navcard .tt{flex:1;line-height:1.15}
+  .navcard .tt b{font-size:13.5px;color:#fff;font-weight:600}
+  .navcard .tt small{display:block;font-size:10.5px;color:#d6f5e4}
+  .navcard .chev{opacity:.7;font-size:12px}
+  .navlabel{font-size:10px;letter-spacing:.12em;color:#a7e8c4;padding:12px 8px 4px;font-weight:700}
+  .navlink{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;cursor:pointer;color:#eafff4;text-decoration:none}
+  .navlink:hover{background:rgba(255,255,255,.12)}
+  .side-foot{margin-top:auto;text-align:center;padding-top:16px}
+  .install{background:rgba(255,255,255,.1);border-radius:12px;padding:12px;font-size:11px;color:#d6f5e4}
+  .install b{display:block;color:#fff;font-size:12px;margin-bottom:2px}
+  .install .how{margin-top:8px;display:inline-flex;gap:6px;align-items:center;background:rgba(255,255,255,.15);padding:5px 10px;border-radius:8px;color:#fff;cursor:pointer}
+  .copyr{font-size:10px;color:#bdeccf;margin-top:12px}
+
+  /* Main */
+  .main{flex:1;min-width:0;display:flex;flex-direction:column}
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 26px;gap:16px}
+  .welcome h4{margin:0;font-size:16px;color:var(--text)}
+  .welcome p{margin:2px 0 0;font-size:12.5px;color:var(--muted)}
+  .badge-owner{display:inline-flex;align-items:center;gap:6px;background:#dcfce7;color:#15803d;padding:6px 12px;border-radius:9px;font-size:12.5px;font-weight:600;margin-left:14px}
+  :root[data-theme="dark"] .badge-owner{background:#0f2a1c;color:#4ade80}
+  .topright{display:flex;align-items:center;gap:14px}
+  .iconbtn{width:34px;height:34px;border-radius:50%;border:1px solid var(--border);background:var(--card);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;color:var(--text)}
+  .userbtn{display:flex;align-items:center;gap:8px;border:1px solid var(--border);background:var(--card);border-radius:10px;padding:7px 12px;font-size:13px;cursor:pointer;color:var(--text)}
+
+  .content{padding:8px 26px 40px;max-width:1220px}
+  .page-title{font-size:26px;font-weight:700;margin:8px 0 2px}
+  .page-sub{color:var(--muted);margin:0 0 20px;font-size:14px}
+
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);padding:22px 24px;margin-bottom:20px}
+  .card-head{display:flex;align-items:center;gap:10px;margin-bottom:20px}
+  .card-head .ci{width:30px;height:30px;border-radius:8px;background:#dcfce7;color:#16a34a;display:flex;align-items:center;justify-content:center;font-size:15px}
+  :root[data-theme="dark"] .card-head .ci{background:#0f2a1c}
+  .card-head h3{margin:0;font-size:19px;font-weight:700;color:var(--card-title)}
+
+  .grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:16px}
+  .field label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:6px;font-weight:500}
+  .field select,.field input,.datebtn{width:100%;height:42px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text);border-radius:10px;padding:0 12px;font-size:14px;outline:none}
+  .field select:focus,.field input:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(22,163,74,.15)}
+  .datebtn{display:flex;align-items:center;gap:8px;text-align:left;cursor:pointer;position:relative}
+  .datebtn input[type=date]{position:absolute;inset:0;opacity:0;cursor:pointer;height:100%;padding:0}
+  .hint{font-size:11px;color:var(--muted);margin-top:6px}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:22px}
+  .fieldlabel{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);margin-bottom:8px;font-weight:600}
+  input[type=range]{-webkit-appearance:none;width:100%;height:6px;border-radius:6px;background:var(--track);outline:none;margin-top:12px}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--green);cursor:pointer;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+  input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--green);cursor:pointer;border:2px solid #fff}
+
+  .results{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:26px 0 4px}
+  .rcard{border:1px solid var(--border);border-radius:14px;padding:16px 18px}
+  .rcard .rl{font-size:12.5px;color:var(--muted);margin-bottom:8px}
+  .rcard .rv{font-size:22px;font-weight:700}
+  .rc-parcela{background:var(--result-green-bg)}
+  .rc-parcela .rv{color:var(--green)}
+  .rc-juros{background:var(--result-amber-bg)} .rc-juros .rv{color:var(--amber)}
+  .rc-total{background:var(--result-green-bg)} .rc-total .rv{color:var(--green)}
+  .rc-tet{background:var(--result-gray-bg)} .rc-tet .rv{color:var(--text)}
+  /* per-mode accent for parcela card */
+  .mode-compostos .rc-parcela{background:#f5f0ff} .mode-compostos .rc-parcela .rv{color:#7c3aed}
+  .mode-price .rc-parcela{background:#eff8ff} .mode-price .rc-parcela .rv{color:#0ea5e9}
+  :root[data-theme="dark"] .mode-compostos .rc-parcela{background:#1e153a}
+  :root[data-theme="dark"] .mode-price .rc-parcela{background:#0c2438}
+
+  .comparebtn{width:100%;border:1px solid var(--border);background:var(--card);color:var(--text);border-radius:12px;padding:13px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:500}
+  .comparebtn:hover{background:var(--result-gray-bg)}
+
+  .compare{margin-top:18px;border-top:1px solid var(--border);padding-top:18px;display:none}
+  .compare.show{display:block}
+  .compare h4{margin:0 0 14px;font-size:16px;display:flex;align-items:center;gap:8px}
+  table{width:100%;border-collapse:collapse}
+  .compare th{text-align:right;font-size:12.5px;color:var(--muted);font-weight:600;padding:8px 10px}
+  .compare th:first-child{text-align:left}
+  .compare td{padding:11px 10px;text-align:right;font-size:14px;border-top:1px solid var(--border)}
+  .compare td:first-child{text-align:left}
+  .compare tr.sel td{background:var(--result-green-bg)}
+  .mbadge{display:inline-flex;padding:4px 10px;border-radius:8px;font-size:12px;font-weight:600}
+  .sel-tag{color:var(--green);font-size:12px;margin-left:8px}
+  .j-val{color:var(--amber);font-weight:600} .t-val{color:var(--green);font-weight:600}
+  .compare-note{text-align:center;color:var(--muted);font-size:12px;margin-top:14px}
+
+  .sched-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+  .sched-head h3{margin:0;font-size:19px;font-weight:700;display:flex;align-items:center;gap:9px;color:var(--card-title)}
+  .sched-right{display:flex;align-items:center;gap:14px}
+  .pdfbtn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text);border-radius:10px;padding:8px 14px;font-size:13px;cursor:pointer}
+  .nxlabel{color:var(--green);font-weight:700;font-size:13px}
+  .stable th{text-align:center;font-size:13px;color:var(--muted);font-weight:600;padding:12px}
+  .stable th:last-child{text-align:right} .stable th:first-child{text-align:center}
+  .stable td{padding:14px 12px;text-align:center;border-top:1px solid var(--border)}
+  .stable td:last-child{text-align:right;color:var(--green);font-weight:600}
+  .stable .pill{display:inline-block;background:var(--result-gray-bg);border:1px solid var(--border);border-radius:8px;padding:3px 9px;font-size:12.5px}
+  .stable .venc{color:var(--muted)}
+  .stable tfoot td{font-weight:700;border-top:2px solid var(--border);text-align:left}
+  .stable tfoot td:last-child{text-align:right;color:var(--green);font-size:16px}
+
+  @media(max-width:1000px){.side{display:none}.grid5{grid-template-columns:1fr 1fr}.results{grid-template-columns:1fr 1fr}.grid2{grid-template-columns:1fr}}
+  @media(max-width:560px){.grid5{grid-template-columns:1fr}.results{grid-template-columns:1fr}.content{padding:8px 14px 40px}}
+</style>
+
+<div class="layout">
+  <!-- SIDEBAR -->
+  <aside class="side">
+    <div class="brand">
+      <div class="logo">💬</div>
+      <div><b>CobraFácil</b><small>Gestão Financeira</small></div>
+    </div>
+    <a class="navcard"><span class="ic">👥</span><span class="tt"><b>Funcionários</b><small>Cadastrar funcionários</small></span><span class="chev">›</span></a>
+    <a class="navcard"><span class="ic">📊</span><span class="tt"><b>Relatórios Diário</b><small>Relatórios via WhatsApp</small></span><span class="chev">›</span></a>
+    <a class="navcard"><span class="ic">👤</span><span class="tt"><b>Meu Perfil</b><small>Gerenciar dados e plano</small></span><span class="chev">›</span></a>
+    <a class="navcard"><span class="ic">👑</span><span class="tt"><b>Meus Planos</b><small>Assinatura e upgrades</small></span><span class="chev">›</span></a>
+    <a class="navcard purple"><span class="ic">🔎</span><span class="tt"><b>Consultas</b><small>SPC, Serasa, CPF e mais</small></span><span class="chev">›</span></a>
+    <div class="navlabel">MENU</div>
+    <a class="navlink"><span>▦</span> Dashboard</a>
+    <a class="navlink"><span>💬</span> Central de Atendimento</a>
+    <a class="navlink"><span>👤</span> Clientes</a>
+    <a class="navlink"><span>🔎</span> Consultas</a>
+    <div class="side-foot">
+      <div class="install">
+        <b>Instale o App</b>Acesso rápido no celular
+        <div class="how">⋮ Como instalar</div>
+      </div>
+      <div class="copyr">© 2024 CobraFácil</div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center">
+        <div class="welcome"><h4>Bem-vindo de volta!</h4><p>Gerencie seus empréstimos</p></div>
+        <span class="badge-owner">👑 Dono (acesso total)</span>
+      </div>
+      <div class="topright">
+        <button class="iconbtn" id="themeBtn" title="Modo Escuro">🌙</button>
+        <button class="userbtn">👤 usuario@email.com</button>
+      </div>
+    </div>
+
+    <div class="content">
+      <h1 class="page-title">Simulador de Empréstimo</h1>
+      <p class="page-sub">Simule empréstimos antes de criar</p>
+
+      <!-- SIMULATOR CARD -->
+      <div class="card" id="simCard">
+        <div class="card-head"><span class="ci">🧮</span><h3>Simulador de Empréstimo</h3></div>
+
+        <div class="grid5">
+          <div class="field">
+            <label>Tipo de Pagamento</label>
+            <select id="tipo">
+              <option value="unico">Pagamento Único</option>
+              <option value="mensal" selected>Parcelado (Mensal)</option>
+              <option value="semanal">Semanal</option>
+              <option value="quinzenal">Quinzenal</option>
+              <option value="diario">Diário</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Modo de Juros</label>
+            <select id="modo">
+              <option value="por_parcela" selected>Por Parcela</option>
+              <option value="sobre_total">Sobre o Total</option>
+              <option value="compostos">Juros Compostos Puro</option>
+              <option value="price">Tabela Price</option>
+              <option value="sac">SAC (Amort. Constante)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Nº de Parcelas</label>
+            <input type="number" id="nparc" value="6" min="1" max="120">
+          </div>
+          <div class="field">
+            <label>Data de Início</label>
+            <div class="datebtn">📅 <span id="startTxt">29/08/2026</span><input type="date" id="startDate"></div>
+          </div>
+          <div class="field">
+            <label>Primeiro Vencimento</label>
+            <div class="datebtn">📅 <span id="firstTxt">29/09/2026</span><input type="date" id="firstDate"></div>
+            <div class="hint">Próximas parcelas calculadas a partir desta data</div>
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div>
+            <div class="fieldlabel">💲 Valor do Empréstimo</div>
+            <input type="number" id="valor" value="1000" min="100" max="100000">
+            <input type="range" id="valorRange" min="100" max="100000" step="100" value="1000">
+            <div class="hint">R$ 100 - R$ 100.000</div>
+          </div>
+          <div>
+            <div class="fieldlabel">％ Taxa de Juros (%)</div>
+            <input type="number" id="taxa" value="10" min="0" step="0.1">
+            <input type="range" id="taxaRange" min="0" max="100" step="0.5" value="10">
+            <div class="hint">Sem limite máximo</div>
+          </div>
+        </div>
+
+        <div class="results" id="results">
+          <div class="rcard rc-parcela"><div class="rl" id="rlParcela">Valor da Parcela</div><div class="rv" id="vParcela">R$ 266,67</div></div>
+          <div class="rcard rc-juros"><div class="rl">Total de Juros</div><div class="rv" id="vJuros">R$ 600,00</div></div>
+          <div class="rcard rc-total"><div class="rl">Total a Receber</div><div class="rv" id="vTotal">R$ 1.600,00</div></div>
+          <div class="rcard rc-tet"><div class="rl">Taxa Efetiva Total</div><div class="rv" id="vTet">60.0%</div></div>
+        </div>
+
+        <button class="comparebtn" id="cmpBtn">⇅ <span id="cmpTxt">Comparar Modos de Juros</span></button>
+
+        <div class="compare" id="compareBox">
+          <h4>⚡ <span id="cmpHead">Comparativo: 6 parcelas de R$ 1.000,00</span></h4>
+          <table>
+            <thead><tr><th>Modo de Juros</th><th>Juros Total</th><th>Total a Receber</th><th>Parcela</th></tr></thead>
+            <tbody id="cmpBody"></tbody>
+          </table>
+          <div class="compare-note">Clique em "Modo de Juros" acima para alterar a simulação</div>
+        </div>
+      </div>
+
+      <!-- SCHEDULE CARD -->
+      <div class="card">
+        <div class="sched-head">
+          <h3>📈 Cronograma de Parcelas</h3>
+          <div class="sched-right">
+            <button class="pdfbtn" id="pdfBtn">🧾 Exportar PDF</button>
+            <span class="nxlabel" id="nxLabel">6x de R$ 266,67</span>
+          </div>
+        </div>
+        <table class="stable">
+          <thead><tr><th>Parcela</th><th>Vencimento</th><th>Valor da Parcela</th></tr></thead>
+          <tbody id="schedBody"></tbody>
+          <tfoot><tr><td colspan="2">Total a Receber</td><td id="schedTotal">R$ 1.600,00</td></tr></tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const brl = v => 'R$ ' + v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const modeNames = {por_parcela:'Por Parcela',sobre_total:'Sobre o Total',compostos:'Juros Compostos Puro',price:'Tabela Price',sac:'SAC'};
+const modeBadge = {
+  por_parcela:{bg:'#dcfce7',c:'#15803d'}, sobre_total:{bg:'#fef9c3',c:'#a16207'},
+  compostos:{bg:'#f3e8ff',c:'#7c3aed'}, price:{bg:'#dbeafe',c:'#1d4ed8'}, sac:{bg:'#d1fae5',c:'#047857'}
+};
+
+// ----- date helpers -----
+function fmt(d){return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();}
+function parseDate(s){const[a,b,c]=s.split('/');return new Date(+c,+b-1,+a);}
+function toISO(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function addMonthsClamped(base,k){
+  const y=base.getFullYear(),m=base.getMonth()+k,day=base.getDate();
+  const d=new Date(y,m,1); const last=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
+  d.setDate(Math.min(day,last)); return d;
+}
+function dueDate(first,i,tipo){ // i = 0-based installment index
+  if(tipo==='mensal'||tipo==='unico') return addMonthsClamped(first,i);
+  const days={semanal:7,quinzenal:15,diario:1}[tipo];
+  const d=new Date(first); d.setDate(d.getDate()+days*i); return d;
+}
+
+// ----- core calculation -----
+function calc(P,ratePct,n,mode){
+  const r=ratePct/100; let sched=[],total,interest;
+  if(mode==='por_parcela'){interest=P*r*n;total=P+interest;sched=Array(n).fill(total/n);}
+  else if(mode==='sobre_total'){interest=P*r;total=P+interest;sched=Array(n).fill(total/n);}
+  else if(mode==='compostos'){total=P*Math.pow(1+r,n);interest=total-P;sched=Array(n).fill(total/n);}
+  else if(mode==='price'){let pmt=r===0?P/n:P*(r*Math.pow(1+r,n))/(Math.pow(1+r,n)-1);sched=Array(n).fill(pmt);total=pmt*n;interest=total-P;}
+  else if(mode==='sac'){const a=P/n;let bal=P;for(let i=0;i<n;i++){sched.push(a+bal*r);bal-=a;}total=sched.reduce((x,y)=>x+y,0);interest=total-P;}
+  const tet=P>0?interest/P*100:0;
+  return {sched,total,interest,tet,variable:mode==='sac'};
+}
+
+function render(){
+  let tipo=$('tipo').value;
+  let P=Math.max(0,parseFloat($('valor').value)||0);
+  let rate=Math.max(0,parseFloat($('taxa').value)||0);
+  let n=tipo==='unico'?1:Math.max(1,parseInt($('nparc').value)||1);
+  if(tipo==='unico'){$('nparc').value=1;$('nparc').disabled=true;}else{$('nparc').disabled=false;}
+  const mode=$('modo').value;
+  const R=calc(P,rate,n,mode);
+
+  // result cards
+  $('simCard').className='card mode-'+mode;
+  $('vParcela').textContent=brl(R.sched[0]);
+  $('rlParcela').textContent=R.variable&&n>1?'1ª Parcela':'Valor da Parcela';
+  $('vJuros').textContent=brl(R.interest);
+  $('vTotal').textContent=brl(R.total);
+  $('vTet').textContent=R.tet.toFixed(1)+'%';
+
+  // schedule
+  const first=parseDate($('firstTxt').textContent);
+  let rows='';
+  R.sched.forEach((p,i)=>{
+    rows+=`<tr><td><span class="pill">${i+1}/${n}</span></td><td class="venc">${fmt(dueDate(first,i,tipo))}</td><td>${brl(p)}</td></tr>`;
+  });
+  $('schedBody').innerHTML=rows;
+  $('schedTotal').textContent=brl(R.total);
+  $('nxLabel').textContent=R.variable&&n>1?`${n}x variável`:`${n}x de ${brl(R.sched[0])}`;
+
+  // comparison
+  $('cmpHead').textContent=`Comparativo: ${n} parcela${n>1?'s':''} de ${brl(P)}`;
+  let cb='';
+  ['por_parcela','sobre_total','compostos','price','sac'].forEach(m=>{
+    const c=calc(P,rate,n,m); const b=modeBadge[m]; const selected=m===mode;
+    cb+=`<tr class="${selected?'sel':''}"><td><span class="mbadge" style="background:${b.bg};color:${b.c}">${modeNames[m]}</span>${selected?'<span class="sel-tag">✓ Selecionado</span>':''}</td>`
+      +`<td class="j-val">${brl(c.interest)}</td><td class="t-val">${brl(c.total)}</td>`
+      +`<td>${c.variable&&n>1?'Variável':brl(c.sched[0])}</td></tr>`;
+  });
+  $('cmpBody').innerHTML=cb;
+}
+
+// ----- wiring -----
+['tipo','modo','nparc','valor','taxa'].forEach(id=>$(id).addEventListener('input',()=>{
+  if(id==='valor'){$('valorRange').value=Math.min(100000,Math.max(100,$('valor').value||100));}
+  if(id==='taxa'){$('taxaRange').value=Math.min(100,$('taxa').value||0);}
+  render();
+}));
+$('valorRange').addEventListener('input',()=>{$('valor').value=$('valorRange').value;render();});
+$('taxaRange').addEventListener('input',()=>{$('taxa').value=$('taxaRange').value;render();});
+
+// dates
+$('startDate').value=toISO(parseDate('29/08/2026'));
+$('firstDate').value=toISO(parseDate('29/09/2026'));
+$('startDate').addEventListener('change',e=>{if(e.target.value){$('startTxt').textContent=fmt(new Date(e.target.value+'T00:00'));}});
+$('firstDate').addEventListener('change',e=>{if(e.target.value){$('firstTxt').textContent=fmt(new Date(e.target.value+'T00:00'));render();}});
+
+// compare toggle
+$('cmpBtn').addEventListener('click',()=>{
+  const box=$('compareBox');const open=box.classList.toggle('show');
+  $('cmpTxt').textContent=open?'Ocultar Modos de Juros':'Comparar Modos de Juros';
+});
+$('pdfBtn').addEventListener('click',()=>window.print());
+
+// theme
+$('themeBtn').addEventListener('click',()=>{
+  const dark=document.documentElement.getAttribute('data-theme')==='dark';
+  document.documentElement.setAttribute('data-theme',dark?'light':'dark');
+  $('themeBtn').textContent=dark?'🌙':'☀️';
+});
+
+render();
+</script>
