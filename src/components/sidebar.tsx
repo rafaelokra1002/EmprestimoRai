@@ -42,7 +42,7 @@ import {
   UserPlus,
   TrendingUp,
 } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 // Cards de atalho (gradiente + borda + sombra + ícone) — valores exatos do style guide da referência.
 const cardColors: Record<string, { card: string; badge: string; icon: string }> = {
@@ -109,6 +109,29 @@ export function Sidebar() {
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({})
+  const [installPrompt, setInstallPrompt] = useState<any>(null)
+
+  useEffect(() => {
+    const handler = (e: any) => { e.preventDefault(); setInstallPrompt(e) }
+    window.addEventListener("beforeinstallprompt", handler)
+    const onInstalled = () => setInstallPrompt(null)
+    window.addEventListener("appinstalled", onInstalled)
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handler)
+      window.removeEventListener("appinstalled", onInstalled)
+    }
+  }, [])
+
+  const handleInstall = async () => {
+    setIsOpen(false)
+    if (installPrompt) {
+      installPrompt.prompt()
+      try { await installPrompt.userChoice } catch { /* ignore */ }
+      setInstallPrompt(null)
+    } else {
+      alert("Para instalar:\n• Android (Chrome): menu ⋮ → \"Instalar app\" / \"Adicionar à tela inicial\".\n• iPhone (Safari): Compartilhar → \"Adicionar à Tela de Início\".")
+    }
+  }
 
   // Só o item mais específico (href mais longo) que casa com a rota fica ativo,
   // para não marcar "Empréstimos" e "Relatório de Empréstimos" ao mesmo tempo.
@@ -242,6 +265,16 @@ export function Sidebar() {
             }
             return renderLeaf(item)
           })}
+
+          {/* Instalar App (depois de Configurações) */}
+          <button
+            type="button"
+            onClick={handleInstall}
+            className="flex w-full items-center gap-2 rounded-lg border-l-[3px] border-l-transparent px-2 py-2.5 text-sm font-normal text-white/80 transition-all hover:border-l-[#D4A574]/40 hover:bg-white/10 hover:text-white"
+          >
+            <Download className="h-6 w-6 shrink-0" />
+            <span className="whitespace-nowrap">Instalar App</span>
+          </button>
         </nav>
 
       </aside>
