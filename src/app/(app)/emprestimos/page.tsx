@@ -2555,10 +2555,10 @@ export default function EmprestimosPage() {
                           Reneg.
                         </span>
                       )}
-                      <span className={`shrink-0 whitespace-nowrap px-1.5 py-0.5 rounded text-[9px] font-medium ${status.color}`}>
+                      <span className={`shrink-0 whitespace-nowrap px-2 py-0.5 rounded text-xs font-bold transition hover:ring-2 hover:ring-inset hover:ring-current hover:saturate-150 ${status.color}`}>
                         {status.label}
                       </span>
-                      <span className="shrink-0 whitespace-nowrap px-1.5 py-0.5 rounded text-[9px] font-medium bg-primary/15 dark:bg-primary/20 text-primary">
+                      <span className="shrink-0 whitespace-nowrap px-2 py-0.5 rounded text-xs font-bold bg-green-500/20 text-[#16a34a] dark:text-green-400 transition hover:bg-green-500/30 hover:brightness-125">
                         {loan.interestType === "CUSTOM" ? "PERSONALIZADO" : loan.installmentCount > 1 ? "PARCELADO" : MODALITY_LABELS[loan.modality] || loan.modality}
                       </span>
                     </div>
@@ -2572,14 +2572,14 @@ export default function EmprestimosPage() {
                       </button>
                       <button
                         onClick={() => setExpandedLoan(expandedLoan === loan.id ? null : loan.id)}
-                        className={`flex shrink-0 items-center gap-1 whitespace-nowrap px-1.5 py-1 rounded-lg text-[11px] transition-colors ${expandedLoan === loan.id ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800" : isDarkCard ? "text-white/80 hover:bg-white/10" : "text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800"}`}
+                        className={`flex shrink-0 items-center gap-1 whitespace-nowrap px-1.5 py-1 rounded-lg text-[11px] transition-colors ${expandedLoan === loan.id ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800" : isDarkCard ? "text-green-300 bg-green-500/15 border border-[#22c55e]/30 hover:bg-green-500/25" : "text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800"}`}
                         title="Detalhes"
                       >
                         <Eye className="h-3 w-3" /> Detalhes
                       </button>
                       <button
                         onClick={() => setComprovanteLoanId(loan.id)}
-                        className={`flex shrink-0 items-center gap-1 whitespace-nowrap px-1.5 py-1 rounded-lg text-[11px] transition-colors ${isDarkCard ? "text-white/80 hover:bg-white/10" : "text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800"}`}
+                        className={`flex shrink-0 items-center gap-1 whitespace-nowrap px-1.5 py-1 rounded-lg text-[11px] transition-colors ${isDarkCard ? "text-green-300 bg-green-500/15 border border-[#22c55e]/30 hover:bg-green-500/25" : "text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800"}`}
                         title="Comprovante"
                       >
                         <FileText className="h-3 w-3" /> Comprovante
@@ -5272,7 +5272,7 @@ export default function EmprestimosPage() {
       <Dialog
         open={whatsappDialog}
         onClose={() => { setWhatsappDialog(false); setWhatsappSent(false) }}
-        className="max-w-lg"
+        className="w-full max-w-2xl"
       >
         {whatsappLoan && (
           <div className="space-y-3">
@@ -5294,20 +5294,11 @@ export default function EmprestimosPage() {
               <User className="h-4 w-4" /> Cliente: <span className="font-semibold text-gray-900 dark:text-zinc-100">{whatsappLoan.client.name}</span>
             </p>
 
-            {/* Modo da mensagem */}
-            <div className="border-b border-gray-100 dark:border-zinc-800 pb-3">
-              <div className="flex rounded-xl bg-gray-100 dark:bg-zinc-800/60 p-1">
-                <span className="inline-flex items-center gap-1.5 rounded-lg border border-green-600 bg-white dark:bg-zinc-900 px-5 py-1.5 text-sm font-semibold text-green-800 dark:text-green-400 shadow-sm">
-                  <FileText className="h-4 w-4" /> Completo
-                </span>
-              </div>
-            </div>
-
             {/* Mensagem (editável) */}
             <Textarea
               value={whatsappMessage}
               onChange={(e) => setWhatsappMessage(e.target.value)}
-              className="h-[280px] resize-none rounded-xl border-l-[3px] border-l-[#16a249] text-sm leading-relaxed"
+              className="h-[400px] resize-none rounded-xl border-l-[3px] border-l-[#16a249] text-sm leading-relaxed"
               placeholder="Digite a mensagem..."
             />
 
@@ -5318,9 +5309,6 @@ export default function EmprestimosPage() {
 
             {/* Ações */}
             <div className="flex gap-2 border-t border-gray-100 dark:border-zinc-800 pt-3">
-              <Button variant="outline" className="flex-1 gap-2" onClick={() => setWhatsappDialog(false)}>
-                <X className="h-4 w-4" /> Cancelar
-              </Button>
               <Button
                 variant="outline"
                 className="flex-1 gap-2 border-amber-400 text-amber-600 hover:bg-amber-50 dark:border-amber-600 dark:text-amber-400 dark:hover:bg-amber-950/20"
@@ -5434,7 +5422,7 @@ export default function EmprestimosPage() {
             <Textarea
               value={reportMessage}
               onChange={(e) => setReportMessage(e.target.value)}
-              className="h-[280px] resize-none rounded-xl border-l-[3px] border-l-[#16a249] text-sm leading-relaxed"
+              className="h-[400px] resize-none rounded-xl border-l-[3px] border-l-[#16a249] text-sm leading-relaxed"
               placeholder="Digite a mensagem..."
             />
 
