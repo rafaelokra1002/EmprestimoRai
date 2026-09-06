@@ -99,6 +99,7 @@ export default function EmprestimosPage() {
   const [expandedLoan, setExpandedLoan] = useState<string | null>(null)
   const [comprovanteLoanId, setComprovanteLoanId] = useState<string | null>(null)
   const [tagDialog, setTagDialog] = useState<Loan | null>(null)
+  const [tagPos, setTagPos] = useState<{ left: number; top: number } | null>(null)
   const [tagInput, setTagInput] = useState("")
   const [tagColor, setTagColor] = useState("#10b981")
   const [editingTags, setEditingTags] = useState<string[]>([])
@@ -219,8 +220,10 @@ export default function EmprestimosPage() {
   const [skipSaturday, setSkipSaturday] = useState(false)
   const [skipSunday, setSkipSunday] = useState(false)
   const [skipHolidays, setSkipHolidays] = useState(false)
+  const [garantias, setGarantias] = useState<{ description: string; value: string; notes: string }[]>([])
   const [dailyInterest, setDailyInterest] = useState(true)
-  const [dailyInterestAmount, setDailyInterestAmount] = useState("15")
+  const [dailyInterestType, setDailyInterestType] = useState<"percent" | "percent30" | "fixed">("percent")
+  const [dailyInterestAmount, setDailyInterestAmount] = useState("")
   const [penaltyFee, setPenaltyFee] = useState<number>(0)
   const [whatsappNotify, setWhatsappNotify] = useState(false)
   const [notes, setNotes] = useState("")
@@ -397,8 +400,10 @@ export default function EmprestimosPage() {
     setSkipSaturday(false)
     setSkipSunday(false)
     setSkipHolidays(false)
+    setGarantias([])
     setDailyInterest(true)
-    setDailyInterestAmount("15")
+    setDailyInterestType("percent")
+    setDailyInterestAmount("")
     setPenaltyFee(0)
     setWhatsappNotify(false)
     setNotes("")
@@ -412,9 +417,16 @@ export default function EmprestimosPage() {
     if (!amount || amount <= 0) return alert("Informe o valor")
     if (!installmentCount || installmentCount < 1) return alert("Informe o número de parcelas")
 
+    // Converte o tipo escolhido (% da parcela / % total ÷30 / R$ fixo) em R$/dia
+    const dailyRaw = parseFloat(dailyInterestAmount) || 0
+    const parcelaValue = installmentCount > 0 ? preview.totalAmount / installmentCount : preview.totalAmount
+    const dailyRsPerDay =
+      dailyInterestType === "fixed" ? dailyRaw
+      : dailyInterestType === "percent30" ? (dailyRaw / 100) * preview.totalAmount / 30
+      : (dailyRaw / 100) * parcelaValue
     const calculatedDailyInterest = resolveDailyInterestAmount(
       dailyInterest,
-      parseFloat(dailyInterestAmount) || 0,
+      dailyRsPerDay,
       amount,
       interestRate,
       modality
@@ -2096,65 +2108,6 @@ export default function EmprestimosPage() {
             <Download className="h-4 w-4" />
             Baixar Relatório
           </button>
-          {/* Vence Hoje */}
-          <div className="relative group">
-            <Button onClick={sendBulkDueToday} disabled={bulkSendingDueToday} className="rounded-xl border border-amber-400 bg-white px-4 py-2 text-sm font-semibold text-amber-600 transition hover:bg-amber-50 hover:brightness-100 dark:bg-zinc-900 dark:border-amber-500 dark:text-amber-400 dark:hover:bg-zinc-800">
-              {bulkSendingDueToday ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <MessageCircle className="h-4 w-4 mr-2" />}
-              {bulkSendingDueToday ? "Enviando..." : "Vence Hoje"}
-            </Button>
-            {dueTodayClients.length > 0 && !bulkSendingDueToday && (
-              <span className="pointer-events-none absolute -top-1.5 -right-1.5 z-10 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-bold text-white">
-                {dueTodayClients.length}
-              </span>
-            )}
-            {dueTodayClients.length > 0 && (
-              <div className="pointer-events-none absolute right-0 top-full z-50 mt-2 hidden w-56 rounded-xl border border-amber-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-900 group-hover:block">
-                <div className="px-3 py-2 border-b border-amber-100 dark:border-zinc-800">
-                  <p className="text-xs font-semibold text-amber-600 dark:text-amber-400">Vence hoje ({dueTodayClients.length})</p>
-                </div>
-                <ul className="max-h-48 overflow-y-auto py-1">
-                  {dueTodayClients.map(c => (
-                    <li key={c.id} className="flex items-center gap-2 px-3 py-1.5">
-                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30 text-[10px] font-bold text-amber-700 dark:text-amber-400">
-                        {c.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()}
-                      </span>
-                      <span className="truncate text-sm text-gray-700 dark:text-zinc-300">{c.name}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-
-          {/* Atrasados */}
-          <div className="relative group">
-            <Button onClick={sendBulkOverdue} disabled={bulkSendingOverdue} className="rounded-xl border border-red-400 bg-white px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50 hover:brightness-100 dark:bg-zinc-900 dark:border-red-500 dark:text-red-400 dark:hover:bg-zinc-800">
-              {bulkSendingOverdue ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <MessageCircle className="h-4 w-4 mr-2" />}
-              {bulkSendingOverdue ? "Enviando..." : "Atrasados"}
-            </Button>
-            {overdueClients.length > 0 && !bulkSendingOverdue && (
-              <span className="pointer-events-none absolute -top-1.5 -right-1.5 z-10 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
-                {overdueClients.length}
-              </span>
-            )}
-            {overdueClients.length > 0 && (
-              <div className="pointer-events-none absolute right-0 top-full z-50 mt-2 hidden w-56 rounded-xl border border-red-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-900 group-hover:block">
-                <div className="px-3 py-2 border-b border-red-100 dark:border-zinc-800">
-                  <p className="text-xs font-semibold text-red-600 dark:text-red-400">Atrasados ({overdueClients.length})</p>
-                </div>
-                <ul className="max-h-48 overflow-y-auto py-1">
-                  {overdueClients.map(c => (
-                    <li key={c.id} className="flex items-center gap-2 px-3 py-1.5">
-                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30 text-[10px] font-bold text-red-700 dark:text-red-400">
-                        {c.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()}
-                      </span>
-                      <span className="truncate text-sm text-gray-700 dark:text-zinc-300">{c.name}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
           <button
             type="button"
             onClick={() => { setBatchResult(null); setBatchOpen(true) }}
@@ -2182,13 +2135,6 @@ export default function EmprestimosPage() {
         >
           Empréstimos ({tabCounts.all})
         </button>
-        <button
-          type="button"
-          onClick={() => showToast("Empréstimo diário em breve", "info")}
-          className="flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 transition-colors whitespace-nowrap"
-        >
-          <Clock className="h-3.5 w-3.5" /> Diário (0)
-        </button>
         <a
           href="/emprestimos/tabela-price"
           className={`flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
@@ -2205,13 +2151,6 @@ export default function EmprestimosPage() {
         >
           <DollarSign className="h-3.5 w-3.5" /> Recebimentos
         </a>
-        <button
-          type="button"
-          onClick={() => showToast("Lixeira em breve", "info")}
-          className="flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 transition-colors whitespace-nowrap"
-        >
-          <Trash2 className="h-3.5 w-3.5" /> Lixeira
-        </button>
       </div>
 
       {/* Search + New Button */}
@@ -2221,13 +2160,6 @@ export default function EmprestimosPage() {
           <Input placeholder="Buscar cliente ou etiqueta..." className="pl-10 dark:bg-[#161A18]" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center lg:flex-none">
-          <button
-            type="button"
-            onClick={() => showToast("Empréstimo diário em breve", "info")}
-            className="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
-          >
-            <Clock className="h-4 w-4 mr-2" /> Novo Diário
-          </button>
           <Button onClick={() => { resetForm(); setDialogOpen(true) }} className="text-white border border-[#10b981]/30 shadow-lg shadow-[#022c22]/40 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.35),transparent_55%),linear-gradient(135deg,#062418_0%,rgba(6,95,70,0.85)_55%,#062418_100%)] hover:bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.45),transparent_55%),linear-gradient(135deg,#083324_0%,rgba(6,95,70,0.95)_55%,#083324_100%)]">
             <Plus className="h-4 w-4 mr-2" /> Novo Empréstimo
           </Button>
@@ -2367,6 +2299,7 @@ export default function EmprestimosPage() {
                 <th className="h-12 px-4 hidden sm:table-cell">Emprestado</th>
                 <th className="h-12 px-4">Restante</th>
                 <th className="h-12 px-4 hidden md:table-cell">Parcelas</th>
+                <th className="h-12 px-4 hidden md:table-cell">Dias Atraso</th>
                 <th className="h-12 px-4 hidden sm:table-cell">Vencimento</th>
                 <th className="h-12 px-4 hidden lg:table-cell">Etiquetas</th>
                 <th className="h-12 px-4 text-right">Ações</th>
@@ -2415,6 +2348,14 @@ export default function EmprestimosPage() {
                         {overdueCount > 0 && <span className="text-[10px] font-medium text-red-600 dark:text-red-400">🔴 {overdueCount} em atraso</span>}
                       </div>
                     </td>
+                    <td className="p-4 hidden md:table-cell">
+                      {(() => {
+                        const d = getCurrentOverdueDays(loan)
+                        return d > 0
+                          ? <span className="whitespace-nowrap text-sm font-semibold text-red-600 dark:text-red-400">{d} dia{d !== 1 ? "s" : ""}</span>
+                          : <span className="text-sm text-gray-400 dark:text-zinc-500">—</span>
+                      })()}
+                    </td>
                     <td className="p-4 hidden sm:table-cell">
                       <span className={isAtraso ? "font-medium text-red-600 dark:text-red-400" : "text-gray-500 dark:text-zinc-400"}>{nextInst ? formatDate(nextInst.dueDate) : "—"}</span>
                     </td>
@@ -2454,7 +2395,14 @@ export default function EmprestimosPage() {
                               <button onClick={() => { setDropdownOpen(null); router.push(`/emprestimos/${loan.id}`) }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800">
                                 <RotateCcw className="h-4 w-4" /> Histórico
                               </button>
-                              <button onClick={() => { setDropdownOpen(null); setEditingTags(loan.tags || []); setTagInput(""); setShowTagForm(false); setTagDialog(loan) }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800">
+                              <button onClick={(e) => {
+                                  setDropdownOpen(null)
+                                  const r = e.currentTarget.getBoundingClientRect()
+                                  const width = 288
+                                  const left = Math.max(8, Math.min(r.left + r.width / 2 - width / 2, window.innerWidth - width - 8))
+                                  setTagPos({ left, top: Math.min(r.bottom + 6, window.innerHeight - 320) })
+                                  setEditingTags(loan.tags || []); setTagInput(""); setShowTagForm(false); setTagDialog(loan)
+                                }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800">
                                 <Tag className="h-4 w-4" /> Etiquetar
                               </button>
                               <button onClick={() => { setDropdownOpen(null); router.push(`/emprestimos/${loan.id}/editar`) }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800">
@@ -2564,7 +2512,14 @@ export default function EmprestimosPage() {
                     </div>
                     <div className="flex shrink-0 flex-nowrap items-center gap-1 sm:justify-end">
                       <button
-                        onClick={() => { setEditingTags(loan.tags || []); setTagInput(""); setShowTagForm(false); setTagDialog(loan) }}
+                        onClick={(e) => {
+                          if (tagDialog?.id === loan.id) { setTagDialog(null); setShowTagForm(false); setTagInput(""); return }
+                          const r = e.currentTarget.getBoundingClientRect()
+                          const width = 288
+                          const left = Math.max(8, Math.min(r.left + r.width / 2 - width / 2, window.innerWidth - width - 8))
+                          setTagPos({ left, top: r.bottom + 6 })
+                          setEditingTags(loan.tags || []); setTagInput(""); setShowTagForm(false); setTagDialog(loan)
+                        }}
                         className="flex shrink-0 items-center gap-1 whitespace-nowrap px-1.5 py-1 rounded-lg text-[11px] text-primary border border-primary/20 dark:border-primary/30 hover:bg-primary/10 dark:hover:bg-primary/20 transition-colors"
                         title="Etiqueta"
                       >
@@ -3133,7 +3088,7 @@ export default function EmprestimosPage() {
 
       {/* ===== NOVO EMPRÉSTIMO DIALOG ===== */}
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} className="max-w-lg max-h-[90vh] overflow-y-auto dark:bg-[#121614]">
-        <div className="space-y-5">
+        <div className="space-y-5 dark:[&_input]:!bg-[#121614] dark:[&_select]:!bg-[#121614] dark:[&_textarea]:!bg-[#121614]">
           {/* Header */}
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">Novo Empréstimo</h2>
@@ -3191,7 +3146,7 @@ export default function EmprestimosPage() {
               <button
                 type="button"
                 onClick={() => setNewClientDialog(true)}
-                className="w-full flex items-center justify-center gap-2 h-10 rounded-md border-2 border-dashed border-primary/50 text-primary text-sm font-medium hover:bg-primary/15 dark:bg-primary/20 transition"
+                className="w-full flex items-center justify-center gap-2 h-10 rounded-md border-2 border-dashed border-primary/50 text-primary text-sm font-medium bg-white hover:bg-primary/15 dark:bg-[#121614] dark:hover:bg-[#1a211d] transition"
               >
                 <Plus className="h-4 w-4" /> Cadastrar novo cliente
               </button>
@@ -3200,7 +3155,7 @@ export default function EmprestimosPage() {
               <button
                 type="button"
                 onClick={() => setClientPickerOpen((open) => !open)}
-                className="flex h-10 w-full items-center justify-between gap-2 rounded-md border border-gray-300 bg-white px-3 text-left text-sm text-gray-900 transition hover:border-primary/50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                className="flex h-10 w-full items-center justify-between gap-2 rounded-md border border-gray-300 bg-white px-3 text-left text-sm text-gray-900 transition hover:border-primary/50 dark:border-zinc-700 dark:bg-[#121614] dark:text-zinc-100"
               >
                 <span className="flex min-w-0 items-center gap-2">
                   <User className="h-4 w-4 shrink-0 text-gray-400 dark:text-zinc-500" />
@@ -3407,7 +3362,7 @@ export default function EmprestimosPage() {
             </div>
             <div>
               <Label>Total a Receber</Label>
-              <div className="mt-1 flex h-10 w-full items-center rounded-md bg-primary/10 dark:bg-primary/20 border border-primary/20 dark:border-primary/30 px-3 text-sm font-bold tabular-nums text-primary">
+              <div className="mt-1 flex h-10 w-full items-center rounded-md bg-primary/10 dark:bg-[#222A26] px-3 text-sm font-extrabold tabular-nums text-gray-900 dark:text-zinc-100">
                 {formatCurrency(preview.totalAmount)}
               </div>
             </div>
@@ -3422,7 +3377,7 @@ export default function EmprestimosPage() {
                 type="date"
                 value={contractDate}
                 onChange={(e) => setContractDate(e.target.value)}
-                className="mt-1"
+                className="mt-1 cal-green"
               />
               <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">Quando foi fechado</p>
             </div>
@@ -3432,7 +3387,7 @@ export default function EmprestimosPage() {
                 type="date"
                 value={firstInstallmentDate}
                 onChange={(e) => setFirstInstallmentDate(e.target.value)}
-                className="mt-1"
+                className="mt-1 cal-green"
               />
               <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">Quando começa a pagar</p>
             </div>
@@ -3457,7 +3412,8 @@ export default function EmprestimosPage() {
             </div>
           </div>
 
-          {/* Vencimento das Parcelas */}
+          {/* Vencimento das Parcelas — só aparece ao marcar um dia */}
+          {(skipSaturday || skipSunday || skipHolidays) && (
           <div>
             <Label>{modality === "BIWEEKLY" ? "Vencimento das Quinzenas" : modality === "WEEKLY" ? "Vencimento das Semanas" : modality === "DAILY" ? "Vencimento dos Dias" : "Vencimento das Parcelas"}</Label>
             <div className="mt-2 space-y-2 max-h-[200px] overflow-y-auto rounded-lg border border-gray-200 dark:border-zinc-800 p-3">
@@ -3475,7 +3431,7 @@ export default function EmprestimosPage() {
                         updated[i] = e.target.value
                         setInstallmentDates(updated)
                       }}
-                      className="flex-1"
+                      className="flex-1 cal-green"
                     />
                     {interestType === "SAC" && sacAmounts && sacAmounts[i] !== undefined && (
                       <span className="text-sm font-bold tabular-nums text-primary w-24 text-right shrink-0">{formatCurrency(sacAmounts[i])}</span>
@@ -3485,6 +3441,7 @@ export default function EmprestimosPage() {
               })}
             </div>
           </div>
+          )}
 
           {/* Observações */}
           <div>
@@ -3497,52 +3454,6 @@ export default function EmprestimosPage() {
             />
           </div>
 
-          {/* Etiquetas */}
-          <div>
-            <Label>Etiquetas</Label>
-            <div className="flex flex-wrap gap-1 mt-1 mb-2">
-              {loanTags.map((tag, i) => (
-                <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">
-                  {tag}
-                  <button type="button" onClick={() => setLoanTags(loanTags.filter((_, idx) => idx !== i))} className="hover:text-red-800 dark:hover:text-red-300">
-                    <X className="h-3 w-3" />
-                  </button>
-                </span>
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <Input
-                value={formTagInput}
-                onChange={(e) => setFormTagInput(e.target.value)}
-                placeholder="Digite uma etiqueta..."
-                className="flex-1"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault()
-                    const val = formTagInput.trim()
-                    if (val && !loanTags.includes(val)) {
-                      setLoanTags([...loanTags, val])
-                    }
-                    setFormTagInput("")
-                  }
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  const val = formTagInput.trim()
-                  if (val && !loanTags.includes(val)) {
-                    setLoanTags([...loanTags, val])
-                  }
-                  setFormTagInput("")
-                }}
-                className="px-3 py-2 rounded-lg bg-primary text-white text-sm hover:bg-primary/90 transition-colors"
-              >
-                <Plus className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-
           {/* Garantias (opcional) */}
           <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
             <div className="flex items-center justify-between gap-2">
@@ -3551,47 +3462,118 @@ export default function EmprestimosPage() {
               </span>
               <button
                 type="button"
-                onClick={() => showToast("Garantias em breve", "info")}
+                onClick={() => setGarantias([...garantias, { description: "", value: "", notes: "" }])}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-gray-700 dark:text-zinc-200 transition hover:bg-gray-50 dark:hover:bg-zinc-800"
               >
                 <Plus className="h-3.5 w-3.5" /> Adicionar
               </button>
             </div>
-            <p className="mt-2 text-xs leading-relaxed text-gray-500 dark:text-zinc-400">Registre bens recebidos como garantia. Não afeta cálculos — apenas aparece no comprovante.</p>
+            {garantias.length === 0 ? (
+              <p className="mt-2 text-xs leading-relaxed text-gray-500 dark:text-zinc-400">Registre bens recebidos como garantia. Não afeta cálculos — apenas aparece no comprovante.</p>
+            ) : (
+              <div className="mt-3 space-y-3">
+                {garantias.map((g, i) => (
+                  <div key={i} className="rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-gray-500 dark:text-zinc-400">Garantia {i + 1}</span>
+                      <button
+                        type="button"
+                        onClick={() => setGarantias(garantias.filter((_, idx) => idx !== i))}
+                        className="text-red-500 hover:text-red-600 transition"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <div className="mt-2 grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs">Descrição do bem *</Label>
+                        <Input
+                          value={g.description}
+                          onChange={(e) => setGarantias(garantias.map((it, idx) => idx === i ? { ...it, description: e.target.value } : it))}
+                          className="mt-1"
+                          placeholder="Ex: Moto Honda CG 160 placa ABC1"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Valor combinado (R$)</Label>
+                        <Input
+                          type="text"
+                          inputMode="decimal"
+                          value={g.value}
+                          onChange={(e) => {
+                            const v = e.target.value
+                            if (/^\d*[,.]?\d*$/.test(v)) setGarantias(garantias.map((it, idx) => idx === i ? { ...it, value: v.replace(",", ".") } : it))
+                          }}
+                          className="mt-1"
+                          placeholder="0,00"
+                        />
+                      </div>
+                    </div>
+                    <div className="mt-2">
+                      <Label className="text-xs">Observações</Label>
+                      <textarea
+                        value={g.notes}
+                        onChange={(e) => setGarantias(garantias.map((it, idx) => idx === i ? { ...it, notes: e.target.value } : it))}
+                        className="mt-1 flex w-full rounded-md border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 px-3 py-2 text-sm text-gray-900 dark:text-zinc-100 min-h-[70px] resize-y focus:outline-none focus:ring-2 focus:ring-ring"
+                        placeholder="Estado de conservação, onde está guardado, etc."
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Juros diários */}
-          <div
-            className="flex items-start gap-3 p-4 rounded-xl border border-amber-500/30 bg-amber-500/5 cursor-pointer transition hover:bg-amber-500/10"
-            onClick={() => setDailyInterest(!dailyInterest)}
-          >
-            <input type="checkbox" checked={dailyInterest} readOnly className="mt-0.5 h-[18px] w-[18px] shrink-0 accent-[#16a249] cursor-pointer" />
-            <div>
-              <span className="text-sm font-semibold text-gray-900 dark:text-zinc-100">📈 Aplicar juros diários em caso de atraso</span>
-              <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">Se marcado, juros serão aplicados automaticamente por dia de atraso</p>
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/5">
+            <div
+              className="flex items-start gap-3 p-4 cursor-pointer transition hover:bg-amber-500/10 rounded-xl"
+              onClick={() => setDailyInterest(!dailyInterest)}
+            >
+              <input type="checkbox" checked={dailyInterest} readOnly className="mt-0.5 h-[18px] w-[18px] shrink-0 accent-[#16a249] cursor-pointer" />
+              <div>
+                <span className="text-sm font-semibold text-gray-900 dark:text-zinc-100">📈 Aplicar juros diários em caso de atraso</span>
+                <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">Se marcado, juros serão aplicados automaticamente por dia de atraso</p>
+              </div>
             </div>
+
+            {/* Tipo de Juros + Taxa — aparece ao marcar */}
+            {dailyInterest && (
+              <div className="grid grid-cols-2 gap-4 px-4 pb-4">
+                <div>
+                  <Label className="text-sm font-medium">Tipo de Juros</Label>
+                  <div className="relative mt-1">
+                    <select
+                      value={dailyInterestType}
+                      onChange={(e) => setDailyInterestType(e.target.value as "percent" | "percent30" | "fixed")}
+                      className={`${selectClass} appearance-none pr-9`}
+                    >
+                      <option value="percent">% da parcela por dia</option>
+                      <option value="percent30">% do valor total / 30 dias</option>
+                      <option value="fixed">Valor fixo (R$ por dia)</option>
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-zinc-400" />
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">{dailyInterestType === "fixed" ? "Valor (R$)" : "Taxa (%)"}</Label>
+                  <Input
+                    type="text"
+                    inputMode="decimal"
+                    value={dailyInterestAmount}
+                    onChange={(e) => {
+                      const v = e.target.value
+                      if (/^\d*[,.]?\d*$/.test(v)) setDailyInterestAmount(v.replace(",", "."))
+                    }}
+                    className="mt-1"
+                    placeholder={dailyInterestType === "fixed" ? "Ex: 15.00" : "Ex: 1, 2"}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Valor do Juros Diário */}
-          {dailyInterest && (
-            <div>
-              <Label className="text-sm font-medium">Valor do Juros Diário (R$)</Label>
-              <Input
-                type="text"
-                inputMode="decimal"
-                value={dailyInterestAmount}
-                onChange={(e) => {
-                  const v = e.target.value
-                  if (/^\d*[,.]?\d*$/.test(v)) setDailyInterestAmount(v.replace(",", "."))
-                }}
-                className="mt-1"
-                placeholder="Ex: 15.00"
-              />
-              <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">Valor cobrado por dia de atraso (padrão: R$ 15,00)</p>
-            </div>
-          )}
-
-          {/* WhatsApp */}
+          {/* WhatsApp — removido temporariamente
           <div
             className={`flex items-start gap-3 p-4 rounded-lg border cursor-pointer transition ${
               whatsappNotify ? "border-primary/50 bg-primary/10 dark:bg-primary/20" : "border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900"
@@ -3606,6 +3588,7 @@ export default function EmprestimosPage() {
               <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">Alertas de atraso e relatórios serão enviados normalmente mesmo que você não marque essa opção</p>
             </div>
           </div>
+          */}
 
           {/* Botões */}
           <div className="flex justify-end gap-3 pt-2">
@@ -4284,119 +4267,127 @@ export default function EmprestimosPage() {
         })()}
       </Dialog>
 
-      {/* ===== ETIQUETAR DIALOG ===== */}
-      <Dialog
-        open={!!tagDialog}
-        onClose={() => { setTagDialog(null); setShowTagForm(false); setTagInput(""); }}
-        title="Gerenciar Etiquetas"
-        className="max-w-sm"
-      >
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 text-gray-700 dark:text-zinc-300">
-            <Tag className="h-4 w-4" />
-            <span className="font-medium text-sm">Etiquetas</span>
-          </div>
+      {/* ===== ETIQUETAR (popover ancorado no botão Etiqueta do card) ===== */}
+      {tagDialog && tagPos && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => { setTagDialog(null); setShowTagForm(false); setTagInput(""); }} />
+          <div
+            className="fixed z-50 w-72 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-3 shadow-xl"
+            style={{ left: tagPos.left, top: tagPos.top }}
+          >
+            <div className="flex items-center gap-2 text-gray-700 dark:text-zinc-300 mb-2">
+              <Tag className="h-4 w-4" />
+              <span className="font-semibold text-sm">Etiquetas</span>
+            </div>
 
-          {/* Tags existentes */}
-          <div className="flex flex-wrap gap-1.5">
-            {editingTags.map((tag, i) => {
-              const [name, color] = tag.includes("|") ? tag.split("|") : [tag, "#ef4444"]
-              return (
-                <span key={i} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium text-white" style={{ backgroundColor: color }}>
-                  {name}
-                  <button type="button" onClick={() => setEditingTags(editingTags.filter((_, idx) => idx !== i))} className="hover:opacity-70">
-                    <X className="h-3 w-3" />
-                  </button>
-                </span>
-              )
-            })}
-          </div>
-
-          {!showTagForm ? (
-            <button
-              type="button"
-              onClick={() => setShowTagForm(true)}
-              className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-zinc-400 border border-dashed border-gray-300 dark:border-zinc-600 rounded-lg px-3 py-1.5 hover:border-gray-400 dark:hover:border-zinc-500 transition-colors"
-            >
-              <Plus className="h-3.5 w-3.5" /> Adicionar
-            </button>
-          ) : (
-            <div className="space-y-3 border border-gray-200 dark:border-zinc-700 rounded-lg p-3">
-              <Input
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                placeholder="Nome da etiqueta..."
-                className="text-sm"
-                autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault()
-                    const val = tagInput.trim()
-                    if (val) {
-                      const newTag = `${val}|${tagColor}`
-                      if (!editingTags.some(t => t.split("|")[0] === val)) {
-                        setEditingTags([...editingTags, newTag])
-                      }
-                      setTagInput("")
-                      setShowTagForm(false)
-                    }
-                  }
-                }}
-              />
-              <div>
-                <p className="text-xs text-gray-500 dark:text-zinc-400 mb-2">Criar nova etiqueta:</p>
-                <div className="flex flex-wrap gap-2">
-                  {["#3b82f6", "#ef4444", "#f97316", "#10b981", "#eab308", "#a855f7", "#ec4899", "#6366f1", "#14b8a6", "#f59e0b", "#8b5cf6", "#06b6d4"].map((c) => (
-                    <button
-                      key={c}
-                      type="button"
-                      onClick={() => setTagColor(c)}
-                      className={`w-7 h-7 rounded-full transition-all ${tagColor === c ? "ring-2 ring-offset-2 ring-gray-900 dark:ring-white dark:ring-offset-zinc-900 scale-110" : "hover:scale-110"}`}
-                      style={{ backgroundColor: c }}
-                    />
-                  ))}
-                </div>
+            {/* Tags existentes */}
+            {editingTags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {editingTags.map((tag, i) => {
+                  const [name, color] = tag.includes("|") ? tag.split("|") : [tag, "#ef4444"]
+                  return (
+                    <span key={i} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium text-white" style={{ backgroundColor: color }}>
+                      {name}
+                      <button type="button" onClick={() => setEditingTags(editingTags.filter((_, idx) => idx !== i))} className="hover:opacity-70">
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  )
+                })}
               </div>
-              {tagInput.trim() && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    const val = tagInput.trim()
-                    if (val) {
-                      const newTag = `${val}|${tagColor}`
-                      if (!editingTags.some(t => t.split("|")[0] === val)) {
-                        setEditingTags([...editingTags, newTag])
+            )}
+
+            {!showTagForm ? (
+              <button
+                type="button"
+                onClick={() => setShowTagForm(true)}
+                className="w-full flex items-center gap-1.5 text-sm text-gray-500 dark:text-zinc-400 border border-dashed border-gray-300 dark:border-zinc-600 rounded-lg px-3 py-1.5 hover:border-gray-400 dark:hover:border-zinc-500 transition-colors"
+              >
+                <Plus className="h-3.5 w-3.5" /> Criar / adicionar etiqueta
+              </button>
+            ) : (
+              <div className="space-y-3">
+                <Input
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  placeholder="Digite para buscar ou criar..."
+                  className="text-sm"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault()
+                      const val = tagInput.trim()
+                      if (val) {
+                        const newTag = `${val}|${tagColor}`
+                        if (!editingTags.some(t => t.split("|")[0] === val)) {
+                          setEditingTags([...editingTags, newTag])
+                        }
+                        setTagInput("")
+                        setShowTagForm(false)
                       }
-                      setTagInput("")
-                      setShowTagForm(false)
                     }
                   }}
-                  className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-white text-sm font-medium transition-colors"
-                  style={{ backgroundColor: tagColor }}
-                >
-                  <Plus className="h-4 w-4" /> Criar &ldquo;{tagInput.trim()}&rdquo;
-                </button>
-              )}
-            </div>
-          )}
+                />
+                {editingTags.length === 0 && !tagInput.trim() && (
+                  <p className="text-xs text-gray-500 dark:text-zinc-400 bg-gray-50 dark:bg-zinc-800/50 rounded-lg p-2 leading-relaxed">
+                    Nenhuma etiqueta ainda. Digite um nome acima para criar a primeira.
+                  </p>
+                )}
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-zinc-400 mb-2">Cor da etiqueta:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {["#3b82f6", "#ef4444", "#f97316", "#10b981", "#eab308", "#a855f7", "#ec4899", "#6366f1", "#14b8a6", "#f59e0b", "#8b5cf6", "#06b6d4"].map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setTagColor(c)}
+                        className={`w-6 h-6 rounded-full transition-all ${tagColor === c ? "ring-2 ring-offset-2 ring-gray-900 dark:ring-white dark:ring-offset-zinc-900 scale-110" : "hover:scale-110"}`}
+                        style={{ backgroundColor: c }}
+                      />
+                    ))}
+                  </div>
+                </div>
+                {tagInput.trim() && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const val = tagInput.trim()
+                      if (val) {
+                        const newTag = `${val}|${tagColor}`
+                        if (!editingTags.some(t => t.split("|")[0] === val)) {
+                          setEditingTags([...editingTags, newTag])
+                        }
+                        setTagInput("")
+                        setShowTagForm(false)
+                      }
+                    }}
+                    className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-white text-sm font-medium transition-colors"
+                    style={{ backgroundColor: tagColor }}
+                  >
+                    <Plus className="h-4 w-4" /> Criar &ldquo;{tagInput.trim()}&rdquo;
+                  </button>
+                )}
+              </div>
+            )}
 
-          <div className="flex justify-end gap-2 pt-2 border-t border-gray-100 dark:border-zinc-800">
-            <Button variant="outline" size="sm" onClick={() => { setTagDialog(null); setShowTagForm(false); setTagInput(""); }}>Cancelar</Button>
-            <Button size="sm" onClick={async () => {
-              if (!tagDialog) return
-              await fetch(`/api/loans/${tagDialog.id}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ tags: editingTags }),
-              })
-              setTagDialog(null)
-              setShowTagForm(false)
-              setTagInput("")
-              fetchLoans()
-            }}>Salvar</Button>
+            <div className="flex justify-end gap-2 pt-2 mt-3 border-t border-gray-100 dark:border-zinc-800">
+              <Button variant="outline" size="sm" onClick={() => { setTagDialog(null); setShowTagForm(false); setTagInput(""); }}>Cancelar</Button>
+              <Button size="sm" onClick={async () => {
+                if (!tagDialog) return
+                await fetch(`/api/loans/${tagDialog.id}`, {
+                  method: "PUT",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ tags: editingTags }),
+                })
+                setTagDialog(null)
+                setShowTagForm(false)
+                setTagInput("")
+                fetchLoans()
+              }}>Salvar</Button>
+            </div>
           </div>
-        </div>
-      </Dialog>
+        </>
+      )}
 
       {/* ===== EDITAR VENCIMENTO (popover ancorado no lápis) ===== */}
       {editDueLoan && editDuePos && (
@@ -5383,11 +5374,11 @@ export default function EmprestimosPage() {
         </div>
       </Dialog>
 
-      {/* Card: Visualizar relatório (mesma largura do card de escolha) */}
+      {/* Card: Visualizar relatório (mesma largura do card de cobrança) */}
       <Dialog
         open={reportDialog}
         onClose={() => setReportDialog(false)}
-        className="w-full max-w-md"
+        className="w-full max-w-2xl"
       >
         {reportLoan && (
           <div className="space-y-3">

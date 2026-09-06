@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Avatar } from "@/components/avatar"
-import { ChevronDown, RefreshCw, Plus, X } from "lucide-react"
+import { ChevronDown, ChevronsUpDown, RefreshCw, Plus, X, Search, Check, Trash2, UserPlus, Shield } from "lucide-react"
 import { calculateLoan, formatCurrency, generateInstallmentDates, localDateStr, resolveDailyInterestAmount } from "@/lib/utils"
 import { showToast } from "@/lib/toast"
 
@@ -61,6 +61,9 @@ export function LoanEditContent({ presentation = "page", onClose }: LoanEditCont
   const [loan, setLoan] = useState<LoanEdit | null>(null)
   const [clients, setClients] = useState<Client[]>([])
   const [clientId, setClientId] = useState("")
+  const [clientPickerOpen, setClientPickerOpen] = useState(false)
+  const [clientSearch, setClientSearch] = useState("")
+  const [manualSelected, setManualSelected] = useState(false)
   const [amount, setAmount] = useState<number>(0)
   const [interestRate, setInterestRate] = useState<number>(0)
   const [interestType, setInterestType] = useState("PER_INSTALLMENT")
@@ -77,6 +80,7 @@ export function LoanEditContent({ presentation = "page", onClose }: LoanEditCont
   const [whatsappNotify, setWhatsappNotify] = useState(false)
   const [installmentDates, setInstallmentDates] = useState<string[]>([])
   const [notes, setNotes] = useState("")
+  const [garantias, setGarantias] = useState<{ description: string; value: string; notes: string }[]>([])
   const [loanTags, setLoanTags] = useState<string[]>([])
   const [tagInput, setTagInput] = useState("")
   const [loading, setLoading] = useState(Boolean(loanId))
@@ -170,10 +174,17 @@ export function LoanEditContent({ presentation = "page", onClose }: LoanEditCont
   }, [firstInstallmentDate, installmentCount, modality, skipSaturday, skipSunday, skipHolidays])
 
   const selectedClient = clients.find((client) => client.id === clientId)
+  const filteredClients = clients.filter((client) => {
+    if (!clientSearch.trim()) return true
+    const q = clientSearch.toLowerCase()
+    return client.name.toLowerCase().includes(q)
+      || (client.phone || "").toLowerCase().includes(q)
+      || (client.document || "").toLowerCase().includes(q)
+  })
 
-  const inputClass = "mt-1.5 h-9 rounded-xl border-gray-200 bg-white px-3 text-sm text-slate-700 shadow-none"
-  const selectClass = "mt-1.5 h-9 w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 pr-9 text-sm text-slate-700 outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
-  const helperClass = "mt-1 text-xs text-slate-400"
+  const inputClass = "mt-1.5 h-9 rounded-md border-gray-200 dark:border-zinc-700 bg-white dark:bg-[#121614] px-3 text-sm text-slate-700 dark:text-zinc-100 shadow-none"
+  const selectClass = "mt-1.5 h-9 w-full appearance-none rounded-md border border-gray-200 dark:border-zinc-700 bg-white dark:bg-[#121614] px-3 pr-9 text-sm text-slate-700 dark:text-zinc-100 outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
+  const helperClass = "mt-1 text-xs text-slate-400 dark:text-zinc-500"
   const labelClass = "text-sm font-medium text-slate-700 dark:text-zinc-300"
 
   const preview = calculateLoan(
@@ -279,20 +290,20 @@ export function LoanEditContent({ presentation = "page", onClose }: LoanEditCont
   }
 
   const card = (
-    <div className="mx-auto max-w-3xl rounded-xl border border-gray-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-900">
-      <div className="flex items-center justify-between px-5 pb-2 pt-4 sm:px-6">
-        <h1 className="text-xl font-semibold text-slate-800 dark:text-zinc-100">Editar Empréstimo</h1>
-        <button
-          type="button"
-          onClick={handleClose}
-          className="rounded-full p-2 text-slate-500 transition hover:bg-gray-100 hover:text-slate-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
-          aria-label="Fechar"
-        >
-          <X className="h-5 w-5" />
-        </button>
-      </div>
+    <div className="mx-auto max-w-3xl rounded-xl border border-gray-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-[#121614]">
+      <div className="max-h-[calc(100vh-48px)] space-y-6 overflow-y-auto px-6 pb-8 pt-4 sm:px-8">
+        <div className="flex items-center justify-between">
+          <h1 className="text-base font-semibold tracking-tight text-slate-800 dark:text-zinc-100 sm:text-xl">Editar Empréstimo</h1>
+          <button
+            type="button"
+            onClick={handleClose}
+            className="flex h-8 w-8 items-center justify-center rounded-md bg-red-500 text-white transition hover:bg-red-600"
+            aria-label="Fechar"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
 
-      <div className="max-h-[calc(100vh-96px)] space-y-6 overflow-y-auto px-6 pb-8 sm:px-8">
         {error && (
           <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-900/40 dark:bg-red-950/20 dark:text-red-300">
             {error}
@@ -300,53 +311,107 @@ export function LoanEditContent({ presentation = "page", onClose }: LoanEditCont
         )}
 
         <div>
-          <Label className="text-base font-medium text-slate-800 dark:text-zinc-100">Cliente *</Label>
-          <div className="relative mt-2 overflow-hidden rounded-2xl border border-primary/20 bg-primary/10 dark:border-primary/30 dark:bg-primary/15">
-            <select
-              value={clientId}
-              onChange={(e) => setClientId(e.target.value)}
-              className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
-            >
-              <option value="">Selecione o cliente</option>
-              {clients.map((client) => (
-                <option key={client.id} value={client.id}>
-                  {client.name}
-                </option>
-              ))}
-            </select>
-            <div className="flex min-h-[56px] items-center justify-between px-4 py-3">
-              <div className="flex min-w-0 items-center gap-3">
-                {selectedClient ? (
-                  <>
-                    <Avatar name={selectedClient.name} src={selectedClient.photo} size="sm" className="bg-primary/20 text-primary" />
-                    <span className="truncate text-base font-medium text-gray-900 dark:text-zinc-100">{selectedClient.name}</span>
-                    <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-600 dark:bg-amber-950/30 dark:text-amber-300">
-                      💰 {selectedClient.score}
-                    </span>
-                  </>
+          <Label className="text-xs font-medium text-slate-800 dark:text-zinc-100 sm:text-sm">Cliente *</Label>
+          <button
+            type="button"
+            onClick={() => setClientPickerOpen((open) => !open)}
+            className="mt-1.5 flex h-9 w-full items-center justify-between gap-2 rounded-md border border-gray-200 bg-white px-3 text-left transition hover:border-primary/50 dark:border-zinc-700 dark:bg-[#121614]"
+          >
+            <div className="flex min-w-0 items-center gap-2">
+              {selectedClient ? (
+                <>
+                  <Avatar name={selectedClient.name} src={selectedClient.photo} size="sm" className="h-6 w-6 text-[10px] bg-primary/20 text-primary" />
+                  <span className="truncate text-sm font-medium text-gray-900 dark:text-zinc-100">{selectedClient.name}</span>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-[#3a2f12] dark:text-[#f5c451]">
+                    👍 {selectedClient.score}
+                  </span>
+                </>
+              ) : (
+                <span className="text-sm text-slate-500 dark:text-zinc-400">Selecione o cliente</span>
+              )}
+            </div>
+            <ChevronsUpDown className="h-4 w-4 shrink-0 text-gray-400 dark:text-zinc-500" />
+          </button>
+
+          {clientPickerOpen && (
+            <div className="mt-2 overflow-hidden rounded-md border border-gray-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-[#121614]">
+              <div className="border-b border-gray-100 p-3 dark:border-zinc-800">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-zinc-500" />
+                  <Input
+                    value={clientSearch}
+                    onChange={(e) => setClientSearch(e.target.value)}
+                    placeholder="Buscar cliente..."
+                    className="pl-9 border-gray-200 bg-white dark:border-zinc-700 dark:bg-[#121614]"
+                    autoFocus
+                  />
+                </div>
+              </div>
+              <div className="p-2 pb-0">
+                <button
+                  type="button"
+                  onClick={() => { setManualSelected(true); setClientId("") }}
+                  className={`flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors ${manualSelected ? "bg-primary/10 text-primary dark:bg-[#29322E] dark:text-zinc-100" : "text-gray-500 hover:bg-gray-50 dark:text-zinc-400 dark:hover:bg-[#29322E]"}`}
+                >
+                  <span className="flex items-center gap-2"><UserPlus className="h-4 w-4" /> Digitar manualmente</span>
+                  {manualSelected && <Check className="h-4 w-4 shrink-0 text-primary" />}
+                </button>
+              </div>
+              <div className="max-h-72 overflow-y-auto p-2">
+                {filteredClients.length === 0 ? (
+                  <div className="rounded-lg px-3 py-6 text-center text-sm text-gray-500 dark:text-zinc-400">
+                    {clientSearch.trim() ? "Nenhum cliente encontrado." : "Digite para buscar um cliente."}
+                  </div>
                 ) : (
-                  <span className="text-sm text-slate-500 dark:text-zinc-400">Selecione o cliente</span>
+                  <div className="space-y-1">
+                    {filteredClients.map((client) => {
+                      const isSelected = client.id === clientId
+                      return (
+                        <button
+                          key={client.id}
+                          type="button"
+                          onClick={() => { setClientId(client.id); setManualSelected(false); setClientPickerOpen(false); setClientSearch("") }}
+                          className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left transition-colors ${isSelected ? "bg-primary/10 dark:bg-[#29322E]" : "hover:bg-gray-50 dark:hover:bg-[#29322E]"}`}
+                        >
+                          <div className="flex min-w-0 items-center gap-3">
+                            <Avatar name={client.name} src={client.photo} size="sm" />
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="truncate text-sm font-medium text-gray-900 dark:text-zinc-100">{client.name}</p>
+                                <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-[#3a2f12] dark:text-[#f5c451]">
+                                  👍 {client.score ?? 0}
+                                </span>
+                              </div>
+                              <p className="truncate text-xs text-gray-500 dark:text-zinc-400">
+                                {client.phone || client.document || "Sem telefone ou CPF"}
+                              </p>
+                            </div>
+                          </div>
+                          {isSelected && <Check className="h-4 w-4 shrink-0 text-primary" />}
+                        </button>
+                      )
+                    })}
+                  </div>
                 )}
               </div>
-              <ChevronDown className="h-4 w-4 text-primary" />
             </div>
-          </div>
+          )}
         </div>
 
         <div className="grid gap-5 sm:grid-cols-2">
           <div>
-            <Label className="text-base font-medium text-slate-800 dark:text-zinc-100">Valor (R$) *</Label>
+            <Label className="text-xs font-medium text-slate-800 dark:text-zinc-100 sm:text-sm">Valor (R$) *</Label>
             <Input type="number" step="0.01" value={amount || ""} onChange={(e) => setAmount(Number(e.target.value))} className={inputClass} />
           </div>
           <div>
-            <Label className="text-base font-medium text-slate-800 dark:text-zinc-100">Juros (%)</Label>
+            <Label className="text-xs font-medium text-slate-800 dark:text-zinc-100 sm:text-sm">Juros (%)</Label>
             <Input type="number" step="0.1" value={interestRate || ""} onChange={(e) => setInterestRate(Number(e.target.value))} className={inputClass} />
           </div>
         </div>
 
         <div className="grid gap-5 sm:grid-cols-2">
           <div>
-            <Label className="text-base font-medium text-slate-800 dark:text-zinc-100">Tipo de Pagamento</Label>
+            <Label className="text-xs font-medium text-slate-800 dark:text-zinc-100 sm:text-sm">Tipo de Pagamento</Label>
             <div className="relative">
               <select value={modality} onChange={(e) => setModality(e.target.value)} className={selectClass}>
                 <option value="MONTHLY">Parcelado (Mensal)</option>
@@ -358,13 +423,13 @@ export function LoanEditContent({ presentation = "page", onClose }: LoanEditCont
             </div>
           </div>
           <div>
-            <Label className="text-base font-medium text-slate-800 dark:text-zinc-100">Parcelas</Label>
+            <Label className="text-xs font-medium text-slate-800 dark:text-zinc-100 sm:text-sm">Parcelas</Label>
             <Input type="number" min={1} value={installmentCount} onChange={(e) => setInstallmentCount(Number(e.target.value) || 1)} className={inputClass} />
           </div>
         </div>
 
         <div>
-          <Label className="text-base font-medium text-slate-800 dark:text-zinc-100">Juros Aplicado</Label>
+          <Label className="text-xs font-medium text-slate-800 dark:text-zinc-100 sm:text-sm">Juros Aplicado</Label>
           <div className="relative">
             <select value={interestType} onChange={(e) => setInterestType(e.target.value)} className={selectClass}>
               <option value="PER_INSTALLMENT">Por Parcela</option>
@@ -377,45 +442,43 @@ export function LoanEditContent({ presentation = "page", onClose }: LoanEditCont
 
         <div className="grid gap-5 sm:grid-cols-2">
           <div>
-            <Label className="text-base font-medium text-slate-800 dark:text-zinc-100">Juros Total (R$)</Label>
+            <Label className="text-xs font-medium text-slate-800 dark:text-zinc-100 sm:text-sm">Juros Total (R$)</Label>
             {interestType === "FIXED_AMOUNT" ? (
               <Input type="number" step="0.01" value={totalInterestAmount || ""} onChange={(e) => setTotalInterestAmount(Number(e.target.value))} className={inputClass} />
             ) : (
-              <Input type="text" readOnly value={formatCurrency(preview.totalInterest)} className={`${inputClass} bg-gray-50 text-slate-700`} />
+              <Input type="text" readOnly value={formatCurrency(preview.totalInterest)} className={`${inputClass} bg-gray-50 dark:bg-[#121614] text-slate-700 dark:text-zinc-100`} />
             )}
           </div>
           <div>
-            <Label className="text-base font-medium text-slate-800 dark:text-zinc-100">Valor da Parcela (R$)</Label>
-            <Input type="text" readOnly value={formatCurrency(preview.installmentAmount)} className={`${inputClass} bg-gray-50 text-slate-700`} />
+            <Label className="text-xs font-medium text-slate-800 dark:text-zinc-100 sm:text-sm">Valor da Parcela (R$)</Label>
+            <Input type="text" readOnly value={formatCurrency(preview.installmentAmount)} className={`${inputClass} bg-gray-50 dark:bg-[#121614] text-slate-700 dark:text-zinc-100`} />
           </div>
         </div>
 
         <div>
-          <Label className="text-base font-medium text-slate-800 dark:text-zinc-100">Total a Receber</Label>
-          <div className="mt-2 flex h-12 w-full items-center rounded-2xl border border-primary/20 bg-primary/10 px-4 text-[1.35rem] font-semibold tracking-[-0.02em] text-primary dark:border-primary/30 dark:bg-primary/15">
-            {formatCurrency(preview.totalAmount)}
-          </div>
+          <Label className="text-xs font-medium text-slate-800 dark:text-zinc-100 sm:text-sm">Total a Receber</Label>
+          <Input type="text" readOnly value={formatCurrency(preview.totalAmount)} className={`${inputClass} w-full bg-primary/10 dark:bg-[#222A26] text-primary dark:text-primary font-semibold`} />
         </div>
 
         <div className="grid gap-5 sm:grid-cols-2">
           <div>
-            <Label className="text-base font-medium text-slate-800 dark:text-zinc-100">Data do Contrato</Label>
+            <Label className="text-xs font-medium text-slate-800 dark:text-zinc-100 sm:text-sm">Data do Contrato</Label>
             <div className="relative">
-              <Input type="date" value={contractDate} onChange={(e) => setContractDate(e.target.value)} className={`${inputClass} pr-3`} />
+              <Input type="date" value={contractDate} onChange={(e) => setContractDate(e.target.value)} className={`${inputClass} pr-3 cal-green`} />
             </div>
             <p className={helperClass}>Quando foi fechado</p>
           </div>
           <div>
-            <Label className="text-base font-medium text-slate-800 dark:text-zinc-100">1ª Parcela *</Label>
+            <Label className="text-xs font-medium text-slate-800 dark:text-zinc-100 sm:text-sm">1ª Parcela *</Label>
             <div className="relative">
-              <Input type="date" value={firstInstallmentDate} onChange={(e) => setFirstInstallmentDate(e.target.value)} className={`${inputClass} pr-3`} />
+              <Input type="date" value={firstInstallmentDate} onChange={(e) => setFirstInstallmentDate(e.target.value)} className={`${inputClass} pr-3 cal-green`} />
             </div>
             <p className={helperClass}>Quando começa a pagar</p>
           </div>
         </div>
 
         <div>
-          <Label className="text-base font-medium text-slate-800 dark:text-zinc-100">Datas das Parcelas</Label>
+          <Label className="text-xs font-medium text-slate-800 dark:text-zinc-100 sm:text-sm">Datas das Parcelas</Label>
           <div className="mt-3 max-h-[260px] space-y-3 overflow-y-auto rounded-2xl border border-gray-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-950/20">
             {installmentDates.map((date, index) => (
               <div key={index} className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -429,7 +492,7 @@ export function LoanEditContent({ presentation = "page", onClose }: LoanEditCont
                       updated[index] = e.target.value
                       setInstallmentDates(updated)
                     }}
-                    className={`${inputClass} mt-0 pr-3`}
+                    className={`${inputClass} mt-0 pr-3 cal-green`}
                   />
                 </div>
               </div>
@@ -441,13 +504,13 @@ export function LoanEditContent({ presentation = "page", onClose }: LoanEditCont
           <p className="text-sm font-medium text-slate-500 dark:text-zinc-400">Não cobra nos seguintes dias:</p>
           <div className="flex flex-wrap gap-6">
             <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-zinc-300">
-              <input type="checkbox" checked={skipSaturday} onChange={(e) => setSkipSaturday(e.target.checked)} /> Sábados
+              <input type="checkbox" checked={skipSaturday} onChange={(e) => setSkipSaturday(e.target.checked)} className="h-[18px] w-[18px] shrink-0 cursor-pointer appearance-none rounded-full border-2 border-green-600 bg-transparent transition-colors checked:bg-green-500" /> Sábados
             </label>
             <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-zinc-300">
-              <input type="checkbox" checked={skipSunday} onChange={(e) => setSkipSunday(e.target.checked)} /> Domingos
+              <input type="checkbox" checked={skipSunday} onChange={(e) => setSkipSunday(e.target.checked)} className="h-[18px] w-[18px] shrink-0 cursor-pointer appearance-none rounded-full border-2 border-green-600 bg-transparent transition-colors checked:bg-green-500" /> Domingos
             </label>
             <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-zinc-300">
-              <input type="checkbox" checked={skipHolidays} onChange={(e) => setSkipHolidays(e.target.checked)} /> Feriados
+              <input type="checkbox" checked={skipHolidays} onChange={(e) => setSkipHolidays(e.target.checked)} className="h-[18px] w-[18px] shrink-0 cursor-pointer appearance-none rounded-full border-2 border-green-600 bg-transparent transition-colors checked:bg-green-500" /> Feriados
             </label>
           </div>
           <Button type="button" variant="outline" onClick={handleRecalculateDates} className="gap-2 rounded-xl">
@@ -456,71 +519,80 @@ export function LoanEditContent({ presentation = "page", onClose }: LoanEditCont
         </div>
 
         <div>
-          <Label className="text-base font-medium text-slate-800 dark:text-zinc-100">Etiquetas</Label>
-          <div className="mb-3 mt-2 flex flex-wrap gap-2">
-            {loanTags.map((tag, index) => (
-              <span key={index} className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-600 dark:bg-red-950/20 dark:text-red-300">
-                {tag}
-                <button type="button" onClick={() => setLoanTags(loanTags.filter((_, currentIndex) => currentIndex !== index))} className="hover:text-red-800 dark:hover:text-red-300">
-                  <X className="h-3 w-3" />
-                </button>
-              </span>
-            ))}
-          </div>
-          <div className="flex gap-2">
-            <Input
-              value={tagInput}
-              onChange={(e) => setTagInput(e.target.value)}
-              placeholder="Digite uma etiqueta..."
-              className={`${inputClass} mt-0 flex-1`}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault()
-                  const value = tagInput.trim()
-                  if (value && !loanTags.includes(value)) {
-                    setLoanTags([...loanTags, value])
-                  }
-                  setTagInput("")
-                }
-              }}
-            />
-            <button
-              type="button"
-              onClick={() => {
-                const value = tagInput.trim()
-                if (value && !loanTags.includes(value)) {
-                  setLoanTags([...loanTags, value])
-                }
-                setTagInput("")
-              }}
-              className="rounded-2xl bg-primary px-4 py-3 text-white transition-colors hover:bg-primary/90"
-            >
-              <Plus className="h-4 w-4" />
-            </button>
-          </div>
+          <Label className="text-xs font-medium text-slate-800 dark:text-zinc-100 sm:text-sm">Observações</Label>
+          <Textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Anotações sobre este empréstimo..."
+            className={`${inputClass} mt-1.5 min-h-[80px] resize-y`}
+          />
         </div>
 
-        <div className="flex flex-col gap-4 rounded-2xl border border-gray-200 bg-gray-50/70 p-4 dark:border-zinc-800 dark:bg-zinc-950/20 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-wrap items-center gap-6">
-            <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-zinc-300">
-              <input type="checkbox" checked={dailyInterest} onChange={(e) => setDailyInterest(e.target.checked)} /> Juros diário
-            </label>
-            {dailyInterest && (
-              <div className="flex items-center gap-2">
-                <label className="text-sm text-slate-600 dark:text-zinc-300">R$</label>
-                <input type="text" inputMode="decimal" value={dailyInterestAmount} onChange={(e) => { const v = e.target.value; if (/^\d*[,.]?\d*$/.test(v)) setDailyInterestAmount(v.replace(",", ".")) }} className="h-11 w-28 rounded-xl border border-gray-200 bg-white px-3 text-sm text-slate-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white" placeholder="0.00" />
-                <span className="text-sm text-slate-500 dark:text-zinc-400">/dia</span>
-              </div>
-            )}
-            <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-zinc-300">
-              <input type="checkbox" checked={whatsappNotify} onChange={(e) => setWhatsappNotify(e.target.checked)} /> Notificar WhatsApp
-            </label>
+        <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4">
+          <div className="flex items-center justify-between gap-2">
+            <span className="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-zinc-100">
+              <Shield className="h-4 w-4 text-amber-600" /> Garantias (opcional)
+            </span>
+            <button
+              type="button"
+              onClick={() => setGarantias([...garantias, { description: "", value: "", notes: "" }])}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+            >
+              <Plus className="h-3.5 w-3.5" /> Adicionar
+            </button>
           </div>
+          {garantias.length === 0 ? (
+            <p className="mt-2 text-xs leading-relaxed text-gray-500 dark:text-zinc-400">Registre bens recebidos como garantia. Não afeta cálculos — apenas aparece no comprovante.</p>
+          ) : (
+            <div className="mt-3 space-y-3">
+              {garantias.map((g, i) => (
+                <div key={i} className="rounded-lg border border-gray-200 bg-white p-3 dark:border-zinc-700 dark:bg-zinc-900">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-gray-500 dark:text-zinc-400">Garantia {i + 1}</span>
+                    <button type="button" onClick={() => setGarantias(garantias.filter((_, idx) => idx !== i))} className="text-red-500 transition hover:text-red-600">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <div className="mt-2 grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs">Descrição do bem *</Label>
+                      <Input
+                        value={g.description}
+                        onChange={(e) => setGarantias(garantias.map((it, idx) => idx === i ? { ...it, description: e.target.value } : it))}
+                        className={`${inputClass} mt-1`}
+                        placeholder="Ex: Moto Honda CG 160 placa ABC1"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Valor combinado (R$)</Label>
+                      <Input
+                        type="text"
+                        inputMode="decimal"
+                        value={g.value}
+                        onChange={(e) => { const v = e.target.value; if (/^\d*[,.]?\d*$/.test(v)) setGarantias(garantias.map((it, idx) => idx === i ? { ...it, value: v.replace(",", ".") } : it)) }}
+                        className={`${inputClass} mt-1`}
+                        placeholder="0,00"
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-2">
+                    <Label className="text-xs">Observações</Label>
+                    <Textarea
+                      value={g.notes}
+                      onChange={(e) => setGarantias(garantias.map((it, idx) => idx === i ? { ...it, notes: e.target.value } : it))}
+                      className={`${inputClass} mt-1 min-h-[70px] resize-y`}
+                      placeholder="Estado de conservação, onde está guardado, etc."
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="flex justify-end gap-3 border-t border-gray-100 pt-2 dark:border-zinc-800">
-          <Button variant="outline" className="rounded-2xl px-5 !border-gray-300 dark:!border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-800" onClick={handleClose}>Cancelar</Button>
-          <Button className="rounded-2xl bg-primary px-5 text-white hover:bg-primary/90" onClick={handleSave} disabled={saving}>{saving ? "Salvando..." : "Salvar Alterações"}</Button>
+          <Button variant="outline" className="rounded-md px-5 !border-gray-300 dark:!border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-800" onClick={handleClose}>Cancelar</Button>
+          <Button className="rounded-md bg-primary px-5 text-white hover:bg-primary/90" onClick={handleSave} disabled={saving}>{saving ? "Salvando..." : "Salvar Alterações"}</Button>
         </div>
       </div>
     </div>
