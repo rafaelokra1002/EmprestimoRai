@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Renegociar Dívida — Pagamento Parcial de Juros</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* =========================================================
+   DESIGN TOKENS — medidos direto da página CobraFácil
+   Fonte: Inter, sans-serif
+   ---------------------------------------------------------
+   Cores
+     --bg-modal      #121614   fundo do modal / textarea / cancelar
+     --border        #29322E   borda cinza padrão
+     --text          #FAFAFA   texto principal
+     --muted         #9DAFA6   texto "Voltar" / secundário
+     --cyan          #06B6D4   cor de destaque desta tela
+     --cyan-label    #67E8F9   labels dos campos
+     --cyan-input-bg #083344   fundo dos inputs
+     --green         #22C35D   botão de ação / valores positivos
+     --yellow        #EAB308   "Juros pendente final"
+     --card-client   rgba(34,42,38,.5)
+   Raios:  cards 12px · inputs/botões 10px
+   Alturas: inputs 40px · botões grandes 40px · voltar 36px
+   Espaço vertical entre blocos: 16px (cards) · 8px (label→input)
+   Modal: 512px de largura · padding 24px
+   ========================================================= */
+:root{
+  --bg-modal:#121614;
+  --border:#29322E;
+  --text:#FAFAFA;
+  --muted:#9DAFA6;
+  --cyan:#06B6D4;
+  --cyan-label:#67E8F9;
+  --cyan-input-bg:#083344;
+  --green:#22C35D;
+  --yellow:#EAB308;
+  --card-client:rgba(34,42,38,.5);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Inter',sans-serif;
+  background:#0a0c0a;
+  color:var(--text);
+  min-height:100vh;
+  display:flex;justify-content:center;align-items:flex-start;
+  padding:24px 12px;
+}
+
+/* ---------- Modal ---------- */
+.modal{
+  width:100%;max-width:512px;
+  background:var(--bg-modal);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:24px;
+  box-shadow:0 25px 60px rgba(0,0,0,.6);
+  max-height:94vh;overflow-y:auto;
+}
+
+/* ---------- Header ---------- */
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.modal-title{
+  font-size:18px;font-weight:600;line-height:18px;letter-spacing:-0.45px;color:var(--text);
+}
+.close-btn{
+  width:40px;height:40px;border:none;border-radius:8px;cursor:pointer;
+  background:#EF4444;color:#fff;font-size:20px;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+}
+.close-btn:hover{filter:brightness(1.08)}
+
+/* ---------- Card do cliente ---------- */
+.client-card{
+  display:flex;align-items:center;gap:14px;
+  background:var(--card-client);
+  border-radius:12px;padding:16px;margin-bottom:16px;
+}
+.avatar{
+  width:50px;height:50px;border-radius:50%;
+  background:#1c2b23;border:1px solid rgba(34,195,93,.35);
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:600;color:#7fe0a3;flex-shrink:0;
+}
+.client-name{font-size:18px;font-weight:700;color:var(--text);margin-bottom:2px}
+.client-line{font-size:13px;color:var(--muted);line-height:1.5}
+
+/* ---------- Seção ciano ---------- */
+.section-card{
+  border:2px solid var(--cyan);
+  border-radius:12px;padding:16px;
+}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.section-title{
+  display:flex;align-items:center;gap:8px;
+  font-size:16px;font-weight:600;line-height:24px;color:var(--cyan);
+}
+.section-title .ic{font-size:16px}
+.btn-voltar{
+  background:none;border:none;cursor:pointer;
+  height:36px;padding:0 12px;border-radius:10px;
+  font-size:14px;font-weight:500;color:var(--muted);font-family:inherit;
+}
+.btn-voltar:hover{color:var(--text)}
+
+/* ---------- Card "Parcela única" ---------- */
+.parcela-card{
+  background:rgba(6,182,212,.1);
+  border:1px solid rgba(6,182,212,.3);
+  border-radius:12px;padding:12px;margin-top:16px;
+}
+.parcela-tag{font-size:12px;font-weight:500;color:var(--cyan-label);margin-bottom:2px}
+.parcela-info{font-size:15px;font-weight:600;color:var(--text)}
+
+/* ---------- Campos ---------- */
+.row-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}
+.field-label{
+  display:block;font-size:12px;font-weight:500;line-height:16px;color:var(--cyan-label);
+}
+.field-label .req{color:var(--cyan)}
+.field input{
+  width:100%;margin-top:8px;height:40px;
+  background:var(--cyan-input-bg);
+  border:1px solid var(--cyan);
+  border-radius:10px;padding:8px 12px;
+  color:#fff;font-size:14px;font-family:inherit;outline:none;
+}
+.field input.value{font-weight:700}
+.field input:focus{box-shadow:0 0 0 3px rgba(6,182,212,.25)}
+input[type=date]::-webkit-calendar-picker-indicator{filter:invert(60%) sepia(80%) saturate(500%) hue-rotate(150deg)}
+
+/* ---------- Caixa de cálculo ---------- */
+.calc-box{
+  background:rgba(6,182,212,.2);
+  border:1px solid var(--cyan);
+  border-radius:12px;padding:16px;margin-top:16px;
+}
+.calc-row{display:flex;align-items:center;justify-content:space-between;font-size:15px;padding:2px 0}
+.calc-row .lbl{color:#cfe9ef}
+.calc-row .val{font-weight:700;color:var(--text)}
+.calc-row .val.green{color:var(--green)}
+.calc-divider{border:none;border-top:1px solid rgba(6,182,212,.4);margin:10px 0}
+.calc-row.final .lbl{font-size:16px;color:var(--cyan)}
+.calc-row.final .val{font-size:18px;font-weight:700;color:var(--yellow)}
+
+/* ---------- Nota ---------- */
+.note{
+  font-size:12px;font-weight:400;line-height:16px;
+  color:rgba(103,232,249,.7);margin-top:12px;
+}
+
+/* ---------- Observações ---------- */
+.obs{margin-top:20px}
+.obs-label{font-size:14px;font-weight:500;line-height:14px;color:var(--text)}
+.obs textarea{
+  width:100%;margin-top:8px;height:80px;min-height:80px;resize:vertical;
+  background:var(--bg-modal);
+  border:1px solid var(--border);
+  border-radius:10px;padding:8px 12px;
+  color:var(--text);font-size:14px;font-family:inherit;outline:none;
+}
+.obs textarea::placeholder{color:#5b6272}
+.obs textarea:focus{border-color:var(--cyan)}
+
+/* ---------- Rodapé ---------- */
+.footer{display:flex;justify-content:flex-end;gap:12px;margin-top:24px}
+.btn{
+  height:40px;padding:8px 16px;border-radius:10px;cursor:pointer;
+  font-size:14px;font-weight:500;font-family:inherit;border:none;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+}
+.btn-cancel{background:var(--bg-modal);border:1px solid var(--border);color:var(--text)}
+.btn-cancel:hover{background:#1a1f1c}
+.btn-primary{background:var(--green);color:#fff}
+.btn-primary:hover{filter:brightness(1.08)}
+</style>
+</head>
+<body>
+
+<div class="modal" role="dialog" aria-labelledby="modalTitle">
+
+  <!-- Header -->
+  <div class="modal-header">
+    <h2 class="modal-title" id="modalTitle">Renegociar Dívida</h2>
+    <button type="button" class="close-btn" aria-label="Fechar">&times;</button>
+  </div>
+
+  <!-- Card do cliente -->
+  <div class="client-card">
+    <div class="avatar">T</div>
+    <div>
+      <div class="client-name">TESTE1</div>
+      <div class="client-line">Saldo devedor: R$ 390,00</div>
+      <div class="client-line">Valor por parcela: R$ 390,00</div>
+    </div>
+  </div>
+
+  <!-- Seção ciano -->
+  <div class="section-card">
+    <div class="section-header">
+      <div class="section-title"><span class="ic">$</span> Pagamento Parcial de Juros</div>
+      <button type="button" class="btn-voltar">← Voltar</button>
+    </div>
+
+    <!-- Parcela única -->
+    <div class="parcela-card">
+      <div class="parcela-tag">Parcela única</div>
+      <div class="parcela-info">05/10/2026 · Juros: R$ 90,00</div>
+    </div>
+
+    <!-- Campos -->
+    <div class="row-2">
+      <div class="field">
+        <label class="field-label">Valor pago agora (R$) <span class="req">*</span></label>
+        <input class="value" type="number" value="90,00">
+      </div>
+      <div class="field">
+        <label class="field-label">Data do pagamento <span class="req">*</span></label>
+        <input type="date" value="2026-09-06">
+      </div>
+    </div>
+
+    <!-- Caixa de cálculo -->
+    <div class="calc-box">
+      <div class="calc-row"><span class="lbl">Juros total da parcela:</span><span class="val">R$ 90,00</span></div>
+      <div class="calc-row"><span class="lbl">Valor pago agora:</span><span class="val green">- R$ 90,00</span></div>
+      <hr class="calc-divider">
+      <div class="calc-row final"><span class="lbl">Juros pendente final:</span><span class="val">R$ 0,00</span></div>
+    </div>
+
+    <!-- Nota -->
+    <div class="note">O saldo devedor e datas de vencimento não serão alterados. Apenas será registrado o pagamento parcial dos juros.</div>
+  </div>
+
+  <!-- Observações -->
+  <div class="obs">
+    <label class="obs-label">Observações</label>
+    <textarea placeholder="Motivo da renegociação..."></textarea>
+  </div>
+
+  <!-- Rodapé -->
+  <div class="footer">
+    <button type="button" class="btn btn-cancel">Cancelar</button>
+    <button type="button" class="btn btn-primary">Registrar Pagamento Parcial</button>
+  </div>
+
+</div>
+
+</body>
+</html>

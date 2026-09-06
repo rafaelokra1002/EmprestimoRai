@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registrar Pagamento</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: #0a0a0a;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    padding: 20px;
+  }
+
+  .modal {
+    background: #0d0d0d;
+    border: 1px solid #1f1f1f;
+    border-radius: 14px;
+    width: 100%;
+    max-width: 460px;
+    padding: 22px 22px 26px;
+    color: #e8e8e8;
+    position: relative;
+  }
+
+  /* Cabeçalho */
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+  }
+  .modal-header h1 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+  }
+  .btn-close {
+    background: #e11d1d;
+    border: none;
+    color: #fff;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .btn-close:hover { background: #c81616; }
+
+  /* Etiquetas */
+  .label-tag {
+    font-size: 14px;
+    color: #cfcfcf;
+    margin-bottom: 8px;
+  }
+  .btn-etiqueta {
+    background: transparent;
+    border: 1px solid #2a2a2a;
+    color: #cfcfcf;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .btn-etiqueta:hover { border-color: #3a3a3a; }
+
+  .divider {
+    border: none;
+    border-top: 1px solid #1c1c1c;
+    margin: 18px 0;
+  }
+
+  /* Card do cliente */
+  .cliente-card {
+    background: #141414;
+    border: 1px solid #1f1f1f;
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    margin-bottom: 22px;
+  }
+  .avatar {
+    background: #1c3a2a;
+    color: #38c172;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .cliente-info .nome { font-size: 16px; font-weight: 700; color: #fff; }
+  .cliente-info .restante { font-size: 13px; color: #9a9a9a; margin-top: 2px; }
+  .cliente-info .parcela-info { font-size: 13px; color: #9a9a9a; margin-top: 6px; }
+
+  /* Seções */
+  .section-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #e8e8e8;
+    margin-bottom: 10px;
+  }
+  .section { margin-bottom: 20px; }
+
+  /* Tipo de pagamento */
+  .tipo-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .tipo-btn {
+    background: transparent;
+    border: 1px solid #2a2a2a;
+    color: #d0d0d0;
+    padding: 10px 4px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .tipo-btn:hover { border-color: #3a3a3a; }
+  .tipo-btn.active {
+    background: #16a34a;
+    border-color: #16a34a;
+    color: #fff;
+    font-weight: 600;
+  }
+  .tipo-btn.desconto {
+    border-color: #1f6b3d;
+    color: #38c172;
+  }
+
+  /* Dropdown / inputs */
+  .field-select, .field-input {
+    width: 100%;
+    background: #141414;
+    border: 1px solid #262626;
+    color: #e8e8e8;
+    padding: 12px 14px;
+    border-radius: 8px;
+    font-size: 14px;
+    outline: none;
+  }
+  .field-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%239a9a9a' stroke-width='2'><path d='M4 6l4 4 4-4'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+  }
+  .field-input::placeholder { color: #6a6a6a; }
+  .field-input:focus, .field-select:focus { border-color: #16a34a; }
+
+  /* Caixa de valores */
+  .valores-box {
+    background: #141414;
+    border: 1px solid #1f1f1f;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-top: 10px;
+  }
+  .valores-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+    padding: 4px 0;
+  }
+  .valores-row .lbl { color: #9a9a9a; }
+  .valores-row .val { color: #fff; font-weight: 600; }
+
+  .helper {
+    font-size: 12px;
+    color: #7a7a7a;
+    margin-top: 6px;
+  }
+  .helper.green { color: #38c172; }
+
+  label.small-title {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #e8e8e8;
+  }
+  .req { color: #38c172; }
+
+  /* Forma de pagamento */
+  .forma-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .forma-btn {
+    background: transparent;
+    border: 1px solid #2a2a2a;
+    color: #d0d0d0;
+    padding: 12px 4px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .forma-btn:hover { border-color: #3a3a3a; }
+  .forma-btn.active {
+    background: #16a34a;
+    border-color: #16a34a;
+    color: #fff;
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+  <div class="modal">
+    <!-- Cabeçalho -->
+    <div class="modal-header">
+      <h1>Registrar Pagamento</h1>
+      <button class="btn-close" aria-label="Fechar">✕</button>
+    </div>
+
+    <!-- Etiquetas -->
+    <div class="label-tag">🏷️ Etiquetas</div>
+    <button class="btn-etiqueta">+ Criar / adicionar etiqueta</button>
+
+    <hr class="divider">
+
+    <!-- Card do cliente -->
+    <div class="cliente-card">
+      <div class="avatar">T</div>
+      <div class="cliente-info">
+        <div class="nome">TESTE1</div>
+        <div class="restante">Restante: R$ 390,00</div>
+        <div class="parcela-info">Parcela: R$ 390,00 (R$ 300,00 + R$ 90,00 juros)</div>
+      </div>
+    </div>
+
+    <!-- Tipo de Pagamento -->
+    <div class="section">
+      <div class="section-title">Tipo de Pagamento</div>
+      <div class="tipo-grid">
+        <button class="tipo-btn">Parcela</button>
+        <button class="tipo-btn active">Parcial</button>
+        <button class="tipo-btn">Total</button>
+        <button class="tipo-btn desconto">% Desconto</button>
+      </div>
+    </div>
+
+    <!-- Referente a qual Parcela -->
+    <div class="section">
+      <div class="section-title">Referente a qual Parcela?</div>
+      <select class="field-select">
+        <option>Parcela 1/1  -  05/10/2026</option>
+      </select>
+      <div class="valores-box">
+        <div class="valores-row"><span class="lbl">Valor base:</span><span class="val">R$ 390,00</span></div>
+        <div class="valores-row"><span class="lbl">Total da parcela:</span><span class="val">R$ 390,00</span></div>
+      </div>
+    </div>
+
+    <!-- Valor Pago -->
+    <div class="section">
+      <label class="small-title">Valor Pago <span class="req">*</span></label>
+      <input class="field-input" type="text" placeholder="Máx: R$ 390,00">
+      <div class="helper">Digite qualquer valor até R$ 390,00</div>
+    </div>
+
+    <!-- Data do Pagamento -->
+    <div class="section">
+      <label class="small-title">Data do Pagamento</label>
+      <input class="field-input" type="text" value="06/09/2026">
+      <div class="helper">Quando o cliente efetivamente pagou</div>
+    </div>
+
+    <!-- Nova Data de Vencimento -->
+    <div class="section">
+      <label class="small-title">Nova Data de Vencimento</label>
+      <input class="field-input" type="text" placeholder="dd/mm/aaaa">
+      <div class="helper">Esta data será o novo vencimento da sub-parcela consolidada. Se ficar no passado, o empréstimo será marcado como atrasado.</div>
+    </div>
+
+    <!-- Forma de Pagamento -->
+    <div class="section">
+      <div class="section-title">Forma de Pagamento</div>
+      <div class="forma-grid">
+        <button class="forma-btn active">💵 Dinheiro</button>
+        <button class="forma-btn">📱 Pix</button>
+        <button class="forma-btn">💳 Cartão</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Seleção interativa dos botões de tipo
+    document.querySelectorAll('.tipo-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tipo-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+    // Seleção interativa da forma de pagamento
+    document.querySelectorAll('.forma-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.forma-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>

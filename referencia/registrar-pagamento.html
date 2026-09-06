@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registrar Pagamento — CobraFácil</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* =========================================================
+   REGISTRAR PAGAMENTO — tokens medidos na página CobraFácil
+   Fonte: Inter, sans-serif
+   ---------------------------------------------------------
+   Cores
+     --bg-modal   #121614   fundo do modal / inputs / botões outline
+     --border     #29322E   borda cinza padrão (~1px)
+     --text       #FAFAFA   texto principal
+     --muted      #9DAFA6   dicas / textos secundários
+     --green      #22C35D   ação / botão e parcela selecionada
+     --emerald    #10B981   borda do botão "Desconto"
+     --emerald-tx #059669   texto do botão "Desconto"
+     --card       rgba(34,42,38,.5)  card do cliente
+   Raios:  cards 12px · inputs/botões/lista 10px
+   Alturas: botões grandes 40px · botões forma/tag 36px/24px
+   Modal: 512px · padding 24px · gap vertical 16px
+   ========================================================= */
+:root{
+  --bg-modal:#121614;
+  --border:#29322E;
+  --text:#FAFAFA;
+  --muted:#9DAFA6;
+  --green:#22C35D;
+  --emerald:#10B981;
+  --emerald-tx:#059669;
+  --card:rgba(34,42,38,.5);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Inter',sans-serif;
+  background:#0a0c0a;color:var(--text);
+  min-height:100vh;display:flex;justify-content:center;align-items:flex-start;
+  padding:24px 12px;
+}
+
+/* ---------- Modal ---------- */
+.modal{
+  width:100%;max-width:512px;
+  background:var(--bg-modal);
+  border:1px solid var(--border);
+  border-radius:12px;padding:24px;
+  display:flex;flex-direction:column;gap:16px;
+  box-shadow:0 25px 60px rgba(0,0,0,.6);
+  max-height:94vh;overflow-y:auto;
+}
+
+/* ---------- Header ---------- */
+.modal-header{display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:18px;font-weight:600;line-height:18px;letter-spacing:-.45px;color:var(--text)}
+.close-btn{
+  width:40px;height:40px;border:none;border-radius:8px;cursor:pointer;
+  background:#EF4444;color:#fff;font-size:20px;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+}
+.close-btn:hover{filter:brightness(1.08)}
+
+/* ---------- Etiquetas ---------- */
+.etiquetas .lbl{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:500;color:var(--text);margin-bottom:8px}
+.btn-tag{
+  height:24px;padding:0 8px;border-radius:10px;cursor:pointer;
+  background:var(--bg-modal);border:1px solid var(--border);color:var(--text);
+  font-size:12px;font-weight:500;font-family:inherit;
+  display:inline-flex;align-items:center;gap:4px;
+}
+.btn-tag:hover{background:#1a1f1c}
+.divider{border:none;border-top:1px solid var(--border);margin:0}
+
+/* ---------- Card do cliente ---------- */
+.client-card{
+  display:flex;align-items:flex-start;gap:14px;
+  background:var(--card);border-radius:12px;padding:16px;
+}
+.avatar{
+  width:50px;height:50px;border-radius:50%;flex-shrink:0;
+  background:#1c2b23;border:1px solid rgba(34,195,93,.35);
+  display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;color:#7fe0a3;
+}
+.client-name{font-size:16px;font-weight:600;line-height:24px;color:var(--text)}
+.client-line{font-size:13px;color:var(--muted);line-height:1.6}
+
+/* ---------- Rótulos de seção ---------- */
+.section-label{font-size:14px;font-weight:500;line-height:14px;color:var(--text)}
+.hint{font-size:12px;font-weight:400;line-height:16px;color:var(--muted)}
+
+/* ---------- Tipo de Pagamento ---------- */
+.block{display:flex;flex-direction:column;gap:10px}
+.tipo-row{display:flex;gap:10px;flex-wrap:wrap}
+.pill{
+  height:40px;padding:8px 16px;border-radius:10px;cursor:pointer;
+  font-size:14px;font-weight:500;font-family:inherit;
+  background:var(--bg-modal);border:1px solid var(--border);color:var(--text);
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+}
+.pill:hover{background:#1a1f1c}
+.pill.active{background:var(--green);border-color:transparent;color:#fff}
+.pill.desconto{border-color:var(--emerald);color:var(--emerald-tx)}
+
+/* ---------- Lista de parcelas ---------- */
+.parcela-list{
+  border:1px solid var(--border);border-radius:10px;padding:8px;height:192px;overflow-y:auto;
+}
+.parcela-item{
+  background:var(--green);border-radius:10px;padding:8px 16px;
+  display:flex;align-items:center;justify-content:space-between;color:#fff;
+}
+.parcela-item .left{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600}
+.parcela-item .right{text-align:right;line-height:1.3}
+.parcela-item .right .date{font-size:11px;opacity:.9}
+.parcela-item .right .val{font-size:14px;font-weight:600}
+
+.resumo-box{
+  background:rgba(34,195,93,.08);border-radius:10px;padding:12px;margin-top:8px;
+}
+.resumo-box .r1{font-size:14px;font-weight:600;color:#e8f5ec}
+.resumo-box .r2{font-size:12px;color:#7bbf95;margin-top:2px}
+
+/* ---------- Data ---------- */
+.field input[type=date]{
+  width:100%;margin-top:8px;height:40px;
+  background:var(--bg-modal);border:1px solid var(--border);border-radius:10px;
+  padding:8px 12px;color:var(--text);font-size:14px;font-family:inherit;outline:none;
+}
+.field input[type=date]:focus{border-color:var(--green)}
+input[type=date]::-webkit-calendar-picker-indicator{filter:invert(70%)}
+.field .hint{margin-top:6px;display:block}
+
+/* ---------- Forma de Pagamento ---------- */
+.forma-row{display:flex;gap:12px}
+.forma-btn{
+  flex:1;height:36px;padding:0 12px;border-radius:10px;cursor:pointer;
+  font-size:12px;font-weight:500;font-family:inherit;
+  background:var(--bg-modal);border:1px solid var(--border);color:var(--text);
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+}
+.forma-btn:hover{background:#1a1f1c}
+.forma-btn.active{background:var(--green);border-color:transparent;color:#fff}
+
+/* ---------- Rodapé ---------- */
+.footer{display:flex;justify-content:flex-end;gap:12px;margin-top:4px}
+.btn{
+  height:40px;padding:8px 16px;border-radius:10px;cursor:pointer;
+  font-size:14px;font-weight:500;font-family:inherit;border:none;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+}
+.btn-cancel{background:var(--bg-modal);border:1px solid var(--border);color:var(--text)}
+.btn-cancel:hover{background:#1a1f1c}
+.btn-primary{background:var(--green);color:#fff}
+.btn-primary:hover{filter:brightness(1.08)}
+</style>
+</head>
+<body>
+
+<div class="modal" role="dialog" aria-labelledby="modalTitle">
+
+  <!-- Header -->
+  <div class="modal-header">
+    <h2 class="modal-title" id="modalTitle">Registrar Pagamento</h2>
+    <button type="button" class="close-btn" aria-label="Fechar">&times;</button>
+  </div>
+
+  <!-- Etiquetas -->
+  <div class="etiquetas">
+    <div class="lbl">🏷️ Etiquetas</div>
+    <button type="button" class="btn-tag">＋ Criar / adicionar etiqueta</button>
+  </div>
+  <hr class="divider">
+
+  <!-- Card do cliente -->
+  <div class="client-card">
+    <div class="avatar">T</div>
+    <div>
+      <div class="client-name">TESTE1</div>
+      <div class="client-line">Restante: R$ 390,00</div>
+      <div class="client-line">Parcela: R$ 390,00 (R$ 300,00 + R$ 90,00 juros)</div>
+    </div>
+  </div>
+
+  <!-- Tipo de Pagamento -->
+  <div class="block">
+    <span class="section-label">Tipo de Pagamento</span>
+    <div class="tipo-row">
+      <button type="button" class="pill active">Parcela</button>
+      <button type="button" class="pill">Parcial</button>
+      <button type="button" class="pill">Total</button>
+      <button type="button" class="pill desconto">％ Desconto</button>
+    </div>
+  </div>
+
+  <!-- Selecione parcelas -->
+  <div class="block">
+    <span class="section-label">Selecione a(s) Parcela(s)</span>
+    <span class="hint">Clique para selecionar múltiplas parcelas</span>
+    <div class="parcela-list">
+      <div class="parcela-item">
+        <div class="left">✓ Parcela 1/1</div>
+        <div class="right">
+          <div class="date">05/10/2026</div>
+          <div class="val">R$ 390,00</div>
+        </div>
+      </div>
+    </div>
+    <div class="resumo-box">
+      <div class="r1">Parcela 1: R$ 390,00</div>
+      <div class="r2">Principal: R$ 300,00 + Juros: R$ 90,00</div>
+    </div>
+  </div>
+
+  <!-- Data do Pagamento -->
+  <div class="block field">
+    <span class="section-label">Data do Pagamento</span>
+    <input type="date" value="2026-09-06">
+    <span class="hint">Quando o cliente efetivamente pagou</span>
+  </div>
+
+  <!-- Forma de Pagamento -->
+  <div class="block">
+    <span class="section-label">Forma de Pagamento</span>
+    <div class="forma-row">
+      <button type="button" class="forma-btn active">💵 Dinheiro</button>
+      <button type="button" class="forma-btn">📱 Pix</button>
+      <button type="button" class="forma-btn">💳 Cartão</button>
+    </div>
+  </div>
+
+  <!-- Rodapé -->
+  <div class="footer">
+    <button type="button" class="btn btn-cancel">Cancelar</button>
+    <button type="button" class="btn btn-primary">Registrar Pagamento</button>
+  </div>
+
+</div>
+
+</body>
+</html>

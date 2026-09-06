@@ -196,6 +196,14 @@ input.cal-green::-webkit-calendar-picker-indicator,
   background-size: 1rem 1rem;
 }
 
+/* Ícone de calendário ciano (classe .cal-cyan) */
+input.cal-cyan::-webkit-calendar-picker-indicator,
+.dark input.cal-cyan::-webkit-calendar-picker-indicator {
+  filter: invert(60%) sepia(80%) saturate(500%) hue-rotate(150deg);
+  cursor: pointer;
+  opacity: 1;
+}
+
 html:not(.dark) .text-gray-900,
 html:not(.dark) .text-slate-800 {
   color: rgb(51 65 85);
