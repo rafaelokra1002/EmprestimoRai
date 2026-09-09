@@ -1,0 +1,170 @@
+/* ============================================================
+   CobraFácil — Sistema de Design (Tailwind + shadcn/ui)
+   Extraído de https://cobrafacil.online/loans
+   Cores em HSL (usar como: color: hsl(var(--primary)); )
+   ============================================================ */
+
+/* ---------- Fontes ---------- */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap");
+
+/* ---------- Tema CLARO (padrão) ---------- */
+:root {
+  --background: 0 0% 98%;
+  --foreground: 150 10% 15%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 150 10% 15%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 150 10% 15%;
+
+  --primary: 142 76% 36%;              /* verde principal */
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 142 40% 95%;
+  --secondary-foreground: 142 76% 25%;
+
+  --muted: 150 10% 95%;
+  --muted-foreground: 150 10% 45%;
+
+  --accent: 142 40% 90%;
+  --accent-foreground: 142 76% 25%;
+
+  --destructive: 0 84% 60%;            /* vermelho */
+  --destructive-foreground: 0 0% 100%;
+
+  --success: 142 76% 36%;
+  --success-foreground: 0 0% 100%;
+
+  --warning: 38 92% 50%;               /* laranja/amarelo */
+  --warning-foreground: 0 0% 100%;
+
+  --border: 150 10% 90%;
+  --input: 150 10% 90%;
+  --ring: 142 76% 36%;
+
+  --radius: .75rem;
+
+  /* Cores de gráficos */
+  --chart-1: 142 76% 36%;
+  --chart-2: 142 60% 50%;
+  --chart-3: 38 92% 50%;
+  --chart-4: 0 84% 60%;
+  --chart-5: 200 80% 50%;
+
+  /* Sidebar */
+  --sidebar-background: 142 76% 36%;
+  --sidebar-foreground: 0 0% 100%;
+  --sidebar-primary: 0 0% 100%;
+  --sidebar-primary-foreground: 142 76% 36%;
+  --sidebar-accent: 142 70% 30%;
+  --sidebar-accent-foreground: 0 0% 100%;
+  --sidebar-border: 142 70% 30%;
+  --sidebar-ring: 0 0% 100%;
+}
+
+/* ---------- Tema ESCURO ---------- */
+.dark {
+  --background: 150 10% 8%;
+  --foreground: 0 0% 98%;
+
+  --card: 150 10% 11%;
+  --card-foreground: 0 0% 98%;
+
+  --popover: 150 10% 10%;
+  --popover-foreground: 0 0% 98%;
+
+  --primary: 142 70% 45%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 150 10% 16%;
+  --secondary-foreground: 142 70% 60%;
+
+  --muted: 150 10% 15%;
+  --muted-foreground: 150 10% 65%;
+
+  --accent: 150 10% 18%;
+  --accent-foreground: 142 70% 60%;
+
+  --destructive: 0 62% 50%;
+  --destructive-foreground: 0 0% 100%;
+
+  --success: 142 70% 45%;
+  --success-foreground: 0 0% 100%;
+
+  --warning: 38 92% 50%;
+  --warning-foreground: 0 0% 100%;
+
+  --border: 150 10% 18%;
+  --input: 150 10% 18%;
+  --ring: 142 70% 45%;
+
+  --chart-1: 142 76% 36%;
+  --chart-2: 142 60% 50%;
+  --chart-3: 38 92% 50%;
+  --chart-4: 0 84% 60%;
+  --chart-5: 200 80% 50%;
+
+  --sidebar-background: 150 10% 10%;
+  --sidebar-foreground: 0 0% 98%;
+  --sidebar-primary: 142 70% 45%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 150 10% 16%;
+  --sidebar-accent-foreground: 0 0% 98%;
+  --sidebar-border: 150 10% 22%;
+  --sidebar-ring: 142 70% 45%;
+}
+
+/* ---------- Base ---------- */
+* {
+  border-color: hsl(var(--border));
+}
+
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: "Inter", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Títulos usam Plus Jakarta Sans na página */
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Plus Jakarta Sans", sans-serif;
+}
+
+/* ============================================================
+   EXEMPLO — Botão "Criar Empréstimo Price"
+   (fundo azul-escuro em degradê com brilho no canto)
+   ============================================================ */
+.botao-emprestimo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  white-space: nowrap;
+  height: 40px;
+  padding: 8px 16px;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  color: #ffffff;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 10px;
+  cursor: pointer;
+  background:
+    radial-gradient(circle at top left, rgba(30, 79, 175, 0.35), transparent 55%),
+    linear-gradient(135deg, #0B1020 0%, rgba(18, 59, 122, 0.85) 55%, #0B1020 100%);
+  box-shadow: 0 10px 15px -3px rgba(23, 37, 84, 0.4),
+              0 4px 6px -4px rgba(23, 37, 84, 0.4);
+  transition: background-color .15s cubic-bezier(.4,0,.2,1),
+              border-color .15s cubic-bezier(.4,0,.2,1),
+              color .15s cubic-bezier(.4,0,.2,1);
+}
+.botao-emprestimo:hover {
+  background:
+    radial-gradient(circle at top left, rgba(30, 79, 175, 0.45), transparent 55%),
+    linear-gradient(135deg, #0E1530 0%, rgba(18, 59, 122, 0.95) 55%, #0E1530 100%);
+}
+.botao-emprestimo svg { width: 16px; height: 16px; flex-shrink: 0; pointer-events: none; }
+.botao-emprestimo:disabled { opacity: .5; pointer-events: none; }

@@ -193,21 +193,6 @@ export function InterestRenegotiateBody(props: InterestRenegotiateBodyProps) {
             </div>
           </div>
 
-          <div>
-            <Label>Forma de Pagamento</Label>
-            <div className="mt-1 grid grid-cols-3 gap-2">
-              {(["Dinheiro", "Pix", "Cartão"] as const).map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => setPayMethod(m)}
-                  className={`flex h-9 items-center justify-center gap-1.5 rounded-[10px] border text-xs font-medium transition ${payMethod === m ? "border-[#22C35D] bg-[#22C35D] text-white" : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-[#29322E] dark:bg-[#121614] dark:text-zinc-200 dark:hover:bg-zinc-800"}`}
-                >
-                  {m === "Dinheiro" ? "💵" : m === "Pix" ? "📱" : "💳"} {m}
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
 
         <div>

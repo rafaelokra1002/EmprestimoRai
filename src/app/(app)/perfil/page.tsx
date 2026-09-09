@@ -756,7 +756,7 @@ export default function PerfilPage() {
             <div><Label>Chave PIX</Label><Input className="mt-1" value={pixKey} onChange={(event) => setPixKey(event.target.value)} placeholder="CPF, e-mail, telefone ou aleatória" /></div>
           )}
           {editType === "charge" && (
-            <div><Label>Nome para cobrança</Label><Input className="mt-1" value={chargeName} onChange={(event) => setChargeName(event.target.value)} placeholder="Ex.: SP Cobrança Fácil" /></div>
+            <div><Label>Nome para cobrança</Label><Input className="mt-1" value={chargeName} onChange={(event) => setChargeName(event.target.value)} placeholder="Ex.: CredGestor" /></div>
           )}
           {editType === "payment" && (
             <div><Label>Link de pagamento</Label><Input className="mt-1" value={paymentLink} onChange={(event) => setPaymentLink(event.target.value)} placeholder="https://..." /></div>

@@ -8,7 +8,7 @@ import { registerSchema, RegisterFormData } from "@/lib/validations"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Banknote, Loader2 } from "lucide-react"
+import { Loader2 } from "lucide-react"
 import Link from "next/link"
 
 export default function RegisterPage() {
@@ -49,10 +49,8 @@ export default function RegisterPage() {
     <div className="min-h-screen bg-white dark:bg-zinc-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center mx-auto mb-4">
-            <Banknote className="h-7 w-7 text-white" />
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">SP Cobrança Fácil</h1>
+          <img src="/credgestor-icon.png" alt="CredGestor" className="h-14 w-14 object-contain mx-auto mb-4 rounded-xl" />
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">CredGestor</h1>
           <p className="text-gray-500 dark:text-zinc-400 mt-2">Criar sua conta</p>
         </div>
 

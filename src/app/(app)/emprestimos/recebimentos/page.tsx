@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Download, HelpCircle, Calendar, RefreshCw, DollarSign, Percent, Hash, TrendingUp, Table2, Trash2, Pencil, Clock, MessageCircle } from "lucide-react"
+import { Download, HelpCircle, Calendar, RefreshCw, DollarSign, Percent, Hash, TrendingUp, Table2, Trash2, Pencil, MessageCircle, AlertTriangle } from "lucide-react"
 import { Dialog } from "@/components/ui/dialog"
 import { formatCurrency, formatDate, localDateStr } from "@/lib/utils"
 
@@ -198,9 +198,10 @@ export default function RecebimentosPage() {
     const totalReceived = paymentsInRange.reduce((sum, p) => sum + p.amount, 0)
     const interestReceived = paymentsInRange.reduce((sum, p) => sum + p.interest, 0)
     const principalPaid = paymentsInRange.reduce((sum, p) => sum + p.principal, 0)
+    const fine = paymentsInRange.reduce((sum, p) => sum + p.lateFee + p.dailyFee, 0)
     const count = paymentsInRange.length
 
-    return { totalReceived, interestReceived, principalPaid, count }
+    return { totalReceived, interestReceived, principalPaid, fine, count }
   }, [paymentsInRange])
 
   const [deletePaymentId, setDeletePaymentId] = useState<string | null>(null)
@@ -407,13 +408,11 @@ export default function RecebimentosPage() {
       {/* Tabs */}
       <div className="flex w-fit max-w-full items-center gap-1 bg-white dark:bg-[#222A26] rounded-xl p-1 border border-gray-200 dark:border-zinc-800 overflow-x-auto">
         <a href="/emprestimos" className="px-4 py-1.5 rounded-md text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 transition-colors whitespace-nowrap">Empréstimos <span className="font-medium opacity-70">({allLoansCount})</span></a>
-        <button type="button" onClick={() => { window.location.href = "/emprestimos" }} className="flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 transition-colors whitespace-nowrap"><Clock className="h-3.5 w-3.5" /> Diário <span className="font-medium opacity-70">(0)</span></button>
         <a href="/emprestimos/tabela-price" className="flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 transition-colors whitespace-nowrap"><Table2 className="h-3.5 w-3.5" /> Tabela Price</a>
-        <button type="button" className="flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium bg-gray-100 dark:bg-[#121614] text-gray-900 dark:text-zinc-100 whitespace-nowrap"><RefreshCw className="h-3.5 w-3.5" /> Recebimentos</button>
-        <a href="/emprestimos" className="flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 transition-colors whitespace-nowrap"><Trash2 className="h-3.5 w-3.5" /> Lixeira</a>
+        <button type="button" className="flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium bg-green-500 text-white whitespace-nowrap"><RefreshCw className="h-3.5 w-3.5" /> Recebimentos</button>
       </div>
 
-      <div className="rounded-xl border border-primary/30 bg-white dark:bg-zinc-900 p-3 flex items-center justify-between gap-3 overflow-x-auto">
+      <div className="rounded-xl border border-primary/30 bg-white dark:bg-[#191F1C] p-3 flex items-center justify-between gap-3 overflow-x-auto">
         <div className="flex items-center gap-2">
           <span className="text-gray-700 dark:text-zinc-300 text-sm flex items-center gap-1"><Calendar className="h-4 w-4 text-primary" /> Período:</span>
           <button type="button" onClick={() => setPeriod("today")} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${period === "today" ? "bg-primary text-white" : "bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-700 dark:text-zinc-300"}`}>Hoje</button>
@@ -442,26 +441,30 @@ export default function RecebimentosPage() {
         </div>
       )}
 
-      <div className="grid md:grid-cols-4 gap-3">
-        <div className="rounded-xl border border-primary/30 bg-white dark:bg-zinc-900 p-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="rounded-xl border border-primary/30 bg-white dark:bg-[#191F1C] p-4">
           <p className="text-gray-500 dark:text-zinc-400 text-sm flex items-center gap-1.5"><DollarSign className="h-4 w-4" /> Total Recebido</p>
           <p className="text-xl font-bold tabular-nums tracking-tight text-[#16a34a] dark:text-green-400 mt-1">{formatCurrency(stats.totalReceived)}</p>
         </div>
-        <div className="rounded-xl border border-primary/30 bg-white dark:bg-zinc-900 p-4">
+        <div className="rounded-xl border border-primary/30 bg-white dark:bg-[#191F1C] p-4">
           <p className="text-gray-500 dark:text-zinc-400 text-sm flex items-center gap-1.5"><TrendingUp className="h-4 w-4" /> Juros Recebido</p>
           <p className="text-xl font-bold tabular-nums tracking-tight text-purple-600 dark:text-purple-400 mt-1">{formatCurrency(stats.interestReceived)}</p>
         </div>
-        <div className="rounded-xl border border-primary/30 bg-white dark:bg-zinc-900 p-4">
+        <div className="rounded-xl border border-primary/30 bg-white dark:bg-[#191F1C] p-4">
+          <p className="text-gray-500 dark:text-zinc-400 text-sm flex items-center gap-1.5"><AlertTriangle className="h-4 w-4" /> Multa</p>
+          <p className="text-xl font-bold tabular-nums tracking-tight text-orange-500 dark:text-orange-400 mt-1">{formatCurrency(stats.fine)}</p>
+        </div>
+        <div className="rounded-xl border border-primary/30 bg-white dark:bg-[#191F1C] p-4">
           <p className="text-gray-500 dark:text-zinc-400 text-sm flex items-center gap-1.5"><Percent className="h-4 w-4" /> Principal Pago</p>
           <p className="text-xl font-bold tabular-nums tracking-tight text-blue-600 dark:text-blue-400 mt-1">{formatCurrency(stats.principalPaid)}</p>
         </div>
-        <div className="rounded-xl border border-primary/30 bg-white dark:bg-zinc-900 p-4">
+        <div className="rounded-xl border border-primary/30 bg-white dark:bg-[#191F1C] p-4">
           <p className="text-gray-500 dark:text-zinc-400 text-sm flex items-center gap-1.5"><Hash className="h-4 w-4" /> Qtd. Pagamentos</p>
           <p className="text-xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100 mt-1">{stats.count}</p>
         </div>
       </div>
 
-      <div className="rounded-xl border border-primary/30 bg-white dark:bg-zinc-900 p-5 min-h-[220px]">
+      <div className="rounded-xl border border-primary/30 bg-white dark:bg-[#191F1C] p-5 min-h-[220px]">
         <h2 className="text-base font-semibold text-gray-900 dark:text-zinc-100 mb-4">Pagamentos – {range.label}</h2>
         {loading ? (
           <div className="text-gray-500 dark:text-zinc-400">Carregando...</div>
@@ -473,7 +476,7 @@ export default function RecebimentosPage() {
         ) : (
           <table className="w-full">
             <thead>
-              <tr className="text-left text-sm text-gray-500 dark:text-zinc-400">
+              <tr className="text-left text-sm text-gray-500 dark:text-zinc-400 border-b border-gray-100 dark:border-zinc-800">
                 <th className="pb-3 font-medium">Data</th>
                 <th className="pb-3 font-medium">Cliente</th>
                 <th className="pb-3 font-medium text-right pr-8">Valor</th>
@@ -552,7 +555,7 @@ export default function RecebimentosPage() {
                         <button
                           type="button"
                           onClick={() => { setEditingPaymentId(payment.id); setEditingAmount(String(payment.amount)) }}
-                          className="p-1.5 rounded-md text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors"
+                          className="p-1.5 rounded-md text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
                           title="Editar valor"
                         >
                           <Pencil className="h-4 w-4" />

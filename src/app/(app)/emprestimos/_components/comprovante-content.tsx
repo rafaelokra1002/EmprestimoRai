@@ -178,7 +178,7 @@ export function ComprovanteContent({
     if (lateFee > 0) {
       lines.push(`(inclui ${formatCurrency(lateFee)} em multas)`)
     }
-    lines.push("", "DATAS DE VENCIMENTO", dueDates, "", "SP Cobrança Fácil - Sistema de Gestão de Cobranças")
+    lines.push("", "DATAS DE VENCIMENTO", dueDates, "", "CredGestor - Sistema de Gestão de Cobranças")
     return lines.join("\n")
   }, [loan, receiptNumber, totalReceivable, lateFee])
 
@@ -236,7 +236,7 @@ export function ComprovanteContent({
 
       <div className="p-3 space-y-2">
         <div className="rounded-lg bg-primary text-primary-foreground px-3 py-2.5 text-center">
-          <p className="text-base font-bold leading-tight">SP Cobrança Fácil</p>
+          <p className="text-base font-bold leading-tight">CredGestor</p>
           <p className="text-[11px] opacity-95">{loan.client.name}</p>
         </div>
 
@@ -339,7 +339,7 @@ export function ComprovanteContent({
         </div>
 
         <div className="rounded-md bg-primary text-primary-foreground text-center py-1.5 font-semibold text-[11px]">
-          SP Cobrança Fácil - Sistema de Gestão de Cobranças
+          CredGestor - Sistema de Gestão de Cobranças
         </div>
       </div>
 

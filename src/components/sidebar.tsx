@@ -195,12 +195,17 @@ export function Sidebar() {
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
-        <div className="flex flex-col p-6">
-          <div className="flex items-center gap-2.5">
-            <img src="/logo.svg" alt="SP Cobrança Fácil" className="h-9 w-9 shrink-0" />
-            <span className="text-lg font-bold text-white leading-tight">SP Cobrança Fácil</span>
+        <div className="flex items-center gap-2.5 p-6">
+          <img src="/credgestor-icon.png" alt="CredGestor" className="h-12 w-12 shrink-0 rounded-lg" />
+          <div className="flex flex-col leading-tight">
+            <span
+              className="text-lg font-bold bg-clip-text text-transparent"
+              style={{ backgroundImage: "linear-gradient(90deg, #1E3AE0 0%, #5B27D6 55%, #8B22C9 100%)" }}
+            >
+              CredGestor
+            </span>
+            <span className="text-[11px] text-white/70">Gestão Financeira</span>
           </div>
-          <span className="pl-[2.875rem] text-[11px] text-white/70 leading-tight">Gestão Financeira</span>
         </div>
 
         <nav className="p-3 space-y-1">

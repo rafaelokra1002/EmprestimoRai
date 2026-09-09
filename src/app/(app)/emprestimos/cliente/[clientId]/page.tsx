@@ -1661,18 +1661,6 @@ export default function ClienteEmprestimosPage() {
                 <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">Quando o cliente efetivamente pagou</p>
               </div>
 
-              {/* Forma de Pagamento */}
-              <div>
-                <Label className="text-sm font-medium">Forma de Pagamento</Label>
-                <div className="mt-2 flex gap-3">
-                  {(["Dinheiro", "Pix", "Cartão"] as const).map((m) => (
-                    <button key={m} type="button" onClick={() => setPayMethod(m)} className={`flex h-9 flex-1 items-center justify-center gap-1.5 rounded-[10px] border text-xs font-medium transition ${payMethod === m ? "border-transparent bg-[#22C35D] text-white" : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-[#29322E] dark:bg-[#121614] dark:text-zinc-200 dark:hover:bg-zinc-800"}`}>
-                      {m === "Dinheiro" ? "💵" : m === "Pix" ? "📱" : "💳"} {m}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               <div className="flex justify-end gap-3 pt-2">
                 <Button variant="outline" className="rounded-[10px] dark:bg-[#121614] dark:border-[#29322E]" onClick={() => { setPaymentDialog(null); resetPaymentForm() }}>Cancelar</Button>
                 <Button onClick={handlePayment} disabled={!payAmount || payAmount <= 0 || paying} className="rounded-[10px] bg-[#22C35D] hover:bg-[#22C35D]/90 text-white">{paying ? "Processando..." : "Registrar Pagamento"}</Button>

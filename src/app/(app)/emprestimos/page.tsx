@@ -2176,7 +2176,17 @@ export default function EmprestimosPage() {
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-zinc-500" />
-          <Input placeholder="Buscar cliente ou etiqueta..." className="pl-10 dark:bg-[#161A18]" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <Input placeholder="Buscar cliente ou etiqueta..." className="pl-10 pr-10 dark:bg-[#161A18]" value={search} onChange={(e) => setSearch(e.target.value)} />
+          {(search || selectedTag) && (
+            <button
+              type="button"
+              onClick={() => { setSearch(""); setSelectedTag(null) }}
+              title="Limpar filtro"
+              className="absolute right-2 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-md text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center lg:flex-none">
           <Button onClick={() => { resetForm(); setDialogOpen(true) }} className="text-white border border-[#10b981]/30 shadow-lg shadow-[#022c22]/40 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.35),transparent_55%),linear-gradient(135deg,#062418_0%,rgba(6,95,70,0.85)_55%,#062418_100%)] hover:bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.45),transparent_55%),linear-gradient(135deg,#083324_0%,rgba(6,95,70,0.95)_55%,#083324_100%)]">
@@ -2287,7 +2297,7 @@ export default function EmprestimosPage() {
       ) : groupedByClient.length === 0 ? (
         <div className="text-center py-8 text-gray-500 dark:text-zinc-400">Nenhum empréstimo encontrado</div>
       ) : viewMode === "list" ? (
-        <div className="rounded-xl border border-primary/30 dark:border-primary/30 bg-white dark:bg-zinc-900 overflow-hidden">
+        <div className="rounded-xl border border-primary/30 dark:border-primary/30 bg-white dark:bg-[#1B231F] overflow-hidden">
         {/* Resumo (2 itens) */}
         <div className="flex flex-wrap items-center gap-x-10 gap-y-3 p-4 border-b border-gray-100 dark:border-zinc-800">
           <div className="flex items-center gap-3">
@@ -2297,16 +2307,23 @@ export default function EmprestimosPage() {
               <p className="text-sm font-semibold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(filteredLoans.reduce((s, l) => s + l.amount, 0))}</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 mx-auto">
             <div className="p-2 rounded-lg bg-amber-500/10"><DollarSign className="h-4 w-4 text-amber-500" /></div>
             <div>
               <p className="text-xs text-gray-500 dark:text-zinc-400">Total a Receber</p>
               <p className="text-sm font-semibold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(filteredLoans.reduce((s, l) => s + l.totalAmount, 0))}</p>
             </div>
           </div>
+          <div className="flex items-center gap-3 mr-6 sm:mr-10">
+            <div className="p-2 rounded-lg bg-primary/10"><TrendingUp className="h-4 w-4 text-primary" /></div>
+            <div>
+              <p className="text-xs text-gray-500 dark:text-zinc-400">Juros Total</p>
+              <p className="text-sm font-semibold tabular-nums text-primary">{formatCurrency(filteredLoans.reduce((s, l) => s + (l.totalAmount - l.amount), 0))}</p>
+            </div>
+          </div>
         </div>
         {/* Contador */}
-        <div className="flex items-center justify-between p-3 border-b border-gray-100 dark:border-zinc-800 bg-gray-50/60 dark:bg-zinc-800/30">
+        <div className="flex items-center justify-between p-3 border-b border-gray-100 dark:border-zinc-800 bg-gray-50/60 dark:bg-[#1B231F]">
           <span className="text-sm text-gray-500 dark:text-zinc-400">{filteredLoans.length} empréstimo{filteredLoans.length !== 1 ? "s" : ""}</span>
         </div>
         <div className="overflow-x-auto">
@@ -2782,17 +2799,17 @@ export default function EmprestimosPage() {
                           return (
                             <div key={inst.id} className="space-y-1">
                               <div className="flex items-center justify-between">
-                                <span className="text-xs font-medium text-red-700 dark:text-red-300">
+                                <span className="text-sm font-medium text-red-700 dark:text-red-300">
                                   Parcela {inst.number}/{loan.installmentCount} em atraso
                                 </span>
-                                <span className="text-xs font-bold text-red-800 dark:text-red-200">{instDays} dias</span>
+                                <span className="text-sm font-bold text-red-800 dark:text-red-200">{instDays} dias</span>
                               </div>
-                              <div className="flex items-center justify-between text-xs mt-1 text-red-600 dark:text-red-300/70">
+                              <div className="flex items-center justify-between text-sm mt-1 text-red-600 dark:text-red-300/70">
                                 <span>Vencimento: {formatDate(inst.dueDate)}</span>
                                 <span className="font-medium">Valor: {formatCurrency(baseAmount)}</span>
                               </div>
                               {instOverdueCharge > 0 && (
-                                <div className="flex items-center justify-between text-xs mt-1">
+                                <div className="flex items-center justify-between text-sm mt-1">
                                   <span className="flex items-center gap-1.5 text-red-600 dark:text-red-300">
                                     Multa Aplicada:
                                     {(loan.penaltyFee > 0 || (loan.dailyInterest && (loan.dailyInterestAmount || 0) > 0)) && (
@@ -2809,7 +2826,7 @@ export default function EmprestimosPage() {
                                   <span className="text-red-600 dark:text-red-300 font-bold">+{formatCurrency(instOverdueCharge)}</span>
                                 </div>
                               )}
-                              <div className="flex items-center justify-between text-xs mt-2 border-t border-red-300 dark:border-red-400/30 pt-2">
+                              <div className="flex items-center justify-between text-sm mt-2 border-t border-red-300 dark:border-red-400/30 pt-2">
                                 <span className="text-red-600 dark:text-red-300/80">Total com Atraso:</span>
                                 <span className="font-bold text-gray-900 dark:text-white">{formatCurrency(payableAmount)}</span>
                               </div>
@@ -2824,14 +2841,14 @@ export default function EmprestimosPage() {
                           <button
                             type="button"
                             onClick={() => openJurosDialog(loan)}
-                            className="inline-flex flex-1 min-w-0 basis-[45%] items-center justify-center gap-1.5 rounded-md border py-2 text-xs font-medium transition-colors border-blue-500/50 text-blue-700 hover:bg-blue-500/10 dark:border-blue-400/50 dark:text-blue-300 dark:hover:bg-blue-500/20"
+                            className="inline-flex flex-1 min-w-0 basis-[45%] items-center justify-center gap-1.5 rounded-md border py-2 text-xs font-medium transition-colors border-blue-500/50 text-blue-700 bg-white hover:bg-blue-500/10 dark:border-blue-400/50 dark:text-blue-300 dark:bg-[#121614] dark:hover:bg-blue-500/20"
                           >
                             <Percent className="h-3.5 w-3.5" /> Juros por Atraso
                           </button>
                           <button
                             type="button"
                             onClick={() => openMultaDialog(loan)}
-                            className="inline-flex flex-1 min-w-0 basis-[45%] items-center justify-center gap-1.5 rounded-md border py-2 text-xs font-medium transition-colors border-orange-500/50 text-orange-700 hover:bg-orange-500/10 dark:border-orange-400/50 dark:text-orange-300 dark:hover:bg-orange-500/20"
+                            className="inline-flex flex-1 min-w-0 basis-[45%] items-center justify-center gap-1.5 rounded-md border py-2 text-xs font-medium transition-colors border-orange-500/50 text-orange-700 bg-white hover:bg-orange-500/10 dark:border-orange-400/50 dark:text-orange-300 dark:bg-[#121614] dark:hover:bg-orange-500/20"
                           >
                             <DollarSign className="h-3.5 w-3.5" /> Aplicar Multa
                           </button>
@@ -4187,22 +4204,6 @@ export default function EmprestimosPage() {
                 </div>
               )}
 
-              {/* Forma de Pagamento */}
-              <div>
-                <Label className="text-sm font-medium">Forma de Pagamento</Label>
-                <div className="mt-2 flex gap-3">
-                  {(["Dinheiro", "Pix", "Cartão"] as const).map((m) => (
-                    <button
-                      key={m}
-                      type="button"
-                      onClick={() => setPayMethod(m)}
-                      className={`flex h-9 flex-1 items-center justify-center gap-1.5 rounded-[10px] border text-xs font-medium transition ${payMethod === m ? "border-transparent bg-[#22C35D] text-white" : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-[#29322E] dark:bg-[#121614] dark:text-zinc-200 dark:hover:bg-zinc-800"}`}
-                    >
-                      {m === "Dinheiro" ? "💵" : m === "Pix" ? "📱" : "💳"} {m}
-                    </button>
-                  ))}
-                </div>
-              </div>
 
               {/* Buttons */}
               <div className="flex justify-end gap-3 pt-2">

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
-import { Calculator, Calendar, Download, HelpCircle, Plus, Table2, User, Wallet, DollarSign, TrendingUp, X, MessageCircle, Send, Loader2, CheckCircle2, Copy, ExternalLink, FileText, Clock, Trash2, Percent } from "lucide-react"
+import { Calculator, Calendar, Download, HelpCircle, Plus, Table2, User, Wallet, DollarSign, TrendingUp, X, MessageCircle, Send, Loader2, CheckCircle2, Copy, ExternalLink, FileText, Clock, Trash2, Percent, ChevronDown } from "lucide-react"
 import { formatCurrency, generateInstallmentDates, localDateStr } from "@/lib/utils"
 
 interface Client {
@@ -232,38 +232,25 @@ export default function TabelaPricePage() {
       <div className="flex w-fit max-w-full items-center gap-1 bg-white dark:bg-[#222A26] rounded-xl p-1 border border-gray-200 dark:border-zinc-800 overflow-x-auto">
         <a
           href="/emprestimos"
-          className="px-4 py-1.5 rounded-md text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 transition-colors whitespace-nowrap"
+          className="px-2.5 py-1.5 rounded-md text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 transition-colors whitespace-nowrap"
         >
           Empréstimos <span className="font-medium opacity-70">({allLoansCount})</span>
         </a>
         <button
           type="button"
-          onClick={() => { window.location.href = "/emprestimos" }}
-          className="flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 transition-colors whitespace-nowrap"
-        >
-          <Clock className="h-3.5 w-3.5" /> Diário <span className="font-medium opacity-70">(0)</span>
-        </button>
-        <button
-          type="button"
-          className="flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium bg-gray-100 dark:bg-[#121614] text-gray-900 dark:text-zinc-100 whitespace-nowrap"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm font-medium bg-[#2563EB] text-white whitespace-nowrap"
         >
           <Table2 className="h-3.5 w-3.5" /> Tabela Price
         </button>
         <a
           href="/emprestimos/recebimentos"
-          className="flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 transition-colors whitespace-nowrap"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 transition-colors whitespace-nowrap"
         >
           <DollarSign className="h-3.5 w-3.5" /> Recebimentos
         </a>
-        <a
-          href="/emprestimos"
-          className="flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 transition-colors whitespace-nowrap"
-        >
-          <Trash2 className="h-3.5 w-3.5" /> Lixeira
-        </a>
       </div>
 
-      <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-sm space-y-4">
+      <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#1B231F] p-6 shadow-sm space-y-4 dark:[&_input]:!bg-[#121614] dark:[&_select]:!bg-[#121614] dark:[&_textarea]:!bg-[#121614]">
         <div>
           <div className="flex items-center gap-3">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white">
@@ -277,20 +264,23 @@ export default function TabelaPricePage() {
         <div>
           <Label className="flex items-center gap-1"><User className="h-4 w-4" /> Cliente</Label>
           <div className="mt-1 flex gap-2">
-            <select
-              value={clientId}
-              onChange={(e) => setClientId(e.target.value)}
-              className="flex h-10 w-full rounded-md border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 px-3 py-2 text-sm text-gray-900 dark:text-zinc-100"
-            >
-              <option value="">Selecione o cliente</option>
-              {clients.map((client) => (
-                <option key={client.id} value={client.id}>{client.name}</option>
-              ))}
-            </select>
+            <div className="relative flex-1">
+              <select
+                value={clientId}
+                onChange={(e) => setClientId(e.target.value)}
+                className="flex h-10 w-full appearance-none rounded-md border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 pl-3 pr-9 py-2 text-sm text-gray-900 dark:text-zinc-100"
+              >
+                <option value="">Selecione o cliente</option>
+                {clients.map((client) => (
+                  <option key={client.id} value={client.id}>{client.name}</option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-zinc-400" />
+            </div>
             <button
               type="button"
               onClick={() => router.push("/clientes")}
-              className="h-10 w-10 rounded-md border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 text-gray-800 dark:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-700"
+              className="h-10 w-10 rounded-md border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-[#121614] text-gray-800 dark:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-700"
               title="Cadastrar cliente"
             >
               <Plus className="h-4 w-4 mx-auto" />
@@ -324,11 +314,11 @@ export default function TabelaPricePage() {
         <div className="grid md:grid-cols-2 gap-3">
           <div>
             <Label className="flex items-center gap-1"><Calendar className="h-4 w-4" /> Data do Contrato</Label>
-            <Input type="date" value={contractDate} onChange={(e) => setContractDate(e.target.value)} className="mt-1" />
+            <Input type="date" value={contractDate} onChange={(e) => setContractDate(e.target.value)} className="mt-1 cal-green" />
           </div>
           <div>
             <Label className="flex items-center gap-1"><Calendar className="h-4 w-4" /> 1ª Parcela</Label>
-            <Input type="date" value={firstInstallmentDate} onChange={(e) => setFirstInstallmentDate(e.target.value)} className="mt-1" />
+            <Input type="date" value={firstInstallmentDate} onChange={(e) => setFirstInstallmentDate(e.target.value)} className="mt-1 cal-green" />
           </div>
         </div>
 
@@ -337,16 +327,15 @@ export default function TabelaPricePage() {
           <Textarea placeholder="Notas sobre o empréstimo..." value={notes} onChange={(e) => setNotes(e.target.value)} className="mt-1" rows={2} />
         </div>
 
-        <div className="flex items-start gap-3 border-t border-gray-100 dark:border-zinc-800 pt-4">
-          <button
-            type="button"
-            role="switch"
-            aria-checked={whatsappNotify}
-            onClick={() => setWhatsappNotify((v) => !v)}
-            className={`relative mt-0.5 h-6 w-11 shrink-0 rounded-full transition-colors ${whatsappNotify ? "bg-green-500" : "bg-gray-300 dark:bg-zinc-600"}`}
-          >
-            <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${whatsappNotify ? "translate-x-5" : ""}`} />
-          </button>
+        <div
+          role="checkbox"
+          aria-checked={whatsappNotify}
+          onClick={() => setWhatsappNotify((v) => !v)}
+          className={`flex items-start gap-3 rounded-lg border p-4 cursor-pointer transition-colors ${whatsappNotify ? "border-green-500 bg-green-500/10" : "border-gray-200 dark:border-zinc-800 dark:bg-[#1B231F]"}`}
+        >
+          <div className={`mt-0.5 h-5 w-5 shrink-0 rounded-full border-2 flex items-center justify-center transition-colors ${whatsappNotify ? "border-green-500" : "border-green-500/60"}`}>
+            {whatsappNotify && <div className="h-2.5 w-2.5 rounded-full bg-green-500" />}
+          </div>
           <div>
             <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">Enviar notificação WhatsApp ao criar</p>
             <p className="text-xs text-gray-500 dark:text-zinc-400">Alertas de atraso e relatórios serão enviados normalmente</p>
@@ -363,7 +352,7 @@ export default function TabelaPricePage() {
           <Button
             onClick={handleCreate}
             disabled={loading || !clientId || !amount || installments < 1}
-            className="bg-[#16a249] hover:bg-[#128a3d] text-white gap-2 disabled:opacity-60"
+            className="botao-emprestimo"
           >
             <Table2 className="h-4 w-4" />
             {loading ? "Criando..." : "Criar Empréstimo Price"}
@@ -376,26 +365,26 @@ export default function TabelaPricePage() {
         <div className="space-y-5">
           {/* Cards de resumo */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-sm">
+            <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#1B231F] p-4 shadow-sm">
               <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">Valor da Parcela</p>
               <p className="mt-1.5 text-2xl font-bold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(preview.installmentValue)}</p>
             </div>
-            <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-sm">
+            <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#1B231F] p-4 shadow-sm">
               <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">Total a Pagar</p>
               <p className="mt-1.5 text-2xl font-bold tabular-nums text-blue-600">{formatCurrency(preview.totalAmount)}</p>
             </div>
-            <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-sm">
+            <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#1B231F] p-4 shadow-sm">
               <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">Total de Juros</p>
               <p className="mt-1.5 text-2xl font-bold tabular-nums text-green-800 dark:text-green-400">{formatCurrency(preview.totalInterest)}</p>
             </div>
-            <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-sm">
+            <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#1B231F] p-4 shadow-sm">
               <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">Custo Efetivo</p>
               <p className="mt-1.5 text-2xl font-bold tabular-nums text-gray-900 dark:text-zinc-100">{(preview.totalInterest / amount * 100).toFixed(1)}%</p>
             </div>
           </div>
 
           {/* Tabela */}
-          <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm">
+          <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#1B231F] overflow-hidden shadow-sm">
             <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-gray-100 dark:border-zinc-800">
               <h3 className="flex items-center gap-2.5 text-base font-semibold text-gray-900 dark:text-zinc-100">
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white"><Table2 className="h-4 w-4" /></span>
@@ -548,7 +537,7 @@ export default function TabelaPricePage() {
         <>
           <div className="fixed inset-0 bg-black/40 z-40" onClick={() => setSelectedRow(null)} />
           <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-sm mx-auto px-4">
-            <div className="rounded-2xl border border-blue-200 dark:border-blue-800 bg-white dark:bg-zinc-900 shadow-2xl p-5 space-y-4">
+            <div className="rounded-2xl border border-blue-200 dark:border-blue-800 bg-white dark:bg-[#1B231F] shadow-2xl p-5 space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Table2 className="h-4 w-4 text-blue-600" />

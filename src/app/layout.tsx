@@ -11,12 +11,12 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: "SP Cobrança Fácil - Gestão Financeira",
+  title: "CredGestor - Gestão Financeira",
   description: "Sistema SaaS de gestão financeira e crédito",
   icons: {
-    icon: "/icon.svg",
-    shortcut: "/icon.svg",
-    apple: "/icon.svg",
+    icon: "/credgestor-icon.png",
+    shortcut: "/credgestor-icon.png",
+    apple: "/credgestor-icon.png",
   },
 }
 
