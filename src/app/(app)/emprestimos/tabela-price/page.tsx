@@ -303,11 +303,14 @@ export default function TabelaPricePage() {
           </div>
           <div>
             <Label className="flex items-center gap-1"><Calendar className="h-4 w-4" /> Frequência</Label>
-            <select value={modality} onChange={(e) => setModality(e.target.value)} className="mt-1 flex h-10 w-full rounded-md border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 px-3 py-2 text-sm text-gray-900 dark:text-zinc-100">
-              <option value="MONTHLY">Mensal</option>
-              <option value="BIWEEKLY">Quinzenal</option>
-              <option value="WEEKLY">Semanal</option>
-            </select>
+            <div className="relative mt-1">
+              <select value={modality} onChange={(e) => setModality(e.target.value)} className="flex h-10 w-full appearance-none rounded-md border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 pl-3 pr-9 py-2 text-sm text-gray-900 dark:text-zinc-100">
+                <option value="MONTHLY">Mensal</option>
+                <option value="BIWEEKLY">Quinzenal</option>
+                <option value="WEEKLY">Semanal</option>
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-zinc-400" />
+            </div>
           </div>
         </div>
 
@@ -322,11 +325,103 @@ export default function TabelaPricePage() {
           </div>
         </div>
 
+        {/* Tabela de Amortização (aparece quando valor e parcelas preenchidos) */}
+        {amount > 0 && installments > 0 && (
+          <div className="rounded-2xl border border-gray-200 dark:border-[#2A332E] bg-white dark:bg-[#191F1C] overflow-hidden shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 px-5 py-4 border-b border-gray-200 dark:border-[#2A332E]">
+              <h3 className="flex items-center gap-2.5 text-base font-semibold text-gray-900 dark:text-zinc-100">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white"><Table2 className="h-4 w-4" /></span>
+                Tabela de Amortização
+              </h3>
+
+              {/* Cards de resumo (ao lado do título) */}
+              <div className="flex flex-1 flex-wrap items-center justify-end gap-2">
+                <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#1B231F] px-3 py-1.5">
+                  <p className="text-[10px] font-medium text-gray-500 dark:text-zinc-400 whitespace-nowrap">Valor da Parcela</p>
+                  <p className="text-sm font-bold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(preview.installmentValue)}</p>
+                </div>
+                <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#1B231F] px-3 py-1.5">
+                  <p className="text-[10px] font-medium text-gray-500 dark:text-zinc-400 whitespace-nowrap">Total a Pagar</p>
+                  <p className="text-sm font-bold tabular-nums text-blue-600">{formatCurrency(preview.totalAmount)}</p>
+                </div>
+                <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#1B231F] px-3 py-1.5">
+                  <p className="text-[10px] font-medium text-gray-500 dark:text-zinc-400 whitespace-nowrap">Total de Juros</p>
+                  <p className="text-sm font-bold tabular-nums text-green-800 dark:text-green-400">{formatCurrency(preview.totalInterest)}</p>
+                </div>
+                <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#1B231F] px-3 py-1.5">
+                  <p className="text-[10px] font-medium text-gray-500 dark:text-zinc-400 whitespace-nowrap">Custo Efetivo</p>
+                  <p className="text-sm font-bold tabular-nums text-gray-900 dark:text-zinc-100">{(preview.totalInterest / amount * 100).toFixed(1)}%</p>
+                </div>
+                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => {
+                const printContent = `
+                  <html><head><title>Tabela Price</title>
+                  <style>body{font-family:Arial;padding:20px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px;text-align:center}th{background:#f5f5f5}h2{margin-bottom:10px}</style>
+                  </head><body>
+                  <h2>Tabela de Amortização - Price</h2>
+                  <p>Capital: ${formatCurrency(amount)} | Taxa: ${monthlyRate}% | Parcelas: ${installments}</p>
+                  <table><thead><tr><th>#</th><th>Vencimento</th><th>Prestação</th><th>Juros</th><th>Amortização</th><th>Saldo Devedor</th></tr></thead><tbody>
+                  ${amortizationTable.map(r => `<tr><td>${r.n}</td><td>${r.date ? new Date(r.date + "T12:00:00").toLocaleDateString("pt-BR") : "—"}</td><td>${formatCurrency(r.payment)}</td><td>${formatCurrency(r.interest)}</td><td>${formatCurrency(r.amort)}</td><td>${formatCurrency(r.balance)}</td></tr>`).join("")}
+                  </tbody></table></body></html>`
+                const w = window.open("", "_blank")
+                if (w) { w.document.write(printContent); w.document.close(); w.print() }
+              }}>
+                <Download className="h-3.5 w-3.5" /> PDF
+                </Button>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto pb-10">
+              <table className="w-full text-sm min-w-[640px]">
+                <thead>
+                  <tr className="bg-gray-100 dark:bg-[#212925] text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-zinc-400">
+                    <th className="px-4 py-3 text-left">#</th>
+                    <th className="px-4 py-3 text-right">Parcela</th>
+                    <th className="px-4 py-3 text-right">Amortização</th>
+                    <th className="px-4 py-3 text-right">Juros</th>
+                    <th className="px-4 py-3 text-right">Saldo</th>
+                    <th className="px-4 py-3 text-right">Vencimento</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {amortizationTable.map((row) => (
+                    <tr
+                      key={row.n}
+                      onClick={() => { setSelectedRow(row); setWaSent(false) }}
+                      className="border-t border-gray-100 dark:border-zinc-800 cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800/40 transition-colors"
+                    >
+                      <td className="px-4 py-3 text-left font-semibold tabular-nums text-green-600 dark:text-green-400">{row.n}</td>
+                      <td className="px-4 py-3 text-right font-semibold tabular-nums text-gray-900 dark:text-zinc-100 whitespace-nowrap">{formatCurrency(row.payment)}</td>
+                      <td className="px-4 py-3 text-right tabular-nums text-green-600 dark:text-green-400 whitespace-nowrap">{formatCurrency(row.amort)}</td>
+                      <td className="px-4 py-3 text-right tabular-nums text-orange-500 whitespace-nowrap">{formatCurrency(row.interest)}</td>
+                      <td className="px-4 py-3 text-right tabular-nums text-gray-700 dark:text-zinc-300 whitespace-nowrap">{formatCurrency(row.balance)}</td>
+                      <td className="px-4 py-3 text-right text-gray-500 dark:text-zinc-400 whitespace-nowrap">
+                        {row.date ? new Date(row.date + "T12:00:00").toLocaleDateString("pt-BR") : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Rodapé: Total a Receber / Juros Total */}
+            <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 border-t border-gray-200 dark:border-[#2A332E]">
+              <span className="flex items-center gap-1.5 text-sm font-medium text-gray-600 dark:text-zinc-300">
+                <DollarSign className="h-4 w-4 text-green-500" /> Total a Receber: <span className="font-bold tabular-nums text-green-600 dark:text-green-400">{formatCurrency(preview.totalAmount)}</span>
+              </span>
+              <span className="flex items-center gap-1.5 text-sm font-medium text-gray-600 dark:text-zinc-300">
+                <Percent className="h-4 w-4 text-green-500" /> Juros Total: <span className="font-bold tabular-nums text-green-600 dark:text-green-400">{formatCurrency(preview.totalInterest)}</span>
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Observações */}
         <div>
           <Label className="flex items-center gap-1"><FileText className="h-4 w-4" /> Observações</Label>
           <Textarea placeholder="Notas sobre o empréstimo..." value={notes} onChange={(e) => setNotes(e.target.value)} className="mt-1" rows={2} />
         </div>
 
+        {/* Notificação */}
         <div
           role="checkbox"
           aria-checked={whatsappNotify}
@@ -342,6 +437,7 @@ export default function TabelaPricePage() {
           </div>
         </div>
 
+        {/* Botões */}
         <div className="flex justify-end gap-3 border-t border-gray-100 dark:border-zinc-800 pt-4">
           <Button
             variant="outline"
@@ -359,100 +455,6 @@ export default function TabelaPricePage() {
           </Button>
         </div>
       </div>
-
-      {/* Resultado / Tabela Price */}
-      {amount > 0 && installments > 0 && (
-        <div className="space-y-5">
-          {/* Cards de resumo */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#1B231F] p-4 shadow-sm">
-              <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">Valor da Parcela</p>
-              <p className="mt-1.5 text-2xl font-bold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(preview.installmentValue)}</p>
-            </div>
-            <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#1B231F] p-4 shadow-sm">
-              <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">Total a Pagar</p>
-              <p className="mt-1.5 text-2xl font-bold tabular-nums text-blue-600">{formatCurrency(preview.totalAmount)}</p>
-            </div>
-            <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#1B231F] p-4 shadow-sm">
-              <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">Total de Juros</p>
-              <p className="mt-1.5 text-2xl font-bold tabular-nums text-green-800 dark:text-green-400">{formatCurrency(preview.totalInterest)}</p>
-            </div>
-            <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#1B231F] p-4 shadow-sm">
-              <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">Custo Efetivo</p>
-              <p className="mt-1.5 text-2xl font-bold tabular-nums text-gray-900 dark:text-zinc-100">{(preview.totalInterest / amount * 100).toFixed(1)}%</p>
-            </div>
-          </div>
-
-          {/* Tabela */}
-          <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#1B231F] overflow-hidden shadow-sm">
-            <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-gray-100 dark:border-zinc-800">
-              <h3 className="flex items-center gap-2.5 text-base font-semibold text-gray-900 dark:text-zinc-100">
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white"><Table2 className="h-4 w-4" /></span>
-                Tabela Price — {installments} parcelas
-              </h3>
-              <Button variant="outline" size="sm" className="gap-1.5" onClick={() => {
-                const printContent = `
-                  <html><head><title>Tabela Price</title>
-                  <style>body{font-family:Arial;padding:20px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px;text-align:center}th{background:#f5f5f5}h2{margin-bottom:10px}</style>
-                  </head><body>
-                  <h2>Tabela de Amortização - Price</h2>
-                  <p>Capital: ${formatCurrency(amount)} | Taxa: ${monthlyRate}% | Parcelas: ${installments}</p>
-                  <table><thead><tr><th>#</th><th>Vencimento</th><th>Prestação</th><th>Juros</th><th>Amortização</th><th>Saldo Devedor</th></tr></thead><tbody>
-                  ${amortizationTable.map(r => `<tr><td>${r.n}</td><td>${r.date ? new Date(r.date + "T12:00:00").toLocaleDateString("pt-BR") : "—"}</td><td>${formatCurrency(r.payment)}</td><td>${formatCurrency(r.interest)}</td><td>${formatCurrency(r.amort)}</td><td>${formatCurrency(r.balance)}</td></tr>`).join("")}
-                  </tbody></table></body></html>`
-                const w = window.open("", "_blank")
-                if (w) { w.document.write(printContent); w.document.close(); w.print() }
-              }}>
-                <Download className="h-3.5 w-3.5" /> PDF
-              </Button>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm min-w-[640px]">
-                <thead>
-                  <tr className="bg-gray-100 dark:bg-zinc-800/60 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-zinc-400">
-                    <th className="px-4 py-3 text-center">#</th>
-                    <th className="px-4 py-3 text-left">Vencimento</th>
-                    <th className="px-4 py-3 text-right">Prestação</th>
-                    <th className="px-4 py-3 text-right">Juros</th>
-                    <th className="px-4 py-3 text-right">Amortização</th>
-                    <th className="px-4 py-3 text-right">Saldo Devedor</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {amortizationTable.map((row) => (
-                    <tr
-                      key={row.n}
-                      onClick={() => { setSelectedRow(row); setWaSent(false) }}
-                      className="border-t border-gray-100 dark:border-zinc-800 cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800/40 transition-colors"
-                    >
-                      <td className="px-4 py-3 text-center">
-                        <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-blue-600 text-white text-xs font-semibold">{row.n}</span>
-                      </td>
-                      <td className="px-4 py-3 text-left text-gray-700 dark:text-zinc-300 whitespace-nowrap">
-                        {row.date ? new Date(row.date + "T12:00:00").toLocaleDateString("pt-BR") : "—"}
-                      </td>
-                      <td className="px-4 py-3 text-right font-semibold tabular-nums text-gray-900 dark:text-zinc-100 whitespace-nowrap">{formatCurrency(row.payment)}</td>
-                      <td className="px-4 py-3 text-right tabular-nums text-orange-500 whitespace-nowrap">{formatCurrency(row.interest)}</td>
-                      <td className="px-4 py-3 text-right tabular-nums text-gray-700 dark:text-zinc-300 whitespace-nowrap">{formatCurrency(row.amort)}</td>
-                      <td className="px-4 py-3 text-right tabular-nums text-gray-700 dark:text-zinc-300 whitespace-nowrap">{formatCurrency(row.balance)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr className="bg-gray-100 dark:bg-zinc-800/60 font-bold text-gray-900 dark:text-zinc-100">
-                    <td className="px-4 py-3 text-left" colSpan={2}>Totais</td>
-                    <td className="px-4 py-3 text-right tabular-nums">{formatCurrency(amortizationTable.reduce((s, r) => s + r.payment, 0))}</td>
-                    <td className="px-4 py-3 text-right tabular-nums text-orange-500">{formatCurrency(amortizationTable.reduce((s, r) => s + r.interest, 0))}</td>
-                    <td className="px-4 py-3 text-right tabular-nums">{formatCurrency(amortizationTable.reduce((s, r) => s + r.amort, 0))}</td>
-                    <td className="px-4 py-3 text-right tabular-nums">{formatCurrency(0)}</td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
       {/* Dialog de sucesso */}
       <Dialog open={successDialog} onClose={() => setSuccessDialog(false)} className="max-w-md">
         <div className="space-y-5">
