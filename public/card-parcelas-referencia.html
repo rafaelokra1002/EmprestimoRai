@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Card de Parcelas — referência</title>
+<style>
+  :root{
+    --bg:        #121614;   /* fundo da página        */
+    --border:    #29322E;   /* borda card/linhas/badge */
+    --head-bg:   rgba(34,42,38,.5); /* fundo cabeçalho */
+    --fg:        #FAFAFA;   /* texto principal        */
+    --muted:     #9DAFA6;   /* texto secundário       */
+    --primary:   #22C35D;   /* verde / destaque       */
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--fg);
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    display:flex; justify-content:center; padding:40px 16px;
+  }
+  .card{
+    width:100%; max-width:820px;
+    border:1px solid var(--border);
+    border-radius:12px;
+    overflow:hidden;              /* mantém os cantos arredondados no scroll */
+  }
+  .scroll{ max-height:300px; overflow-y:auto; }
+  table{ width:100%; border-collapse:collapse; font-size:14px; }
+
+  thead{ position:sticky; top:0; background:var(--head-bg); backdrop-filter:blur(2px); }
+  th{
+    padding:12px; text-align:center; font-weight:500; color:var(--fg);
+  }
+  tbody tr{ border-top:1px solid var(--border); transition:background-color .15s; }
+  tbody tr:hover{ background:rgba(34,42,38,.3); }
+  td{ padding:12px; text-align:center; }
+
+  .col-venc{ color:var(--muted); }
+  .col-valor{ font-weight:600; color:var(--primary); }
+
+  .badge{
+    display:inline-flex; align-items:center;
+    border:1px solid var(--border); border-radius:9999px;
+    padding:2px 10px; font-size:12px; font-weight:600; color:var(--fg);
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Parcela</th>
+            <th>Vencimento</th>
+            <th>Valor da Parcela</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="badge">1/6</span></td><td class="col-venc">09/10/2026</td><td class="col-valor">R$ 266,67</td></tr>
+          <tr><td><span class="badge">2/6</span></td><td class="col-venc">09/11/2026</td><td class="col-valor">R$ 266,67</td></tr>
+          <tr><td><span class="badge">3/6</span></td><td class="col-venc">09/12/2026</td><td class="col-valor">R$ 266,67</td></tr>
+          <tr><td><span class="badge">4/6</span></td><td class="col-venc">09/01/2027</td><td class="col-valor">R$ 266,67</td></tr>
+          <tr><td><span class="badge">5/6</span></td><td class="col-venc">09/02/2027</td><td class="col-valor">R$ 266,67</td></tr>
+          <tr><td><span class="badge">6/6</span></td><td class="col-venc">09/03/2027</td><td class="col-valor">R$ 266,67</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</body>
+</html>

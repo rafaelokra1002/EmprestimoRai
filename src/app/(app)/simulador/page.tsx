@@ -202,7 +202,7 @@ export default function SimuladorPage() {
       </div>
 
       {/* ===== MAIN CARD ===== */}
-      <div className="rounded-2xl border border-primary/40 bg-white dark:bg-zinc-900 p-6 space-y-5">
+      <div className="rounded-2xl border border-primary/40 bg-white dark:bg-[#191F1C] p-6 space-y-5">
 
         {/* Card header */}
         <div className="flex items-center gap-2.5 pb-1">
@@ -222,7 +222,7 @@ export default function SimuladorPage() {
                   setPaymentType(t)
                   if (t === "UNICO") setInstallmentCount("1")
                 }}
-                className="flex h-11 w-full rounded-lg border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 px-3 py-2 text-sm text-gray-900 dark:text-zinc-100 appearance-none pr-8"
+                className="flex h-11 w-full rounded-lg border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-[#121614] px-3 py-2 text-sm text-gray-900 dark:text-zinc-100 appearance-none pr-8"
               >
                 {paymentOptions.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
@@ -237,7 +237,7 @@ export default function SimuladorPage() {
               <select
                 value={interestMode}
                 onChange={(e) => setInterestMode(e.target.value as InterestMode)}
-                className="flex h-11 w-full rounded-lg border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 px-3 py-2 text-sm text-gray-900 dark:text-zinc-100 appearance-none pr-8"
+                className="flex h-11 w-full rounded-lg border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-[#121614] px-3 py-2 text-sm text-gray-900 dark:text-zinc-100 appearance-none pr-8"
               >
                 {interestOptions.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
@@ -254,12 +254,12 @@ export default function SimuladorPage() {
               value={isSingle ? "1" : installmentCount}
               disabled={isSingle}
               onChange={(e) => { const v = e.target.value; if (/^\d*$/.test(v)) setInstallmentCount(v) }}
-              className="mt-1.5 h-11 bg-gray-50 dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              className="mt-1.5 h-11 bg-gray-50 dark:bg-[#121614] border-gray-300 dark:border-zinc-700 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
           <div>
             <Label className="text-sm font-medium text-gray-700 dark:text-zinc-300">Data de Início</Label>
-            <div className="relative mt-1.5 flex h-11 items-center gap-2 rounded-lg border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 px-3 text-sm text-gray-900 dark:text-zinc-100">
+            <div className="relative mt-1.5 flex h-11 items-center gap-2 rounded-lg border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-[#121614] px-3 text-sm text-gray-900 dark:text-zinc-100">
               <Calendar className="h-4 w-4 shrink-0 text-gray-500 dark:text-zinc-400" />
               <span>{startDate ? formatDateBR(new Date(startDate + "T12:00:00")) : "--/--/----"}</span>
               <input
@@ -272,7 +272,7 @@ export default function SimuladorPage() {
           </div>
           <div>
             <Label className="text-sm font-medium text-gray-700 dark:text-zinc-300">Primeiro Vencimento</Label>
-            <div className="relative mt-1.5 flex h-11 items-center gap-2 rounded-lg border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 px-3 text-sm text-gray-900 dark:text-zinc-100">
+            <div className="relative mt-1.5 flex h-11 items-center gap-2 rounded-lg border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-[#121614] px-3 text-sm text-gray-900 dark:text-zinc-100">
               <Calendar className="h-4 w-4 shrink-0 text-gray-500 dark:text-zinc-400" />
               <span>{firstDueDate ? formatDateBR(new Date(firstDueDate + "T12:00:00")) : "--/--/----"}</span>
               <input
@@ -297,7 +297,7 @@ export default function SimuladorPage() {
               inputMode="decimal"
               value={valor}
               onChange={(e) => { const v = e.target.value; if (/^\d*[,.]?\d*$/.test(v)) setValor(v.replace(",", ".")) }}
-              className="mt-1.5 h-11 bg-gray-50 dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 text-sm font-medium"
+              className="mt-1.5 h-11 bg-gray-50 dark:bg-[#121614] border-gray-300 dark:border-zinc-700 text-sm font-medium"
             />
             <input
               type="range"
@@ -306,7 +306,8 @@ export default function SimuladorPage() {
               step={100}
               value={parseFloat(valor) || 100}
               onChange={(e) => setValor(e.target.value)}
-              className="w-full mt-2 h-1.5 rounded-full appearance-none cursor-pointer bg-gray-200 dark:bg-zinc-700 accent-green-500"
+              style={{ "--val": `${((Math.min(100000, Math.max(100, parseFloat(valor) || 100)) - 100) / 99900) * 100}%` } as React.CSSProperties}
+              className="w-full mt-2 h-1.5 rounded-full appearance-none cursor-pointer accent-green-500 slider-green"
             />
             <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">R$ 100 - R$ 100.000</p>
           </div>
@@ -319,7 +320,7 @@ export default function SimuladorPage() {
               inputMode="decimal"
               value={taxa}
               onChange={(e) => { const v = e.target.value; if (/^\d*[,.]?\d*$/.test(v)) setTaxa(v.replace(",", ".")) }}
-              className="mt-1.5 h-11 bg-gray-50 dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 text-sm font-medium"
+              className="mt-1.5 h-11 bg-gray-50 dark:bg-[#121614] border-gray-300 dark:border-zinc-700 text-sm font-medium"
             />
             <input
               type="range"
@@ -328,7 +329,8 @@ export default function SimuladorPage() {
               step={0.5}
               value={parseFloat(taxa) || 0}
               onChange={(e) => setTaxa(e.target.value)}
-              className="w-full mt-2 h-1.5 rounded-full appearance-none cursor-pointer bg-gray-200 dark:bg-zinc-700 accent-green-500"
+              style={{ "--val": `${Math.min(100, Math.max(0, parseFloat(taxa) || 0))}%` } as React.CSSProperties}
+              className="w-full mt-2 h-1.5 rounded-full appearance-none cursor-pointer accent-green-500 slider-green"
             />
             <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">Sem limite máximo</p>
           </div>
@@ -340,7 +342,7 @@ export default function SimuladorPage() {
             <p className="text-xs text-gray-500 dark:text-zinc-400">{parcelaLabel}</p>
             <p className={`text-2xl font-bold tabular-nums tracking-tight mt-1 ${parcelaValueCls}`}>{formatCurrency(result.installmentValue)}</p>
           </div>
-          <div className="rounded-xl border border-orange-500/30 bg-orange-50 dark:bg-orange-950/20 p-4">
+          <div className="rounded-xl border border-orange-500/30 dark:border-orange-500/15 bg-orange-50 dark:bg-[#24251C] p-4">
             <p className="text-xs text-gray-500 dark:text-zinc-400">Total de Juros</p>
             <p className="text-2xl font-bold tabular-nums tracking-tight text-orange-600 dark:text-orange-400 mt-1">{formatCurrency(result.totalInterest)}</p>
           </div>
@@ -357,7 +359,7 @@ export default function SimuladorPage() {
         {/* ===== COMPARE BUTTON ===== */}
         <button
           onClick={() => setShowCompare(!showCompare)}
-          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700 text-sm font-medium text-gray-600 dark:text-zinc-300 transition-all"
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-[#121614] hover:bg-gray-100 dark:hover:bg-zinc-800 text-sm font-medium text-gray-600 dark:text-zinc-300 transition-all"
         >
           <ArrowUpDown className="h-4 w-4" />
           {showCompare ? "Ocultar Modos de Juros" : "Comparar Modos de Juros"}
@@ -417,13 +419,13 @@ export default function SimuladorPage() {
               placeholder="Telefone do cliente (opcional)"
               value={clientPhone}
               onChange={(e) => setClientPhone(e.target.value.replace(/\D/g, "").slice(0, 15))}
-              className="w-full rounded-lg border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 pl-8 pr-3 py-2 text-sm text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="w-full rounded-lg border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-[#121614] pl-8 pr-3 py-2 text-sm text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-primary/50"
             />
           </div>
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={() => { navigator.clipboard.writeText(buildSimulationText()); showToast("Texto copiado!", "success", "center") }}
-              className="flex items-center justify-center gap-2 py-2 rounded-lg border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700 text-xs font-medium text-gray-700 dark:text-zinc-300 transition"
+              className="flex items-center justify-center gap-2 py-2 rounded-lg border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-[#121614] hover:bg-gray-100 dark:hover:bg-zinc-800 text-xs font-medium text-gray-700 dark:text-zinc-300 transition"
             >
               <Copy className="h-3.5 w-3.5" /> Copiar Texto
             </button>
@@ -461,18 +463,15 @@ export default function SimuladorPage() {
             </button>
           </div>
         </div>
-      </div>
 
-      {/* ===== CRONOGRAMA DE PARCELAS ===== */}
-      <div className="space-y-2">
+        {/* ===== CRONOGRAMA DE PARCELAS ===== */}
+        <div className="space-y-2 border-t border-primary/20 pt-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-gray-700 dark:text-zinc-200" />
             <h2 className="text-[19px] font-bold text-gray-900 dark:text-zinc-100">Cronograma de Parcelas</h2>
-            <Badge className="bg-primary/5 text-primary border-primary/30 text-[10px] px-2 py-0.5 ml-1">
-              {result.variable && count > 1 ? `${count}x variável` : `${installmentCount}x de ${formatCurrency(result.installmentValue)}`}
-            </Badge>
           </div>
+          <div className="flex items-center gap-2">
           <button
             onClick={() => {
               const scheduleRows = schedule.map((i) =>
@@ -498,38 +497,48 @@ export default function SimuladorPage() {
               const w = window.open("", "_blank")
               if (w) { w.document.write(printContent); w.document.close(); w.print() }
             }}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs text-gray-600 dark:text-zinc-400 hover:bg-gray-50 transition"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-md border border-gray-200 dark:border-zinc-700 bg-white dark:bg-[#121614] text-sm text-gray-700 dark:text-zinc-100 hover:bg-gray-50 dark:hover:bg-zinc-800 transition"
           >
             <Receipt className="h-3.5 w-3.5" /> Exportar PDF
           </button>
+          <Badge className="bg-[#222A27] dark:bg-[#222A27] text-green-400 dark:text-green-400 border-transparent text-xs px-2.5 py-1">
+            {result.variable && count > 1 ? `${count}x variável` : `${installmentCount}x de ${formatCurrency(result.installmentValue)}`}
+          </Badge>
+          </div>
         </div>
 
-        <div className="rounded-xl border border-primary/30 bg-white dark:bg-zinc-900 overflow-hidden">
-          <div className="grid grid-cols-3 px-4 py-2 border-b border-gray-100 dark:border-zinc-800 text-[10px] font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wider">
-            <span>Parcela</span>
-            <span>Vencimento</span>
-            <span className="text-right">Valor</span>
-          </div>
-          <div className="max-h-[320px] overflow-y-auto">
+        <div className="rounded-xl border border-gray-200 dark:border-[#29322E] bg-white dark:bg-[#191F1C] overflow-hidden">
+          <div className="max-h-[300px] overflow-y-auto scrollbar-green">
+            <div className="sticky top-0 z-10 grid grid-cols-3 px-3 py-3 bg-gray-50 dark:bg-[#222A26]/50 dark:backdrop-blur-sm text-sm font-medium text-center text-gray-700 dark:text-[#FAFAFA]">
+              <span>Parcela</span>
+              <span>Vencimento</span>
+              <span>Valor da Parcela</span>
+            </div>
             {schedule.map((inst) => (
               <div
                 key={inst.number}
-                className="grid grid-cols-3 px-4 py-2 border-b border-gray-100 dark:border-zinc-800/60 last:border-0 items-center hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition"
+                className="grid grid-cols-3 px-3 py-3 border-t border-gray-100 dark:border-[#29322E] items-center text-center hover:bg-gray-50 dark:hover:bg-[#222A26]/30 transition"
               >
-                <div className="flex items-center gap-2">
-                  <span className="h-6 w-6 rounded-full bg-primary/5 border border-primary/30 flex items-center justify-center text-[10px] font-bold text-primary shrink-0">
-                    {inst.number}
+                <div className="flex justify-center">
+                  <span className="inline-flex items-center justify-center rounded-full border border-gray-300 dark:border-[#29322E] px-2.5 py-0.5 text-xs font-semibold text-gray-900 dark:text-[#FAFAFA]">
+                    {inst.number}/{count}
                   </span>
-                  <span className="text-xs text-gray-400 dark:text-zinc-500">/{count}</span>
                 </div>
-                <span className="text-xs text-gray-700 dark:text-zinc-300">{formatDateBR(inst.dueDate)}</span>
-                <span className="text-xs font-medium text-primary text-right">
+                <span className="text-sm text-gray-500 dark:text-[#9DAFA6]">{formatDateBR(inst.dueDate)}</span>
+                <span className="text-sm font-semibold text-green-600 dark:text-[#22C35D]">
                   {formatCurrency(inst.amount)}
                 </span>
               </div>
             ))}
           </div>
+
+          {/* Rodapé: Total a Receber */}
+          <div className="grid grid-cols-3 items-center px-8 py-3 border-t border-gray-200 dark:border-[#29322E] bg-gray-50 dark:bg-[#1D2421]">
+            <span className="col-span-2 text-sm font-bold text-gray-900 dark:text-[#FAFAFA]">Total a Receber</span>
+            <span className="text-center text-sm font-bold tabular-nums text-green-600 dark:text-[#22C35D]">{formatCurrency(result.totalAmount)}</span>
+          </div>
         </div>
+      </div>
       </div>
     </div>
   )
