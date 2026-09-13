@@ -1,13 +1,13 @@
 ﻿"use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
-import { Calculator, Calendar, Download, HelpCircle, Plus, Table2, User, Wallet, DollarSign, TrendingUp, X, MessageCircle, Send, Loader2, CheckCircle2, Copy, ExternalLink, FileText, Clock, Trash2, Percent, ChevronDown } from "lucide-react"
+import { Calculator, Calendar, Download, HelpCircle, Plus, Table2, User, Wallet, DollarSign, TrendingUp, X, MessageCircle, Send, Loader2, CheckCircle2, Copy, ExternalLink, FileText, Clock, Trash2, Percent, ChevronDown, Search } from "lucide-react"
 import { formatCurrency, generateInstallmentDates, localDateStr } from "@/lib/utils"
 
 interface Client {
@@ -79,7 +79,24 @@ export default function TabelaPricePage() {
   const [waSending, setWaSending] = useState(false)
   const [waSent, setWaSent] = useState(false)
 
+  // Dropdown de cliente com busca
+  const [clientOpen, setClientOpen] = useState(false)
+  const [clientSearch, setClientSearch] = useState("")
+  const clientBoxRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!clientOpen) return
+    const onClick = (e: MouseEvent) => {
+      if (clientBoxRef.current && !clientBoxRef.current.contains(e.target as Node)) {
+        setClientOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", onClick)
+    return () => document.removeEventListener("mousedown", onClick)
+  }, [clientOpen])
+
   const selectedClient = clients.find(c => c.id === clientId) || null
+  const filteredClients = clients.filter((c) => c.name.toLowerCase().includes(clientSearch.toLowerCase()))
 
   const buildRowMessage = (row: RowDetail) => {
     const clientName = selectedClient?.name || "Cliente"
@@ -264,18 +281,55 @@ export default function TabelaPricePage() {
         <div>
           <Label className="flex items-center gap-1"><User className="h-4 w-4" /> Cliente</Label>
           <div className="mt-1 flex gap-2">
-            <div className="relative flex-1">
-              <select
-                value={clientId}
-                onChange={(e) => setClientId(e.target.value)}
-                className="flex h-10 w-full appearance-none rounded-md border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 pl-3 pr-9 py-2 text-sm text-gray-900 dark:text-zinc-100"
+            <div ref={clientBoxRef} className="relative flex-1">
+              <button
+                type="button"
+                onClick={() => { setClientOpen((v) => !v); setClientSearch("") }}
+                className="flex h-10 w-full items-center justify-between rounded-md border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-[#121614] pl-3 pr-3 py-2 text-sm text-left text-gray-900 dark:text-zinc-100"
               >
-                <option value="">Selecione o cliente</option>
-                {clients.map((client) => (
-                  <option key={client.id} value={client.id}>{client.name}</option>
-                ))}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-zinc-400" />
+                <span className={selectedClient ? "" : "text-gray-500 dark:text-zinc-400"}>
+                  {selectedClient ? selectedClient.name : "Selecione o cliente"}
+                </span>
+                <ChevronDown className="h-4 w-4 shrink-0 text-gray-400 dark:text-zinc-400" />
+              </button>
+              {clientOpen && (
+                <div className="absolute left-0 right-0 top-full z-30 mt-1 overflow-hidden rounded-md border border-gray-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-[#121614]">
+                  <div className="relative border-b border-gray-100 dark:border-zinc-800 p-2">
+                    <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      autoFocus
+                      type="text"
+                      value={clientSearch}
+                      onChange={(e) => setClientSearch(e.target.value)}
+                      placeholder="Buscar cliente..."
+                      className="h-9 w-full rounded-md border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 pl-9 pr-3 text-sm text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-primary/50"
+                    />
+                  </div>
+                  <div className="max-h-56 overflow-y-auto py-1">
+                    <button
+                      type="button"
+                      onClick={() => { setClientId(""); setClientOpen(false) }}
+                      className="flex w-full px-3 py-2 text-left text-sm text-gray-500 dark:text-zinc-400 hover:bg-gray-50 dark:hover:bg-zinc-800"
+                    >
+                      Selecione o cliente
+                    </button>
+                    {filteredClients.length === 0 ? (
+                      <p className="px-3 py-2 text-sm text-gray-400 dark:text-zinc-500">Nenhum cliente encontrado</p>
+                    ) : (
+                      filteredClients.map((client) => (
+                        <button
+                          key={client.id}
+                          type="button"
+                          onClick={() => { setClientId(client.id); setClientOpen(false) }}
+                          className={`flex w-full px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-zinc-800 ${clientId === client.id ? "bg-primary/10 text-primary dark:bg-[#29322E] dark:text-zinc-100" : "text-gray-900 dark:text-zinc-100"}`}
+                        >
+                          {client.name}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
             <button
               type="button"
@@ -328,31 +382,32 @@ export default function TabelaPricePage() {
         {/* Tabela de Amortização (aparece quando valor e parcelas preenchidos) */}
         {amount > 0 && installments > 0 && (
           <div className="rounded-2xl border border-gray-200 dark:border-[#2A332E] bg-white dark:bg-[#191F1C] overflow-hidden shadow-sm">
-            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 px-5 py-4 border-b border-gray-200 dark:border-[#2A332E]">
-              <h3 className="flex items-center gap-2.5 text-base font-semibold text-gray-900 dark:text-zinc-100">
+            <div className="relative flex items-center justify-center px-5 py-4 border-b border-gray-200 dark:border-[#2A332E]">
+              <h3 className="absolute left-5 top-1/2 -translate-y-1/2 flex items-center gap-2.5 text-base font-semibold text-gray-900 dark:text-zinc-100">
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white"><Table2 className="h-4 w-4" /></span>
                 Tabela de Amortização
               </h3>
 
-              {/* Cards de resumo (ao lado do título) */}
-              <div className="flex flex-1 flex-wrap items-center justify-end gap-2">
-                <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#1B231F] px-3 py-1.5">
+              {/* Cards de resumo (centralizados no card) */}
+              <div className="flex flex-wrap items-center justify-center gap-4">
+                <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#1B231F] px-3 py-1.5 text-center">
                   <p className="text-[10px] font-medium text-gray-500 dark:text-zinc-400 whitespace-nowrap">Valor da Parcela</p>
                   <p className="text-sm font-bold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(preview.installmentValue)}</p>
                 </div>
-                <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#1B231F] px-3 py-1.5">
+                <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#1B231F] px-3 py-1.5 text-center">
                   <p className="text-[10px] font-medium text-gray-500 dark:text-zinc-400 whitespace-nowrap">Total a Pagar</p>
                   <p className="text-sm font-bold tabular-nums text-blue-600">{formatCurrency(preview.totalAmount)}</p>
                 </div>
-                <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#1B231F] px-3 py-1.5">
+                <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#1B231F] px-3 py-1.5 text-center">
                   <p className="text-[10px] font-medium text-gray-500 dark:text-zinc-400 whitespace-nowrap">Total de Juros</p>
                   <p className="text-sm font-bold tabular-nums text-green-800 dark:text-green-400">{formatCurrency(preview.totalInterest)}</p>
                 </div>
-                <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#1B231F] px-3 py-1.5">
+                <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#1B231F] px-3 py-1.5 text-center">
                   <p className="text-[10px] font-medium text-gray-500 dark:text-zinc-400 whitespace-nowrap">Custo Efetivo</p>
                   <p className="text-sm font-bold tabular-nums text-gray-900 dark:text-zinc-100">{(preview.totalInterest / amount * 100).toFixed(1)}%</p>
                 </div>
-                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => {
+              </div>
+              <Button variant="outline" size="sm" className="absolute right-5 top-1/2 -translate-y-1/2 gap-1.5" onClick={() => {
                 const printContent = `
                   <html><head><title>Tabela Price</title>
                   <style>body{font-family:Arial;padding:20px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px;text-align:center}th{background:#f5f5f5}h2{margin-bottom:10px}</style>
@@ -366,8 +421,7 @@ export default function TabelaPricePage() {
                 if (w) { w.document.write(printContent); w.document.close(); w.print() }
               }}>
                 <Download className="h-3.5 w-3.5" /> PDF
-                </Button>
-              </div>
+              </Button>
             </div>
 
             <div className="overflow-x-auto pb-10">
