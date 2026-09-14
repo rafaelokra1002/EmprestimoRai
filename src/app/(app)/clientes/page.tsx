@@ -14,7 +14,7 @@ import { FilterDropdown } from "@/components/ui/filter-dropdown"
 import { Textarea } from "@/components/ui/textarea"
 import { Avatar } from "@/components/avatar"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Search, Pencil, Trash2, User, MapPin, FileText, Users, Camera, Upload, Eye, Image, DollarSign, Briefcase, LayoutGrid, Rows3, Filter, CheckCircle2, MoreVertical, UserCheck, Phone, Mail, XCircle, Share2, MessageCircle, Copy, Info, Key, Home, ChevronRight } from "lucide-react"
+import { Plus, Search, Pencil, Trash2, User, MapPin, FileText, Users, Camera, Upload, Eye, Image, DollarSign, Briefcase, LayoutGrid, Rows3, Filter, CheckCircle2, MoreVertical, UserCheck, Phone, Mail, XCircle, X, Share2, MessageCircle, Copy, Info, Home, ChevronRight, CreditCard, Instagram, Globe, Building2, Hash, Tag, Download } from "lucide-react"
 import { useSession } from "next-auth/react"
 
 interface Client {
@@ -86,17 +86,6 @@ interface ClientLoanAmount {
   }
 }
 
-const DOC_TYPES = [
-  { value: "CPF", label: "CPF" },
-  { value: "RG", label: "RG" },
-  { value: "CNH", label: "CNH" },
-  { value: "COMPROVANTE_RESIDENCIA", label: "Comprovante de Residência" },
-  { value: "COMPROVANTE_RENDA", label: "Comprovante de Renda" },
-  { value: "SELFIE", label: "Selfie / Foto do Cliente" },
-  { value: "CONTRATO", label: "Contrato" },
-  { value: "OUTRO", label: "Outro" },
-]
-
 function cpfMask(value: string) {
   return value
     .replace(/\D/g, "")
@@ -127,6 +116,8 @@ export default function ClientesPage() {
   const { data: session } = useSession()
   const [shareModalOpen, setShareModalOpen] = useState(false)
   const [shareLinkCopied, setShareLinkCopied] = useState(false)
+  const DEFAULT_SHARE_MESSAGE = "Olá! Para agilizar seu atendimento, faça seu cadastro rápido neste link 👇\nÉ seguro, leva menos de 2 minutos e seus dados ficam protegidos. Após preencher, eu recebo e aprovo aqui no sistema. 🙏\n\n{link}"
+  const [shareMessage, setShareMessage] = useState(DEFAULT_SHARE_MESSAGE)
   const [clients, setClients] = useState<Client[]>([])
   const [filtered, setFiltered] = useState<Client[]>([])
   const [loanAmountsByClient, setLoanAmountsByClient] = useState<Record<string, number>>({})
@@ -157,7 +148,10 @@ export default function ClientesPage() {
   const [clientDocs, setClientDocs] = useState<ClientDoc[]>([])
   const [docsLoading, setDocsLoading] = useState(false)
   const [uploadingDoc, setUploadingDoc] = useState(false)
-  const [selectedDocType, setSelectedDocType] = useState("OUTRO")
+  const [docDescription, setDocDescription] = useState("")
+  const [uploadSuccess, setUploadSuccess] = useState(false)
+  const [dragActive, setDragActive] = useState(false)
+  const [docSizes, setDocSizes] = useState<Record<string, number>>({})
   const [profileImagePreview, setProfileImagePreview] = useState<{ name: string; src: string } | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -360,6 +354,8 @@ export default function ClientesPage() {
       status: client.status,
     })
     setPhotoPreview(client.photo || null)
+    setUploadSuccess(false)
+    setDocDescription("")
     setActiveTab("dados")
     setDialogOpen(true)
     fetchClientDocs(client.id)
@@ -378,34 +374,77 @@ export default function ClientesPage() {
     }
   }
 
-  const handleDocUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file || !editing) return
+  const readFileAsDataUrl = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onloadend = () => resolve(reader.result as string)
+      reader.onerror = reject
+      reader.readAsDataURL(file)
+    })
 
+  const uploadDocs = async (files: File[]) => {
+    if (!editing || files.length === 0) return
     setUploadingDoc(true)
-    const reader = new FileReader()
-    reader.onloadend = async () => {
-      const base64 = reader.result as string
-      try {
-        await fetch(`/api/clients/${editing.id}/documents`, {
+    setUploadSuccess(false)
+    try {
+      const newSizes: Record<string, number> = {}
+      for (const file of files) {
+        const base64 = await readFileAsDataUrl(file)
+        const res = await fetch(`/api/clients/${editing.id}/documents`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             name: file.name,
-            type: selectedDocType,
+            type: docDescription.trim() || "OUTRO",
             fileData: base64,
             fileType: file.type,
           }),
         })
-        fetchClientDocs(editing.id)
-      } catch {
-        // silently fail
-      } finally {
-        setUploadingDoc(false)
-        if (docFileInputRef.current) docFileInputRef.current.value = ""
+        if (res.ok) {
+          const created = await res.json().catch(() => null)
+          if (created?.id) newSizes[created.id] = file.size
+        }
       }
+      setDocSizes((prev) => ({ ...prev, ...newSizes }))
+      setDocDescription("")
+      setUploadSuccess(true)
+      await fetchClientDocs(editing.id)
+    } finally {
+      setUploadingDoc(false)
+      if (docFileInputRef.current) docFileInputRef.current.value = ""
     }
-    reader.readAsDataURL(file)
+  }
+
+  const handleDocInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    uploadDocs(e.target.files ? Array.from(e.target.files) : [])
+  }
+
+  const handleDocDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setDragActive(false)
+    uploadDocs(e.dataTransfer?.files ? Array.from(e.dataTransfer.files) : [])
+  }
+
+  const handleDocDownload = async (doc: ClientDoc) => {
+    if (!editing) return
+    try {
+      const res = await fetch(`/api/clients/${editing.id}/documents?docId=${doc.id}`)
+      const data = await res.json()
+      if (!res.ok || !data?.fileData) return
+      const link = document.createElement("a")
+      link.href = data.fileData
+      link.download = doc.name
+      link.click()
+    } catch {
+      // silently fail
+    }
+  }
+
+  const formatFileSize = (bytes?: number) => {
+    if (bytes == null) return null
+    if (bytes < 1024) return `${bytes} B`
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
   }
 
   const handleDocDelete = async (docId: string) => {
@@ -467,15 +506,6 @@ export default function ClientesPage() {
     }
   }
 
-  const getDocTypeLabel = (type: string) => {
-    return DOC_TYPES.find(d => d.value === type)?.label || type
-  }
-
-  const getDocIcon = (fileType: string) => {
-    if (fileType.startsWith("image/")) return <Image className="h-5 w-5 text-primary" />
-    return <FileText className="h-5 w-5 text-blue-600" />
-  }
-
   const [deleteClientId, setDeleteClientId] = useState<string | null>(null)
   const [deletingClient, setDeletingClient] = useState(false)
   const handleDelete = (id: string) => setDeleteClientId(id)
@@ -505,6 +535,8 @@ export default function ClientesPage() {
       notes: "", status: initialStatus
     })
     setPhotoPreview(null)
+    setUploadSuccess(false)
+    setDocDescription("")
     setActiveTab("dados")
     setDialogOpen(true)
   }
@@ -875,14 +907,14 @@ export default function ClientesPage() {
 
       {/* Listing */}
       {clientesView === "clientes" && (viewMode === "table" ? (
-        <div className="rounded-xl overflow-hidden border border-[#10b981]/30 dark:border-[#10b981]/25 bg-[#f4faf7] dark:bg-[#1D2421]">
+        <div className="rounded-xl overflow-hidden border border-[#10b981]/30 dark:border-[#22C35D]/30 bg-[#f4faf7] dark:bg-[#121614] dark:shadow-[0_4px_20px_-2px_rgba(34,195,93,0.10)] dark:[&_tr]:border-[#29322E]">
           {/* Search bar */}
           <div className="flex items-center gap-3 px-5 py-4 bg-transparent">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-zinc-500" />
               <Input
                 placeholder="Buscar clientes..."
-                className="pl-10 h-10"
+                className="pl-10 h-10 dark:bg-[#121614] dark:border-[#29322E]"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -900,7 +932,7 @@ export default function ClientesPage() {
               ]}
               minWidthClassName="min-w-[190px]"
             />
-            <div className="flex h-10 items-center gap-2 rounded-lg border border-[#10b981]/30 bg-[#10b981]/10 px-3 text-sm font-medium text-[#059669] whitespace-nowrap dark:text-[#34d399]">
+            <div className="flex h-10 items-center gap-2 rounded-lg border border-[#22C35D]/20 bg-[#22C35D]/10 px-3 text-sm font-medium text-[#059669] whitespace-nowrap dark:text-[#22C35D]">
               <Users className="h-4 w-4" />
               {filtered.length} clientes
             </div>
@@ -931,12 +963,12 @@ export default function ClientesPage() {
                   <TableCell colSpan={10} className="text-center py-8 text-gray-500 dark:text-zinc-400">Nenhum cliente encontrado</TableCell>
                 </TableRow>
               ) : (
-                filtered.map((client) => {
+                filtered.map((client, rowIdx) => {
                   const displayedRequestedAmount = getDisplayedRequestedAmount(client)
 
                   return (
                   <TableRow key={client.id}>
-                    <TableCell className="border-l-[3px] border-l-[#10b981]">
+                    <TableCell className="border-l-4" style={{ borderLeftColor: rowIdx % 2 === 0 ? "#FBBF24" : "#34D399" }}>
                       <div className="flex items-center gap-3">
                         <span
                           onClick={() => client.photo && setProfileImagePreview({ name: client.name, src: client.photo })}
@@ -953,12 +985,17 @@ export default function ClientesPage() {
                     <TableCell className="text-gray-700 dark:text-zinc-300">{client.income ? `R$ ${client.income.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "-"}</TableCell>
                     <TableCell className="text-gray-700 dark:text-zinc-300">{displayedRequestedAmount ? `R$ ${displayedRequestedAmount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "-"}</TableCell>
                     <TableCell>
-                      <Badge variant="success" className="text-[#407767] dark:text-[#407767]">Empréstimo</Badge>
+                      <Badge variant="success" className="bg-[#22C35D]/10 text-[#22C35D] border-[#22C35D]/20 dark:bg-[#22C35D]/10 dark:text-[#22C35D] dark:border-[#22C35D]/20">Empréstimo</Badge>
                     </TableCell>
                     <TableCell>
                       <Badge
                         variant={getDisplayedClientStatus(client) === "ACTIVE" ? "success" : "warning"}
-                        className={getDisplayedClientStatus(client) === "ACTIVE" ? "border-transparent bg-[#3B7060] text-white dark:bg-[#0B4030]" : ""}
+                        className={getDisplayedClientStatus(client) === "ACTIVE" ? "border-transparent" : ""}
+                        style={getDisplayedClientStatus(client) === "ACTIVE" ? {
+                          color: "#A7F3D0",
+                          border: "1px solid rgba(16,185,129,0.3)",
+                          background: "radial-gradient(circle at 0% 0%, rgba(16,185,129,0.22), rgba(0,0,0,0) 60%), linear-gradient(135deg, #062418, rgba(6,95,70,0.7))",
+                        } : undefined}
                       >
                         {getDisplayedClientStatus(client) === "ACTIVE" ? "Ativo" : "Inativo"}
                       </Badge>
@@ -986,14 +1023,14 @@ export default function ClientesPage() {
           </Table>
         </div>
       ) : (
-        <div className="rounded-xl overflow-hidden border border-[#10b981]/30 dark:border-[#10b981]/25 bg-[#f4faf7] dark:bg-[#1D2421]">
+        <div className="rounded-xl overflow-hidden border border-[#10b981]/30 dark:border-[#22C35D]/30 bg-[#f4faf7] dark:bg-[#121614] dark:shadow-[0_4px_20px_-2px_rgba(34,195,93,0.10)] dark:[&_tr]:border-[#29322E]">
           {/* Search bar */}
           <div className="flex items-center gap-3 px-5 py-4 bg-transparent">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-zinc-500" />
               <Input
                 placeholder="Buscar clientes..."
-                className="pl-10 h-10"
+                className="pl-10 h-10 dark:bg-[#121614] dark:border-[#29322E]"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -1011,7 +1048,7 @@ export default function ClientesPage() {
               ]}
               minWidthClassName="min-w-[190px]"
             />
-            <div className="flex h-10 items-center gap-2 rounded-lg border border-[#10b981]/30 bg-[#10b981]/10 px-3 text-sm font-medium text-[#059669] whitespace-nowrap dark:text-[#34d399]">
+            <div className="flex h-10 items-center gap-2 rounded-lg border border-[#22C35D]/20 bg-[#22C35D]/10 px-3 text-sm font-medium text-[#059669] whitespace-nowrap dark:text-[#22C35D]">
               <Users className="h-4 w-4" />
               {filtered.length} clientes
             </div>
@@ -1237,15 +1274,18 @@ export default function ClientesPage() {
         const userId = (session?.user as any)?.id
         const token = userId ? btoa(userId).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "") : ""
         const link = userId ? `${window.location.origin}/registro/${token}` : ""
+        const finalMessage = shareMessage.includes("{link}")
+          ? shareMessage.replace(/\{link\}/g, link)
+          : `${shareMessage}\n\n${link}`
         const handleCopy = () => {
           const markCopied = () => {
             setShareLinkCopied(true)
             setTimeout(() => setShareLinkCopied(false), 2500)
           }
           if (navigator.clipboard?.writeText) {
-            navigator.clipboard.writeText(link).then(markCopied).catch(() => {
+            navigator.clipboard.writeText(finalMessage).then(markCopied).catch(() => {
               const el = document.createElement("textarea")
-              el.value = link
+              el.value = finalMessage
               el.style.position = "fixed"
               el.style.opacity = "0"
               document.body.appendChild(el)
@@ -1256,7 +1296,7 @@ export default function ClientesPage() {
             })
           } else {
             const el = document.createElement("textarea")
-            el.value = link
+            el.value = finalMessage
             el.style.position = "fixed"
             el.style.opacity = "0"
             document.body.appendChild(el)
@@ -1267,8 +1307,7 @@ export default function ClientesPage() {
           }
         }
         const handleWhatsApp = () => {
-          const text = encodeURIComponent(`Olá! Preencha seus dados pelo link abaixo para solicitar seu cadastro:\n${link}`)
-          window.open(`https://wa.me/?text=${text}`, "_blank")
+          window.open(`https://wa.me/?text=${encodeURIComponent(finalMessage)}`, "_blank")
         }
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -1279,15 +1318,15 @@ export default function ClientesPage() {
                 <span className="text-sm font-medium text-white dark:text-zinc-900">Link copiado para a área de transferência!</span>
               </div>
             )}
-            <div className="relative w-full max-w-sm rounded-2xl bg-white dark:bg-zinc-900 shadow-xl">
+            <div className="relative w-full max-w-lg rounded-2xl bg-white dark:bg-[#121614] shadow-xl">
               {/* Header */}
               <div className="flex items-center justify-between px-5 pt-5 pb-3">
                 <div className="flex items-center gap-2">
-                  <Share2 className="h-5 w-5 text-gray-700 dark:text-zinc-200" />
+                  <Share2 className="h-5 w-5 text-green-500" />
                   <h2 className="text-base font-bold text-gray-900 dark:text-zinc-100">Link de cadastro de clientes</h2>
                 </div>
-                <button onClick={() => setShareModalOpen(false)} className="text-gray-400 hover:text-gray-600 dark:text-zinc-500 dark:hover:text-zinc-300">
-                  <XCircle className="h-5 w-5" />
+                <button onClick={() => setShareModalOpen(false)} className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500 text-white transition-colors hover:bg-red-600">
+                  <X className="h-4 w-4" />
                 </button>
               </div>
 
@@ -1297,28 +1336,51 @@ export default function ClientesPage() {
                 </p>
 
                 {/* Link box */}
-                <div className="flex items-center gap-2 rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 px-3 py-2.5">
+                <div className="flex items-center gap-2 rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-[#121614] px-3 py-2.5">
                   <span className="flex-1 truncate text-xs text-gray-600 dark:text-zinc-300 font-mono">{link}</span>
                   <button
                     onClick={handleCopy}
                     className="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-primary hover:bg-primary/90 px-3 py-1.5 text-xs font-semibold text-white transition-colors"
                   >
                     <Copy className="h-3.5 w-3.5" />
-                    {shareLinkCopied ? "Copiado!" : "Copiar link"}
+                    {shareLinkCopied ? "Copiado!" : "Copiar mensagem"}
                   </button>
                 </div>
 
+                {/* Mensagem que será enviada */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Mensagem que será enviada</p>
+                    <button
+                      type="button"
+                      onClick={() => setShareMessage(DEFAULT_SHARE_MESSAGE)}
+                      className="text-xs font-medium text-gray-500 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+                    >
+                      Restaurar padrão
+                    </button>
+                  </div>
+                  <textarea
+                    value={shareMessage}
+                    onChange={(e) => setShareMessage(e.target.value)}
+                    rows={5}
+                    className="w-full resize-none rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-[#121614] px-3 py-2.5 text-sm text-gray-800 dark:text-zinc-200 placeholder-gray-400 dark:placeholder-zinc-500 outline-none focus:ring-2 focus:ring-primary/40"
+                  />
+                  <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">
+                    Use <code className="rounded bg-gray-100 dark:bg-zinc-800 px-1 py-0.5 text-[11px] text-gray-600 dark:text-zinc-300">{"{link}"}</code> para indicar onde o link aparece. Se você apagar, o link é anexado ao final automaticamente.
+                  </p>
+                </div>
+
                 {/* Como funciona */}
-                <div className="rounded-xl border border-green-200 dark:border-green-900/40 bg-green-500/5 dark:bg-green-950/10 p-4 space-y-2">
+                <div className="rounded-xl border border-green-200 dark:border-green-900/40 bg-green-500/5 dark:bg-[#131F18] p-4 space-y-2">
                   <div className="flex items-center gap-1.5 mb-1">
                     <Info className="h-4 w-4 text-green-600 dark:text-green-400" />
-                    <p className="text-sm font-semibold text-green-700 dark:text-green-400">Como funciona</p>
+                    <p className="text-sm font-semibold text-green-700 dark:text-white">Como funciona</p>
                   </div>
                   {[
                     "Envie o link para o cliente (WhatsApp, e-mail, etc).",
                     "Ele preenche o formulário com nome, telefone, e-mail e demais dados.",
                     "O cadastro fica pendente até a sua aprovação.",
-                    <>Aprove ou rejeite na aba <strong>"Aprovações"</strong> aqui mesmo nesta página.</>,
+                    <>Aprove ou rejeite na aba <strong className="text-gray-900 dark:text-white">"Aprovações"</strong> aqui mesmo nesta página.</>,
                   ].map((step, i) => (
                     <p key={i} className="text-sm text-gray-600 dark:text-zinc-400">
                       {i + 1}. {step}
@@ -1331,7 +1393,7 @@ export default function ClientesPage() {
                   onClick={handleWhatsApp}
                   className="w-full flex items-center justify-center gap-2 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 px-4 py-3 text-sm font-semibold text-gray-700 dark:text-zinc-200 transition-colors"
                 >
-                  <MessageCircle className="h-4 w-4" />
+                  <MessageCircle className="h-4 w-4 text-green-500" />
                   Compartilhar no WhatsApp
                 </button>
               </div>
@@ -1362,22 +1424,23 @@ export default function ClientesPage() {
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
         title={editing ? "Editar Cliente" : "Novo Cliente"}
-        className="max-w-2xl dark:bg-[#121614]"
+        closeClassName="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500 text-white hover:bg-red-600 hover:text-white dark:text-white dark:hover:text-white"
+        className={`${activeTab === "endereco" || activeTab === "documentos" ? "w-full " : ""}max-w-2xl border dark:border-[#29322E] shadow-lg dark:bg-[#121614]`}
       >
         {/* Tabs */}
-        <div className="grid grid-cols-1 gap-1 rounded-xl bg-gray-100 dark:bg-zinc-800 p-1 mb-6 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-1 rounded-xl border border-gray-200 dark:border-[#29322E] bg-gray-100 dark:bg-[#191F1C] p-1 mb-6 sm:grid-cols-3">
           {tabs.map((tab) => (
             <button
               key={tab.key}
               type="button"
               onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center justify-start gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all sm:justify-center ${
+              className={`flex items-center justify-start gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium transition-all sm:justify-center ${
                 activeTab === tab.key
-                  ? "bg-white dark:bg-zinc-900 text-primary shadow-sm"
-                  : "text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200"
+                  ? "border-gray-200 bg-white text-gray-900 shadow-sm dark:border-[#29322E] dark:bg-[#121614] dark:text-zinc-100"
+                  : "border-transparent text-gray-500 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-zinc-200"
               }`}
             >
-              <span className={activeTab === tab.key ? "text-primary" : ""}>{tab.icon}</span>
+              <span className={activeTab === tab.key ? "text-gray-900 dark:text-zinc-100" : "text-gray-400 dark:text-zinc-500"}>{tab.icon}</span>
               {tab.label}
             </button>
           ))}
@@ -1404,7 +1467,7 @@ export default function ClientesPage() {
                     className="h-20 w-20 rounded-full object-cover ring-2 ring-ring ring-offset-2"
                   />
                 ) : (
-                  <div className="h-20 w-20 rounded-full bg-primary/10 dark:bg-primary/20 flex items-center justify-center text-primary text-2xl font-bold ring-2 ring-ring ring-offset-2">
+                  <div className="h-20 w-20 rounded-full bg-primary flex items-center justify-center text-white text-2xl font-bold">
                     {watchName ? watchName.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase() : "CL"}
                   </div>
                 )}
@@ -1429,29 +1492,29 @@ export default function ClientesPage() {
 
               {/* Nome Completo */}
               <div>
-                <Label>Nome Completo <span className="text-red-500">*</span></Label>
-                <Input {...register("name")} className="mt-1" />
+                <Label className="flex items-center gap-1.5"><User className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Nome Completo <span className="text-red-500">*</span></Label>
+                <Input {...register("name")} className="mt-1 dark:bg-[#121614] dark:border-[#29322E]" />
                 {errors.name && <p className="text-red-600 text-xs mt-1">{errors.name.message}</p>}
               </div>
 
               {/* CPF + RG */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <Label>CPF</Label>
+                  <Label className="flex items-center gap-1.5"><CreditCard className="h-4 w-4 text-gray-400 dark:text-zinc-500" />CPF</Label>
                   <Input
                     {...register("document")}
                     placeholder="000.000.000-00"
-                    className="mt-1"
+                    className="mt-1 dark:bg-[#121614] dark:border-[#29322E]"
                     onChange={(e) => setValue("document", cpfMask(e.target.value), { shouldValidate: true })}
                   />
                   {errors.document && <p className="text-red-600 text-xs mt-1">{errors.document.message}</p>}
                 </div>
                 <div>
-                  <Label>RG</Label>
+                  <Label className="flex items-center gap-1.5"><CreditCard className="h-4 w-4 text-gray-400 dark:text-zinc-500" />RG</Label>
                   <Input
                     {...register("rg")}
                     placeholder="00.000.000-0"
-                    className="mt-1"
+                    className="mt-1 dark:bg-[#121614] dark:border-[#29322E]"
                   />
                 </div>
               </div>
@@ -1459,21 +1522,22 @@ export default function ClientesPage() {
               {/* E-mail + Telefone (+55) */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <Label>E-mail</Label>
+                  <Label className="flex items-center gap-1.5"><Mail className="h-4 w-4 text-gray-400 dark:text-zinc-500" />E-mail</Label>
                   <Input
                     {...register("email")}
                     type="email"
                     placeholder="email@exemplo.com"
-                    className="mt-1"
+                    className="mt-1 dark:bg-[#121614] dark:border-[#29322E]"
                   />
                 </div>
                 <div>
-                  <Label>Telefone (com DDD)</Label>
+                  <Label className="flex items-center gap-1.5"><Phone className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Telefone (com DDD)</Label>
                   <div className="mt-1 flex gap-2">
                     <span className="flex h-10 shrink-0 items-center rounded-md border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800/60 px-3 text-sm font-medium text-gray-600 dark:text-zinc-300">+55</span>
                     <Input
                       {...register("phone")}
                       placeholder="(15) 98104-6991"
+                      className="dark:bg-[#121614] dark:border-[#29322E]"
                       onChange={(e) => setValue("phone", phoneMask(e.target.value))}
                     />
                   </div>
@@ -1484,19 +1548,19 @@ export default function ClientesPage() {
               {/* Instagram + Facebook */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <Label>Instagram</Label>
+                  <Label className="flex items-center gap-1.5"><Instagram className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Instagram</Label>
                   <Input
                     {...register("instagram")}
                     placeholder="@usuario"
-                    className="mt-1"
+                    className="mt-1 dark:bg-[#121614] dark:border-[#29322E]"
                   />
                 </div>
                 <div>
-                  <Label>Facebook</Label>
+                  <Label className="flex items-center gap-1.5"><Globe className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Facebook</Label>
                   <Input
                     {...register("facebook")}
                     placeholder="Nome ou URL do perfil"
-                    className="mt-1"
+                    className="mt-1 dark:bg-[#121614] dark:border-[#29322E]"
                   />
                 </div>
               </div>
@@ -1504,19 +1568,19 @@ export default function ClientesPage() {
               {/* Profissão e Local de Trabalho */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <Label>Profissão</Label>
+                  <Label className="flex items-center gap-1.5"><Briefcase className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Profissão</Label>
                   <Input
                     {...register("profession")}
                     placeholder="Ex: Eletricista, Comerciante..."
-                    className="mt-1"
+                    className="mt-1 dark:bg-[#121614] dark:border-[#29322E]"
                   />
                 </div>
                 <div>
-                  <Label>Local de Trabalho</Label>
+                  <Label className="flex items-center gap-1.5"><Building2 className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Local de Trabalho</Label>
                   <Input
                     {...register("workplace")}
                     placeholder="Ex: Empresa X, Loja Y..."
-                    className="mt-1"
+                    className="mt-1 dark:bg-[#121614] dark:border-[#29322E]"
                   />
                 </div>
               </div>
@@ -1524,33 +1588,33 @@ export default function ClientesPage() {
               {/* Renda e Valor Solicitado */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <Label>Renda</Label>
+                  <Label className="flex items-center gap-1.5"><DollarSign className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Renda</Label>
                   <Input
                     type="number"
                     step="0.01"
                     {...register("income", { valueAsNumber: true })}
                     placeholder="0,00"
-                    className="mt-1"
+                    className="mt-1 dark:bg-[#121614] dark:border-[#29322E]"
                   />
                 </div>
                 <div>
-                  <Label>Valor Solicitado</Label>
+                  <Label className="flex items-center gap-1.5"><DollarSign className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Valor Solicitado</Label>
                   <Input
                     type="number"
                     step="0.01"
                     {...register("requestedAmount", { valueAsNumber: true })}
                     placeholder="0,00"
-                    className="mt-1"
+                    className="mt-1 dark:bg-[#121614] dark:border-[#29322E]"
                   />
                 </div>
               </div>
 
               {/* Categoria */}
               <div>
-                <Label>Categoria</Label>
+                <Label className="flex items-center gap-1.5"><Tag className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Categoria</Label>
                 <select
                   {...register("category")}
-                  className="flex h-10 w-full rounded-md border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-sm text-gray-900 dark:text-zinc-100 mt-1 focus-visible:outline-none focus:ring-2 focus:ring-ring focus:border-ring outline-none"
+                  className="flex h-10 w-full rounded-md border border-gray-300 dark:border-[#29322E] bg-white dark:bg-[#121614] px-3 py-2 text-sm text-gray-900 dark:text-zinc-100 mt-1 focus-visible:outline-none focus:ring-2 focus:ring-ring focus:border-ring outline-none"
                 >
                   <option value="">Selecione...</option>
                   <option value="CARTEIRA_ASSINADA">Carteira assinada</option>
@@ -1585,19 +1649,19 @@ export default function ClientesPage() {
                 <div className="rounded-2xl border border-gray-200 bg-gray-50/80 p-4 dark:border-zinc-800 dark:bg-zinc-900/80">
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
-                      <Label>Nome de quem indicou</Label>
+                      <Label className="flex items-center gap-1.5"><User className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Nome de quem indicou</Label>
                       <Input
                         {...register("referralName")}
                         placeholder="Nome do indicador"
-                        className="mt-1"
+                        className="mt-1 dark:bg-[#121614] dark:border-[#29322E]"
                       />
                     </div>
                     <div>
-                      <Label>Telefone de quem indicou</Label>
+                      <Label className="flex items-center gap-1.5"><Phone className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Telefone de quem indicou</Label>
                       <Input
                         {...register("referralPhone")}
                         placeholder="(00) 00000-0000"
-                        className="mt-1"
+                        className="mt-1 dark:bg-[#121614] dark:border-[#29322E]"
                         onChange={(e) => setValue("referralPhone", phoneMask(e.target.value))}
                       />
                     </div>
@@ -1608,10 +1672,10 @@ export default function ClientesPage() {
               {/* Tipo de Cliente - removed */}
 
               <div>
-                <Label>Status do Cliente</Label>
+                <Label className="flex items-center gap-1.5"><UserCheck className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Status do Cliente</Label>
                 <select
                   {...register("status")}
-                  className="mt-1 flex h-10 w-full rounded-md border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-sm text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring outline-none"
+                  className="mt-1 flex h-10 w-full rounded-md border border-gray-300 dark:border-[#29322E] bg-white dark:bg-[#121614] px-3 py-2 text-sm text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring outline-none"
                 >
                   <option value="ACTIVE">Ativo</option>
                   <option value="INACTIVE">Inativo</option>
@@ -1625,10 +1689,10 @@ export default function ClientesPage() {
 
               {/* Observações */}
               <div>
-                <Label className="font-semibold text-gray-800 dark:text-zinc-200">Observações</Label>
+                <Label className="flex items-center gap-1.5 font-semibold text-gray-800 dark:text-zinc-200"><FileText className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Observações</Label>
                 <Textarea
                   {...register("notes")}
-                  className="mt-1"
+                  className="mt-1 dark:bg-[#121614] dark:border-[#29322E]"
                   rows={3}
                 />
               </div>
@@ -1640,12 +1704,12 @@ export default function ClientesPage() {
             <div className="space-y-4">
               {/* CEP com botão Buscar */}
               <div>
-                <Label className="font-semibold">CEP</Label>
+                <Label className="flex items-center gap-1.5 font-semibold"><MapPin className="h-4 w-4 text-gray-400 dark:text-zinc-500" />CEP</Label>
                 <div className="mt-1 flex flex-col gap-2 sm:flex-row">
                   <Input
                     {...register("zipCode")}
                     placeholder="00000-000"
-                    className="flex-1"
+                    className="flex-1 dark:bg-[#121614] dark:border-[#29322E]"
                     onChange={(e) => setValue("zipCode", cepMask(e.target.value))}
                     onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); searchCep() } }}
                   />
@@ -1663,61 +1727,37 @@ export default function ClientesPage() {
 
               {/* Rua / Logradouro */}
               <div>
-                <Label className="font-semibold">Rua / Logradouro</Label>
-                <Input {...register("address")} placeholder="Preenchido automaticamente pelo CEP" className="mt-1" />
+                <Label className="flex items-center gap-1.5 font-semibold"><MapPin className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Rua / Logradouro</Label>
+                <Input {...register("address")} placeholder="Preenchido automaticamente pelo CEP" className="mt-1 dark:bg-[#121614] dark:border-[#29322E]" />
               </div>
 
               {/* Número e Complemento */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <Label className="font-semibold">Número</Label>
-                  <Input {...register("number")} placeholder="123" className="mt-1" />
+                  <Label className="flex items-center gap-1.5 font-semibold"><Hash className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Número</Label>
+                  <Input {...register("number")} placeholder="123" className="mt-1 dark:bg-[#121614] dark:border-[#29322E]" />
                 </div>
                 <div>
-                  <Label className="font-semibold">Complemento</Label>
-                  <Input {...register("complement")} placeholder="Apto 101" className="mt-1" />
+                  <Label className="flex items-center gap-1.5 font-semibold"><Home className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Complemento</Label>
+                  <Input {...register("complement")} placeholder="Apto 101" className="mt-1 dark:bg-[#121614] dark:border-[#29322E]" />
                 </div>
               </div>
 
               {/* Bairro */}
               <div>
-                <Label className="font-semibold">Bairro</Label>
-                <Input {...register("neighborhood")} placeholder="Preenchido automaticamente pelo CEP" className="mt-1" />
+                <Label className="flex items-center gap-1.5 font-semibold"><MapPin className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Bairro</Label>
+                <Input {...register("neighborhood")} placeholder="Preenchido automaticamente pelo CEP" className="mt-1 dark:bg-[#121614] dark:border-[#29322E]" />
               </div>
 
               {/* Cidade e Estado */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <Label className="font-semibold">Cidade</Label>
-                  <Input {...register("city")} placeholder="Preenchido automaticamente" className="mt-1" />
+                  <Label className="flex items-center gap-1.5 font-semibold"><MapPin className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Cidade</Label>
+                  <Input {...register("city")} placeholder="Preenchido automaticamente" className="mt-1 dark:bg-[#121614] dark:border-[#29322E]" />
                 </div>
                 <div>
-                  <Label className="font-semibold">Estado (UF)</Label>
-                  <Input {...register("state")} placeholder="UF" className="mt-1" />
-                </div>
-              </div>
-
-              {/* Tipo de moradia */}
-              <div>
-                <Label className="font-semibold">Tipo de moradia</Label>
-                <div className="mt-1 grid grid-cols-2 gap-3">
-                  {[
-                    { value: "ALUGUEL", label: "Aluguel", icon: <Key className="h-4 w-4" /> },
-                    { value: "PROPRIA", label: "Casa própria", icon: <Home className="h-4 w-4" /> },
-                  ].map((opt) => {
-                    const active = watch("housingType") === opt.value
-                    return (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        onClick={() => setValue("housingType", opt.value, { shouldDirty: true })}
-                        className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors ${active ? "border-[#16a34a] bg-[#16a34a]/10 text-[#15803d] dark:border-green-700 dark:bg-green-950/30 dark:text-green-400" : "border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-600 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800"}`}
-                      >
-                        <span className={active ? "text-[#16a34a] dark:text-green-400" : "text-gray-400 dark:text-zinc-500"}>{opt.icon}</span>
-                        {opt.label}
-                      </button>
-                    )
-                  })}
+                  <Label className="flex items-center gap-1.5 font-semibold"><MapPin className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Estado (UF)</Label>
+                  <Input {...register("state")} placeholder="UF" className="mt-1 dark:bg-[#121614] dark:border-[#29322E]" />
                 </div>
               </div>
             </div>
@@ -1734,109 +1774,131 @@ export default function ClientesPage() {
                 </div>
               ) : (
                 <>
-                  {/* Upload area */}
-                  <div className="rounded-lg border-2 border-dashed border-gray-300 dark:border-zinc-700 p-6 text-center hover:border-gray-300 dark:border-zinc-700 transition-colors">
-                    <Upload className="h-10 w-10 text-gray-400 dark:text-zinc-500 mx-auto mb-3" />
-                    <p className="text-sm text-gray-700 dark:text-zinc-300 mb-1">Enviar documento</p>
-                    <p className="text-xs text-gray-400 dark:text-zinc-500 mb-4">PDF, imagens (JPG, PNG) — máx. 5MB</p>
-
-                    <div className="flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
-                      <select
-                        value={selectedDocType}
-                        onChange={(e) => setSelectedDocType(e.target.value)}
-                        className="h-9 rounded-md border border-gray-300 bg-gray-50 px-3 text-sm text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
-                      >
-                        {DOC_TYPES.map((dt) => (
-                          <option key={dt.value} value={dt.value}>{dt.label}</option>
-                        ))}
-                      </select>
-
-                      <input
-                        type="file"
-                        ref={docFileInputRef}
-                        accept="image/*,.pdf"
-                        className="hidden"
-                        onChange={handleDocUpload}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => docFileInputRef.current?.click()}
-                        disabled={uploadingDoc}
-                        className="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary/90 disabled:opacity-50 sm:w-auto"
-                      >
-                        <Upload className="h-4 w-4" />
-                        {uploadingDoc ? "Enviando..." : "Selecionar Arquivo"}
-                      </button>
-                    </div>
+                  {/* Descrição do documento */}
+                  <div>
+                    <Label className="font-semibold">Descrição do Documento (opcional)</Label>
+                    <Input
+                      value={docDescription}
+                      onChange={(e) => setDocDescription(e.target.value)}
+                      placeholder="Ex: RG, CPF, Comprovante de residência..."
+                      className="mt-1 dark:bg-[#121614] dark:border-[#29322E]"
+                    />
                   </div>
 
-                  {/* Document list */}
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-3">Documentos enviados</h4>
+                  {/* Selecionar arquivos */}
+                  <input
+                    type="file"
+                    ref={docFileInputRef}
+                    accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
+                    multiple
+                    className="hidden"
+                    onChange={handleDocInputChange}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => docFileInputRef.current?.click()}
+                    disabled={uploadingDoc}
+                    className="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-800 transition-colors hover:bg-gray-50 disabled:opacity-50 dark:border-[#29322E] dark:bg-[#121614] dark:text-zinc-100 dark:hover:bg-[#191F1C]"
+                  >
+                    <Upload className="h-4 w-4" />
+                    {uploadingDoc ? "Enviando..." : "Selecionar Arquivos"}
+                  </button>
+
+                  <p className="text-xs text-gray-400 dark:text-zinc-500">
+                    Aceita: imagens, PDF, Word, Excel. Você pode selecionar múltiplos arquivos.
+                  </p>
+
+                  {/* Dica arrastar e soltar */}
+                  <div
+                    onDragOver={(e) => { e.preventDefault(); setDragActive(true) }}
+                    onDragLeave={() => setDragActive(false)}
+                    onDrop={handleDocDrop}
+                    className={`rounded-lg border border-dashed px-4 py-3 text-center text-xs transition-colors ${
+                      dragActive
+                        ? "border-primary bg-primary/5 text-primary"
+                        : "border-gray-300 text-gray-400 dark:border-[#29322E] dark:text-zinc-500"
+                    }`}
+                  >
+                    Dica (PC): você também pode arrastar e soltar arquivos aqui dentro para anexar.
+                  </div>
+
+                  {/* Banner de sucesso */}
+                  {uploadSuccess && (
+                    <div className="flex items-center justify-between gap-3 rounded-lg border border-green-600/40 bg-green-500/10 px-4 py-3">
+                      <div className="flex items-center gap-2.5">
+                        <CheckCircle2 className="h-5 w-5 shrink-0 text-green-500" />
+                        <div>
+                          <p className="text-sm font-semibold text-green-500">Documento(s) enviado(s) com sucesso!</p>
+                          <p className="text-xs text-green-600 dark:text-green-500/80">Os documentos já aparecem abaixo.</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setUploadSuccess(false)}
+                        className="text-sm font-semibold text-green-500 transition-colors hover:text-green-400"
+                      >
+                        OK
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Documentos salvos */}
+                  <div className="border-t border-gray-100 pt-4 dark:border-[#29322E]">
+                    <h4 className="text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-3">Documentos Salvos ({clientDocs.length})</h4>
                     {docsLoading ? (
                       <p className="text-sm text-gray-400 dark:text-zinc-500 text-center py-4">Carregando documentos...</p>
                     ) : clientDocs.length === 0 ? (
-                      <div className="text-center py-6 rounded-lg bg-white dark:bg-zinc-900">
+                      <div className="text-center py-6 rounded-lg border border-gray-200 dark:border-[#29322E] bg-white dark:bg-[#121614]">
                         <FileText className="h-8 w-8 text-gray-500 dark:text-zinc-400 mx-auto mb-2" />
                         <p className="text-sm text-gray-400 dark:text-zinc-500">Nenhum documento enviado</p>
                       </div>
                     ) : (
                       <div className="space-y-2">
-                        {clientDocs.map((doc) => (
+                        {clientDocs.map((doc) => {
+                          const size = formatFileSize(docSizes[doc.id])
+                          return (
                           <div
                             key={doc.id}
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => handleDocView(doc)}
-                            onKeyDown={(event) => {
-                              if (event.key === "Enter" || event.key === " ") {
-                                event.preventDefault()
-                                handleDocView(doc)
-                              }
-                            }}
-                            className="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 transition-colors hover:bg-gray-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800 sm:flex-row sm:items-center sm:justify-between"
-                            title="Abrir documento"
+                            className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 dark:border-[#29322E] dark:bg-[#121614]"
                           >
-                            <div className="flex items-center gap-3">
-                              {getDocIcon(doc.fileType)}
-                              <div>
-                                <p className="text-sm font-medium text-gray-800 dark:text-zinc-200">{doc.name}</p>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs text-primary bg-primary/10 dark:bg-primary/20 px-2 py-0.5 rounded">
-                                    {getDocTypeLabel(doc.type)}
-                                  </span>
-                                  <span className="text-xs text-gray-400 dark:text-zinc-500">
-                                    {new Date(doc.createdAt).toLocaleDateString("pt-BR")}
-                                  </span>
-                                </div>
+                            <button
+                              type="button"
+                              onClick={() => handleDocView(doc)}
+                              title="Abrir documento"
+                              className="flex min-w-0 items-center gap-3 text-left"
+                            >
+                              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-red-500/10">
+                                {doc.fileType?.startsWith("image/")
+                                  ? <Image className="h-4 w-4 text-red-500" />
+                                  : <FileText className="h-4 w-4 text-red-500" />}
+                              </span>
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-medium text-gray-800 dark:text-zinc-200">{doc.name}</p>
+                                <p className="text-xs text-gray-400 dark:text-zinc-500">
+                                  {[size, new Date(doc.createdAt).toLocaleDateString("pt-BR")].filter(Boolean).join(" • ")}
+                                </p>
                               </div>
-                            </div>
-                            <div className="flex items-center gap-1">
+                            </button>
+                            <div className="flex items-center gap-1 shrink-0">
                               <button
                                 type="button"
-                                onClick={(event) => {
-                                  event.stopPropagation()
-                                  handleDocView(doc)
-                                }}
-                                className="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 transition-colors"
-                                title="Visualizar documento"
+                                onClick={() => handleDocDownload(doc)}
+                                className="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-800 dark:text-zinc-400 dark:hover:bg-[#191F1C] dark:hover:text-zinc-100 transition-colors"
+                                title="Baixar documento"
                               >
-                                <Eye className="h-4 w-4" />
+                                <Download className="h-4 w-4" />
                               </button>
                               <button
                                 type="button"
-                                onClick={(event) => {
-                                  event.stopPropagation()
-                                  handleDocDelete(doc.id)
-                                }}
-                                className="p-1.5 rounded-md text-red-600 hover:bg-red-50 dark:bg-red-950/10 transition-colors"
+                                onClick={() => handleDocDelete(doc.id)}
+                                className="p-1.5 rounded-md text-red-500 hover:bg-red-500/10 transition-colors"
                                 title="Excluir documento"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </button>
                             </div>
                           </div>
-                        ))}
+                        )})}
                       </div>
                     )}
                   </div>
@@ -1851,43 +1913,42 @@ export default function ClientesPage() {
               {formError}
             </div>
           )}
-          <div className="flex flex-col gap-3 border-t border-gray-200 pt-4 dark:border-zinc-800 sm:flex-row sm:items-center sm:justify-between">
-            <Button type="button" variant="outline" onClick={() => { setDialogOpen(false); setFormError(null) }}>
-              Cancelar
-            </Button>
-            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
-              {activeTab === "dados" && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setActiveTab("endereco")}
-                  className="text-primary border-primary/30 hover:bg-primary/10"
-                >
-                  Próximo: Endereço →
-                </Button>
-              )}
+          <div className="flex flex-col gap-3 border-t border-gray-200 pt-4 dark:border-[#29322E] sm:flex-row sm:items-center sm:justify-between">
+            <div>
               {activeTab === "endereco" && (
-                <>
-                  <Button type="button" variant="outline" onClick={() => setActiveTab("dados")}>
-                    ← Voltar
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setActiveTab("documentos")}
-                    className="text-primary border-primary/30 hover:bg-primary/10"
-                  >
-                    Próximo: Documentos →
-                  </Button>
-                </>
+                <Button type="button" variant="outline" onClick={() => setActiveTab("dados")}>
+                  ← Voltar
+                </Button>
               )}
               {activeTab === "documentos" && (
                 <Button type="button" variant="outline" onClick={() => setActiveTab("endereco")}>
                   ← Voltar
                 </Button>
               )}
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
+              {activeTab === "dados" && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setActiveTab("endereco")}
+                  className="bg-[#252D29] dark:bg-[#252D29] text-[#22C35D] dark:text-[#22C35D] border-[#3a463f] dark:border-[#3a463f] hover:bg-[#2c352f] dark:hover:bg-[#2c352f]"
+                >
+                  Próximo: Endereço →
+                </Button>
+              )}
+              {activeTab === "endereco" && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setActiveTab("documentos")}
+                  className="bg-[#252D29] dark:bg-[#252D29] text-[#22C35D] dark:text-[#22C35D] border-[#3a463f] dark:border-[#3a463f] hover:bg-[#2c352f] dark:hover:bg-[#2c352f]"
+                >
+                  Próximo: Documentos →
+                </Button>
+              )}
               <Button type="submit" disabled={saving}>
-                {saving ? "Salvando..." : editing ? "Salvar" : "Criar Cliente"}
+                {saving ? "Salvando..." : activeTab === "documentos" ? "Concluir" : editing ? "Salvar" : "Criar Cliente"}
               </Button>
             </div>
           </div>

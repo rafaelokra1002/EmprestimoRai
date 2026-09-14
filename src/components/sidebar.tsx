@@ -8,7 +8,7 @@ import {
   LayoutGrid,
   Award,
   DollarSign,
-  Download,
+  Copyright,
   Users,
   FileText,
   Calendar,
@@ -23,6 +23,8 @@ import {
   User,
   Menu,
   X,
+  Smartphone,
+  MoreVertical,
   LogOut,
   Sun,
   Moon,
@@ -35,7 +37,7 @@ import {
   GraduationCap,
   MessageSquareText,
   Search,
-  Headphones,
+  DatabaseBackup,
   FileCheck,
   LifeBuoy,
   Crown,
@@ -58,7 +60,7 @@ const topItems = [
   { href: "/whatsapp", label: "Relatórios Diário", subtitle: "Relatórios via WhatsApp", icon: FileCheck, color: "amber" },
   { href: "/perfil", label: "Meu Perfil", subtitle: "Gerenciar dados e plano", icon: User, color: "cyan" },
   { href: "#", label: "Meus Planos", subtitle: "Assinatura e upgrades", icon: Crown, color: "yellow" },
-  { href: "/consultas", label: "Consultas", subtitle: "CNPJ, CPF e mais", icon: Search, color: "fuchsia" },
+  { href: "/backup", label: "Backup", subtitle: "Salvar e restaurar dados", icon: DatabaseBackup, color: "fuchsia" },
 ]
 
 const highlightItem = null
@@ -68,7 +70,6 @@ type MenuItem = LeafItem | { label: string; icon: any; children: LeafItem[] }
 
 const menuItems: MenuItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutGrid },
-  { href: "#", label: "Central de Atendimento", icon: Headphones, badge: "Beta" },
   { href: "/clientes", label: "Clientes", icon: Users },
   { href: "/consultas", label: "Consultas", icon: Search },
   {
@@ -94,13 +95,16 @@ const menuItems: MenuItem[] = [
   },
   { href: "/contas", label: "Caixa", icon: CreditCard },
   { href: "/despesas", label: "Despesas", icon: Receipt },
-  { href: "#", label: "Desconto de Cheque", icon: FileCheck },
   { href: "/templates", label: "Templates", icon: MessageSquareText },
-  { href: "/backup", label: "Backup", icon: Download },
   { href: "/clientes/desaparecido", label: "Desaparecido", icon: XCircle },
-  { href: "#", label: "Suporte", icon: LifeBuoy },
-  { href: "/aulas", label: "Aulas", icon: GraduationCap },
-  { href: "/configuracoes", label: "Configurações", icon: Settings },
+  {
+    label: "Configurações",
+    icon: Settings,
+    children: [
+      { href: "/aulas", label: "Aulas", icon: GraduationCap },
+      { href: "#", label: "Suporte", icon: LifeBuoy },
+    ],
+  },
 ]
 
 const hardNavigationRoutes = new Set(["/emprestimos/tabela-price", "/emprestimos/recebimentos", "/emprestimos/relatorio"])
@@ -110,6 +114,16 @@ export function Sidebar() {
   const [isOpen, setIsOpen] = useState(false)
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({})
   const [installPrompt, setInstallPrompt] = useState<any>(null)
+  const [installDismissed, setInstallDismissed] = useState(false)
+
+  useEffect(() => {
+    try { setInstallDismissed(localStorage.getItem("install-card-dismissed") === "1") } catch {}
+  }, [])
+
+  const dismissInstall = () => {
+    setInstallDismissed(true)
+    try { localStorage.setItem("install-card-dismissed", "1") } catch {}
+  }
 
   useEffect(() => {
     const handler = (e: any) => { e.preventDefault(); setInstallPrompt(e) }
@@ -271,15 +285,42 @@ export function Sidebar() {
             return renderLeaf(item)
           })}
 
-          {/* Instalar App (depois de Configurações) */}
-          <button
-            type="button"
-            onClick={handleInstall}
-            className="flex w-full items-center gap-2 rounded-lg border-l-[3px] border-l-transparent px-2 py-2.5 text-sm font-normal text-white/80 transition-all hover:border-l-[#D4A574]/40 hover:bg-white/10 hover:text-white"
-          >
-            <Download className="h-6 w-6 shrink-0" />
-            <span className="whitespace-nowrap">Instalar App</span>
-          </button>
+          {/* Instalar App (card) */}
+          {!installDismissed && (
+            <div className="mt-2 rounded-xl border border-[#22C35D]/20 bg-gradient-to-br from-[#1A5631] to-[#0F3D22] p-3">
+              <div className="flex items-start gap-2.5">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/10 text-white">
+                  <Smartphone className="h-5 w-5" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-white">Instale o App</p>
+                  <p className="text-xs text-white/50">Acesso rápido no celular</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={dismissInstall}
+                  className="shrink-0 text-white/40 transition-colors hover:text-white/70"
+                  title="Fechar"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={handleInstall}
+                className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-[#22C35D] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#1da84f]"
+              >
+                <MoreVertical className="h-4 w-4" />
+                Como instalar
+              </button>
+            </div>
+          )}
+
+          {/* Footer */}
+          <div className="mt-4 flex items-center justify-center gap-1.5 border-t border-white/10 pt-4 text-xs text-white/40">
+            <Copyright className="h-3.5 w-3.5" />
+            CredGestor 2026
+          </div>
         </nav>
 
       </aside>

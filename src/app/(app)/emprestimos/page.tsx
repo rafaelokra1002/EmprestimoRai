@@ -18,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { LoanRenegotiationContent } from "./_components/loan-renegotiation-content"
 import { InterestRenegotiateBody } from "./_components/interest-renegotiate-body"
 import { ComprovanteContent } from "./_components/comprovante-content"
+import { LoanDetailsContent } from "./_components/loan-details-content"
 import { formatCurrency, formatDate, calculateLoan, generateInstallmentDates, resolveDailyInterestAmount, localDateStr, buildLoanReportMessage } from "@/lib/utils"
 import { showToast } from "@/lib/toast"
 import { buildLoanData, calculateEffectivePaidAmountFromPayments, calculateOverdueInterest, calculateRealizedProfitFromPayments, calculateTotalAmountWithLateFee, getDaysOverdue, getNextDueDate, getOverdueDailyAmountBRL, getPaidExcludingInterest } from "@/lib/loan-logic"
@@ -91,7 +92,7 @@ export default function EmprestimosPage() {
   const [search, setSearch] = useState("")
   const [activeTab, setActiveTab] = useState<"all" | "daily" | "price" | "received">("all")
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
-  const [loanFilter, setLoanFilter] = useState<"open" | "all" | "on_time" | "due_today" | "paid" | "overdue" | "overdue_1_7" | "overdue_8_15" | "overdue_16_30" | "overdue_30_plus" | "renegotiated" | "interest_only" | "weekly" | "biweekly" | "monthly" | "single" | "tagged">("open")
+  const [loanFilter, setLoanFilter] = useState<"open" | "all" | "on_time" | "due_today" | "paid" | "overdue" | "overdue_1_7" | "overdue_8_15" | "overdue_16_30" | "overdue_30_plus" | "renegotiated" | "interest_only" | "weekly" | "biweekly" | "monthly" | "single" | "parceled" | "tagged">("open")
   const [filterOpen, setFilterOpen] = useState(false)
   const [overdueMenuOpen, setOverdueMenuOpen] = useState(false)
   const [tagFilterOpen, setTagFilterOpen] = useState(false)
@@ -99,6 +100,7 @@ export default function EmprestimosPage() {
   const [payMenuOpen, setPayMenuOpen] = useState<string | null>(null)
   const [expandedLoan, setExpandedLoan] = useState<string | null>(null)
   const [comprovanteLoanId, setComprovanteLoanId] = useState<string | null>(null)
+  const [detailsLoanId, setDetailsLoanId] = useState<string | null>(null)
   const [tagDialog, setTagDialog] = useState<Loan | null>(null)
   const [tagPos, setTagPos] = useState<{ left: number; top: number } | null>(null)
   const [tagInput, setTagInput] = useState("")
@@ -1801,6 +1803,8 @@ export default function EmprestimosPage() {
       result = result.filter(l => l.modality === "MONTHLY")
     } else if (loanFilter === "single") {
       result = result.filter(l => l.installmentCount === 1)
+    } else if (loanFilter === "parceled") {
+      result = result.filter(l => l.installmentCount > 1)
     } else if (loanFilter === "tagged") {
       result = result.filter(l => (l.tags || []).length > 0)
     }
@@ -2034,6 +2038,8 @@ export default function EmprestimosPage() {
         return isActive ? "border-orange-500 bg-orange-500 text-white shadow-sm" : "border-orange-400 text-orange-600 hover:bg-orange-50 dark:border-orange-800 dark:text-orange-300 dark:hover:bg-orange-950/20"
       case "teal":
         return isActive ? "border-teal-500 bg-teal-500 text-white shadow-sm" : "border-teal-500 text-teal-600 hover:bg-teal-50 dark:border-teal-700 dark:text-teal-400 dark:hover:bg-teal-950/20"
+      case "indigo":
+        return isActive ? "border-indigo-500 bg-indigo-500 text-white shadow-sm" : "border-indigo-400 text-indigo-600 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-300 dark:hover:bg-indigo-950/20"
       default:
         return isActive ? "border-primary bg-primary text-white shadow-sm" : "border-gray-400 text-gray-700 hover:bg-gray-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
     }
@@ -2049,9 +2055,8 @@ export default function EmprestimosPage() {
     { value: "renegotiated", label: "Reneg.", color: "yellow" },
     { value: "interest_only", label: "Só Juros", color: "purple" },
     { value: "weekly", label: "Semanal", color: "orange", icon: Calendar },
-    { value: "biweekly", label: "Quinzenal", color: "teal", icon: Calendar },
+    { value: "parceled", label: "Parcelado", color: "indigo", icon: Calendar },
     { value: "monthly", label: "Mensal", color: "green", icon: Calendar },
-    { value: "single", label: "Única", color: "gray", icon: DollarSign },
   ]
 
   const overdueSubFilters: { value: LoanFilterValue; label: string }[] = [
@@ -2562,8 +2567,8 @@ export default function EmprestimosPage() {
                         <Tag className="h-3 w-3" /> Etiqueta
                       </button>
                       <button
-                        onClick={() => setExpandedLoan(expandedLoan === loan.id ? null : loan.id)}
-                        className={`flex shrink-0 items-center gap-1 whitespace-nowrap px-1.5 py-1 rounded-lg text-[11px] transition-colors ${expandedLoan === loan.id ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800" : isDarkCard ? "text-green-300 bg-green-500/15 border border-[#22c55e]/30 hover:bg-green-500/25" : "text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800"}`}
+                        onClick={() => setDetailsLoanId(loan.id)}
+                        className={`flex shrink-0 items-center gap-1 whitespace-nowrap px-1.5 py-1 rounded-lg text-[11px] transition-colors ${isDarkCard ? "text-green-300 bg-green-500/15 border border-[#22c55e]/30 hover:bg-green-500/25" : "text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800"}`}
                         title="Detalhes"
                       >
                         <Eye className="h-3 w-3" /> Detalhes
@@ -5370,6 +5375,21 @@ export default function EmprestimosPage() {
             </>
           )}
         </div>
+      </Dialog>
+
+      {/* Modal Detalhes do Empréstimo (suspenso) */}
+      <Dialog
+        open={Boolean(detailsLoanId)}
+        onClose={() => setDetailsLoanId(null)}
+        className="max-w-5xl border-none bg-transparent p-0 shadow-none"
+      >
+        {detailsLoanId ? (
+          <LoanDetailsContent
+            loanId={detailsLoanId}
+            presentation="modal"
+            onClose={() => setDetailsLoanId(null)}
+          />
+        ) : null}
       </Dialog>
 
       {/* Modal Comprovante de Empréstimo (suspenso) */}

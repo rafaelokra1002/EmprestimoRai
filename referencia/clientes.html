@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clientes — Réplica CobraFácil</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* Base */
+    --bg:            #121614;   /* fundo da página */
+    --surface:       #191F1C;   /* fundo do card/tabela */
+    --text:          #FAFAFA;   /* texto principal */
+    --text-muted:    #9DAFA6;   /* texto secundário */
+    --border:        #29322E;   /* divisórias e bordas */
+
+    /* Marca (verde) */
+    --brand:         #22C35D;
+    --brand-10:      rgba(34,195,93,0.10);
+    --brand-20:      rgba(34,195,93,0.20);
+    --brand-30:      rgba(34,195,93,0.30);
+
+    /* Acentos */
+    --accent-amber:  #FBBF24;   /* barra lateral de linha */
+    --accent-emerald:#34D399;   /* barra lateral de linha */
+    --accent-gold:   #D4A574;   /* aba ativa / brilho */
+    --danger:        #CF3030;   /* ícone excluir */
+
+    /* Raios / tipografia */
+    --radius-sm: 8px;
+    --radius:    10px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  body{
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap{ max-width: 900px; margin: 0 auto; padding: 16px; }
+
+  /* ---------- Banner promocional (roxo) ---------- */
+  .banner{
+    display:flex; align-items:center; gap:16px;
+    padding:20px 24px;
+    border-radius: var(--radius-lg);
+    border:1px solid rgba(232,121,249,0.4);
+    background:
+      radial-gradient(circle at 0% 0%, rgba(217,70,239,0.35), rgba(0,0,0,0) 55%),
+      linear-gradient(135deg, #2B0A3D, #7C1D6F, #3B0A52);
+    color:#fff; text-decoration:none;
+  }
+  .banner .b-icon{
+    width:48px; height:48px; flex:0 0 48px;
+    display:flex; align-items:center; justify-content:center;
+    border-radius:12px; background:rgba(255,255,255,0.12);
+    font-size:20px;
+  }
+  .banner .b-body{ flex:1; }
+  .banner .b-title{ display:block; font-size:16px; font-weight:700; }
+  .banner .b-sub{ display:block; font-size:13px; color:rgba(255,255,255,0.8); margin-top:2px; }
+  .banner .b-btn{
+    display:inline-flex; align-items:center; gap:6px;
+    padding:6px 12px; border-radius:9999px;
+    background:rgba(255,255,255,0.10); color:#fff;
+    font-size:12px; font-weight:600; white-space:nowrap;
+  }
+
+  /* ---------- Cabeçalho ---------- */
+  .header{
+    display:flex; align-items:flex-start; justify-content:space-between;
+    flex-wrap:wrap; gap:16px; margin:28px 0 20px;
+  }
+  h1{ font-size:18px; font-weight:700; color:var(--text); }
+  .subtitle{ font-size:14px; color:var(--text-muted); margin-top:2px; }
+  .actions{ display:flex; gap:10px; flex-wrap:wrap; }
+
+  .btn{
+    display:inline-flex; align-items:center; gap:8px;
+    font-size:14px; font-weight:500; cursor:pointer;
+    padding:8px 16px; border-radius:var(--radius);
+    border:1px solid transparent; transition:filter .15s, background .15s;
+  }
+  .btn svg{ width:16px; height:16px; }
+  .btn-primary{ background:var(--brand); color:#fff; }
+  .btn-primary:hover{ filter:brightness(1.08); }
+  .btn-secondary{ background:var(--bg); color:var(--text); border-color:var(--border); }
+  .btn-secondary:hover{ background:#1b201d; }
+
+  /* ---------- Abas ---------- */
+  .tabs{
+    display:inline-flex; gap:4px; padding:4px;
+    border:1px solid var(--border); border-radius:var(--radius);
+    margin-bottom:20px;
+  }
+  .tab{
+    display:inline-flex; align-items:center; gap:8px;
+    font-size:14px; font-weight:500; cursor:pointer;
+    padding:6px 12px; border-radius:var(--radius-sm);
+    background:transparent; color:var(--text-muted); border:none;
+  }
+  .tab.active{ background:var(--bg); color:var(--text); }
+
+  /* ---------- Card da tabela ---------- */
+  .card{
+    background:var(--surface);
+    border:1px solid var(--brand-30);
+    border-radius:var(--radius-md);
+    box-shadow:0 4px 20px -2px var(--brand-10);
+    overflow:hidden;
+  }
+  .card-top{ display:flex; align-items:center; gap:12px; padding:20px; }
+  .search{
+    position:relative; flex:1;
+  }
+  .search svg{ position:absolute; left:14px; top:50%; transform:translateY(-50%); width:16px; height:16px; color:var(--text-muted); }
+  .search input{
+    width:100%; background:var(--bg); color:var(--text);
+    border:1px solid var(--border); border-radius:var(--radius);
+    padding:8px 12px 8px 40px; font-size:14px; font-family:var(--font);
+    outline:none;
+  }
+  .search input::placeholder{ color:var(--text-muted); }
+  .search input:focus{ border-color:var(--brand); }
+  .count-badge{
+    display:inline-flex; align-items:center; gap:6px; white-space:nowrap;
+    font-size:12px; font-weight:600; color:var(--brand);
+    background:var(--brand-10); border:1px solid var(--brand-20);
+    padding:6px 12px; border-radius:9999px;
+  }
+
+  /* ---------- Tabela ---------- */
+  table{ width:100%; border-collapse:collapse; }
+  thead th{
+    text-align:left; font-size:13px; font-weight:500; color:var(--text-muted);
+    padding:0 16px 12px; border-bottom:1px solid var(--border);
+  }
+  tbody td{ padding:16px; font-size:14px; border-bottom:1px solid var(--border); }
+  tbody tr{ border-left:4px solid var(--accent-amber); }
+  tbody tr:nth-child(even){ border-left-color:var(--accent-emerald); }
+  tbody tr:hover{ background:rgba(255,255,255,0.02); }
+
+  .client-cell{ display:flex; align-items:center; gap:12px; }
+  .avatar{
+    width:38px; height:38px; flex:0 0 38px; border-radius:9999px;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--brand-10); color:var(--brand);
+    font-size:12px; font-weight:600;
+  }
+  .avatar img{ width:100%; height:100%; border-radius:9999px; object-fit:cover; }
+  .client-name{ font-weight:600; }
+
+  .badge{
+    display:inline-flex; align-items:center;
+    font-size:12px; font-weight:600; padding:2px 10px; border-radius:9999px;
+  }
+  .badge-tipo{ color:var(--brand); background:var(--brand-10); border:1px solid var(--brand-20); }
+  .badge-status{
+    color:#A7F3D0; border:1px solid rgba(16,185,129,0.3);
+    background:
+      radial-gradient(circle at 0% 0%, rgba(16,185,129,0.22), rgba(0,0,0,0) 60%),
+      linear-gradient(135deg, #062418, rgba(6,95,70,0.7));
+  }
+
+  .row-actions{ display:flex; gap:12px; }
+  .icon-btn{ background:none; border:none; cursor:pointer; padding:4px; display:flex; }
+  .icon-btn svg{ width:18px; height:18px; }
+  .icon-edit svg{ color:var(--text); }
+  .icon-del svg{ color:var(--danger); }
+</style>
+</head>
+<body>
+  <div class="wrap">
+
+    <!-- Banner -->
+    <a class="banner" href="#">
+      <span class="b-icon">🔍</span>
+      <span class="b-body">
+        <span class="b-title">Faça consultas de SPC, Serasa e CPF</span>
+        <span class="b-sub">Score, protestos, SCR BACEN e muito mais — a partir de R$ 5,00</span>
+      </span>
+      <span class="b-btn">Consultar →</span>
+    </a>
+
+    <!-- Cabeçalho -->
+    <div class="header">
+      <div>
+        <h1>Clientes</h1>
+        <div class="subtitle">Gerencie seus clientes</div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-secondary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
+          Criar Empréstimo
+        </button>
+        <button class="btn btn-secondary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>
+          Compartilhar link de cadastro
+        </button>
+        <button class="btn btn-primary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+          Novo Cliente
+        </button>
+      </div>
+    </div>
+
+    <!-- Abas -->
+    <div class="tabs">
+      <button class="tab active">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Clientes
+      </button>
+      <button class="tab">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 11l-3 3-2-2"/></svg>
+        Aprovações
+      </button>
+    </div>
+
+    <!-- Card -->
+    <div class="card">
+      <div class="card-top">
+        <div class="search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg>
+          <input type="text" placeholder="Buscar clientes...">
+        </div>
+        <span class="count-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          7 clientes
+        </span>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th>Telefone</th>
+            <th>Tipo</th>
+            <th>Status</th>
+            <th>Cadastrado em</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Linhas de exemplo (dados fictícios) -->
+          <tr>
+            <td><div class="client-cell"><div class="avatar">C1</div><span class="client-name">Cliente 1</span></div></td>
+            <td>+55 (71) 90000-0001</td>
+            <td><span class="badge badge-tipo">Empréstimo</span></td>
+            <td><span class="badge badge-status">Ativo</span></td>
+            <td>02/08/2026</td>
+            <td><div class="row-actions">
+              <button class="icon-btn icon-edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
+              <button class="icon-btn icon-del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>
+            </div></td>
+          </tr>
+          <tr>
+            <td><div class="client-cell"><div class="avatar">C2</div><span class="client-name">Cliente 2</span></div></td>
+            <td>+55 (71) 90000-0002</td>
+            <td><span class="badge badge-tipo">Empréstimo</span></td>
+            <td><span class="badge badge-status">Ativo</span></td>
+            <td>02/08/2026</td>
+            <td><div class="row-actions">
+              <button class="icon-btn icon-edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
+              <button class="icon-btn icon-del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>
+            </div></td>
+          </tr>
+          <tr>
+            <td><div class="client-cell"><div class="avatar">C3</div><span class="client-name">Cliente 3</span></div></td>
+            <td>+55 (71) 90000-0003</td>
+            <td><span class="badge badge-tipo">Empréstimo</span></td>
+            <td><span class="badge badge-status">Ativo</span></td>
+            <td>04/08/2026</td>
+            <td><div class="row-actions">
+              <button class="icon-btn icon-edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
+              <button class="icon-btn icon-del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>
+            </div></td>
+          </tr>
+          <tr>
+            <td><div class="client-cell"><div class="avatar">TE</div><span class="client-name">TESTE10</span></div></td>
+            <td>-</td>
+            <td><span class="badge badge-tipo">Empréstimo</span></td>
+            <td><span class="badge badge-status">Ativo</span></td>
+            <td>17/08/2026</td>
+            <td><div class="row-actions">
+              <button class="icon-btn icon-edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
+              <button class="icon-btn icon-del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>
+            </div></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</body>
+</html>

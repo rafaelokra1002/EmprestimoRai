@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Avatar } from "@/components/avatar"
 import { Dialog } from "@/components/ui/dialog"
+import { LoanDetailsContent } from "@/app/(app)/emprestimos/_components/loan-details-content"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ArrowLeft, Calendar, Check, CheckCircle2, ChevronDown, Clock, Copy, DollarSign, Download, Eye, FileText, Lock, Loader2, MessageCircle, Pencil, Receipt, RotateCcw, Send, Tag, Trash2, X, Plus } from "lucide-react"
@@ -113,6 +114,7 @@ export default function ClienteEmprestimosPage() {
 
   // Payment receipt dialog state
   const [paymentReceiptDialog, setPaymentReceiptDialog] = useState(false)
+  const [detailsLoanId, setDetailsLoanId] = useState<string | null>(null)
   const [paymentReceiptInfo, setPaymentReceiptInfo] = useState<{
     type: string
     clientName: string
@@ -1034,7 +1036,7 @@ export default function ClienteEmprestimosPage() {
                       <Tag className="h-3 w-3" /> Etiqueta
                     </button>
                     <button
-                      onClick={() => router.push(`/emprestimos/${loan.id}`)}
+                      onClick={() => setDetailsLoanId(loan.id)}
                       className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
                     >
                       <Eye className="h-3 w-3" /> Detalhes
@@ -1856,6 +1858,21 @@ export default function ClienteEmprestimosPage() {
             </div>
           </div>
         )}
+      </Dialog>
+
+      {/* Modal Detalhes do Empréstimo (suspenso) */}
+      <Dialog
+        open={Boolean(detailsLoanId)}
+        onClose={() => setDetailsLoanId(null)}
+        className="max-w-5xl border-none bg-transparent p-0 shadow-none"
+      >
+        {detailsLoanId ? (
+          <LoanDetailsContent
+            loanId={detailsLoanId}
+            presentation="modal"
+            onClose={() => setDetailsLoanId(null)}
+          />
+        ) : null}
       </Dialog>
 
       {/* Modal Comprovante de Empréstimo (suspenso) */}

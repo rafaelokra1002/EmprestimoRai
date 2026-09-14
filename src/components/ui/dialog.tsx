@@ -10,9 +10,10 @@ interface DialogProps {
   children: React.ReactNode
   title?: string
   className?: string
+  closeClassName?: string
 }
 
-export function Dialog({ open, onClose, children, title, className }: DialogProps) {
+export function Dialog({ open, onClose, children, title, className, closeClassName }: DialogProps) {
   if (!open) return null
 
   return (
@@ -27,7 +28,7 @@ export function Dialog({ open, onClose, children, title, className }: DialogProp
         {title && (
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-slate-700 dark:text-zinc-100">{title}</h2>
-            <button onClick={onClose} className="text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-100">
+            <button onClick={onClose} className={cn("text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-100", closeClassName)}>
               <X className="h-5 w-5" />
             </button>
           </div>

@@ -78,7 +78,14 @@ export default function RelatorioEmprestimosPage() {
   const [startDate, setStartDate] = useState(firstOfMonth())
   const [endDate, setEndDate] = useState(lastOfMonth())
   const autoDateSet = useRef(false)
-  const [paymentFilter, setPaymentFilter] = useState<"all" | "monthly" | "installment">("all")
+  const [paymentFilter, setPaymentFilter] = useState<"all" | "monthly" | "installment" | "weekly">("all")
+
+  // Predicado central de tipo/modalidade usado pelos filtros/cards do relatório
+  const matchesType = (l: Loan) =>
+    paymentFilter === "monthly" ? l.installmentCount === 1
+      : paymentFilter === "installment" ? l.installmentCount > 1
+      : paymentFilter === "weekly" ? l.modality === "WEEKLY"
+      : true
   const [showModalityCards, setShowModalityCards] = useState(false)
   const [caixaExtra, setCaixaExtra] = useState(0)
   const [caixaInicial, setCaixaInicial] = useState(0)
@@ -145,8 +152,7 @@ export default function RelatorioEmprestimosPage() {
       const loanDate = localDateStr(new Date(loan.contractDate || loan.createdAt))
       if (startDate && loanDate < startDate) return false
       if (endDate && loanDate > endDate) return false
-      if (paymentFilter === "monthly" && loan.installmentCount !== 1) return false
-      if (paymentFilter === "installment" && loan.installmentCount <= 1) return false
+      if (!matchesType(loan)) return false
       return true
     })
   }, [loans, startDate, endDate, paymentFilter])
@@ -157,8 +163,7 @@ export default function RelatorioEmprestimosPage() {
       const loanDate = localDateStr(new Date(loan.contractDate || loan.createdAt))
       if (endDate && loanDate > endDate) return false
       if (loan.status !== "ACTIVE" && startDate && loanDate < startDate) return false
-      if (paymentFilter === "monthly" && loan.installmentCount !== 1) return false
-      if (paymentFilter === "installment" && loan.installmentCount <= 1) return false
+      if (!matchesType(loan)) return false
       return true
     })
   }, [loans, startDate, endDate, paymentFilter])
@@ -173,9 +178,7 @@ export default function RelatorioEmprestimosPage() {
         if (endDate && d > endDate) return false
         return true
       })
-    if (paymentFilter === "monthly") return base.filter(l => l.installmentCount === 1 && hasInstInPeriod(l))
-    if (paymentFilter === "installment") return base.filter(l => l.installmentCount > 1 && hasInstInPeriod(l))
-    return base.filter(hasInstInPeriod)
+    return base.filter(l => matchesType(l) && hasInstInPeriod(l))
   }, [loans, paymentFilter, startDate, endDate])
 
   // Capital na rua = principal em aberto, alinhado ao dashboard (desconta parcelas
@@ -292,10 +295,7 @@ export default function RelatorioEmprestimosPage() {
       }, 0)
     }, 0)
 
-  const deletedByType = (subset: Loan[]) =>
-    paymentFilter === "monthly" ? subset.filter(l => l.installmentCount === 1)
-      : paymentFilter === "installment" ? subset.filter(l => l.installmentCount > 1)
-      : subset
+  const deletedByType = (subset: Loan[]) => subset.filter(matchesType)
 
   const modalityStats = useMemo(() => {
     const allActive = loans.filter(l => l.status === "ACTIVE")
@@ -312,6 +312,7 @@ export default function RelatorioEmprestimosPage() {
       all: calc(allActive, allWithProfit, hiddenLoans),
       installment: calc(allActive.filter(l => l.installmentCount > 1), allWithProfit.filter(l => l.installmentCount > 1), hiddenLoans.filter(l => l.installmentCount > 1)),
       monthly: calc(allActive.filter(l => l.installmentCount === 1), allWithProfit.filter(l => l.installmentCount === 1), hiddenLoans.filter(l => l.installmentCount === 1)),
+      weekly: calc(allActive.filter(l => l.modality === "WEEKLY"), allWithProfit.filter(l => l.modality === "WEEKLY"), hiddenLoans.filter(l => l.modality === "WEEKLY")),
     }
   }, [loans, hiddenLoans])
 
@@ -326,9 +327,7 @@ export default function RelatorioEmprestimosPage() {
 
   // All loans filtered by type only (no date filter) — used for charts
   const paymentFilteredLoans = useMemo(() => {
-    if (paymentFilter === "monthly") return loans.filter(l => l.installmentCount === 1)
-    if (paymentFilter === "installment") return loans.filter(l => l.installmentCount > 1)
-    return loans
+    return loans.filter(matchesType)
   }, [loans, paymentFilter])
 
   // ===== CALCULATIONS =====
@@ -338,9 +337,7 @@ export default function RelatorioEmprestimosPage() {
   // pagamento "só juros" renova o vencimento mas o principal continua na rua)
   const capitalNaRua = useMemo(() => {
     const base = loans.filter(l => l.status === "ACTIVE")
-    const typeFiltered = paymentFilter === "monthly" ? base.filter(l => l.installmentCount === 1)
-      : paymentFilter === "installment" ? base.filter(l => l.installmentCount > 1)
-      : base
+    const typeFiltered = base.filter(matchesType)
     return typeFiltered.reduce((sum, l) => sum + remainingCapital(l), 0)
   }, [loans, paymentFilter])
 
@@ -464,9 +461,7 @@ export default function RelatorioEmprestimosPage() {
   // Saldo restante: saldo devedor (com multas) de TODOS os ativos, ignorando o período
   const faltaReceber = useMemo(() => {
     const base = loans.filter(l => l.status === "ACTIVE")
-    const typeFiltered = paymentFilter === "monthly" ? base.filter(l => l.installmentCount === 1)
-      : paymentFilter === "installment" ? base.filter(l => l.installmentCount > 1)
-      : base
+    const typeFiltered = base.filter(matchesType)
     return typeFiltered.reduce((sum, l) => sum + getRemaining(l), 0)
   }, [loans, paymentFilter])
 
@@ -474,9 +469,7 @@ export default function RelatorioEmprestimosPage() {
     const now = new Date()
     const todayStr = localDateStr(now)
     const base = loans.filter(l => l.status === "ACTIVE")
-    const typeFiltered = paymentFilter === "monthly" ? base.filter(l => l.installmentCount === 1)
-      : paymentFilter === "installment" ? base.filter(l => l.installmentCount > 1)
-      : base
+    const typeFiltered = base.filter(matchesType)
     let total = 0
     let count = 0
     typeFiltered.forEach((l) => {
@@ -547,9 +540,7 @@ export default function RelatorioEmprestimosPage() {
     const now = new Date()
     const todayStr = localDateStr(now)
     const base = loans.filter(l => l.status === "ACTIVE")
-    const typeFiltered = paymentFilter === "monthly" ? base.filter(l => l.installmentCount === 1)
-      : paymentFilter === "installment" ? base.filter(l => l.installmentCount > 1)
-      : base
+    const typeFiltered = base.filter(matchesType)
     let total = 0
     let count = 0
     typeFiltered.forEach((l) => {
@@ -582,9 +573,7 @@ export default function RelatorioEmprestimosPage() {
 
   const lucroRealizadoTotal = useMemo(() => {
     const base = loans.filter(l => l.status === "ACTIVE" || l.status === "COMPLETED")
-    const typeFiltered = paymentFilter === "monthly" ? base.filter(l => l.installmentCount === 1)
-      : paymentFilter === "installment" ? base.filter(l => l.installmentCount > 1)
-      : base
+    const typeFiltered = base.filter(matchesType)
 
     return typeFiltered.reduce((total, l) => total + getRealizedProfit(l), 0) + sumDeletedProfit(deletedByType(hiddenLoans))
   }, [loans, hiddenLoans, paymentFilter])
@@ -624,9 +613,7 @@ export default function RelatorioEmprestimosPage() {
   const contratosEmAtraso = useMemo(() => {
     const todayStr = localDateStr(new Date())
     const base = loans.filter(l => l.status === "ACTIVE")
-    const typeFiltered = paymentFilter === "monthly" ? base.filter(l => l.installmentCount === 1)
-      : paymentFilter === "installment" ? base.filter(l => l.installmentCount > 1)
-      : base
+    const typeFiltered = base.filter(matchesType)
 
     return typeFiltered
       .map((loan) => {
@@ -785,7 +772,7 @@ export default function RelatorioEmprestimosPage() {
       </Card>
   */
 
-  const FILTER_LABELS: Record<string, string> = { monthly: "Mensal", all: "Todos", installment: "Parcelado" }
+  const FILTER_LABELS: Record<string, string> = { monthly: "Mensal", all: "Todos", installment: "Parcelado", weekly: "Semanal" }
   // Cor por modalidade: Todos = roxo, Parcelado = azul, Mensal = âmbar
   const FILTER_COLORS: Record<string, { active: string; idle: string; badge: string; value: string }> = {
     all: {
@@ -805,6 +792,12 @@ export default function RelatorioEmprestimosPage() {
       idle: "border-amber-500/40 bg-amber-500/5 dark:bg-amber-500/10 hover:border-amber-500 hover:bg-amber-500/10",
       badge: "bg-amber-500 text-white",
       value: "text-amber-600 dark:text-amber-400",
+    },
+    weekly: {
+      active: "border-orange-500 bg-orange-500/10 dark:bg-orange-500/15 shadow-sm shadow-orange-500/20",
+      idle: "border-orange-500/40 bg-orange-500/5 dark:bg-orange-500/10 hover:border-orange-500 hover:bg-orange-500/10",
+      badge: "bg-orange-500 text-white",
+      value: "text-orange-600 dark:text-orange-400",
     },
   }
 
@@ -888,8 +881,8 @@ export default function RelatorioEmprestimosPage() {
         </div>
 
         {showModalityCards && (
-          <div className="grid grid-cols-3 gap-3">
-            {(["all", "installment", "monthly"] as const).map((type) => {
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {(["all", "installment", "monthly", "weekly"] as const).map((type) => {
               const isActive = paymentFilter === type
               const stats = modalityStats[type]
               return (
@@ -988,7 +981,7 @@ export default function RelatorioEmprestimosPage() {
               <div className="min-w-0">
                 <p className="text-[10px] sm:text-xs text-gray-500 dark:text-zinc-400 font-medium truncate">💵 Capital na Rua</p>
                 <p className="mt-0.5 text-sm sm:text-base lg:text-xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100 truncate">{formatCurrency(capitalNaRua)}</p>
-                <p className="mt-0.5 text-[10px] sm:text-xs text-gray-400 dark:text-zinc-500 truncate">{(paymentFilter === "monthly" ? modalityStats.monthly.contratos : paymentFilter === "installment" ? modalityStats.installment.contratos : modalityStats.all.contratos)} contratos ativos</p>
+                <p className="mt-0.5 text-[10px] sm:text-xs text-gray-400 dark:text-zinc-500 truncate">{modalityStats[paymentFilter].contratos} contratos ativos</p>
               </div>
             </div>
           </CardContent>
