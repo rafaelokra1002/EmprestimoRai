@@ -89,6 +89,9 @@ export const saleSchema = z.object({
   installmentCount: z.number().min(1, "Mínimo 1 parcela"),
   startDate: z.string().min(1, "Selecione a data"),
   notes: z.string().optional(),
+  downPayment: z.number().min(0).optional(),
+  modality: z.string().optional(),
+  type: z.enum(["PRODUCT", "CONTRACT"]).optional(),
 })
 
 export const vehicleSchema = z.object({

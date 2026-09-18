@@ -189,6 +189,7 @@ model Sale {
   installmentCount Int               @default(1)
   startDate        DateTime
   status           SaleStatus        @default(ACTIVE)
+  type             SaleType          @default(PRODUCT)
   notes            String?
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
@@ -312,6 +313,11 @@ enum SaleStatus {
   ACTIVE
   COMPLETED
   CANCELLED
+}
+
+enum SaleType {
+  PRODUCT
+  CONTRACT
 }
 
 enum InstallmentStatus {

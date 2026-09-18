@@ -15,7 +15,7 @@ export async function GET() {
     const sales = await prisma.sale.findMany({
       where: { userId: (session.user as any).id },
       include: {
-        client: { select: { id: true, name: true } },
+        client: { select: { id: true, name: true, phone: true } },
         saleInstallments: { orderBy: { number: "asc" } },
       },
       orderBy: { createdAt: "desc" },
@@ -37,9 +37,11 @@ export async function POST(request: Request) {
     const body = await request.json()
     const data = saleSchema.parse(body)
 
-    const startDate = new Date(data.startDate)
-    const installmentDates = generateInstallmentDates(startDate, data.installmentCount)
-    const installmentAmount = data.totalAmount / data.installmentCount
+    const startDate = new Date(data.startDate.includes("T") ? data.startDate : data.startDate + "T12:00:00")
+    const modality = data.modality || "MONTHLY"
+    const installmentDates = generateInstallmentDates(startDate, data.installmentCount, modality)
+    const downPayment = Math.min(data.downPayment || 0, data.totalAmount)
+    const installmentAmount = (data.totalAmount - downPayment) / data.installmentCount
 
     const sale = await prisma.sale.create({
       data: {
@@ -50,6 +52,7 @@ export async function POST(request: Request) {
         installmentCount: data.installmentCount,
         startDate,
         notes: data.notes,
+        type: data.type || "PRODUCT",
         saleInstallments: {
           create: installmentDates.map((date, index) => ({
             number: index + 1,
