@@ -18,7 +18,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { LoanRenegotiationContent } from "./_components/loan-renegotiation-content"
 import { InterestRenegotiateBody } from "./_components/interest-renegotiate-body"
 import { ComprovanteContent } from "./_components/comprovante-content"
-import { LoanDetailsContent } from "./_components/loan-details-content"
+import { LoanDetailsContent, type LoanDetailsTone } from "./_components/loan-details-content"
 import { formatCurrency, formatDate, calculateLoan, generateInstallmentDates, resolveDailyInterestAmount, localDateStr, buildLoanReportMessage } from "@/lib/utils"
 import { showToast } from "@/lib/toast"
 import { buildLoanData, calculateEffectivePaidAmountFromPayments, calculateOverdueInterest, calculateRealizedProfitFromPayments, calculateTotalAmountWithLateFee, getDaysOverdue, getNextDueDate, getOverdueDailyAmountBRL, getPaidExcludingInterest } from "@/lib/loan-logic"
@@ -101,6 +101,7 @@ export default function EmprestimosPage() {
   const [expandedLoan, setExpandedLoan] = useState<string | null>(null)
   const [comprovanteLoanId, setComprovanteLoanId] = useState<string | null>(null)
   const [detailsLoanId, setDetailsLoanId] = useState<string | null>(null)
+  const [detailsTone, setDetailsTone] = useState<LoanDetailsTone>("default")
   const [tagDialog, setTagDialog] = useState<Loan | null>(null)
   const [tagPos, setTagPos] = useState<{ left: number; top: number } | null>(null)
   const [tagInput, setTagInput] = useState("")
@@ -2187,9 +2188,10 @@ export default function EmprestimosPage() {
               type="button"
               onClick={() => { setSearch(""); setSelectedTag(null) }}
               title="Limpar filtro"
-              className="absolute right-2 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-md text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+              aria-label="Limpar busca"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center justify-center rounded-md border border-red-500 p-0.5 text-red-500 transition-colors hover:bg-red-500/10"
             >
-              <X className="h-4 w-4" />
+              <X className="h-3.5 w-3.5" />
             </button>
           )}
         </div>
@@ -2500,6 +2502,7 @@ export default function EmprestimosPage() {
               const isRenegotiada = (loan.tags || []).some((t: string) => t.split("|")[0] === "Renegociacao")
               const oldLoanIdMatch = loan.notes?.match(/Renegociacao do contrato ([a-z0-9_-]+)/i)
               const oldLoan = isRenegotiada && oldLoanIdMatch ? loans.find((l) => l.id === oldLoanIdMatch[1]) : null
+              const detailTone: LoanDetailsTone = isRenegotiada ? "renegotiated" : isAtrasado ? "overdue" : isDueTodayHighlight ? "dueToday" : (isSoJuros || isPagoNoMes) ? "interest" : (isQuitado || isParceladoCardBlue) ? "settled" : "default"
 
               // Cores: Renegociada=rosa, Vence hoje=laranja, Atrasado=vermelho, Só Juros/Pago no mês=roxo, Quitado=azul, resto=branco
               const cardBorder = isRenegotiada ? "border-pink-500/20 border-l-4 border-l-[#EC4899] shadow-lg shadow-pink-950/40" : isAtrasado ? "border-red-500/20 border-l-4 border-l-[#E5484D] shadow-lg shadow-red-950/40" : isDueTodayHighlight ? "border-amber-500/20 border-l-4 border-l-[#F59E0B] shadow-lg shadow-amber-950/40" : (isSoJuros || isPagoNoMes) ? "border-purple-500/20 border-l-4 border-l-[#a855f7] shadow-lg shadow-purple-950/40" : (isQuitado || isParceladoCardBlue) ? "border-blue-400 dark:border-blue-700" : isDueToday ? "border-amber-500/20 border-l-4 border-l-[#F59E0B] shadow-lg shadow-amber-950/40" : "border-gray-200 dark:border-zinc-700"
@@ -2567,7 +2570,7 @@ export default function EmprestimosPage() {
                         <Tag className="h-3 w-3" /> Etiqueta
                       </button>
                       <button
-                        onClick={() => setDetailsLoanId(loan.id)}
+                        onClick={() => { setDetailsTone(detailTone); setDetailsLoanId(loan.id) }}
                         className={`flex shrink-0 items-center gap-1 whitespace-nowrap px-1.5 py-1 rounded-lg text-[11px] transition-colors ${isDarkCard ? "text-green-300 bg-green-500/15 border border-[#22c55e]/30 hover:bg-green-500/25" : "text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800"}`}
                         title="Detalhes"
                       >
@@ -5381,12 +5384,13 @@ export default function EmprestimosPage() {
       <Dialog
         open={Boolean(detailsLoanId)}
         onClose={() => setDetailsLoanId(null)}
-        className="max-w-5xl border-none bg-transparent p-0 shadow-none"
+        className="w-full max-w-3xl border-none bg-transparent p-0 shadow-none"
       >
         {detailsLoanId ? (
           <LoanDetailsContent
             loanId={detailsLoanId}
             presentation="modal"
+            tone={detailsTone}
             onClose={() => setDetailsLoanId(null)}
           />
         ) : null}

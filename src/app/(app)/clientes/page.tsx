@@ -14,7 +14,7 @@ import { FilterDropdown } from "@/components/ui/filter-dropdown"
 import { Textarea } from "@/components/ui/textarea"
 import { Avatar } from "@/components/avatar"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Search, Pencil, Trash2, User, MapPin, FileText, Users, Camera, Upload, Eye, Image, DollarSign, Briefcase, LayoutGrid, Rows3, Filter, CheckCircle2, MoreVertical, UserCheck, Phone, Mail, XCircle, X, Share2, MessageCircle, Copy, Info, Home, ChevronRight, CreditCard, Instagram, Globe, Building2, Hash, Tag, Download } from "lucide-react"
+import { Plus, Search, Pencil, Trash2, User, MapPin, FileText, Users, Camera, Upload, Eye, Image, DollarSign, Briefcase, LayoutGrid, Rows3, Filter, CheckCircle2, MoreVertical, UserCheck, Phone, Mail, XCircle, X, Share2, MessageCircle, Copy, Info, Home, CreditCard, Instagram, Globe, Building2, Hash, Tag, Download } from "lucide-react"
 import { useSession } from "next-auth/react"
 
 interface Client {
@@ -152,6 +152,7 @@ export default function ClientesPage() {
   const [uploadSuccess, setUploadSuccess] = useState(false)
   const [dragActive, setDragActive] = useState(false)
   const [docSizes, setDocSizes] = useState<Record<string, number>>({})
+  const [pendingDocs, setPendingDocs] = useState<{ file: File; description: string }[]>([])
   const [profileImagePreview, setProfileImagePreview] = useState<{ name: string; src: string } | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -309,6 +310,32 @@ export default function ClientesPage() {
         return
       }
 
+      // Cliente novo: envia os documentos que foram anexados durante o cadastro
+      if (!editing) {
+        const created = await res.json().catch(() => null)
+        const newId = created?.id
+        if (newId && pendingDocs.length > 0) {
+          for (const pd of pendingDocs) {
+            try {
+              const base64 = await readFileAsDataUrl(pd.file)
+              await fetch(`/api/clients/${newId}/documents`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  name: pd.file.name,
+                  type: pd.description || "OUTRO",
+                  fileData: base64,
+                  fileType: pd.file.type,
+                }),
+              })
+            } catch {
+              // ignora falha de um arquivo específico
+            }
+          }
+        }
+      }
+
+      setPendingDocs([])
       setDialogOpen(false)
       setEditing(null)
       setActiveTab("dados")
@@ -356,6 +383,7 @@ export default function ClientesPage() {
     setPhotoPreview(client.photo || null)
     setUploadSuccess(false)
     setDocDescription("")
+    setPendingDocs([])
     setActiveTab("dados")
     setDialogOpen(true)
     fetchClientDocs(client.id)
@@ -383,7 +411,15 @@ export default function ClientesPage() {
     })
 
   const uploadDocs = async (files: File[]) => {
-    if (!editing || files.length === 0) return
+    if (files.length === 0) return
+    // Cliente ainda não existe: guarda os arquivos para enviar após criar
+    if (!editing) {
+      setPendingDocs((prev) => [...prev, ...files.map((f) => ({ file: f, description: docDescription.trim() }))])
+      setDocDescription("")
+      setUploadSuccess(true)
+      if (docFileInputRef.current) docFileInputRef.current.value = ""
+      return
+    }
     setUploadingDoc(true)
     setUploadSuccess(false)
     try {
@@ -537,6 +573,7 @@ export default function ClientesPage() {
     setPhotoPreview(null)
     setUploadSuccess(false)
     setDocDescription("")
+    setPendingDocs([])
     setActiveTab("dados")
     setDialogOpen(true)
   }
@@ -626,25 +663,6 @@ export default function ClientesPage() {
 
   return (
     <div className="space-y-4 pt-6">
-      {/* Banner de Consultas (SPC/Serasa/CPF) */}
-      <div className="flex items-center justify-between gap-4 overflow-hidden rounded-xl bg-gradient-to-r from-[#6A2385] to-[#4A105B] p-4 sm:p-5">
-        <div className="flex items-center gap-4">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-white/10">
-            <Search className="h-7 w-7 text-white" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-base font-bold text-white sm:text-lg">Faça consultas de SPC, Serasa e CPF</p>
-            <p className="text-sm text-white/70">Score, protestos, SCR BACEN e muito mais — a partir de R$ 5,00</p>
-          </div>
-        </div>
-        <button
-          type="button"
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-white/15 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/25"
-        >
-          Consultar <ChevronRight className="h-4 w-4" />
-        </button>
-      </div>
-
       {/* Title + actions */}
       <div className="space-y-5">
         {/* Linha 1: título + botões de ação */}
@@ -914,10 +932,20 @@ export default function ClientesPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-zinc-500" />
               <Input
                 placeholder="Buscar clientes..."
-                className="pl-10 h-10 dark:bg-[#121614] dark:border-[#29322E]"
+                className="pl-10 pr-9 h-10 dark:bg-[#121614] dark:border-[#29322E]"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  aria-label="Limpar busca"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center justify-center rounded-md border border-red-500 p-0.5 text-red-500 transition-colors hover:bg-red-500/10"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
             </div>
             <FilterDropdown
               label="Filtros"
@@ -938,7 +966,7 @@ export default function ClientesPage() {
             </div>
           </div>
           <div className="h-3" />
-          <Table>
+          <Table className="[&_th]:px-6 [&_td]:px-6">
             <TableHeader>
               <TableRow>
                 <TableHead>Cliente</TableHead>
@@ -1030,10 +1058,20 @@ export default function ClientesPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-zinc-500" />
               <Input
                 placeholder="Buscar clientes..."
-                className="pl-10 h-10 dark:bg-[#121614] dark:border-[#29322E]"
+                className="pl-10 pr-9 h-10 dark:bg-[#121614] dark:border-[#29322E]"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  aria-label="Limpar busca"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center justify-center rounded-md border border-red-500 p-0.5 text-red-500 transition-colors hover:bg-red-500/10"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
             </div>
             <FilterDropdown
               label="Filtros"
@@ -1766,14 +1804,12 @@ export default function ClientesPage() {
           {/* Tab: Documentos */}
           {activeTab === "documentos" && (
             <div className="space-y-4">
-              {!editing ? (
-                <div className="text-center py-8">
-                  <FileText className="h-12 w-12 text-gray-500 dark:text-zinc-400 mx-auto mb-3" />
-                  <p className="text-gray-500 dark:text-zinc-400 text-sm">Salve o cliente primeiro para adicionar documentos</p>
-                  <p className="text-gray-400 dark:text-zinc-500 text-xs mt-1">Crie o cliente e depois edite para enviar documentos</p>
-                </div>
-              ) : (
-                <>
+              {!editing && (
+                <p className="rounded-lg border border-dashed border-primary/30 bg-primary/5 px-4 py-2.5 text-center text-xs text-primary">
+                  Anexe os documentos agora — eles serão enviados automaticamente ao criar o cliente.
+                </p>
+              )}
+
                   {/* Descrição do documento */}
                   <div>
                     <Label className="font-semibold">Descrição do Documento (opcional)</Label>
@@ -1842,7 +1878,49 @@ export default function ClientesPage() {
                     </div>
                   )}
 
-                  {/* Documentos salvos */}
+                  {/* Documentos pendentes (durante o cadastro) */}
+                  {!editing && (
+                    <div className="border-t border-gray-100 pt-4 dark:border-[#29322E]">
+                      <h4 className="text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-3">Documentos a enviar ({pendingDocs.length})</h4>
+                      {pendingDocs.length === 0 ? (
+                        <div className="text-center py-6 rounded-lg border border-gray-200 dark:border-[#29322E] bg-white dark:bg-[#121614]">
+                          <FileText className="h-8 w-8 text-gray-500 dark:text-zinc-400 mx-auto mb-2" />
+                          <p className="text-sm text-gray-400 dark:text-zinc-500">Nenhum documento anexado</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {pendingDocs.map((pd, i) => (
+                            <div key={i} className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 dark:border-[#29322E] dark:bg-[#121614]">
+                              <div className="flex min-w-0 items-center gap-3">
+                                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-red-500/10">
+                                  {pd.file.type.startsWith("image/")
+                                    ? <Image className="h-4 w-4 text-red-500" />
+                                    : <FileText className="h-4 w-4 text-red-500" />}
+                                </span>
+                                <div className="min-w-0">
+                                  <p className="truncate text-sm font-medium text-gray-800 dark:text-zinc-200">{pd.file.name}</p>
+                                  <p className="text-xs text-gray-400 dark:text-zinc-500">
+                                    {[formatFileSize(pd.file.size), pd.description].filter(Boolean).join(" • ")}
+                                  </p>
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setPendingDocs((prev) => prev.filter((_, idx) => idx !== i))}
+                                className="p-1.5 rounded-md text-red-500 hover:bg-red-500/10 transition-colors shrink-0"
+                                title="Remover"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Documentos salvos (cliente existente) */}
+                  {editing && (
                   <div className="border-t border-gray-100 pt-4 dark:border-[#29322E]">
                     <h4 className="text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-3">Documentos Salvos ({clientDocs.length})</h4>
                     {docsLoading ? (
@@ -1902,8 +1980,7 @@ export default function ClientesPage() {
                       </div>
                     )}
                   </div>
-                </>
-              )}
+                  )}
             </div>
           )}
 

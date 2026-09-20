@@ -1217,7 +1217,7 @@ export default function ClientesDesaparecidosPage() {
       <Dialog
         open={Boolean(detailsLoanId)}
         onClose={() => setDetailsLoanId(null)}
-        className="max-w-5xl border-none bg-transparent p-0 shadow-none"
+        className="w-full max-w-3xl border-none bg-transparent p-0 shadow-none"
       >
         {detailsLoanId ? (
           <LoanDetailsContent

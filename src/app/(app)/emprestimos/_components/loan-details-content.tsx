@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
+import { X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { buildLoanData, calculateOverdueInterest, calculateTotalAmountWithLateFee, getDaysOverdue, getOverdueDailyAmountBRL, getPaidExcludingInterest } from "@/lib/loan-logic"
@@ -41,21 +42,45 @@ interface LoanDetails {
   firstInstallmentDate: string
   status: string
   notes: string | null
-  client: { id: string; name: string }
+  client: { id: string; name: string; phone?: string | null }
   installments: Installment[]
   payments: Payment[]
 }
 
 const loanIdPattern = /^c[a-z0-9]{24,}$/i
 
+export type LoanDetailsTone = "overdue" | "renegotiated" | "dueToday" | "interest" | "settled" | "default"
+
+// Cor do título do cabeçalho por status (tom claro da cor do card)
+const TONE_TITLE: Record<LoanDetailsTone, string> = {
+  overdue: "#f8d7da",
+  renegotiated: "#f9d6e6",
+  dueToday: "#f7e6c4",
+  interest: "#e6d6f9",
+  settled: "#d6e4f9",
+  default: "#ffffff",
+}
+
+// Fundo do modal por status, espelhando as cores dos cards de empréstimo
+const TONE_MODAL_BG: Record<LoanDetailsTone, string> = {
+  overdue: "border-l-[#E5484D] text-white bg-[radial-gradient(circle_at_top_left,rgba(255,92,92,0.20),transparent_55%),linear-gradient(135deg,#1F0608_0%,rgba(122,31,14,0.9)_55%,#1F0608_100%)]",
+  renegotiated: "border-l-[#EC4899] text-white bg-[radial-gradient(circle_at_top_left,rgba(255,120,190,0.24),transparent_55%),linear-gradient(135deg,#3A0F24_0%,#8E2F58_55%,#3A0F24_100%)]",
+  dueToday: "border-l-[#F59E0B] text-white bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.22),transparent_55%),linear-gradient(135deg,#332812_0%,#8A6E2A_55%,#332812_100%)]",
+  interest: "border-l-[#a855f7] text-white bg-[radial-gradient(circle_at_top_left,rgba(190,123,255,0.30),transparent_55%),linear-gradient(135deg,#2C1544_0%,#6B399E_55%,#2C1544_100%)]",
+  settled: "border-l-blue-500 text-white bg-[radial-gradient(circle_at_top_left,rgba(96,165,250,0.22),transparent_55%),linear-gradient(135deg,#0B1F3A_0%,#1E3A5F_55%,#0B1F3A_100%)]",
+  default: "border-l-[#29322E] text-white bg-[#191F1C]",
+}
+
 export function LoanDetailsContent({
   presentation = "page",
   onClose,
   loanId: loanIdProp,
+  tone = "default",
 }: {
   presentation?: "page" | "modal"
   onClose?: () => void
   loanId?: string
+  tone?: LoanDetailsTone
 }) {
   const params = useParams<{ id: string }>()
   const router = useRouter()
@@ -178,9 +203,128 @@ export function LoanDetailsContent({
   const baseOutstanding = Math.max(0, loan.totalAmount - paidExcludingInterest)
   const totalPayableWithOverdue = calculateTotalAmountWithLateFee(loanData)
 
-  const containerClassName = presentation === "modal"
-    ? "max-h-[90vh] overflow-y-auto rounded-2xl border border-gray-200 bg-white p-5 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900"
-    : "space-y-5 pt-6"
+  if (presentation === "modal") {
+    const todayStart = new Date(new Date().toDateString())
+    const cardClass = `rounded-xl p-3 ${tone === "default" ? "bg-[#1B231F]" : "bg-white/10"}`
+    const lucroCardClass = `rounded-xl p-3 ${tone === "default" ? "bg-[#1A2720]" : "bg-white/10"}`
+    const contratoFields: { label: string; value: string }[] = [
+      { label: "Data do Contrato", value: formatDate(loan.contractDate) },
+      { label: "Início", value: formatDate(loan.firstInstallmentDate) },
+      { label: "Tipo de Juros", value: "Simples" },
+      { label: "Modo de Juros", value: interestModeLabel[loan.interestType] || loan.interestType },
+      { label: "Total de Juros", value: formatCurrency(loan.profit) },
+      { label: "Tipo de Pagamento", value: modalityLabel[loan.modality] || loan.modality },
+    ]
+
+    return (
+      <div className={`flex max-h-[92vh] flex-col overflow-hidden rounded-xl border-l-4 shadow-2xl ${TONE_MODAL_BG[tone]}`}>
+        {/* Cabeçalho */}
+        <div className="relative flex shrink-0 items-center gap-2 border-b border-white/20 px-6 py-3">
+          <h2 className="flex items-center gap-2 text-lg font-semibold" style={{ color: TONE_TITLE[tone] }}>
+            <span>📄</span> Detalhes do Empréstimo — {loan.client.name}
+          </h2>
+          <button
+            type="button"
+            onClick={handleClose}
+            aria-label="Fechar"
+            className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-[10px] bg-[#cf3030] text-white transition-colors hover:bg-[#b82a2a]"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* Corpo */}
+        <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-6 py-4">
+          {/* Lucro previsto / realizado */}
+          <div className={lucroCardClass}>
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+              <div>
+                <div className="mb-1 flex items-center gap-1.5 text-[13px] text-white/75">💰 Lucro Previsto</div>
+                <div className="text-xl font-bold text-white">{formatCurrency(loan.profit)}</div>
+              </div>
+              <div>
+                <div className="mb-1 flex items-center gap-1.5 text-[13px] text-white/75">✅ Lucro Realizado</div>
+                <div className="flex items-center gap-2 text-xl font-bold text-white">
+                  {formatCurrency(realizedProfit)}
+                  <span className="rounded-full bg-green-500/25 px-2 py-0.5 text-[11px] font-semibold text-green-300">{realizedProfitPct}%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Juros / parcela */}
+          <div className="grid grid-cols-1 gap-5 px-0.5 py-1 sm:grid-cols-2">
+            <div className="flex items-center gap-1.5 text-sm text-white/90">% Juros: {loan.interestRate.toFixed(2)}%</div>
+            <div className="flex items-center gap-1.5 text-sm text-white/90">💳 {loan.installmentCount}x {formatCurrency(loan.installmentValue)}</div>
+          </div>
+
+          {/* Progresso */}
+          <div className={cardClass}>
+            <div className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-white">📊 Progresso</div>
+            <div className="flex items-center gap-3">
+              <div className="h-2 flex-1 overflow-hidden rounded-full bg-black/35">
+                <div className="h-full rounded-full bg-white/85" style={{ width: `${progressPct}%` }} />
+              </div>
+              <span className="text-[13px] font-semibold text-white">{progressPct}%</span>
+            </div>
+            <div className="mt-2 text-xs text-white/65">
+              {paidInstallments} de {totalInstallments} parcela(s) paga(s) • {Math.max(0, totalInstallments - paidInstallments)} restante(s)
+            </div>
+          </div>
+
+          {/* Cronograma de Parcelas */}
+          <div className={cardClass}>
+            <div className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-white">📅 Cronograma de Parcelas</div>
+            <div className="space-y-2">
+              {loan.installments.map((inst) => {
+                const paid = inst.status === "PAID"
+                const overdue = !paid && (inst.status === "OVERDUE" || new Date(inst.dueDate) < todayStart)
+                const label = paid ? "Pago" : overdue ? "Atrasada" : "Pendente"
+                const labelColor = paid ? "text-green-300" : overdue ? "text-red-300" : "text-white/75"
+                return (
+                  <div key={inst.id} className="grid grid-cols-[1fr_auto_1fr_auto] items-center gap-3 text-sm text-white/90">
+                    <span>Parcela {inst.number}/{totalInstallments}</span>
+                    <span className="text-center font-semibold">{formatCurrency(inst.amount)}</span>
+                    <span className="text-center text-white/75">{formatDate(inst.dueDate)}</span>
+                    <span className={`text-right font-semibold ${labelColor}`}>{label}</span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Contato do Cliente */}
+          <div className={cardClass}>
+            <div className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-white">👤 Contato do Cliente</div>
+            <div className="flex items-center gap-2 text-sm text-white/90">📞 {loan.client.phone?.trim() ? loan.client.phone : "Não informado"}</div>
+          </div>
+
+          {/* Detalhes do Contrato */}
+          <div className={cardClass}>
+            <div className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-white">📋 Detalhes do Contrato</div>
+            <div className="grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2">
+              {contratoFields.map((f) => (
+                <div key={f.label}>
+                  <div className="mb-0.5 text-xs text-white/60">{f.label}</div>
+                  <div className="text-sm font-semibold text-white">{f.value}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Observações */}
+          <div className={cardClass}>
+            <div className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-white">📝 Observações</div>
+            <div className="whitespace-pre-line text-[13px] leading-relaxed text-white/80">
+              {loan.notes?.trim() ? loan.notes : "Sem observações."}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const containerClassName = "space-y-5 pt-6"
 
   return (
     <div className={containerClassName}>
@@ -190,7 +334,7 @@ export function LoanDetailsContent({
           <p className="text-gray-500 dark:text-zinc-400 text-sm">Detalhes do contrato</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={handleClose}>{presentation === "modal" ? "Fechar" : "Voltar"}</Button>
+          <Button variant="outline" onClick={handleClose}>Voltar</Button>
           <Button variant="outline" onClick={() => router.push(`/emprestimos/${loan.id}/comprovante`)}>Comprovante</Button>
           <Button onClick={() => router.push(`/emprestimos/${loan.id}/editar`)}>Editar</Button>
         </div>

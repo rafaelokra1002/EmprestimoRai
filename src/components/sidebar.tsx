@@ -101,6 +101,7 @@ const menuItems: MenuItem[] = [
     label: "Configurações",
     icon: Settings,
     children: [
+      { href: "/configuracoes", label: "Configurações", icon: Settings },
       { href: "/aulas", label: "Aulas", icon: GraduationCap },
       { href: "#", label: "Suporte", icon: LifeBuoy },
     ],
