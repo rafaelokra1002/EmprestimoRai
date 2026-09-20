@@ -2375,9 +2375,6 @@ export default function EmprestimosPage() {
                           </span>
                         )}
                         <span className="font-medium text-gray-900 dark:text-zinc-100 truncate max-w-[140px] lg:max-w-[220px]" title={loan.client.name}>{loan.client.name}</span>
-                        {loans.filter(l => l.client.id === loan.client.id).length >= 2 && (
-                          <span className="w-3 h-3 rounded-full bg-yellow-400 inline-block flex-shrink-0" title={`${loans.filter(l => l.client.id === loan.client.id).length} empréstimos`} />
-                        )}
                       </div>
                     </td>
                     <td className="p-4">
@@ -2433,6 +2430,9 @@ export default function EmprestimosPage() {
                             <div className="absolute right-0 top-full mt-1 z-50 w-48 rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-lg py-1">
                               <button onClick={() => { setDropdownOpen(null); openPaymentDialog(loan) }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800">
                                 <Receipt className="h-4 w-4" /> Pagar
+                              </button>
+                              <button onClick={() => { setDropdownOpen(null); openInterestRenegotiateDialog(loan) }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800">
+                                <DollarSign className="h-4 w-4" /> Pagar Juros
                               </button>
                               <div className="border-t border-gray-100 dark:border-zinc-800 my-1" />
                               <button onClick={() => { setDropdownOpen(null); router.push(`/emprestimos/${loan.id}`) }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800">
