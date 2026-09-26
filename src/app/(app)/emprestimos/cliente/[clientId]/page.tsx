@@ -9,7 +9,7 @@ import { Dialog } from "@/components/ui/dialog"
 import { LoanDetailsContent, type LoanDetailsTone } from "@/app/(app)/emprestimos/_components/loan-details-content"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ArrowLeft, Calendar, Check, CheckCircle2, ChevronDown, Clock, Copy, DollarSign, Download, Eye, FileText, Lock, Loader2, MessageCircle, Pencil, Receipt, RotateCcw, Send, Tag, Trash2, X, Plus } from "lucide-react"
+import { ArrowLeft, Calendar, Check, CheckCircle2, ChevronDown, Clock, Copy, DollarSign, Download, Eye, FileText, Lock, Loader2, MessageCircle, Pencil, Percent, Receipt, RotateCcw, Send, Tag, Trash2, X, Plus, AlertTriangle } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import { LoanRenegotiationContent } from "../../_components/loan-renegotiation-content"
 import { InterestRenegotiateBody } from "../../_components/interest-renegotiate-body"
@@ -71,6 +71,18 @@ export default function ClienteEmprestimosPage() {
   const [editingDateLoanId, setEditingDateLoanId] = useState<string | null>(null)
   const [dateDraft, setDateDraft] = useState("")
   const [savingDate, setSavingDate] = useState(false)
+
+  // Aplicar / excluir multa de atraso
+  const [multaDialog, setMultaDialog] = useState<Loan | null>(null)
+  const [multaType, setMultaType] = useState<"fixedOnce" | "percent" | "fixedDay">("fixedOnce")
+  const [multaValue, setMultaValue] = useState("")
+  const [savingMulta, setSavingMulta] = useState(false)
+
+  // Configurar juros por atraso → grava em dailyInterestAmount R$/dia
+  const [jurosDialog, setJurosDialog] = useState<Loan | null>(null)
+  const [jurosType, setJurosType] = useState<"percent" | "percent30" | "fixed">("percent")
+  const [jurosPct, setJurosPct] = useState("")
+  const [savingJuros, setSavingJuros] = useState(false)
 
   // Profile PIX key
   const [profilePixKey, setProfilePixKey] = useState("")
@@ -198,6 +210,114 @@ export default function ClienteEmprestimosPage() {
       setSavingDate(false)
     }
   }
+
+  const openMultaDialog = (loan: Loan) => {
+    setMultaDialog(loan)
+    setMultaType("fixedOnce")
+    setMultaValue(loan.penaltyFee > 0 ? String(loan.penaltyFee) : "")
+  }
+
+  const overdueInstallmentsOf = (loan: Loan) => {
+    const now = new Date()
+    return loan.installments
+      .filter((i: any) => i.status !== "PAID" && new Date(i.dueDate) < now)
+      .sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+  }
+
+  // "Valor da parcela" usado no cálculo "% da parcela por dia" (parcelas iguais)
+  const parcelaValueOf = (loan: Loan) => (loan.installmentCount > 0 ? loan.totalAmount / loan.installmentCount : loan.totalAmount)
+
+  // Aplica a multa conforme o tipo: "único por parcela" grava em penaltyFee; os tipos "por dia"
+  // gravam em dailyInterestAmount (campo já usado pelo cálculo em todas as telas).
+  const saveMulta = async () => {
+    if (!multaDialog) return
+    const value = parseFloat(multaValue)
+    if (!Number.isFinite(value) || value < 0) { showToast("Informe um valor válido", "error"); return }
+    const body =
+      multaType === "percent" ? { dailyInterest: true, dailyInterestAmount: Math.round(((value / 100) * parcelaValueOf(multaDialog)) * 100) / 100 }
+      : multaType === "fixedDay" ? { dailyInterest: true, dailyInterestAmount: Math.round(value * 100) / 100 }
+      : { penaltyFee: Math.round(value * 100) / 100 }
+    setSavingMulta(true)
+    try {
+      const res = await fetch(`/api/loans/${multaDialog.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      })
+      if (res.ok) {
+        showToast("Multa aplicada!")
+        setMultaDialog(null)
+        setMultaValue("")
+        fetchLoans()
+      } else {
+        showToast("Erro ao aplicar multa", "error")
+      }
+    } catch {
+      showToast("Erro ao aplicar multa", "error")
+    } finally {
+      setSavingMulta(false)
+    }
+  }
+
+  // Remove a multa/juros de atraso aplicados (zera penaltyFee e o juros por dia configurado).
+  const excluirMulta = async (loan: Loan) => {
+    try {
+      const res = await fetch(`/api/loans/${loan.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ penaltyFee: 0, dailyInterest: false, dailyInterestAmount: 0 }),
+      })
+      if (res.ok) {
+        showToast("Multa removida!")
+        fetchLoans()
+      } else {
+        showToast("Erro ao remover multa", "error")
+      }
+    } catch {
+      showToast("Erro ao remover multa", "error")
+    }
+  }
+
+  const openJurosDialog = (loan: Loan) => {
+    // Não pré-preenche: só guardamos o R$/dia final (não a % nem o tipo), então reconstruir
+    // uma % geraria um número confuso. Abre limpo para o usuário informar o valor desejado.
+    setJurosDialog(loan)
+    setJurosType("percent")
+    setJurosPct("")
+  }
+
+  // Converte o tipo escolhido em R$/dia e grava em dailyInterestAmount (campo já usado por
+  // getOverdueDailyAmountBRL em todas as telas — não muda o cálculo central).
+  const saveJuros = async () => {
+    if (!jurosDialog) return
+    const raw = parseFloat(jurosPct)
+    if (!Number.isFinite(raw) || raw < 0) { showToast("Informe um valor válido", "error"); return }
+    const dailyRs =
+      jurosType === "fixed" ? raw
+      : jurosType === "percent30" ? (raw / 100) * jurosDialog.totalAmount / 30
+      : (raw / 100) * parcelaValueOf(jurosDialog)
+    setSavingJuros(true)
+    try {
+      const res = await fetch(`/api/loans/${jurosDialog.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dailyInterest: true, dailyInterestAmount: Math.round(dailyRs * 100) / 100 }),
+      })
+      if (res.ok) {
+        showToast("Juros por atraso salvos!")
+        setJurosDialog(null)
+        setJurosPct("")
+        fetchLoans()
+      } else {
+        showToast("Erro ao salvar juros", "error")
+      }
+    } catch {
+      showToast("Erro ao salvar juros", "error")
+    } finally {
+      setSavingJuros(false)
+    }
+  }
+
   const isSameMonthYear = (value: Date, reference: Date) => (
     value.getFullYear() === reference.getFullYear() && value.getMonth() === reference.getMonth()
   )
@@ -540,6 +660,20 @@ export default function ClienteEmprestimosPage() {
     const baseRemaining = Math.max(0, installment.amount - (installment.paidAmount || 0))
     return baseRemaining + getInstallmentOverdueCharge(loan, installment)
   }
+
+  // Juros extras para empréstimos MENSAL (1 parcela) com múltiplos ciclos vencidos
+  const getExtraCyclesInterest = (loan: Loan) => {
+    if (loan.installmentCount !== 1) return 0
+    const overdueInst = loan.installments.find((i: any) => i.status !== "PAID")
+    if (!overdueInst) return 0
+    const now = new Date(); now.setHours(0, 0, 0, 0)
+    const due = new Date(overdueInst.dueDate); due.setHours(0, 0, 0, 0)
+    if (due >= now) return 0
+    const daysOver = Math.floor((now.getTime() - due.getTime()) / 86400000)
+    const extraCycles = Math.floor(daysOver / 30)
+    return extraCycles * interestPerInst(loan)
+  }
+
   const getPaymentBreakdown = (
     loan: Loan,
     amount: number,
@@ -980,6 +1114,11 @@ export default function ClienteEmprestimosPage() {
             const currentTotalReceivable = remaining
             const receivedProfit = getReceivedProfit(loan)
             const profitPct = loan.profit > 0 ? Math.round((receivedProfit / loan.profit) * 100) : 0
+            // Multa de atraso acumulada (juros diários + penalidade) das parcelas vencidas.
+            const multaAtraso = loan.installments
+              .filter((i: any) => i.status !== "PAID" && new Date(i.dueDate) < new Date())
+              .reduce((s: number, i: any) => s + getInstallmentOverdueCharge(loan, i), 0)
+            const lucroPrevistoTotal = loan.profit + multaAtraso
             const nextInst = getNextDueInst(loan)
             const intPerInst = interestPerInst(loan)
 
@@ -1087,12 +1226,22 @@ export default function ClienteEmprestimosPage() {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <p className={`text-[11px] flex items-center gap-1 ${isDarkCard ? "text-white/60" : "text-muted-foreground"}`}><Lock className="h-3 w-3" /> Lucro Previsto</p>
-                      <p className="text-sm font-bold tabular-nums text-primary">{formatCurrency(loan.profit)}</p>
+                      <p className="text-sm font-bold tabular-nums text-primary">{formatCurrency(lucroPrevistoTotal)}</p>
                     </div>
                     <div className="text-right">
                       <p className={`text-[11px] flex items-center gap-1 justify-end ${isDarkCard ? "text-white/60" : "text-muted-foreground"}`}><Check className="h-3 w-3" /> Lucro Realizado</p>
                       <p className="text-sm font-bold tabular-nums text-primary">{formatCurrency(receivedProfit)} <span className={`text-xs ${isDarkCard ? "text-white/50" : "text-muted-foreground"}`}>{profitPct}%</span></p>
                     </div>
+                  </div>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                    <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 dark:bg-blue-950/30 px-1.5 py-0.5 text-[10px] font-medium text-blue-600 dark:text-blue-400">
+                      <DollarSign className="h-2.5 w-2.5" /> Juros: {formatCurrency(loan.profit)}
+                    </span>
+                    {multaAtraso > 0 && (
+                      <span className="inline-flex items-center gap-1 rounded-md bg-yellow-50 dark:bg-yellow-950/30 px-1.5 py-0.5 text-[10px] font-medium text-yellow-700 dark:text-yellow-500">
+                        <AlertTriangle className="h-2.5 w-2.5" /> Multas: {formatCurrency(multaAtraso)}
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -1163,21 +1312,28 @@ export default function ClienteEmprestimosPage() {
                   const jurosPago = intPerInst > 0 ? totalPartialPaid % intPerInst : 0
                   const jurosPendente = intPerInst > 0 ? intPerInst - jurosPago : 0
                   const hasPartialInterest = jurosPago > 0
+                  const overdueMonths = Math.floor(getCurrentOverdueDays(loan) / 30)
+                  const jurosMultiplier = overdueMonths >= 1 ? overdueMonths : 0
                   return (
-                    <div className="mx-4 mt-2 px-3 py-2 rounded-lg bg-gray-50 dark:bg-zinc-800/60 space-y-1">
+                    <div className="mx-4 mt-3 px-3 py-2 rounded-lg bg-purple-500/15 border border-purple-400/40 space-y-1">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-500 dark:text-zinc-400">Só Juros (por parcela):</span>
-                        <span className="text-sm font-bold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(intPerInst)}</span>
+                        <span className={`text-xs ${isDarkCard ? "text-purple-200" : "text-purple-700 dark:text-purple-200"}`}>Só Juros (por parcela):</span>
+                        <span className={`text-sm font-bold tabular-nums ${isDarkCard ? "text-purple-100" : "text-purple-800 dark:text-purple-100"}`}>
+                          {jurosMultiplier >= 1 && loan.installmentCount === 1 && (
+                            <span className="mr-1 relative -top-0.5 text-[9px] font-medium text-orange-500 dark:text-orange-400">{jurosMultiplier + 1}x</span>
+                          )}
+                          {formatCurrency(intPerInst)}
+                        </span>
                       </div>
                       {hasPartialInterest && (
                         <>
                           <div className="flex items-center justify-between">
-                            <span className="text-xs text-yellow-600 dark:text-yellow-400 flex items-center gap-1">💳 Juros já pago:</span>
-                            <span className="text-sm font-bold tabular-nums text-yellow-600 dark:text-yellow-400">{formatCurrency(jurosPago)}</span>
+                            <span className={`text-xs flex items-center gap-1 ${isDarkCard ? "text-yellow-200" : "text-yellow-700 dark:text-yellow-300"}`}>💳 Juros já pago:</span>
+                            <span className={`text-sm font-bold tabular-nums ${isDarkCard ? "text-yellow-200" : "text-yellow-700 dark:text-yellow-300"}`}>{formatCurrency(jurosPago)}</span>
                           </div>
                           <div className="flex items-center justify-between">
-                            <span className="text-xs text-red-500 dark:text-red-400">Juros pendente:</span>
-                            <span className="text-sm font-bold tabular-nums text-red-500 dark:text-red-400">{formatCurrency(jurosPendente)}</span>
+                            <span className={`text-xs ${isDarkCard ? "text-red-200" : "text-red-600 dark:text-red-300"}`}>Juros pendente:</span>
+                            <span className={`text-sm font-bold tabular-nums ${isDarkCard ? "text-red-200" : "text-red-600 dark:text-red-300"}`}>{formatCurrency(jurosPendente)}</span>
                           </div>
                         </>
                       )}
@@ -1232,37 +1388,80 @@ export default function ClienteEmprestimosPage() {
                     ? overdueInsts.slice(0, 1)
                     : overdueInsts
                   return (
-                    <div className="mx-4 mt-2 px-3 py-2.5 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/50 space-y-2">
-                      {visibleOverdueInsts.map((inst: any) => {
+                    <div className="mx-4 mt-3 p-3 rounded-lg bg-red-50 border-2 border-red-300 dark:bg-red-500/20 dark:border-red-400/30 space-y-2">
+                      {visibleOverdueInsts.map((inst: any, idx: number) => {
                         const todayStartInst = new Date(); todayStartInst.setHours(0, 0, 0, 0)
                         const dueStartInst = new Date(inst.dueDate); dueStartInst.setHours(0, 0, 0, 0)
                         const instDays = Math.max(0, Math.floor((todayStartInst.getTime() - dueStartInst.getTime()) / (1000 * 60 * 60 * 24)))
                         const baseAmount = Math.max(0, inst.amount - (inst.paidAmount || 0))
-                        const payableAmount = getInstallmentPayableAmount(loan, inst)
-                        const instPenalty = Math.max(0, Math.round((payableAmount - baseAmount) * 100) / 100)
+                        const instOverdueCharge = getInstallmentOverdueCharge(loan, inst)
+                        const extraCycles = getExtraCyclesInterest(loan)
+                        const payableAmount = baseAmount + instOverdueCharge + extraCycles
                         return (
-                          <div key={inst.id}>
+                          <div key={inst.id} className="space-y-1">
                             <div className="flex items-center justify-between">
-                              <span className="text-xs font-medium text-red-700 dark:text-red-400">Parcela {inst.number}/{loan.installmentCount} em atraso</span>
-                              <span className="text-xs font-bold text-red-700 dark:text-red-400">{instDays} dias</span>
+                              <span className="text-sm font-medium text-red-700 dark:text-red-300">
+                                Parcela {inst.number}/{loan.installmentCount} em atraso
+                              </span>
+                              <span className="text-sm font-bold text-red-800 dark:text-red-200">{instDays} dias</span>
                             </div>
-                            <div className="flex items-center justify-between text-xs mt-0.5">
-                              <span className="text-gray-600 dark:text-zinc-400">Vencimento: {formatDate(inst.dueDate)}</span>
-                              <span className="text-gray-700 dark:text-zinc-300 font-medium">Valor: {formatCurrency(baseAmount)}</span>
+                            <div className="flex items-center justify-between text-sm mt-1 text-red-600 dark:text-red-300/70">
+                              <span>Vencimento: {formatDate(inst.dueDate)}</span>
+                              <span className="font-medium">Valor: {formatCurrency(baseAmount)}</span>
                             </div>
-                            {instPenalty > 0 && (
-                              <div className="flex items-center justify-between text-xs mt-0.5">
-                                <span className="text-red-600 dark:text-red-400">Multa Aplicada:</span>
-                                <span className="text-red-600 dark:text-red-400 font-bold">+{formatCurrency(instPenalty)}</span>
+                            {instOverdueCharge > 0 && (
+                              <div className="flex items-center justify-between text-sm mt-1">
+                                <span className="flex items-center gap-1.5 text-red-600 dark:text-red-300">
+                                  Multa Aplicada:
+                                  {(loan.penaltyFee > 0 || (loan.dailyInterest && (loan.dailyInterestAmount || 0) > 0)) && (
+                                    <button
+                                      type="button"
+                                      onClick={() => excluirMulta(loan)}
+                                      title="Excluir multa"
+                                      className="inline-flex items-center gap-1 rounded-md border border-green-600/40 px-1.5 py-0.5 text-[10px] font-medium text-green-800 dark:text-green-400 hover:bg-green-500/10 transition-colors"
+                                    >
+                                      <Trash2 className="h-2.5 w-2.5" /> Excluir
+                                    </button>
+                                  )}
+                                </span>
+                                <span className="text-red-600 dark:text-red-300 font-bold">+{formatCurrency(instOverdueCharge)}</span>
                               </div>
                             )}
-                            <div className="flex items-center justify-between text-xs mt-0.5">
-                              <span className="font-medium text-red-700 dark:text-red-300">Valor total com atraso:</span>
-                              <span className="font-bold text-red-700 dark:text-red-300">{formatCurrency(payableAmount)}</span>
+                            <div className="flex items-center justify-between text-sm mt-2 border-t border-red-300 dark:border-red-400/30 pt-2">
+                              <span className="text-red-600 dark:text-red-300/80">Total com Atraso:</span>
+                              <span className="font-bold text-gray-900 dark:text-white">{formatCurrency(payableAmount)}</span>
                             </div>
+                            {idx < visibleOverdueInsts.length - 1 && (
+                              <div className="border-b border-red-200 dark:border-red-800/40 pt-1" />
+                            )}
                           </div>
                         )
                       })}
+                      {/* Configurar juros por atraso / aplicar multa */}
+                      <div className="flex flex-wrap gap-2 mt-3">
+                        <button
+                          type="button"
+                          onClick={() => openJurosDialog(loan)}
+                          className="inline-flex flex-1 min-w-0 basis-[45%] items-center justify-center gap-1.5 rounded-md border py-2 text-xs font-medium transition-colors border-blue-500/50 text-blue-700 bg-white hover:bg-blue-500/10 dark:border-blue-400/50 dark:text-blue-300 dark:bg-[#121614] dark:hover:bg-blue-500/20"
+                        >
+                          <Percent className="h-3.5 w-3.5" /> Juros por Atraso
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => openMultaDialog(loan)}
+                          className="inline-flex flex-1 min-w-0 basis-[45%] items-center justify-center gap-1.5 rounded-md border py-2 text-xs font-medium transition-colors border-orange-500/50 text-orange-700 bg-white hover:bg-orange-500/10 dark:border-orange-400/50 dark:text-orange-300 dark:bg-[#121614] dark:hover:bg-orange-500/20"
+                        >
+                          <DollarSign className="h-3.5 w-3.5" /> Aplicar Multa
+                        </button>
+                      </div>
+                      <p className="text-[10px] text-red-600 dark:text-red-300/60 mt-2">Pague a parcela em atraso para regularizar o empréstimo</p>
+                      <Button
+                        size="sm"
+                        onClick={() => openWhatsappDialog(loan)}
+                        className="w-full h-10 mt-3 text-sm bg-red-600 hover:bg-red-700 text-white transition-colors"
+                      >
+                        <MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Cobrar atraso
+                      </Button>
                     </div>
                   )
                 })()}
@@ -1320,19 +1519,196 @@ export default function ClienteEmprestimosPage() {
                       <span className={tooltipClsRight}>Excluir empréstimo</span>
                     </button>
                   </div>
-                  {(status.label === "Atrasado" || status.label === "Inadimplente") && (
-                    <div>
-                      <Button size="sm" onClick={() => openWhatsappDialog(loan)} className="w-full h-9 text-sm bg-red-600 hover:bg-red-700 text-white transition-colors">
-                        <MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Cobrar via WhatsApp
-                      </Button>
-                    </div>
-                  )}
                 </div>
               </div>
             )
           })}
         </div>
       )}
+
+      {/* ===== APLICAR MULTA DIALOG ===== */}
+      <Dialog open={!!multaDialog} onClose={() => { setMultaDialog(null); setMultaValue("") }} className="rounded-2xl">
+        {multaDialog && (() => {
+          const overdue = overdueInstallmentsOf(multaDialog)
+          const val = parseFloat(multaValue) || 0
+          const total = val * overdue.length
+          const dailyRs = multaType === "percent" ? (val / 100) * parcelaValueOf(multaDialog) : val
+          const now = new Date()
+          const valueLabel = multaType === "percent" ? "Porcentagem por dia (%)" : multaType === "fixedDay" ? "Valor por dia (R$)" : "Valor da multa por parcela (R$)"
+          return (
+            <div className="space-y-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">Aplicar Multa</h2>
+                  <p className="mt-1 text-sm text-gray-500 dark:text-zinc-400">Escolha o tipo de cálculo da multa e aplique às parcelas em atraso.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { setMultaDialog(null); setMultaValue("") }}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-red-400 bg-red-500 text-white transition-colors hover:bg-red-600"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Tipo de cálculo</Label>
+                <div className="relative">
+                  <select
+                    value={multaType}
+                    onChange={(e) => setMultaType(e.target.value as "fixedOnce" | "percent" | "fixedDay")}
+                    className="h-11 w-full appearance-none rounded-lg border border-green-500 bg-gray-50 dark:bg-zinc-800 px-3 pr-9 text-sm text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-green-500/40"
+                  >
+                    <option value="percent">% do valor da parcela por dia</option>
+                    <option value="fixedDay">Valor fixo (R$) por dia</option>
+                    <option value="fixedOnce">Valor fixo único por parcela</option>
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-zinc-400" />
+                </div>
+              </div>
+              {multaType !== "fixedOnce" && (
+                <div className="space-y-1.5">
+                  <Label>{valueLabel}</Label>
+                  <Input type="number" min={0} step={multaType === "percent" ? "0.1" : "1"} value={multaValue} onChange={(e) => setMultaValue(e.target.value)} placeholder={multaType === "percent" ? "Ex: 1.5" : "Ex: 40"} className="h-11 rounded-lg" />
+                </div>
+              )}
+              {multaType === "fixedOnce" ? (
+                <>
+                  <div className="space-y-1.5">
+                    <p className="text-sm font-medium text-gray-700 dark:text-zinc-200">Parcelas em atraso ({overdue.length})</p>
+                    {overdue.length === 0 ? (
+                      <p className="text-xs text-gray-400 dark:text-zinc-500">Nenhuma parcela em atraso.</p>
+                    ) : overdue.map((i: any) => {
+                      const dias = Math.max(0, Math.floor((now.getTime() - new Date(i.dueDate).getTime()) / 86400000))
+                      return (
+                        <div key={i.id} className="flex items-center justify-between gap-2 rounded-lg border border-gray-200 dark:border-zinc-700 px-3 py-2 text-xs">
+                          <span className="flex min-w-0 items-center gap-2 text-gray-700 dark:text-zinc-200">
+                            <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600 dark:text-green-500" />
+                            <span className="shrink-0 font-medium">Parcela {i.number}</span>
+                            <span className="truncate text-gray-400 dark:text-zinc-500">Venc: {formatDate(i.dueDate)} • {dias} dias atraso</span>
+                          </span>
+                          <div className="flex shrink-0 items-center gap-2">
+                            <input
+                              type="number"
+                              min={0}
+                              value={multaValue}
+                              onChange={(e) => setMultaValue(e.target.value)}
+                              onFocus={(e) => e.currentTarget.select()}
+                              placeholder="0"
+                              className="w-24 rounded-md border border-gray-300 bg-gray-50 px-2.5 py-1.5 text-center text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500/40 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                            />
+                            <span className="w-16 text-right font-semibold text-red-500 dark:text-red-400">+{formatCurrency(val)}</span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                  <div className="rounded-lg bg-red-50 dark:bg-red-950/20 px-3 py-2 text-sm font-semibold text-red-600 dark:text-red-400">Total de multas: {formatCurrency(total)}</div>
+                </>
+              ) : (
+                <div className="space-y-1.5">
+                  <p className="text-sm font-medium text-gray-700 dark:text-zinc-200">Selecione as parcelas e revise o cálculo</p>
+                  {overdue.length === 0 ? (
+                    <p className="text-xs text-gray-400 dark:text-zinc-500">Nenhuma parcela em atraso.</p>
+                  ) : overdue.map((i: any) => {
+                    const dias = Math.max(0, Math.floor((now.getTime() - new Date(i.dueDate).getTime()) / 86400000))
+                    const charge = dailyRs * dias
+                    return (
+                      <div key={i.id} className="flex items-center gap-2 rounded-lg border border-gray-200 dark:border-zinc-700 px-3 py-2 text-xs">
+                        <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600 dark:text-green-500" />
+                        <span className="shrink-0 font-medium text-gray-700 dark:text-zinc-200">Parcela {i.number}:</span>
+                        <span className="truncate text-gray-500 dark:text-zinc-400">{formatCurrency(dailyRs)} × {dias} dias</span>
+                        <span className="ml-auto shrink-0 font-semibold text-red-500 dark:text-red-400">= {formatCurrency(charge)}</span>
+                      </div>
+                    )
+                  })}
+                  <div className="rounded-lg bg-red-50 dark:bg-red-950/20 px-3 py-2 text-sm font-semibold text-red-600 dark:text-red-400">
+                    Total de multas: {formatCurrency(overdue.reduce((s: number, i: any) => s + dailyRs * Math.max(0, Math.floor((now.getTime() - new Date(i.dueDate).getTime()) / 86400000)), 0))}
+                  </div>
+                </div>
+              )}
+              <div className="flex justify-end gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => { setMultaDialog(null); setMultaValue("") }}
+                  className="rounded-lg bg-gray-100 px-5 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={saveMulta}
+                  disabled={savingMulta || !multaValue}
+                  className="rounded-lg bg-green-500 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-green-600 disabled:opacity-60"
+                >
+                  {savingMulta ? "Salvando..." : "Aplicar Multa"}
+                </button>
+              </div>
+            </div>
+          )
+        })()}
+      </Dialog>
+
+      {/* ===== CONFIGURAR JUROS POR ATRASO DIALOG ===== */}
+      <Dialog open={!!jurosDialog} onClose={() => { setJurosDialog(null); setJurosPct("") }} className="rounded-2xl">
+        <div className="space-y-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">Configurar Juros por Atraso</h2>
+              <p className="mt-1 text-sm text-gray-500 dark:text-zinc-400">Configure o cálculo automático de juros por dia de atraso.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => { setJurosDialog(null); setJurosPct("") }}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-red-400 bg-red-500 text-white transition-colors hover:bg-red-600"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Tipo de cálculo</Label>
+            <div className="relative">
+              <select
+                value={jurosType}
+                onChange={(e) => setJurosType(e.target.value as "percent" | "percent30" | "fixed")}
+                className="h-11 w-full appearance-none rounded-lg border border-green-500 bg-gray-50 dark:bg-zinc-800 px-3 pr-9 text-sm text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-green-500/40"
+              >
+                <option value="percent">% da parcela por dia</option>
+                <option value="percent30">% do valor total / 30 dias</option>
+                <option value="fixed">Valor fixo (R$ por dia)</option>
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-zinc-400" />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label>{jurosType === "fixed" ? "Valor por dia de atraso (R$)" : "Porcentagem por dia de atraso (%)"}</Label>
+            <Input type="number" min={0} step={jurosType === "fixed" ? "1" : "0.1"} value={jurosPct} onChange={(e) => setJurosPct(e.target.value)} placeholder={jurosType === "fixed" ? "Ex: 10" : "Ex: 1.5"} className="h-11 rounded-lg" />
+            <p className="text-xs text-gray-400 dark:text-zinc-500">
+              {jurosType === "fixed"
+                ? "Os juros serão calculados: R$ por dia × dias em atraso"
+                : jurosType === "percent30"
+                  ? "Os juros serão calculados: (% × valor total ÷ 30) × dias em atraso"
+                  : "Os juros serão calculados: % × valor da parcela × dias em atraso"}
+            </p>
+          </div>
+          <div className="flex justify-end gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => { setJurosDialog(null); setJurosPct("") }}
+              className="rounded-lg bg-gray-100 px-5 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={saveJuros}
+              disabled={savingJuros || !jurosPct}
+              className="rounded-lg bg-green-500 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-green-600 disabled:opacity-60"
+            >
+              {savingJuros ? "Salvando..." : "Salvar Juros"}
+            </button>
+          </div>
+        </div>
+      </Dialog>
 
       {/* Tag Dialog */}
       <Dialog open={!!tagDialog} onClose={() => setTagDialog(null)} title="Gerenciar Etiquetas" className="max-w-sm">

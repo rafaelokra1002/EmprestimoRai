@@ -2358,7 +2358,7 @@ export default function EmprestimosPage() {
                 const paidCount = loan.installments.filter(i => i.status === "PAID").length
                 const overdueCount = loan.installments.filter(i => i.status !== "PAID" && toDateStr(new Date(i.dueDate)) < todayStr).length
                 return (
-                  <tr key={loan.id} className={`border-b border-gray-100 dark:border-zinc-800 transition-colors ${isAtraso ? "bg-red-500/5 hover:bg-red-500/10" : status.label === "Só Juros" ? "bg-purple-500/5 hover:bg-purple-500/10" : "hover:bg-gray-50 dark:hover:bg-zinc-800/40"}`}>
+                  <tr key={loan.id} className={`border-b border-gray-100 dark:border-zinc-800 transition-colors ${isAtraso ? "bg-red-500/5 hover:bg-red-500/10" : status.label === "Só Juros" ? "bg-purple-500/5 hover:bg-purple-500/10" : status.label === "Pendente" ? "hover:bg-yellow-500/10" : "hover:bg-gray-50 dark:hover:bg-zinc-800/40"}`}>
                     <td className="p-4">
                       <div className="flex items-center gap-2">
                         {loan.client.photo ? (
@@ -2397,7 +2397,7 @@ export default function EmprestimosPage() {
                       })()}
                     </td>
                     <td className="p-4 hidden sm:table-cell">
-                      <span className={isAtraso ? "font-medium text-red-600 dark:text-red-400" : "text-gray-500 dark:text-zinc-400"}>{nextInst ? formatDate(nextInst.dueDate) : "—"}</span>
+                      <span className={isAtraso ? "font-medium text-red-600 dark:text-red-400" : isDueToday ? "font-medium text-yellow-600 dark:text-yellow-400" : "text-gray-500 dark:text-zinc-400"}>{nextInst ? formatDate(nextInst.dueDate) : "—"}</span>
                     </td>
                     <td className="p-4 hidden lg:table-cell">
                       <div className="flex flex-wrap gap-1">
@@ -3020,13 +3020,12 @@ export default function EmprestimosPage() {
                 return ni && toDateStr(new Date(ni.dueDate)) === todayStr
               })
 
-              // Cards escuros (gradiente): atrasado=vinho, vence hoje=âmbar, só juros/pago no mês=roxo
-              const isDarkFolderCard = isGroupRed || isGroupDueToday || isGroupPurple
-              const fCardBorder = isGroupRed ? "border-red-500/20 border-l-4 border-l-[#E5484D] shadow-lg shadow-red-950/40" : isGroupDueToday ? "border-amber-500/20 border-l-4 border-l-[#F59E0B] shadow-lg shadow-amber-950/40" : isGroupPurple ? "border-purple-500/20 border-l-4 border-l-[#a855f7] shadow-lg shadow-purple-950/40" : isGroupBlue ? "border-blue-400 dark:border-blue-700" : "border-gray-200 dark:border-zinc-700"
-              const fCardBg = isGroupRed ? "bg-[radial-gradient(circle_at_top_left,rgba(255,92,92,0.18),transparent_55%),linear-gradient(135deg,#1F0608_0%,rgba(122,31,14,0.85)_55%,#1F0608_100%)]" : isGroupDueToday ? "bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.20),transparent_55%),linear-gradient(135deg,#332812_0%,#8A6E2A_55%,#332812_100%)]" : isGroupPurple ? "bg-[radial-gradient(circle_at_top_left,rgba(190,123,255,0.28),transparent_55%),linear-gradient(135deg,#2C1544_0%,#6B399E_55%,#2C1544_100%)]" : isGroupBlue ? "bg-blue-100 dark:bg-blue-950/30" : "bg-white dark:bg-zinc-900"
+              // Card de pasta fica neutro, exceto quando atrasado/vence hoje/em dia (fundo escuro com destaque dourado).
+              const isDarkFolderCard = isGroupRed || isGroupDueToday || isGroupGreen
+              const fCardBorder = isGroupRed ? "border-amber-400/20 border-l-4 border-l-[#E5484D] shadow-lg shadow-slate-950/40" : isGroupDueToday ? "border-amber-400/20 border-l-4 border-l-[#F59E0B] shadow-lg shadow-slate-950/40" : isGroupGreen ? "border-amber-400/20 border-l-4 border-l-[#3B82F6] shadow-lg shadow-slate-950/40" : isGroupPurple ? "border-purple-500/20 border-l-4 border-l-[#a855f7]" : isGroupBlue ? "border-blue-400 dark:border-blue-700" : "border-gray-200 dark:border-zinc-700"
+              const fCardBg = (isGroupRed || isGroupDueToday || isGroupGreen) ? "bg-[radial-gradient(circle_at_top_left,rgba(212,165,116,0.18),transparent_55%),linear-gradient(135deg,#0F1419_0%,rgba(30,41,59,0.85)_55%,#0F1419_100%)]" : "bg-white dark:bg-zinc-900"
               const fRemainingColor = "text-[#16a34a] dark:text-green-400"
-              const fRemainingBg = isDarkFolderCard ? "bg-white/10" : isGroupBlue ? "bg-gray-50 dark:bg-zinc-800/50" : "bg-gray-50 dark:bg-zinc-800/50"
-              const fCellBg = isDarkFolderCard ? "bg-white/10" : "bg-gray-50 dark:bg-zinc-800/50"
+              const fRemainingBg = isDarkFolderCard ? "bg-white/10" : "bg-gray-50 dark:bg-zinc-800/50"
               const fText = isDarkFolderCard ? "text-white" : "text-gray-900 dark:text-zinc-100"
               const fMuted = isDarkFolderCard ? "text-white/70" : "text-gray-400 dark:text-zinc-500"
 
@@ -3044,9 +3043,6 @@ export default function EmprestimosPage() {
                     <Avatar name={group.clientName} src={group.clientPhoto} size="sm" />
                     <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-600 dark:bg-zinc-600 text-white flex items-center gap-1">
                       <FolderOpen className="h-3 w-3" />
-                      {group.loans.length >= 2 && (
-                        <span className="w-2.5 h-2.5 rounded-full bg-yellow-400 inline-block flex-shrink-0" />
-                      )}
                       {group.loans.length} empréstimos
                     </span>
                     <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${groupStatus.color}`}>
@@ -3063,20 +3059,20 @@ export default function EmprestimosPage() {
                   </div>
 
                   {/* Grid de valores */}
-                  <div className={`mx-4 grid grid-cols-2 gap-px rounded-lg overflow-hidden border ${isDarkFolderCard ? "bg-white/10 border-white/10" : "bg-gray-100 border-gray-100 dark:bg-zinc-800 dark:border-zinc-800"}`}>
-                    <div className={`${fCellBg} px-3 py-2.5`}>
+                  <div className={`mx-4 grid grid-cols-2 rounded-lg overflow-hidden border ${isDarkFolderCard ? "bg-white/10 border-white/10" : "bg-gray-50 border-gray-100 dark:bg-zinc-800/50 dark:border-zinc-800"}`}>
+                    <div className="px-3 py-2.5">
                       <p className={`text-[11px] ${fMuted}`}>Emprestado</p>
                       <p className={`text-sm font-bold tabular-nums ${fText}`}>{formatCurrency(totalAmount)}</p>
                     </div>
-                    <div className={`${fCellBg} px-3 py-2.5 text-right`}>
+                    <div className="px-3 py-2.5 text-right">
                       <p className={`text-[11px] ${fMuted}`}>Total a Receber</p>
                       <p className={`text-sm font-bold tabular-nums ${fText}`}>{formatCurrency(totalReceivable)}</p>
                     </div>
-                    <div className={`${fCellBg} px-3 py-2.5`}>
+                    <div className="px-3 py-2.5">
                       <p className={`text-[11px] flex items-center gap-1 ${fMuted}`}><Lock className="h-3 w-3" /> Lucro Previsto</p>
                       <p className="text-sm font-bold tabular-nums text-primary">{formatCurrency(totalProfit)}</p>
                     </div>
-                    <div className={`${fCellBg} px-3 py-2.5 text-right`}>
+                    <div className="px-3 py-2.5 text-right">
                       <p className={`text-[11px] flex items-center gap-1 justify-end ${fMuted}`}><Check className="h-3 w-3" /> Recebido</p>
                       <p className="text-sm font-bold tabular-nums text-primary">{formatCurrency(totalReceivedProfit)}</p>
                     </div>
