@@ -203,7 +203,7 @@ export default function EmprestimosPage() {
   const [clientId, setClientId] = useState("")
   const [clientSearch, setClientSearch] = useState("")
   const [manualSelected, setManualSelected] = useState(false)
-  const [clientPickerOpen, setClientPickerOpen] = useState(true)
+  const [clientPickerOpen, setClientPickerOpen] = useState(false)
   const [amount, setAmount] = useState<number>(0)
   const [interestRate, setInterestRate] = useState<number>(0)
   const [interestType, setInterestType] = useState("PER_INSTALLMENT")
@@ -396,7 +396,7 @@ export default function EmprestimosPage() {
     setClientId("")
     setClientSearch("")
     setManualSelected(false)
-    setClientPickerOpen(true)
+    setClientPickerOpen(false)
     setAmount(0)
     setInterestRate(0)
     setInterestType("PER_INSTALLMENT")
@@ -1673,7 +1673,7 @@ export default function EmprestimosPage() {
           amount,
           date: renegotiateDate || today(),
           newDueDate: sendNewDueDate,
-          notes: (renegotiateNotes ? renegotiateNotes + " | " : "") + (renegotiateMode === "full" ? "Pagamento só juros" : "Pagamento parcial de juros") + (renegotiateMode === "full" ? ` [forma:${renegotiatePayMethod}]` : "") + (dailyFeeInPayment > 0 ? ` [dailyFee:${dailyFeeInPayment.toFixed(2)}]` : "") + " [OVERDUE_CONFIG:fixed:15]",
+          notes: (renegotiateNotes ? renegotiateNotes + " | " : "") + (renegotiateMode === "full" ? "Pagamento só juros" : "Pagamento parcial de juros") + ` [forma:${renegotiatePayMethod}]` + (dailyFeeInPayment > 0 ? ` [dailyFee:${dailyFeeInPayment.toFixed(2)}]` : "") + " [OVERDUE_CONFIG:fixed:15]",
         }),
       })
       setRenegotiateDialog(null)
@@ -2024,25 +2024,27 @@ export default function EmprestimosPage() {
   const chipTone = (color: string, isActive: boolean) => {
     switch (color) {
       case "blue":
-        return isActive ? "border-blue-500 bg-blue-500 text-white shadow-sm" : "border-blue-400 text-blue-600 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-300 dark:hover:bg-blue-950/20"
+        return isActive ? "border-blue-600 bg-blue-600 text-white" : "border-blue-500 text-blue-500 hover:bg-blue-500/10"
       case "amber":
-        return isActive ? "border-amber-500 bg-amber-500 text-white shadow-sm" : "border-amber-400 text-amber-600 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-300 dark:hover:bg-amber-950/20"
-      case "green":
-        return isActive ? "border-green-600 bg-green-500 text-white shadow-sm" : "border-green-600 text-green-700 hover:bg-green-500/10 dark:text-green-400 dark:hover:bg-green-500/10"
+        return isActive ? "border-amber-600 bg-amber-600 text-white" : "border-amber-500 text-amber-600 hover:bg-amber-500/10"
+      case "primary":
+        return isActive ? "border-primary bg-primary text-white" : "border-primary text-primary hover:bg-primary/10"
       case "red":
-        return isActive ? "border-red-500 bg-red-500 text-white shadow-sm" : "border-red-400 text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950/20"
+        return isActive ? "border-destructive bg-destructive text-white" : "border-destructive text-destructive hover:bg-destructive/10"
       case "yellow":
-        return isActive ? "border-yellow-500 bg-yellow-500 text-white shadow-sm" : "border-yellow-500 text-yellow-600 hover:bg-yellow-50 dark:border-yellow-700 dark:text-yellow-400 dark:hover:bg-yellow-950/20"
+        return isActive ? "border-yellow-600 bg-yellow-600 text-white" : "border-yellow-500 text-yellow-600 hover:bg-yellow-500/10"
       case "purple":
-        return isActive ? "border-purple-500 bg-purple-500 text-white shadow-sm" : "border-purple-400 text-purple-600 hover:bg-purple-50 dark:border-purple-800 dark:text-purple-300 dark:hover:bg-purple-950/20"
+        return isActive ? "border-purple-600 bg-purple-600 text-white" : "border-purple-500 text-purple-600 hover:bg-purple-500/10"
       case "orange":
-        return isActive ? "border-orange-500 bg-orange-500 text-white shadow-sm" : "border-orange-400 text-orange-600 hover:bg-orange-50 dark:border-orange-800 dark:text-orange-300 dark:hover:bg-orange-950/20"
+        return isActive ? "border-orange-600 bg-orange-600 text-white" : "border-orange-500 text-orange-600 hover:bg-orange-500/10"
       case "teal":
-        return isActive ? "border-teal-500 bg-teal-500 text-white shadow-sm" : "border-teal-500 text-teal-600 hover:bg-teal-50 dark:border-teal-700 dark:text-teal-400 dark:hover:bg-teal-950/20"
+        return isActive ? "border-teal-600 bg-teal-600 text-white" : "border-teal-500 text-teal-600 hover:bg-teal-500/10"
+      case "emerald":
+        return isActive ? "border-[#059669] bg-[#059669] text-white" : "border-[#10b981] text-[#059669] hover:bg-[#10b981]/10"
       case "indigo":
-        return isActive ? "border-indigo-500 bg-indigo-500 text-white shadow-sm" : "border-indigo-400 text-indigo-600 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-300 dark:hover:bg-indigo-950/20"
+        return isActive ? "border-indigo-600 bg-indigo-600 text-white" : "border-indigo-500 text-indigo-600 hover:bg-indigo-500/10"
       default:
-        return isActive ? "border-primary bg-primary text-white shadow-sm" : "border-gray-400 text-gray-700 hover:bg-gray-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+        return isActive ? "border-primary bg-primary text-white" : "border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground"
     }
   }
 
@@ -2051,13 +2053,13 @@ export default function EmprestimosPage() {
     { value: "all", label: "Todos", color: "gray" },
     { value: "on_time", label: "Em Dia", color: "blue" },
     { value: "due_today", label: "Vence Hoje", color: "amber", icon: Bell },
-    { value: "paid", label: "Pagos", color: "green" },
+    { value: "paid", label: "Pagos", color: "primary" },
     // "Atraso" (com dropdown) é renderizado separadamente
     { value: "renegotiated", label: "Reneg.", color: "yellow" },
     { value: "interest_only", label: "Só Juros", color: "purple" },
     { value: "weekly", label: "Semanal", color: "orange", icon: Calendar },
     { value: "parceled", label: "Parcelado", color: "indigo", icon: Calendar },
-    { value: "monthly", label: "Mensal", color: "green", icon: Calendar },
+    { value: "monthly", label: "Mensal", color: "emerald", icon: Calendar },
   ]
 
   const overdueSubFilters: { value: LoanFilterValue; label: string }[] = [
@@ -2351,14 +2353,22 @@ export default function EmprestimosPage() {
             <tbody>
               {filteredLoans.map((loan) => {
                 const status = getLoanStatusInfo(loan)
+                const isAtraso = status.label === "Atrasado" || status.label === "Inadimplente"
+                // Nos filtros "Todos" e "Em Aberto", quem já pagou só os juros e não está mais em atraso
+                // aparece como "Em Dia" (o status "Só Juros" continua valendo nos outros filtros/telas).
+                // Cores do badge seguem a referência (emprestimos-lista.html): pílula vermelha p/ atraso, azul p/ em dia.
+                const displayStatus = ((loanFilter === "all" || loanFilter === "open") && status.label === "Só Juros")
+                  ? { label: "Em Dia", color: "bg-blue-500/10 text-blue-600 border border-blue-500/20" }
+                  : isAtraso
+                    ? { label: status.label, color: "bg-red-500/10 text-red-600 border border-red-500/20" }
+                    : status
                 const remaining = getRemaining(loan)
                 const nextInst = getNextDueInst(loan)
                 const isDueToday = nextInst && toDateStr(new Date(nextInst.dueDate)) === todayStr
-                const isAtraso = status.label === "Atrasado" || status.label === "Inadimplente"
                 const paidCount = loan.installments.filter(i => i.status === "PAID").length
                 const overdueCount = loan.installments.filter(i => i.status !== "PAID" && toDateStr(new Date(i.dueDate)) < todayStr).length
                 return (
-                  <tr key={loan.id} className={`border-b border-gray-100 dark:border-zinc-800 transition-colors ${isAtraso ? "bg-red-500/5 hover:bg-red-500/10" : status.label === "Só Juros" ? "bg-purple-500/5 hover:bg-purple-500/10" : status.label === "Pendente" ? "hover:bg-yellow-500/10" : "hover:bg-gray-50 dark:hover:bg-zinc-800/40"}`}>
+                  <tr key={loan.id} className={`border-b border-gray-100 dark:border-zinc-800 transition-colors ${isAtraso ? "bg-red-500/5 hover:bg-red-500/10" : "hover:bg-gray-50 dark:hover:bg-[#222A26]/50"}`}>
                     <td className="p-4">
                       <div className="flex items-center gap-2">
                         {loan.client.photo ? (
@@ -2378,10 +2388,10 @@ export default function EmprestimosPage() {
                       </div>
                     </td>
                     <td className="p-4">
-                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${status.color}`}>{status.label}</span>
+                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${displayStatus.color}`}>{displayStatus.label}</span>
                     </td>
                     <td className="p-4 hidden sm:table-cell font-medium whitespace-nowrap tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(loan.amount)}</td>
-                    <td className={`p-4 font-semibold whitespace-nowrap tabular-nums ${isAtraso ? "text-red-600 dark:text-red-400" : "text-gray-900 dark:text-zinc-100"}`}>{formatCurrency(remaining)}</td>
+                    <td className={`p-4 font-semibold whitespace-nowrap tabular-nums ${isAtraso ? "text-red-600" : "text-gray-900 dark:text-zinc-100"}`}>{formatCurrency(remaining)}</td>
                     <td className="p-4 hidden md:table-cell">
                       <div className="flex flex-col gap-0.5">
                         <span className="text-sm text-[#059669] dark:text-[#34d399]">✅ {paidCount}/{loan.installmentCount}</span>
@@ -2392,12 +2402,12 @@ export default function EmprestimosPage() {
                       {(() => {
                         const d = getCurrentOverdueDays(loan)
                         return d > 0
-                          ? <span className="whitespace-nowrap text-sm font-semibold text-red-600 dark:text-red-400">{d} dia{d !== 1 ? "s" : ""}</span>
+                          ? <span className="whitespace-nowrap text-sm font-semibold text-red-600">{d} dia{d !== 1 ? "s" : ""}</span>
                           : <span className="text-sm text-gray-400 dark:text-zinc-500">—</span>
                       })()}
                     </td>
                     <td className="p-4 hidden sm:table-cell">
-                      <span className={isAtraso ? "font-medium text-red-600 dark:text-red-400" : isDueToday ? "font-medium text-yellow-600 dark:text-yellow-400" : "text-gray-500 dark:text-zinc-400"}>{nextInst ? formatDate(nextInst.dueDate) : "—"}</span>
+                      <span className={isAtraso ? "font-medium text-red-600" : isDueToday ? "font-medium text-yellow-600 dark:text-yellow-400" : "text-gray-500 dark:text-zinc-400"}>{nextInst ? formatDate(nextInst.dueDate) : "—"}</span>
                     </td>
                     <td className="p-4 hidden lg:table-cell">
                       <div className="flex flex-wrap gap-1">
@@ -2505,11 +2515,12 @@ export default function EmprestimosPage() {
               const detailTone: LoanDetailsTone = isRenegotiada ? "renegotiated" : isAtrasado ? "overdue" : isDueTodayHighlight ? "dueToday" : (isSoJuros || isPagoNoMes) ? "interest" : (isQuitado || isParceladoCardBlue) ? "settled" : "default"
 
               // Cores: Renegociada=rosa, Vence hoje=laranja, Atrasado=vermelho, Só Juros/Pago no mês=roxo, Quitado=azul, resto=branco
-              const cardBorder = isRenegotiada ? "border-pink-500/20 border-l-4 border-l-[#EC4899] shadow-lg shadow-pink-950/40" : isAtrasado ? "border-red-500/20 border-l-4 border-l-[#E5484D] shadow-lg shadow-red-950/40" : isDueTodayHighlight ? "border-amber-500/20 border-l-4 border-l-[#F59E0B] shadow-lg shadow-amber-950/40" : (isSoJuros || isPagoNoMes) ? "border-purple-500/20 border-l-4 border-l-[#a855f7] shadow-lg shadow-purple-950/40" : (isQuitado || isParceladoCardBlue) ? "border-blue-400 dark:border-blue-700" : isDueToday ? "border-amber-500/20 border-l-4 border-l-[#F59E0B] shadow-lg shadow-amber-950/40" : "border-gray-200 dark:border-zinc-700"
-              const cardBg = isRenegotiada ? "bg-[radial-gradient(circle_at_top_left,rgba(255,120,190,0.22),transparent_55%),linear-gradient(135deg,#3A0F24_0%,#8E2F58_55%,#3A0F24_100%)]" : isAtrasado ? "bg-[radial-gradient(circle_at_top_left,rgba(255,92,92,0.18),transparent_55%),linear-gradient(135deg,#1F0608_0%,rgba(122,31,14,0.85)_55%,#1F0608_100%)]" : isDueTodayHighlight ? "bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.20),transparent_55%),linear-gradient(135deg,#332812_0%,#8A6E2A_55%,#332812_100%)]" : (isSoJuros || isPagoNoMes) ? "bg-[radial-gradient(circle_at_top_left,rgba(190,123,255,0.28),transparent_55%),linear-gradient(135deg,#2C1544_0%,#6B399E_55%,#2C1544_100%)]" : (isQuitado || isParceladoCardBlue) ? "bg-blue-100 dark:bg-blue-950/30" : isDueToday ? "bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.20),transparent_55%),linear-gradient(135deg,#332812_0%,#8A6E2A_55%,#332812_100%)]" : "bg-white dark:bg-zinc-900"
-              const remainingColor = "text-[#16a34a] dark:text-green-400"
-              // Cards com fundo escuro (atrasado = vinho, só juros = roxo): texto direto no card precisa ser claro
-              const isDarkCard = isRenegotiada || isAtrasado || isSoJuros || isPagoNoMes || isDueToday || isDueTodayHighlight
+              const cardBorder = isRenegotiada ? "border-pink-500/20 border-l-4 border-l-[#EC4899] shadow-lg shadow-pink-950/40" : isAtrasado ? "border-red-500/20 border-l-4 border-l-[#E5484D] shadow-lg shadow-red-950/40" : isDueTodayHighlight ? "border-amber-500/20 border-l-4 border-l-[#F59E0B] shadow-lg shadow-amber-950/40" : (isSoJuros || isPagoNoMes) ? "border-purple-500/20 border-l-4 border-l-[#a855f7] shadow-lg shadow-purple-950/40" : isQuitado ? "border-primary" : isDueToday ? "border-amber-500/20 border-l-4 border-l-[#F59E0B] shadow-lg shadow-amber-950/40" : "border-gray-200 dark:border-zinc-700"
+              const cardBg = isRenegotiada ? "bg-[radial-gradient(circle_at_top_left,rgba(255,120,190,0.22),transparent_55%),linear-gradient(135deg,#3A0F24_0%,#8E2F58_55%,#3A0F24_100%)]" : isAtrasado ? "bg-[radial-gradient(circle_at_top_left,rgba(255,92,92,0.18),transparent_55%),linear-gradient(135deg,#1F0608_0%,rgba(122,31,14,0.85)_55%,#1F0608_100%)]" : isDueTodayHighlight ? "bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.20),transparent_55%),linear-gradient(135deg,#332812_0%,#8A6E2A_55%,#332812_100%)]" : (isSoJuros || isPagoNoMes) ? "bg-[radial-gradient(circle_at_top_left,rgba(190,123,255,0.28),transparent_55%),linear-gradient(135deg,#2C1544_0%,#6B399E_55%,#2C1544_100%)]" : isQuitado ? "bg-primary" : isDueToday ? "bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.20),transparent_55%),linear-gradient(135deg,#332812_0%,#8A6E2A_55%,#332812_100%)]" : "bg-white dark:bg-zinc-900"
+              const remainingColor = isQuitado ? "text-white" : "text-[#16a34a] dark:text-green-400"
+              const profitValueColor = isQuitado ? "text-white" : "text-primary"
+              // Cards com fundo escuro (atrasado = vinho, só juros = roxo, quitado = verde sólido): texto direto no card precisa ser claro
+              const isDarkCard = isRenegotiada || isAtrasado || isSoJuros || isPagoNoMes || isDueToday || isDueTodayHighlight || isQuitado
 
               return (
                 <div key={group.clientId} className={`rounded-xl border overflow-hidden shadow-sm hover:shadow-md transition-shadow ${cardBorder} ${cardBg}`}>
@@ -2547,10 +2558,10 @@ export default function EmprestimosPage() {
                           Reneg.
                         </span>
                       )}
-                      <span className={`shrink-0 whitespace-nowrap px-2 py-0.5 rounded text-xs font-bold transition hover:ring-2 hover:ring-inset hover:ring-current hover:saturate-150 ${status.color}`}>
+                      <span className={`shrink-0 whitespace-nowrap px-2 py-0.5 rounded-lg text-xs font-bold transition hover:ring-2 hover:ring-inset hover:ring-current hover:saturate-150 ${isQuitado ? "bg-white/20 text-white" : status.color}`}>
                         {status.label}
                       </span>
-                      <span className="shrink-0 whitespace-nowrap px-2 py-0.5 rounded text-xs font-bold bg-green-500/20 text-[#16a34a] dark:text-green-400 transition hover:bg-green-500/30 hover:brightness-125">
+                      <span className={`shrink-0 whitespace-nowrap px-2 py-0.5 rounded-lg text-xs font-bold transition hover:brightness-125 ${isQuitado ? "bg-white/20 text-white" : "bg-green-500/20 text-[#16a34a] dark:text-green-400 hover:bg-green-500/30"}`}>
                         {loan.interestType === "CUSTOM" ? "PERSONALIZADO" : loan.installmentCount > 1 ? "PARCELADO" : MODALITY_LABELS[loan.modality] || loan.modality}
                       </span>
                     </div>
@@ -2609,11 +2620,11 @@ export default function EmprestimosPage() {
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <p className={`text-[11px] flex items-center gap-1 ${isDarkCard ? "text-white/60" : "text-muted-foreground"}`}><Lock className="h-3 w-3" /> Lucro Previsto</p>
-                        <p className="text-sm font-bold tabular-nums text-primary">{formatCurrency(lucroPrevistoTotal)}</p>
+                        <p className={`text-sm font-bold tabular-nums ${profitValueColor}`}>{formatCurrency(lucroPrevistoTotal)}</p>
                       </div>
                       <div className="text-right">
                         <p className={`text-[11px] flex items-center gap-1 justify-end ${isDarkCard ? "text-white/60" : "text-muted-foreground"}`}><Check className="h-3 w-3" /> Lucro Realizado</p>
-                        <p className="text-sm font-bold tabular-nums text-primary">{formatCurrency(receivedProfit)} <span className={`text-xs ${isDarkCard ? "text-white/50" : "text-muted-foreground"}`}>{profitPct}%</span></p>
+                        <p className={`text-sm font-bold tabular-nums ${profitValueColor}`}>{formatCurrency(receivedProfit)} <span className={`text-xs ${isDarkCard ? "text-white/50" : "text-muted-foreground"}`}>{profitPct}%</span></p>
                       </div>
                     </div>
                     <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
@@ -2700,7 +2711,7 @@ export default function EmprestimosPage() {
                       )}
                     </div>
                     <div className="flex flex-wrap items-center gap-1.5 sm:justify-end">
-                      <span className="inline-flex items-center gap-1.5 rounded-md bg-primary/10 dark:bg-primary/20 px-2 py-0.5 font-medium text-primary">
+                      <span className={`inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 font-medium ${isQuitado ? "bg-white/20 text-white" : "bg-primary/10 dark:bg-primary/20 text-primary"}`}>
                         <DollarSign className="h-3.5 w-3.5" /> Pago: {formatCurrency(paid)}
                       </span>
                     </div>

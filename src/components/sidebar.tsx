@@ -88,9 +88,9 @@ const menuItems: MenuItem[] = [
     icon: ShoppingCart,
     children: [
       { href: "/vendas", label: "Vendas de Produtos", icon: ShoppingCart },
-      { href: "#", label: "Contratos", icon: FileText },
-      { href: "#", label: "Rel. Vendas", icon: TrendingUp },
-      { href: "#", label: "Veículos Registrados", icon: Car },
+      { href: "/vendas", label: "Contratos", icon: FileText },
+      { href: "/vendas/relatorio", label: "Rel. Vendas", icon: TrendingUp },
+      { href: "/veiculos", label: "Veículos Registrados", icon: Car },
     ],
   },
   { href: "/contas", label: "Caixa", icon: CreditCard },

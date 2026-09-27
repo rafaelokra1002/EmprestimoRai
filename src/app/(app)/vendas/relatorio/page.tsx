@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useEffect, useState, useMemo } from "react"
 import { formatCurrency, formatDate } from "@/lib/utils"
@@ -13,6 +13,21 @@ import {
 } from "recharts"
 
 type TabType = "produtos" | "veiculos" | "contratos" | "assinaturas"
+
+// Custo de uma venda é guardado como texto dentro de notes (ex.: "Custo: R$ 2.500,00"),
+// mesmo formato usado em vendas/page.tsx.
+const parseMoneyBR = (value: string) => {
+  if (!value) return 0
+  const normalized = value.replace(/\s/g, "").replace(/\./g, "").replace(",", ".")
+  const parsed = Number(normalized)
+  return Number.isFinite(parsed) ? parsed : 0
+}
+const getSaleCost = (sale: any) => {
+  const m = (sale.notes || "").match(/Custo:\s*R\$\s*([\d.,]+)/)
+  return m ? parseMoneyBR(m[1]) : 0
+}
+const getSalePaid = (sale: any) =>
+  sale.saleInstallments?.reduce((s: number, i: any) => s + (i.paidAmount || 0), 0) || 0
 
 export default function RelatorioVendasPage() {
   const [sales, setSales] = useState<any[]>([])
@@ -47,13 +62,25 @@ export default function RelatorioVendasPage() {
 
   useEffect(() => { fetchData() }, [])
 
+  // /api/sales devolve Produtos e Contratos juntos (mesma tabela) — separa pelos dois tipos.
+  const productSales = useMemo(() => sales.filter(s => (s.type || "PRODUCT") === "PRODUCT"), [sales])
+  const contractSales = useMemo(() => sales.filter(s => s.type === "CONTRACT"), [sales])
+
   // Filter by period
   const salesInPeriod = useMemo(() =>
-    sales.filter(s => {
+    productSales.filter(s => {
       const d = new Date(s.createdAt)
       return d >= periodStart && d <= periodEnd
     }),
-    [sales, periodStart, periodEnd]
+    [productSales, periodStart, periodEnd]
+  )
+
+  const contractsInPeriod = useMemo(() =>
+    contractSales.filter(s => {
+      const d = new Date(s.createdAt)
+      return d >= periodStart && d <= periodEnd
+    }),
+    [contractSales, periodStart, periodEnd]
   )
 
   const vehiclesInPeriod = useMemo(() =>
@@ -64,37 +91,42 @@ export default function RelatorioVendasPage() {
     [vehicles, periodStart, periodEnd]
   )
 
+  // Parcelas vencidas (usadas tanto no total global quanto nas tabelas "em atraso")
+  const now = new Date()
+  const getOverdueInstallments = (sale: any) =>
+    (sale.saleInstallments || []).filter((i: any) => i.status !== "PAID" && new Date(i.dueDate) < now)
+  const getOverdueAmount = (sale: any) =>
+    getOverdueInstallments(sale).reduce((s: number, i: any) => s + (i.amount - (i.paidAmount || 0)), 0)
+
   // ===== GLOBAL STATS =====
   const globalStats = useMemo(() => {
     const salesTotalVendido = salesInPeriod.reduce((s, sale) => s + (sale.totalAmount || 0), 0)
+    const contractsTotalVendido = contractsInPeriod.reduce((s, sale) => s + (sale.totalAmount || 0), 0)
     const vehiclesTotalVendido = vehiclesInPeriod.reduce((s, v) => s + (v.salePrice || 0), 0)
-    const totalVendido = salesTotalVendido + vehiclesTotalVendido
-    const vendaCount = salesInPeriod.length + vehiclesInPeriod.length
+    const totalVendido = salesTotalVendido + contractsTotalVendido + vehiclesTotalVendido
+    const vendaCount = salesInPeriod.length + contractsInPeriod.length + vehiclesInPeriod.length
 
-    const salesRecebido = salesInPeriod.reduce((s, sale) => {
-      const instPaid = sale.saleInstallments?.reduce((acc: number, i: any) => acc + (i.paidAmount || 0), 0) || 0
-      return s + instPaid
-    }, 0)
+    const salesRecebido = salesInPeriod.reduce((s, sale) => s + getSalePaid(sale), 0)
+    const contractsRecebido = contractsInPeriod.reduce((s, sale) => s + getSalePaid(sale), 0)
     const vehiclesRecebido = vehiclesInPeriod.reduce((s, v) => s + (v.paidAmount || 0), 0)
-    const totalRecebido = salesRecebido + vehiclesRecebido
+    const totalRecebido = salesRecebido + contractsRecebido + vehiclesRecebido
 
-    const salesCusto = 0 // Sales don't have purchase cost in this model
+    const salesCusto = salesInPeriod.reduce((s, sale) => s + getSaleCost(sale), 0)
     const vehiclesCusto = vehiclesInPeriod.reduce((s, v) => s + (v.purchasePrice || 0), 0)
     const totalCusto = salesCusto + vehiclesCusto
-    const lucro = totalVendido - totalCusto
+    // Contratos não têm custo/lucro (é receita recorrente, não revenda) — só entra no vendido/recebido.
+    const lucro = (salesTotalVendido + vehiclesTotalVendido) - totalCusto
 
-    // Em Atraso: overdue items
-    const now = new Date()
+    // Em Atraso: overdue items (produtos + contratos + veículos)
     let atrasoDinheiro = 0
     let atrasoCount = 0
 
-    salesInPeriod.forEach(sale => {
-      sale.saleInstallments?.forEach((inst: any) => {
-        if (inst.status === "OVERDUE" || (inst.status === "PENDING" && new Date(inst.dueDate) < now && inst.paidAmount < inst.amount)) {
-          atrasoDinheiro += inst.amount - (inst.paidAmount || 0)
-          atrasoCount++
-        }
-      })
+    sales.forEach(sale => {
+      const overdue = getOverdueInstallments(sale)
+      if (overdue.length > 0) {
+        atrasoDinheiro += getOverdueAmount(sale)
+        atrasoCount += overdue.length
+      }
     })
 
     // For vehicles, check if there is overdue balance based on schedule
@@ -115,35 +147,30 @@ export default function RelatorioVendasPage() {
     })
 
     return { totalVendido, vendaCount, totalRecebido, lucro, totalCusto, atrasoDinheiro, atrasoCount }
-  }, [salesInPeriod, vehiclesInPeriod, vehicles])
+  }, [salesInPeriod, contractsInPeriod, vehiclesInPeriod, sales, vehicles])
 
   // ===== PIE CHART DATA =====
   const pieData = useMemo(() => {
     const produtosTotal = salesInPeriod.reduce((s, sale) => s + (sale.totalAmount || 0), 0)
     const veiculosTotal = vehiclesInPeriod.reduce((s, v) => s + (v.salePrice || 0), 0)
-    // Contratos = 0 for now (could extend later)
+    const contratosTotal = contractsInPeriod.reduce((s, sale) => s + (sale.totalAmount || 0), 0)
     return [
       { name: "Produtos", value: produtosTotal, color: "#22c55e" },
       { name: "Veículos", value: veiculosTotal, color: "#10b981" },
-      { name: "Contratos", value: 0, color: "#f59e0b" },
+      { name: "Contratos", value: contratosTotal, color: "#f59e0b" },
     ].filter(d => d.value > 0)
-  }, [salesInPeriod, vehiclesInPeriod])
+  }, [salesInPeriod, vehiclesInPeriod, contractsInPeriod])
 
   // ===== PER-TAB STATS =====
   const tabStats = useMemo(() => {
-    const now = new Date()
-
     // Produtos
     const pVendido = salesInPeriod.reduce((s, sale) => s + (sale.totalAmount || 0), 0)
     const pCount = salesInPeriod.length
-    const pCusto = 0
+    const pCusto = salesInPeriod.reduce((s, sale) => s + getSaleCost(sale), 0)
     const pLucro = pVendido - pCusto
     let pPendente = 0
-    sales.forEach(sale => {
-      if (sale.status === "ACTIVE") {
-        const totalPaid = sale.saleInstallments?.reduce((acc: number, i: any) => acc + (i.paidAmount || 0), 0) || 0
-        pPendente += (sale.totalAmount || 0) - totalPaid
-      }
+    productSales.forEach(sale => {
+      if (sale.status === "ACTIVE") pPendente += (sale.totalAmount || 0) - getSalePaid(sale)
     })
 
     // Veículos
@@ -157,15 +184,34 @@ export default function RelatorioVendasPage() {
       if (falta > 0) vPendente += falta
     })
 
+    // Contratos (sem custo/lucro — é receita recorrente)
+    const cValor = contractsInPeriod.reduce((s, sale) => s + (sale.totalAmount || 0), 0)
+    const cCount = contractsInPeriod.length
+    const cRecebido = contractsInPeriod.reduce((s, sale) => s + getSalePaid(sale), 0)
+    let cPendente = 0
+    let cAtraso = 0
+    contractSales.forEach(sale => {
+      if (sale.status === "ACTIVE") cPendente += (sale.totalAmount || 0) - getSalePaid(sale)
+      cAtraso += getOverdueAmount(sale)
+    })
+
     return {
       produtos: { vendido: pVendido, count: pCount, custo: pCusto, lucro: pLucro, pendente: pPendente },
       veiculos: { vendido: vVendido, count: vCount, custo: vCusto, lucro: vLucro, pendente: vPendente },
-      contratos: { vendido: 0, count: 0, custo: 0, lucro: 0, pendente: 0 },
-      assinaturas: { vendido: 0, count: 0, custo: 0, lucro: 0, pendente: 0 },
+      contratos: { valor: cValor, count: cCount, recebido: cRecebido, pendente: cPendente, atraso: cAtraso },
+      assinaturas: { receita: 0, recebido: 0, pendente: 0, atraso: 0 },
     }
-  }, [salesInPeriod, vehiclesInPeriod, sales, vehicles])
+  }, [salesInPeriod, vehiclesInPeriod, contractsInPeriod, productSales, contractSales, vehicles])
 
   const currentTabStats = tabStats[activeTab]
+
+  // Itens em atraso da aba atual, pra tabela "em atraso" (só Produtos e Contratos por enquanto)
+  const overdueItemsForTab = useMemo(() => {
+    const list = activeTab === "produtos" ? productSales : activeTab === "contratos" ? contractSales : []
+    return list
+      .map(sale => ({ sale, amount: getOverdueAmount(sale) }))
+      .filter(x => x.amount > 0)
+  }, [activeTab, productSales, contractSales])
 
   const tabs: { key: TabType; label: string; icon: React.ReactNode }[] = [
     { key: "produtos", label: "Produtos", icon: <Package className="h-4 w-4" /> },
@@ -214,7 +260,7 @@ export default function RelatorioVendasPage() {
       </div>
 
       {/* ===== GLOBAL STAT CARDS ===== */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {/* Vendido no Período */}
         <div className="rounded-xl border border-primary/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
           <div className="h-10 w-10 rounded-xl bg-primary/5 dark:bg-primary/10 flex items-center justify-center">
@@ -251,12 +297,12 @@ export default function RelatorioVendasPage() {
         </div>
 
         {/* Em Atraso */}
-        <div className="rounded-xl border border-amber-500/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
-          <div className="h-10 w-10 rounded-xl bg-amber-50 dark:bg-amber-950/10 flex items-center justify-center">
-            <AlertTriangle className="h-5 w-5 text-amber-600" />
+        <div className="rounded-xl border border-red-500/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
+          <div className="h-10 w-10 rounded-xl bg-red-50 dark:bg-red-950/10 flex items-center justify-center">
+            <AlertTriangle className="h-5 w-5 text-red-600" />
           </div>
           <div>
-            <p className="text-xs text-amber-600">Em Atraso (Total)</p>
+            <p className="text-xs text-red-600">Em Atraso (Total)</p>
             <p className="text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(globalStats.atrasoDinheiro)}</p>
             <p className="text-xs text-gray-400 dark:text-zinc-500">{globalStats.atrasoCount} itens</p>
           </div>
@@ -341,53 +387,171 @@ export default function RelatorioVendasPage() {
       </div>
 
       {/* ===== PER-TAB STATS ===== */}
-      <div className="grid grid-cols-2 gap-3">
-        {/* Vendido no Período */}
-        <div className="rounded-xl border border-primary/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
-          <div className="h-10 w-10 rounded-xl bg-primary/5 dark:bg-primary/10 flex items-center justify-center">
-            <Package className="h-5 w-5 text-primary" />
+      {(activeTab === "produtos" || activeTab === "veiculos") && (() => {
+        const s = activeTab === "produtos" ? tabStats.produtos : tabStats.veiculos
+        const icon = activeTab === "produtos" ? <Package className="h-5 w-5 text-primary" /> : <Car className="h-5 w-5 text-primary" />
+        return (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="rounded-xl border border-primary/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
+              <div className="h-10 w-10 rounded-xl bg-primary/5 dark:bg-primary/10 flex items-center justify-center">{icon}</div>
+              <div>
+                <p className="text-xs text-gray-500 dark:text-zinc-400">Vendido no Período</p>
+                <p className="text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(s.vendido)}</p>
+                <p className="text-xs text-gray-400 dark:text-zinc-500">{s.count} vendas</p>
+              </div>
+            </div>
+            <div className="rounded-xl border border-primary/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
+              <div className="h-10 w-10 rounded-xl bg-amber-50 dark:bg-amber-950/10 flex items-center justify-center">
+                <DollarSign className="h-5 w-5 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 dark:text-zinc-400">Custo</p>
+                <p className="text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(s.custo)}</p>
+              </div>
+            </div>
+            <div className="rounded-xl border border-primary/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
+              <div className="h-10 w-10 rounded-xl bg-primary/5 dark:bg-primary/10 flex items-center justify-center">
+                <Percent className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 dark:text-zinc-400">Lucro</p>
+                <p className="text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(s.lucro)}</p>
+              </div>
+            </div>
+            <div className="rounded-xl border border-amber-500/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
+              <div className="h-10 w-10 rounded-xl bg-amber-50 dark:bg-amber-950/10 flex items-center justify-center">
+                <Clock className="h-5 w-5 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-xs text-amber-600">Pendente (Total)</p>
+                <p className="text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(s.pendente)}</p>
+                <p className="text-xs text-gray-400 dark:text-zinc-500">Todos ativos</p>
+              </div>
+            </div>
           </div>
-          <div>
-            <p className="text-xs text-gray-500 dark:text-zinc-400">Vendido no Período</p>
-            <p className="text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(currentTabStats.vendido)}</p>
-            <p className="text-xs text-gray-400 dark:text-zinc-500">{currentTabStats.count} vendas</p>
-          </div>
-        </div>
+        )
+      })()}
 
-        {/* Custo */}
-        <div className="rounded-xl border border-primary/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
-          <div className="h-10 w-10 rounded-xl bg-amber-50 dark:bg-amber-950/10 flex items-center justify-center">
-            <DollarSign className="h-5 w-5 text-amber-600" />
+      {activeTab === "contratos" && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="rounded-xl border border-primary/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
+            <div className="h-10 w-10 rounded-xl bg-primary/5 dark:bg-primary/10 flex items-center justify-center">
+              <FileText className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 dark:text-zinc-400">Valor no Período</p>
+              <p className="text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(tabStats.contratos.valor)}</p>
+              <p className="text-xs text-gray-400 dark:text-zinc-500">{tabStats.contratos.count} contratos</p>
+            </div>
           </div>
-          <div>
-            <p className="text-xs text-gray-500 dark:text-zinc-400">Custo</p>
-            <p className="text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(currentTabStats.custo)}</p>
+          <div className="rounded-xl border border-primary/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
+            <div className="h-10 w-10 rounded-xl bg-primary/5 dark:bg-primary/10 flex items-center justify-center">
+              <CheckCircle2 className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 dark:text-zinc-400">Recebido no Período</p>
+              <p className="text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(tabStats.contratos.recebido)}</p>
+            </div>
+          </div>
+          <div className="rounded-xl border border-amber-500/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
+            <div className="h-10 w-10 rounded-xl bg-amber-50 dark:bg-amber-950/10 flex items-center justify-center">
+              <Clock className="h-5 w-5 text-amber-600" />
+            </div>
+            <div>
+              <p className="text-xs text-amber-600">Pendente (Total)</p>
+              <p className="text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(tabStats.contratos.pendente)}</p>
+              <p className="text-xs text-gray-400 dark:text-zinc-500">Todos ativos</p>
+            </div>
+          </div>
+          <div className="rounded-xl border border-red-500/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
+            <div className="h-10 w-10 rounded-xl bg-red-50 dark:bg-red-950/10 flex items-center justify-center">
+              <AlertTriangle className="h-5 w-5 text-red-600" />
+            </div>
+            <div>
+              <p className="text-xs text-red-600">Em Atraso</p>
+              <p className="text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(tabStats.contratos.atraso)}</p>
+            </div>
           </div>
         </div>
+      )}
 
-        {/* Lucro */}
-        <div className="rounded-xl border border-primary/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
-          <div className="h-10 w-10 rounded-xl bg-primary/5 dark:bg-primary/10 flex items-center justify-center">
-            <Percent className="h-5 w-5 text-primary" />
+      {activeTab === "assinaturas" && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 opacity-50">
+          <div className="rounded-xl border border-primary/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
+            <div className="h-10 w-10 rounded-xl bg-primary/5 dark:bg-primary/10 flex items-center justify-center">
+              <Repeat className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 dark:text-zinc-400">Receita Mensal</p>
+              <p className="text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(0)}</p>
+              <p className="text-xs text-gray-400 dark:text-zinc-500">0 assinaturas ativas</p>
+            </div>
           </div>
-          <div>
-            <p className="text-xs text-gray-500 dark:text-zinc-400">Lucro</p>
-            <p className="text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(currentTabStats.lucro)}</p>
+          <div className="rounded-xl border border-primary/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
+            <div className="h-10 w-10 rounded-xl bg-primary/5 dark:bg-primary/10 flex items-center justify-center">
+              <CheckCircle2 className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 dark:text-zinc-400">Recebido no Período</p>
+              <p className="text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(0)}</p>
+            </div>
+          </div>
+          <div className="rounded-xl border border-amber-500/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
+            <div className="h-10 w-10 rounded-xl bg-amber-50 dark:bg-amber-950/10 flex items-center justify-center">
+              <Clock className="h-5 w-5 text-amber-600" />
+            </div>
+            <div>
+              <p className="text-xs text-amber-600">Pendente</p>
+              <p className="text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(0)}</p>
+            </div>
+          </div>
+          <div className="rounded-xl border border-red-500/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
+            <div className="h-10 w-10 rounded-xl bg-red-50 dark:bg-red-950/10 flex items-center justify-center">
+              <AlertTriangle className="h-5 w-5 text-red-600" />
+            </div>
+            <div>
+              <p className="text-xs text-red-600">Em Atraso</p>
+              <p className="text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(0)}</p>
+              <p className="text-xs text-gray-400 dark:text-zinc-500">0 cobranças</p>
+            </div>
           </div>
         </div>
+      )}
+      {activeTab === "assinaturas" && (
+        <p className="text-xs text-gray-400 dark:text-zinc-500 text-center">Assinaturas ainda está em desenvolvimento.</p>
+      )}
 
-        {/* Pendente (Total) */}
-        <div className="rounded-xl border border-amber-500/30 bg-gray-50 dark:bg-zinc-800/80 p-4 flex items-start gap-3">
-          <div className="h-10 w-10 rounded-xl bg-amber-50 dark:bg-amber-950/10 flex items-center justify-center">
-            <Clock className="h-5 w-5 text-amber-600" />
-          </div>
-          <div>
-            <p className="text-xs text-amber-600">Pendente (Total)</p>
-            <p className="text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-zinc-100">{formatCurrency(currentTabStats.pendente)}</p>
-            <p className="text-xs text-gray-400 dark:text-zinc-500">Todos ativos</p>
+      {/* ===== EM ATRASO TABLE ===== */}
+      {(activeTab === "produtos" || activeTab === "contratos") && overdueItemsForTab.length > 0 && (
+        <div className="rounded-xl border border-red-500/30 bg-red-50/40 dark:bg-red-950/10 p-5">
+          <h2 className="flex items-center gap-2 text-sm font-bold text-red-600 mb-3">
+            <AlertTriangle className="h-4 w-4" />
+            {activeTab === "produtos" ? "Vendas em Atraso" : "Contratos em Atraso"}
+          </h2>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-red-200 dark:border-red-900/40 text-left text-gray-500 dark:text-zinc-400">
+                  <th className="pb-2 pr-4 font-medium">{activeTab === "produtos" ? "Produto" : "Tipo"}</th>
+                  <th className="pb-2 pr-4 font-medium">Cliente</th>
+                  <th className="pb-2 pr-4 font-medium">Valor em Atraso</th>
+                  <th className="pb-2 font-medium">Telefone</th>
+                </tr>
+              </thead>
+              <tbody>
+                {overdueItemsForTab.map(({ sale, amount }) => (
+                  <tr key={sale.id} className="border-b border-red-100 dark:border-red-900/20 last:border-0">
+                    <td className="py-2.5 pr-4 font-medium text-gray-900 dark:text-zinc-100">{sale.description}</td>
+                    <td className="py-2.5 pr-4 text-gray-600 dark:text-zinc-300">{sale.client?.name || "—"}</td>
+                    <td className="py-2.5 pr-4 font-semibold text-red-600">{formatCurrency(amount)}</td>
+                    <td className="py-2.5 text-gray-500 dark:text-zinc-400">{sale.client?.phone || "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }

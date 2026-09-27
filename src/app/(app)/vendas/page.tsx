@@ -9,12 +9,13 @@ import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { FilterDropdown } from "@/components/ui/filter-dropdown"
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table"
+import { Avatar } from "@/components/avatar"
 import {
   Plus, Trash2, Search, Calendar, Package, FileText, CreditCard,
   CheckCircle2, DollarSign, CalendarDays, ShoppingBag, User,
   ClipboardList, Pencil, Copy, ChevronDown, ChevronUp, MessageCircle,
   Receipt, Send, Download, Tag, TrendingUp, LayoutGrid, Wallet,
-  Filter, Phone, X, Loader2, List, AlertTriangle
+  Filter, Phone, X, Loader2, List, AlertTriangle, ChevronsUpDown, Check
 } from "lucide-react"
 import { formatCurrency, formatDate, localDateStr } from "@/lib/utils"
 
@@ -22,6 +23,12 @@ type TabType = "produtos" | "contratos" | "assinaturas"
 type FilterType = "aberto" | "todos" | "em_atraso" | "quitados"
 
 const TAG_COLORS = ["#ef4444","#f97316","#f59e0b","#eab308","#84cc16","#22c55e","#10b981","#14b8a6","#06b6d4","#3b82f6","#8b5cf6","#ec4899"]
+
+const CONTRACT_TYPE_OPTIONS = [
+  "Aluguel de Casa", "Aluguel de Kitnet", "Aluguel de Apartamento",
+  "Aluguel de Sala Comercial", "Aluguel de Veículo", "Mensalidade",
+  "Serviço Mensal", "Parcelado",
+]
 
 export default function VendasPage() {
   const parseMoneyBR = (value: string) => {
@@ -78,6 +85,8 @@ export default function VendasPage() {
   const [formClientAddress, setFormClientAddress] = useState("")
   const [formSaleDate, setFormSaleDate] = useState(localDateStr())
   const [formCostPrice, setFormCostPrice] = useState("")
+  const [formCostMode, setFormCostMode] = useState<"value" | "percent">("value")
+  const [formCostPercent, setFormCostPercent] = useState("")
   const [formSalePrice, setFormSalePrice] = useState("")
   const [formDownPayment, setFormDownPayment] = useState("0")
   const [formInstallments, setFormInstallments] = useState("1")
@@ -86,6 +95,9 @@ export default function VendasPage() {
   const [formWhatsapp, setFormWhatsapp] = useState(false)
   const [formNotes, setFormNotes] = useState("")
   const [formSelectedClientId, setFormSelectedClientId] = useState("")
+  const [newClientMode, setNewClientMode] = useState(false)
+  const [clientPickerOpen, setClientPickerOpen] = useState(false)
+  const [clientPickerSearch, setClientPickerSearch] = useState("")
   const [formProductName, setFormProductName] = useState("")
   const [formType, setFormType] = useState<"PRODUCT" | "CONTRACT">("PRODUCT")
   const [formMonthlyValue, setFormMonthlyValue] = useState("")
@@ -141,10 +153,31 @@ export default function VendasPage() {
     }
   }
 
+  const filteredClientsForPicker = useMemo(() => {
+    const q = clientPickerSearch.trim().toLowerCase()
+    if (!q) return []
+    return clients.filter((c: any) =>
+      c.name?.toLowerCase().includes(q) ||
+      c.phone?.toLowerCase().includes(q) ||
+      c.document?.toLowerCase().includes(q)
+    ).slice(0, 20)
+  }, [clients, clientPickerSearch])
+
+  const hasValidClient = newClientMode ? Boolean(formClientName.trim()) : Boolean(formSelectedClientId)
+
+  // Custo pode ser digitado em R$ direto ou como % do valor de venda
+  const effectiveCostValue = useMemo(() => {
+    if (formCostMode === "percent") {
+      const pct = parseFloat(formCostPercent.replace(",", ".")) || 0
+      return Math.round(((pct / 100) * parseMoneyBR(formSalePrice)) * 100) / 100
+    }
+    return parseMoneyBR(formCostPrice)
+  }, [formCostMode, formCostPercent, formCostPrice, formSalePrice])
+
   // Check if form is valid for submission
   const isFormValid = formType === "CONTRACT"
-    ? formProductName.trim() && formSelectedClientId && formMonthlyValue && parseMoneyBR(formMonthlyValue) > 0 && formFirstDueDate
-    : formProductName.trim() && formSelectedClientId && formSalePrice && parseMoneyBR(formSalePrice) > 0 && formFirstDueDate
+    ? formProductName.trim() && hasValidClient && formMonthlyValue && parseMoneyBR(formMonthlyValue) > 0 && formFirstDueDate
+    : formProductName.trim() && hasValidClient && formSalePrice && parseMoneyBR(formSalePrice) > 0 && formFirstDueDate
 
   // Pay dialog
   const [payDialogOpen, setPayDialogOpen] = useState(false)
@@ -183,7 +216,7 @@ export default function VendasPage() {
   const handleNewSaleSubmit = async () => {
     const noteParts = []
     if (formProductDescription) noteParts.push(`Detalhes: ${formProductDescription}`)
-    if (formCostPrice) noteParts.push(`Custo: R$ ${formatMoneyBR(parseMoneyBR(formCostPrice))}`)
+    if (effectiveCostValue > 0) noteParts.push(`Custo: R$ ${formatMoneyBR(effectiveCostValue)}`)
     if (parseMoneyBR(formDownPayment) > 0) noteParts.push(`Entrada: R$ ${formatMoneyBR(parseMoneyBR(formDownPayment))}`)
     if (formWhatsapp) noteParts.push("[WHATSAPP:ON]")
     if (formNotes) noteParts.push(formNotes)
@@ -195,8 +228,7 @@ export default function VendasPage() {
     if (existingTags.length > 0) notes = `${notes} [SALE_TAGS:${existingTags.join(";")}]`
 
     const isContract = formType === "CONTRACT"
-    const payload = {
-      clientId: formSelectedClientId,
+    const payload: any = {
       description: formProductName,
       totalAmount: isContract
         ? Math.round(parseMoneyBR(formMonthlyValue) * (parseInt(formInstallments) || 1) * 100) / 100
@@ -207,6 +239,20 @@ export default function VendasPage() {
       modality: formFrequency,
       downPayment: isContract ? 0 : parseMoneyBR(formDownPayment),
       type: formType,
+    }
+    // Cliente: ou um já cadastrado (clientId), ou os dados pra criar um novo na hora
+    // (o backend cria o Client e vincula à venda em um único passo).
+    if (newClientMode) {
+      payload.newClient = {
+        name: formClientName,
+        phone: formClientPhone || undefined,
+        document: formClientCpf || undefined,
+        rg: formClientRg || undefined,
+        email: formClientEmail || undefined,
+        address: formClientAddress || undefined,
+      }
+    } else {
+      payload.clientId = formSelectedClientId
     }
 
     setSaleFormError(null)
@@ -259,6 +305,8 @@ export default function VendasPage() {
     setFormClientAddress("")
     setFormSaleDate(localDateStr())
     setFormCostPrice("")
+    setFormCostMode("value")
+    setFormCostPercent("")
     setFormSalePrice("")
     setFormDownPayment("0")
     setFormInstallments("1")
@@ -267,6 +315,9 @@ export default function VendasPage() {
     setFormWhatsapp(false)
     setFormNotes("")
     setFormMonthlyValue("")
+    setNewClientMode(false)
+    setClientPickerOpen(false)
+    setClientPickerSearch("")
   }
 
   const openNewSale = (type: "PRODUCT" | "CONTRACT" = "PRODUCT") => {
@@ -274,6 +325,7 @@ export default function VendasPage() {
     setSaleFormError(null)
     resetFormState()
     setFormType(type)
+    if (type === "CONTRACT") setFormProductName(CONTRACT_TYPE_OPTIONS[0])
     setDialogOpen(true)
   }
 
@@ -287,6 +339,8 @@ export default function VendasPage() {
     handleSelectClient(sale.clientId || "")
     setFormSaleDate(localDateStr(sale.startDate))
     setFormCostPrice(parsed.cost > 0 ? formatMoneyBR(parsed.cost) : "")
+    setFormCostMode("value")
+    setFormCostPercent("")
     setFormSalePrice(formatMoneyBR(Number(sale.totalAmount || 0)))
     setFormDownPayment(formatMoneyBR(parsed.downPayment))
     setFormInstallments(String(sale.installmentCount))
@@ -298,6 +352,9 @@ export default function VendasPage() {
     setFormMonthlyValue(
       sale.installmentCount > 0 ? formatMoneyBR(Number(sale.totalAmount || 0) / sale.installmentCount) : ""
     )
+    setNewClientMode(false)
+    setClientPickerOpen(false)
+    setClientPickerSearch(sale.client?.name || "")
     setDialogOpen(true)
   }
 
@@ -602,36 +659,39 @@ export default function VendasPage() {
     { value: "quitados" as const, label: "Quitados" },
   ]
 
+  // Cores conferidas ao vivo em cobrafacil.online/product-sales (e /loans, mesmo design
+  // system): Atrasado = gradiente vermelho, Quitado = verde sólido (bg-primary), Em Dia
+  // (pendente, ainda não vencido) = gradiente ciano. Os 3 estados usam texto branco.
   const statusBadge = (status: string) => {
     if (status === "quitado") return {
       label: "Quitado",
       cls: "border-transparent",
-      accent: "#3b82f6",
       style: {
-        color: "#BFDBFE",
-        border: "1px solid rgba(59,130,246,0.35)",
-        background: "radial-gradient(circle at 0% 0%, rgba(59,130,246,0.22), rgba(0,0,0,0) 60%), linear-gradient(135deg, #0B1F3A, rgba(30,58,95,0.7))",
+        color: "#fff",
+        border: "1px solid rgba(255,255,255,0.4)",
+        background: "rgba(255,255,255,0.15)",
       } as React.CSSProperties,
+      cardClass: "border border-primary bg-primary border-l-4 border-l-primary text-white",
     }
     if (status === "atraso") return {
       label: "Em Atraso",
       cls: "border-transparent",
-      accent: "#ef4444",
       style: {
         color: "#FCA5A5",
         border: "1px solid rgba(239,68,68,0.35)",
-        background: "radial-gradient(circle at 0% 0%, rgba(239,68,68,0.22), rgba(0,0,0,0) 60%), linear-gradient(135deg, #2A0A0A, rgba(127,29,29,0.7))",
+        background: "rgba(0,0,0,0.25)",
       } as React.CSSProperties,
+      cardClass: "border border-red-500/30 shadow-lg shadow-red-950/40 bg-[radial-gradient(circle_at_top_left,rgba(255,92,92,0.18),transparent_55%),linear-gradient(135deg,#1F0608_0%,rgba(122,31,14,0.85)_55%,#1F0608_100%)] border-l-4 border-l-[#E5484D] text-white",
     }
     return {
       label: "Pendente",
       cls: "border-transparent",
-      accent: "#D4A574",
       style: {
-        color: "#A7F3D0",
-        border: "1px solid rgba(16,185,129,0.3)",
-        background: "radial-gradient(circle at 0% 0%, rgba(16,185,129,0.22), rgba(0,0,0,0) 60%), linear-gradient(135deg, #062418, rgba(6,95,70,0.7))",
+        color: "#A5F3FC",
+        border: "1px solid rgba(34,211,238,0.3)",
+        background: "rgba(0,0,0,0.25)",
       } as React.CSSProperties,
+      cardClass: "border border-cyan-500/20 shadow-lg shadow-cyan-950/40 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.18),transparent_55%),linear-gradient(135deg,#06141A_0%,rgba(14,85,102,0.85)_55%,#06141A_100%)] border-l-4 border-l-[#22D3EE] text-white",
     }
   }
 
@@ -821,27 +881,26 @@ export default function VendasPage() {
             return (
               <div
                 key={sale.id}
-                className="rounded-2xl border border-gray-200 dark:border-[#262E2A] border-l-4 bg-gray-50 dark:bg-[#1C2532] overflow-hidden"
-                style={{ borderLeftColor: badge.accent }}
+                className={`rounded-2xl overflow-hidden ${badge.cardClass}`}
               >
                 {/* ---- Header ---- */}
                 <div className="p-4 pb-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="h-10 w-10 shrink-0 rounded-2xl bg-green-500/15 flex items-center justify-center">
-                        <Package className="h-5 w-5 text-green-500" />
+                      <div className="h-10 w-10 shrink-0 rounded-2xl bg-white/15 flex items-center justify-center">
+                        <Package className="h-5 w-5 text-white" />
                       </div>
                       <div className="min-w-0">
-                        <p className="font-bold text-gray-900 dark:text-zinc-100 text-sm truncate">{sale.description}</p>
+                        <p className="font-bold text-white text-sm truncate">{sale.description}</p>
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-0.5">
                           <div className="flex items-center gap-1">
-                            <User className="h-3 w-3 text-gray-400 dark:text-zinc-500" />
-                            <span className="text-xs text-gray-500 dark:text-zinc-400">{sale.client?.name || "—"}</span>
+                            <User className="h-3 w-3 text-white/50" />
+                            <span className="text-xs text-white/70">{sale.client?.name || "—"}</span>
                           </div>
                           {sale.client?.phone && (
                             <div className="flex items-center gap-1">
-                              <Phone className="h-3 w-3 text-gray-400 dark:text-zinc-500" />
-                              <span className="text-xs text-gray-500 dark:text-zinc-400">{sale.client.phone}</span>
+                              <Phone className="h-3 w-3 text-white/50" />
+                              <span className="text-xs text-white/70">{sale.client.phone}</span>
                             </div>
                           )}
                         </div>
@@ -864,7 +923,7 @@ export default function VendasPage() {
                   <button
                     type="button"
                     onClick={() => openTagDialog(sale)}
-                    className="inline-flex items-center gap-1 rounded-lg bg-gray-900 dark:bg-[#121614] border border-gray-200 dark:border-[#29322E] px-2.5 py-1 text-xs font-medium text-white transition-colors hover:bg-gray-800"
+                    className="inline-flex items-center gap-1 rounded-lg bg-black/20 border border-white/20 px-2.5 py-1 text-xs font-medium text-white transition-colors hover:bg-black/30"
                   >
                     <Plus className="h-3 w-3" /> Criar / adicionar etiqueta
                   </button>
@@ -873,67 +932,67 @@ export default function VendasPage() {
                 {/* ---- Stats 3x2 ---- */}
                 <div className="grid grid-cols-3 gap-x-3 gap-y-4 mx-4 mb-4">
                   <div className="flex items-start gap-2.5">
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-500/15 text-red-400"><Tag className="h-3.5 w-3.5" /></span>
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-500/20 text-red-300"><Tag className="h-3.5 w-3.5" /></span>
                     <div className="min-w-0">
-                      <p className="text-[10px] uppercase tracking-wider text-gray-400 dark:text-zinc-500">Custo</p>
-                      <p className="text-sm font-semibold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(cost)}</p>
+                      <p className="text-[10px] uppercase tracking-wider text-white/50">Custo</p>
+                      <p className="text-sm font-semibold tabular-nums text-white">{formatCurrency(cost)}</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-2.5">
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-500/15 text-blue-400"><DollarSign className="h-3.5 w-3.5" /></span>
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-500/20 text-blue-300"><DollarSign className="h-3.5 w-3.5" /></span>
                     <div className="min-w-0">
-                      <p className="text-[10px] uppercase tracking-wider text-gray-400 dark:text-zinc-500">Venda</p>
-                      <p className="text-sm font-semibold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(sale.totalAmount)}</p>
+                      <p className="text-[10px] uppercase tracking-wider text-white/50">Venda</p>
+                      <p className="text-sm font-semibold tabular-nums text-white">{formatCurrency(sale.totalAmount)}</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-2.5">
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-500/15 text-green-400"><TrendingUp className="h-3.5 w-3.5" /></span>
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-500/20 text-green-300"><TrendingUp className="h-3.5 w-3.5" /></span>
                     <div className="min-w-0">
-                      <p className="text-[10px] uppercase tracking-wider text-gray-400 dark:text-zinc-500">Lucro</p>
-                      <p className="text-sm font-semibold tabular-nums text-green-400">
-                        {formatCurrency(lucro)} {lucroPct != null && <span className="text-[10px] font-normal text-gray-400 dark:text-zinc-500">({lucroPct}%)</span>}
+                      <p className="text-[10px] uppercase tracking-wider text-white/50">Lucro</p>
+                      <p className="text-sm font-semibold tabular-nums text-green-300">
+                        {formatCurrency(lucro)} {lucroPct != null && <span className="text-[10px] font-normal text-white/50">({lucroPct}%)</span>}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-start gap-2.5">
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-500/15 text-green-400"><Wallet className="h-3.5 w-3.5" /></span>
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-500/20 text-green-300"><Wallet className="h-3.5 w-3.5" /></span>
                     <div className="min-w-0">
-                      <p className="text-[10px] uppercase tracking-wider text-gray-400 dark:text-zinc-500">Recebido</p>
-                      <p className="text-sm font-semibold tabular-nums text-green-400">{formatCurrency(paid)}</p>
+                      <p className="text-[10px] uppercase tracking-wider text-white/50">Recebido</p>
+                      <p className="text-sm font-semibold tabular-nums text-green-300">{formatCurrency(paid)}</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-2.5">
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-500/15 text-orange-400"><DollarSign className="h-3.5 w-3.5" /></span>
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-500/20 text-orange-300"><DollarSign className="h-3.5 w-3.5" /></span>
                     <div className="min-w-0">
-                      <p className="text-[10px] uppercase tracking-wider text-gray-400 dark:text-zinc-500">Falta</p>
-                      <p className="text-sm font-semibold tabular-nums text-orange-400">{formatCurrency(falta > 0 ? falta : 0)}</p>
+                      <p className="text-[10px] uppercase tracking-wider text-white/50">Falta</p>
+                      <p className="text-sm font-semibold tabular-nums text-orange-300">{formatCurrency(falta > 0 ? falta : 0)}</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-2.5">
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-500/15 text-zinc-400"><LayoutGrid className="h-3.5 w-3.5" /></span>
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/15 text-white/80"><LayoutGrid className="h-3.5 w-3.5" /></span>
                     <div className="min-w-0">
-                      <p className="text-[10px] uppercase tracking-wider text-gray-400 dark:text-zinc-500">Parcelas</p>
-                      <p className="text-sm font-semibold tabular-nums text-gray-900 dark:text-zinc-100">{paidCount}/{sale.installmentCount}</p>
+                      <p className="text-[10px] uppercase tracking-wider text-white/50">Parcelas</p>
+                      <p className="text-sm font-semibold tabular-nums text-white">{paidCount}/{sale.installmentCount}</p>
                     </div>
                   </div>
                 </div>
 
                 {/* ---- Progresso ---- */}
                 <div className="mx-4 mb-3">
-                  <div className="h-1.5 w-full rounded-full bg-gray-200 dark:bg-[#29322E] overflow-hidden">
-                    <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${progressPct}%` }} />
+                  <div className="h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
+                    <div className="h-full rounded-full bg-white transition-all" style={{ width: `${progressPct}%` }} />
                   </div>
-                  <p className="mt-1.5 text-right text-[11px] text-blue-400">{progressPct}% concluído</p>
+                  <p className="mt-1.5 text-right text-[11px] text-white/60">{progressPct}% concluído</p>
                 </div>
 
                 {/* ---- Next installment ---- */}
                 {nextInst && (
                   <div className="mx-4 mb-3 flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2 text-gray-500 dark:text-zinc-400">
-                      <Calendar className="h-4 w-4 text-gray-400 dark:text-zinc-500" />
+                    <div className="flex items-center gap-2 text-white/70">
+                      <Calendar className="h-4 w-4 text-white/50" />
                       <span>{nextInst.number}ª parcela — {formatDate(nextInst.dueDate)}</span>
                     </div>
-                    <span className="text-gray-900 dark:text-zinc-100 font-semibold">{formatCurrency(nextInst.amount)}</span>
+                    <span className="text-white font-semibold">{formatCurrency(nextInst.amount)}</span>
                   </div>
                 )}
 
@@ -955,25 +1014,25 @@ export default function VendasPage() {
                   <Button
                     onClick={() => openPay(sale)}
                     disabled={status === "quitado"}
-                    className="flex-1 rounded-xl bg-primary hover:bg-primary/90 gap-2 text-sm h-11"
+                    className="flex-1 rounded-xl bg-white text-gray-900 hover:bg-white/90 gap-2 text-sm h-11"
                   >
                     <DollarSign className="h-4 w-4" /> Pagar
                   </Button>
                   <Button
                     variant="outline"
                     onClick={() => { setParcelasSale(sale); setParcelasDialogOpen(true) }}
-                    className="flex-1 rounded-xl gap-2 text-sm h-11 dark:bg-[#121614] dark:border-[#29322E]"
+                    className="flex-1 rounded-xl gap-2 text-sm h-11 bg-white/10 border-white/20 text-white hover:bg-white/20"
                   >
                     <ClipboardList className="h-4 w-4" /> Parcelas
                   </Button>
-                  <Button variant="outline" size="icon" className="h-11 w-11 rounded-xl dark:bg-[#121614] dark:border-[#29322E]" title="Resumo" onClick={() => printSaleSummary(sale)}>
-                    <FileText className="h-4 w-4 text-gray-500 dark:text-zinc-400" />
+                  <Button variant="outline" size="icon" className="h-11 w-11 rounded-xl bg-white/10 border-white/20 hover:bg-white/20" title="Resumo" onClick={() => printSaleSummary(sale)}>
+                    <FileText className="h-4 w-4 text-white/80" />
                   </Button>
-                  <Button variant="outline" size="icon" className="h-11 w-11 rounded-xl dark:bg-[#121614] dark:border-[#29322E]" title="Editar" onClick={() => openEditSale(sale)}>
-                    <Pencil className="h-4 w-4 text-gray-500 dark:text-zinc-400" />
+                  <Button variant="outline" size="icon" className="h-11 w-11 rounded-xl bg-white/10 border-white/20 hover:bg-white/20" title="Editar" onClick={() => openEditSale(sale)}>
+                    <Pencil className="h-4 w-4 text-white/80" />
                   </Button>
-                  <Button variant="outline" size="icon" className="h-11 w-11 rounded-xl dark:bg-[#121614] dark:border-[#29322E]" title="Excluir" onClick={() => handleDelete(sale.id)}>
-                    <Trash2 className="h-4 w-4 text-red-600" />
+                  <Button variant="outline" size="icon" className="h-11 w-11 rounded-xl bg-white/10 border-white/20 hover:bg-white/20" title="Excluir" onClick={() => handleDelete(sale.id)}>
+                    <Trash2 className="h-4 w-4 text-red-300" />
                   </Button>
                 </div>
               </div>
@@ -1158,128 +1217,136 @@ export default function VendasPage() {
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
           {filteredContracts.map((sale) => {
-            const paid = getSalePaid(sale)
-            const paidCount = getSalePaidCount(sale)
             const nextInst = getNextInstallment(sale)
             const status = getSaleStatus(sale)
-            const badge = statusBadge(status)
-            const progressPct = sale.installmentCount > 0 ? Math.round((paidCount / sale.installmentCount) * 100) : 0
             const tags = getSaleTags(sale)
             const monthly = sale.installmentCount > 0 ? sale.totalAmount / sale.installmentCount : sale.totalAmount
+            const isAtraso = status === "atraso"
+            const isQuitado = status === "quitado"
+            // Cores conferidas ao vivo em cobrafacil.online/product-sales?tab=contracts: o card de
+            // contrato é bem mais simples que o de produto — sem gradiente, só um tom leve da cor do
+            // status (bg-destructive/10 no site de referência, aqui usamos vermelho/verde do sistema).
+            const contractCardClass = isAtraso
+              ? "bg-red-500/10 border-red-500/40"
+              : isQuitado
+                ? "bg-primary/10 border-primary/40"
+                : "bg-gray-50 dark:bg-[#1C2532] border-gray-200 dark:border-[#262E2A]"
+            const daysLate = nextInst ? Math.max(0, Math.floor((Date.now() - new Date(nextInst.dueDate).getTime()) / 86400000)) : 0
 
             return (
               <div
                 key={sale.id}
-                className="rounded-2xl border border-gray-200 dark:border-[#262E2A] border-l-4 bg-gray-50 dark:bg-[#1C2532] overflow-hidden"
-                style={{ borderLeftColor: badge.accent }}
+                className={`rounded-xl border overflow-hidden shadow-sm transition-all ${contractCardClass}`}
               >
-                {/* ---- Header ---- */}
-                <div className="p-4 pb-3">
-                  <div className="flex items-start justify-between gap-3">
+                <div className="p-4">
+                  {/* ---- Header ---- */}
+                  <div className="flex items-start justify-between gap-3 mb-3">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="h-10 w-10 shrink-0 rounded-2xl bg-green-500/15 flex items-center justify-center">
-                        <FileText className="h-5 w-5 text-green-500" />
+                      <div className="h-10 w-10 shrink-0 rounded-full bg-primary/20 flex items-center justify-center">
+                        <FileText className="h-5 w-5 text-primary" />
                       </div>
                       <div className="min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="font-bold text-gray-900 dark:text-zinc-100 text-sm truncate">{sale.client?.name || "—"}</p>
-                          <span className="rounded-md bg-gray-200 dark:bg-white/5 px-1.5 py-0.5 text-[10px] font-semibold text-gray-500 dark:text-zinc-400">{sale.installmentCount}x</span>
-                        </div>
-                        <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5 truncate">{sale.description}</p>
+                        <p className="font-semibold text-gray-900 dark:text-zinc-100 text-sm truncate">{sale.client?.name || "—"}</p>
+                        <p className="text-xs text-gray-500 dark:text-zinc-400 truncate">{sale.description}</p>
                       </div>
                     </div>
-                    <Badge className={`text-xs shrink-0 ${badge.cls}`} style={badge.style}>{badge.label}</Badge>
-                  </div>
-                </div>
-
-                {/* ---- Etiquetas ---- */}
-                <div className="mx-4 mb-4 flex flex-wrap items-center gap-1.5">
-                  {tags.map((t, i) => {
-                    const [name, color] = t.split("|")
-                    return (
-                      <span key={i} className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium" style={{ backgroundColor: `${color}20`, color }}>
-                        {name}
-                      </span>
-                    )
-                  })}
-                  <button
-                    type="button"
-                    onClick={() => openTagDialog(sale)}
-                    className="inline-flex items-center gap-1 rounded-lg bg-gray-900 dark:bg-[#121614] border border-gray-200 dark:border-[#29322E] px-2.5 py-1 text-xs font-medium text-white transition-colors hover:bg-gray-800"
-                  >
-                    <Plus className="h-3 w-3" /> Criar / adicionar etiqueta
-                  </button>
-                </div>
-
-                {/* ---- Valor mensal / Total a receber ---- */}
-                <div className="mx-4 mb-3 space-y-2">
-                  <div className="flex items-center justify-between rounded-lg bg-gray-100 dark:bg-[#121614] px-3 py-2.5">
-                    <span className="text-xs text-gray-500 dark:text-zinc-400">Valor mensal</span>
-                    <span className="text-sm font-semibold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(monthly)}</span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg bg-gray-100 dark:bg-[#121614] px-3 py-2.5">
-                    <span className="text-xs text-gray-500 dark:text-zinc-400">Total a receber</span>
-                    <span className="text-sm font-semibold tabular-nums text-green-500">{formatCurrency(sale.totalAmount)}</span>
-                  </div>
-                </div>
-
-                {/* ---- Progresso ---- */}
-                <div className="mx-4 mb-3">
-                  <div className="h-1.5 w-full rounded-full bg-gray-200 dark:bg-[#29322E] overflow-hidden">
-                    <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${progressPct}%` }} />
-                  </div>
-                  <p className="mt-1.5 text-right text-[11px] text-blue-400">{progressPct}% concluído</p>
-                </div>
-
-                {/* ---- Next installment ---- */}
-                {nextInst && (
-                  <div className="mx-4 mb-3 flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2 text-gray-500 dark:text-zinc-400">
-                      <Calendar className="h-4 w-4 text-gray-400 dark:text-zinc-500" />
-                      <span>{nextInst.number}ª parcela — {formatDate(nextInst.dueDate)}</span>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Button variant="outline" size="sm" className="h-6 px-2 text-[10px] gap-1" onClick={() => printSaleSummary(sale)}>
+                        <FileText className="h-3 w-3" /> Comprovante
+                      </Button>
+                      <span className="inline-flex items-center rounded-full bg-gray-200 dark:bg-zinc-700 px-2.5 py-0.5 text-xs font-semibold text-gray-700 dark:text-zinc-200">{sale.installmentCount}x</span>
                     </div>
-                    <span className="text-gray-900 dark:text-zinc-100 font-semibold">{formatCurrency(nextInst.amount)}</span>
                   </div>
-                )}
 
-                {/* ---- Cobrar Antecipado ---- */}
-                {status !== "quitado" && (
-                  <div className="mx-4 mb-4">
+                  {/* ---- Etiquetas ---- */}
+                  <div className="mb-3 flex flex-wrap items-center gap-1.5">
+                    {tags.map((t, i) => {
+                      const [name, color] = t.split("|")
+                      return (
+                        <span key={i} className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium" style={{ backgroundColor: `${color}20`, color }}>
+                          {name}
+                        </span>
+                      )
+                    })}
                     <button
                       type="button"
-                      onClick={() => cobrarAntecipado(sale)}
-                      className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#10b981]/30 shadow-lg shadow-[#022c22]/40 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.35),transparent_55%),linear-gradient(135deg,#062418_0%,rgba(6,95,70,0.85)_55%,#062418_100%)] hover:bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.45),transparent_55%),linear-gradient(135deg,#083324_0%,rgba(6,95,70,0.95)_55%,#083324_100%)] px-4 py-2.5 text-sm font-medium text-white transition-colors"
+                      onClick={() => openTagDialog(sale)}
+                      className="inline-flex items-center gap-1 rounded-lg bg-gray-900 dark:bg-[#121614] border border-gray-200 dark:border-[#29322E] px-2.5 py-1 text-xs font-medium text-white transition-colors hover:bg-gray-800"
                     >
-                      <MessageCircle className="h-4 w-4" /> Cobrar Antecipado
+                      <Plus className="h-3 w-3" /> Criar / adicionar etiqueta
                     </button>
                   </div>
-                )}
 
-                {/* ---- Actions ---- */}
-                <div className="flex items-center gap-2 p-4 pt-0">
-                  <Button
-                    onClick={() => openPay(sale)}
-                    disabled={status === "quitado"}
-                    className="flex-1 rounded-xl bg-primary hover:bg-primary/90 gap-2 text-sm h-11"
-                  >
-                    <DollarSign className="h-4 w-4" /> Pagar
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => { setParcelasSale(sale); setParcelasDialogOpen(true) }}
-                    className="flex-1 rounded-xl gap-2 text-sm h-11 dark:bg-[#121614] dark:border-[#29322E]"
-                  >
-                    <ClipboardList className="h-4 w-4" /> Parcelas
-                  </Button>
-                  <Button variant="outline" size="icon" className="h-11 w-11 rounded-xl dark:bg-[#121614] dark:border-[#29322E]" title="Resumo" onClick={() => printSaleSummary(sale)}>
-                    <FileText className="h-4 w-4 text-gray-500 dark:text-zinc-400" />
-                  </Button>
-                  <Button variant="outline" size="icon" className="h-11 w-11 rounded-xl dark:bg-[#121614] dark:border-[#29322E]" title="Editar" onClick={() => openEditSale(sale)}>
-                    <Pencil className="h-4 w-4 text-gray-500 dark:text-zinc-400" />
-                  </Button>
-                  <Button variant="outline" size="icon" className="h-11 w-11 rounded-xl dark:bg-[#121614] dark:border-[#29322E]" title="Excluir" onClick={() => handleDelete(sale.id)}>
-                    <Trash2 className="h-4 w-4 text-red-600" />
-                  </Button>
+                  {/* ---- Valor mensal / Total a receber ---- */}
+                  <div className="space-y-1.5 mb-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-500 dark:text-zinc-400">Valor mensal</span>
+                      <span className="font-bold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(monthly)}</span>
+                    </div>
+                    <div className="flex items-center justify-between p-2 rounded-lg bg-primary/10">
+                      <span className="text-sm text-gray-500 dark:text-zinc-400">Total a receber</span>
+                      <span className="font-bold tabular-nums text-primary">{formatCurrency(sale.totalAmount)}</span>
+                    </div>
+                  </div>
+
+                  {/* ---- Próxima parcela ---- */}
+                  {nextInst && (
+                    <div className="mb-3 space-y-2">
+                      <div className={`p-2 rounded-lg text-sm flex items-center justify-between ${isAtraso ? "bg-red-500/10" : "bg-gray-100 dark:bg-white/5"}`}>
+                        <div className="flex items-center gap-2 text-gray-700 dark:text-zinc-300">
+                          {isAtraso ? <AlertTriangle className="h-4 w-4 text-red-500 shrink-0" /> : <Calendar className="h-4 w-4 text-gray-400 dark:text-zinc-500 shrink-0" />}
+                          <span>
+                            {nextInst.number}ª parcela - {formatDate(nextInst.dueDate)}
+                            {isAtraso && <span className="text-red-500 font-medium ml-1">({daysLate}d atraso)</span>}
+                          </span>
+                        </div>
+                        <span className="font-semibold text-gray-900 dark:text-zinc-100">{formatCurrency(nextInst.amount)}</span>
+                      </div>
+                      {isAtraso ? (
+                        <button
+                          type="button"
+                          onClick={() => cobrarAntecipado(sale)}
+                          className="flex w-full items-center justify-center gap-2 rounded-lg border border-red-500/30 shadow-lg shadow-red-950/40 bg-[radial-gradient(circle_at_top_left,rgba(255,92,92,0.35),transparent_55%),linear-gradient(135deg,#1F0608_0%,rgba(122,31,14,0.85)_55%,#1F0608_100%)] hover:bg-[radial-gradient(circle_at_top_left,rgba(255,92,92,0.45),transparent_55%),linear-gradient(135deg,#240709_0%,rgba(122,31,14,0.95)_55%,#240709_100%)] px-4 py-2 text-sm font-medium text-white transition-colors"
+                        >
+                          <MessageCircle className="h-4 w-4" /> Cobrar Atraso
+                        </button>
+                      ) : !isQuitado && (
+                        <button
+                          type="button"
+                          onClick={() => cobrarAntecipado(sale)}
+                          className="flex w-full items-center justify-center gap-2 rounded-lg border border-[#10b981]/30 shadow-lg shadow-[#022c22]/40 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.35),transparent_55%),linear-gradient(135deg,#062418_0%,rgba(6,95,70,0.85)_55%,#062418_100%)] hover:bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.45),transparent_55%),linear-gradient(135deg,#083324_0%,rgba(6,95,70,0.95)_55%,#083324_100%)] px-4 py-2 text-sm font-medium text-white transition-colors"
+                        >
+                          <MessageCircle className="h-4 w-4" /> Cobrar Antecipado
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {/* ---- Actions ---- */}
+                  <div className="space-y-2">
+                    <Button
+                      onClick={() => openPay(sale)}
+                      disabled={isQuitado}
+                      className="w-full rounded-lg bg-primary hover:bg-primary/90 gap-2 text-sm h-9"
+                    >
+                      {nextInst ? `Pagar ${nextInst.number}ª parcela - ${formatDate(nextInst.dueDate)} (${formatCurrency(nextInst.amount)})` : "Pagar"}
+                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => { setParcelasSale(sale); setParcelasDialogOpen(true) }}
+                        className="flex-1 rounded-lg gap-2 text-sm h-9 dark:bg-[#121614] dark:border-[#29322E]"
+                      >
+                        <ClipboardList className="h-4 w-4" /> Parcelas
+                      </Button>
+                      <Button variant="outline" size="icon" className="h-9 w-9 rounded-lg dark:bg-[#121614] dark:border-[#29322E]" title="Editar" onClick={() => openEditSale(sale)}>
+                        <Pencil className="h-4 w-4 text-gray-500 dark:text-zinc-400" />
+                      </Button>
+                      <Button variant="outline" size="icon" className="h-9 w-9 rounded-lg dark:bg-[#121614] dark:border-[#29322E]" title="Excluir" onClick={() => handleDelete(sale.id)}>
+                        <Trash2 className="h-4 w-4 text-red-600" />
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </div>
             )
@@ -1293,20 +1360,172 @@ export default function VendasPage() {
       <Dialog
         open={dialogOpen}
         onClose={() => { setDialogOpen(false); setEditSale(null) }}
-        title={editSale ? (formType === "CONTRACT" ? "Editar Contrato" : "Editar Venda") : (formType === "CONTRACT" ? "Novo Contrato" : "Nova Venda")}
+        title={editSale ? (formType === "CONTRACT" ? "Editar Contrato" : "Editar Venda") : (formType === "CONTRACT" ? "Novo Contrato" : "Nova Venda de Produto")}
         className="max-w-xl"
+        closeClassName="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-red-400 bg-red-500 text-white hover:bg-red-600 hover:text-white"
       >
         <div className="space-y-5">
-          {/* Product / Contract Name */}
-          <div>
-            <Label className="font-semibold">{formType === "CONTRACT" ? "Título do Contrato *" : "Nome do Produto *"}</Label>
-            <Input
-              value={formProductName}
-              onChange={(e) => setFormProductName(e.target.value)}
-              className="mt-1"
-              placeholder={formType === "CONTRACT" ? "Ex: Aluguel de Casa" : "Ex: iPhone 15, Geladeira, etc."}
-            />
+          {/* Client Selector */}
+          <div className="space-y-2">
+            <Label className="font-semibold">{formType === "CONTRACT" ? "Cliente / Inquilino *" : "Cliente *"}</Label>
+
+            {newClientMode ? (
+              <div className="rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800/40 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-primary">Novo Cliente</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewClientMode(false)
+                      handleSelectClient("")
+                    }}
+                    className="text-xs font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+                <div>
+                  <Label className="text-xs">Nome do Cliente *</Label>
+                  <Input value={formClientName} onChange={(e) => setFormClientName(e.target.value)} className="mt-1" placeholder="Nome completo" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs">Telefone</Label>
+                    <Input value={formClientPhone} onChange={(e) => setFormClientPhone(e.target.value)} className="mt-1" placeholder="(00) 00000-0000" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">CPF</Label>
+                    <Input value={formClientCpf} onChange={(e) => setFormClientCpf(e.target.value)} className="mt-1" placeholder="000.000.000-00" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs">RG</Label>
+                    <Input value={formClientRg} onChange={(e) => setFormClientRg(e.target.value)} className="mt-1" placeholder="00.000.000-0" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">E-mail</Label>
+                    <Input value={formClientEmail} onChange={(e) => setFormClientEmail(e.target.value)} className="mt-1" placeholder="email@exemplo.com" />
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs">Endereço</Label>
+                  <Input value={formClientAddress} onChange={(e) => setFormClientAddress(e.target.value)} className="mt-1" placeholder="Rua, número, bairro..." />
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => { setNewClientMode(true); setClientPickerOpen(false); handleSelectClient("") }}
+                className="w-full flex items-center justify-center gap-2 h-10 rounded-md border-2 border-dashed border-primary/50 text-primary text-sm font-medium bg-white hover:bg-primary/15 dark:bg-[#121614] dark:hover:bg-[#1a211d] transition"
+              >
+                <Plus className="h-4 w-4" /> Cadastrar novo cliente
+              </button>
+            )}
+
+            {!newClientMode && (
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => setClientPickerOpen((open) => !open)}
+                  className="flex h-10 w-full items-center justify-between gap-2 rounded-md border border-gray-300 bg-white px-3 text-left text-sm text-gray-900 transition hover:border-primary/50 hover:bg-gray-50 dark:border-zinc-700 dark:bg-[#121614] dark:text-zinc-100 dark:hover:bg-[#222A26]"
+                >
+                  <span className="flex min-w-0 items-center gap-2">
+                    <User className="h-4 w-4 shrink-0 text-gray-400 dark:text-zinc-500" />
+                    <span className={`truncate ${formSelectedClientId ? "text-gray-900 dark:text-zinc-100" : "text-gray-500 dark:text-zinc-400"}`}>
+                      {formSelectedClientId ? formClientName || "Cliente selecionado" : "Buscar cliente por nome, telefone ou CPF..."}
+                    </span>
+                  </span>
+                  <ChevronsUpDown className="h-4 w-4 shrink-0 text-gray-400 dark:text-zinc-500" />
+                </button>
+
+                {clientPickerOpen && (
+                  <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-[#121614]">
+                    <div className="border-b border-gray-100 p-2 dark:border-zinc-800">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-zinc-500" />
+                        <Input
+                          value={clientPickerSearch}
+                          onChange={(e) => setClientPickerSearch(e.target.value)}
+                          placeholder="Buscar cliente..."
+                          className="h-8 pl-9 border-0 bg-white shadow-none focus-visible:ring-0 focus-visible:border-0 dark:bg-[#171C1A]"
+                        />
+                      </div>
+                    </div>
+                    <div className="max-h-72 overflow-y-auto p-2">
+                      {filteredClientsForPicker.length === 0 ? (
+                        <div className="rounded-lg px-3 py-6 text-center text-sm text-gray-500 dark:text-zinc-400">
+                          {clientPickerSearch.trim() ? "Nenhum cliente encontrado." : "Digite para buscar um cliente."}
+                        </div>
+                      ) : (
+                        <div className="space-y-1">
+                          {filteredClientsForPicker.map((client: any) => {
+                            const isSelected = client.id === formSelectedClientId
+                            return (
+                              <button
+                                key={client.id}
+                                type="button"
+                                onClick={() => {
+                                  handleSelectClient(client.id)
+                                  setClientPickerSearch(client.name)
+                                  setClientPickerOpen(false)
+                                }}
+                                className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left transition-colors ${isSelected ? "bg-primary/10 dark:bg-[#29322E]" : "hover:bg-gray-50 dark:hover:bg-[#29322E]"}`}
+                              >
+                                <div className="flex min-w-0 items-center gap-3">
+                                  <Avatar name={client.name} src={client.photo} size="sm" />
+                                  <div className="min-w-0">
+                                    <p className="truncate text-sm font-medium text-gray-900 dark:text-zinc-100">{client.name}</p>
+                                    <p className="truncate text-xs text-gray-500 dark:text-zinc-400">{client.phone || client.document || "Sem telefone ou CPF"}</p>
+                                  </div>
+                                </div>
+                                {isSelected && <Check className="h-4 w-4 shrink-0 text-primary" />}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
+
+          {/* Product / Contract Name */}
+          {formType === "CONTRACT" ? (
+            <div>
+              <Label className="font-semibold">Tipo de Contrato *</Label>
+              <select
+                value={CONTRACT_TYPE_OPTIONS.includes(formProductName) ? formProductName : "Outro"}
+                onChange={(e) => setFormProductName(e.target.value === "Outro" ? "" : e.target.value)}
+                className="flex h-10 w-full rounded-md border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 px-3 py-2 text-sm text-gray-900 dark:text-zinc-100 mt-1"
+              >
+                {CONTRACT_TYPE_OPTIONS.map((opt) => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+                <option value="Outro">Outro (personalizado)</option>
+              </select>
+              {!CONTRACT_TYPE_OPTIONS.includes(formProductName) && (
+                <Input
+                  value={formProductName}
+                  onChange={(e) => setFormProductName(e.target.value)}
+                  className="mt-2"
+                  placeholder="Descreva o tipo de contrato"
+                />
+              )}
+            </div>
+          ) : (
+            <div>
+              <Label className="font-semibold">Nome do Produto *</Label>
+              <Input
+                value={formProductName}
+                onChange={(e) => setFormProductName(e.target.value)}
+                className="mt-1"
+                placeholder="Ex: iPhone 15, Geladeira, etc."
+              />
+            </div>
+          )}
 
           {/* Product Description */}
           {formType === "PRODUCT" && (
@@ -1321,93 +1540,6 @@ export default function VendasPage() {
               />
             </div>
           )}
-
-          {/* Client Selector */}
-          <div className="rounded-xl border border-blue-500/30 bg-blue-50 dark:bg-blue-950/5 p-4 space-y-3">
-            <div className="flex items-center gap-2">
-              <User className="h-4 w-4 text-blue-600" />
-              <span className="text-sm font-semibold text-blue-600">Usar cliente cadastrado</span>
-            </div>
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-zinc-500" />
-              <select
-                value={formSelectedClientId}
-                onChange={(e) => handleSelectClient(e.target.value)}
-                className="flex h-10 w-full rounded-md border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 pl-9 pr-3 py-2 text-sm text-gray-900 dark:text-zinc-100 appearance-none"
-              >
-                <option value="">Selecionar cliente...</option>
-                {clients.map((c: any) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-zinc-500 pointer-events-none" />
-            </div>
-            <p className="text-xs text-gray-400 dark:text-zinc-500">Selecione um cliente para preencher os dados automaticamente, ou digite manualmente abaixo.</p>
-          </div>
-
-          {/* Client Fields - 2 columns */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label className="font-semibold">Nome do Cliente *</Label>
-              <Input
-                value={formClientName}
-                onChange={(e) => setFormClientName(e.target.value)}
-                className="mt-1"
-                placeholder="Nome completo"
-              />
-            </div>
-            <div>
-              <Label className="font-semibold">Telefone</Label>
-              <Input
-                value={formClientPhone}
-                onChange={(e) => setFormClientPhone(e.target.value)}
-                className="mt-1"
-                placeholder="(00) 00000-0000"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label className="font-semibold">CPF</Label>
-              <Input
-                value={formClientCpf}
-                onChange={(e) => setFormClientCpf(e.target.value)}
-                className="mt-1"
-                placeholder="000.000.000-00"
-              />
-            </div>
-            <div>
-              <Label className="font-semibold">RG</Label>
-              <Input
-                value={formClientRg}
-                onChange={(e) => setFormClientRg(e.target.value)}
-                className="mt-1"
-                placeholder="00.000.000-0"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label className="font-semibold">E-mail</Label>
-              <Input
-                value={formClientEmail}
-                onChange={(e) => setFormClientEmail(e.target.value)}
-                className="mt-1"
-                placeholder="email@exemplo.com"
-              />
-            </div>
-            <div>
-              <Label className="font-semibold">Endereço</Label>
-              <Input
-                value={formClientAddress}
-                onChange={(e) => setFormClientAddress(e.target.value)}
-                className="mt-1"
-                placeholder="Rua, número, bairro..."
-              />
-            </div>
-          </div>
 
           {formType === "CONTRACT" ? (
             <>
@@ -1504,16 +1636,48 @@ export default function VendasPage() {
                   />
                 </div>
                 <div>
-                  <Label className="font-semibold">Custo (R$)</Label>
-                  <Input
-                    type="text"
-                    inputMode="decimal"
-                    value={formCostPrice}
-                    onChange={(e) => setFormCostPrice(normalizeMoneyInput(e.target.value))}
-                    onBlur={() => formatMoneyInputOnBlur(formCostPrice, setFormCostPrice)}
-                    className="mt-1"
-                    placeholder="Quanto você pagou"
-                  />
+                  <div className="flex items-center justify-between">
+                    <Label className="font-semibold">Custo</Label>
+                    <div className="flex items-center rounded-md border border-gray-300 dark:border-zinc-700 overflow-hidden text-xs">
+                      <button
+                        type="button"
+                        onClick={() => setFormCostMode("value")}
+                        className={`px-2 py-0.5 font-medium transition-colors ${formCostMode === "value" ? "bg-primary text-white" : "bg-transparent text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800"}`}
+                      >
+                        R$
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormCostMode("percent")}
+                        className={`px-2 py-0.5 font-medium transition-colors ${formCostMode === "percent" ? "bg-primary text-white" : "bg-transparent text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800"}`}
+                      >
+                        %
+                      </button>
+                    </div>
+                  </div>
+                  {formCostMode === "percent" ? (
+                    <>
+                      <Input
+                        type="text"
+                        inputMode="decimal"
+                        value={formCostPercent}
+                        onChange={(e) => setFormCostPercent(e.target.value.replace(/[^\d.,]/g, ""))}
+                        className="mt-1"
+                        placeholder="Ex: 30"
+                      />
+                      <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">= {formatCurrency(effectiveCostValue)}</p>
+                    </>
+                  ) : (
+                    <Input
+                      type="text"
+                      inputMode="decimal"
+                      value={formCostPrice}
+                      onChange={(e) => setFormCostPrice(normalizeMoneyInput(e.target.value))}
+                      onBlur={() => formatMoneyInputOnBlur(formCostPrice, setFormCostPrice)}
+                      className="mt-1"
+                      placeholder="Quanto você pagou"
+                    />
+                  )}
                 </div>
               </div>
 
@@ -1632,7 +1796,7 @@ export default function VendasPage() {
           {/* Validation hint */}
           {!isFormValid && (
             <p className="text-xs text-red-600 text-center">
-              Preencha: {!formProductName.trim() ? (formType === "CONTRACT" ? "Título, " : "Produto, ") : ""}{!formSelectedClientId ? "Cliente, " : ""}{formType === "CONTRACT" ? ((!formMonthlyValue || parseFloat(formMonthlyValue) <= 0) ? "Valor Mensal, " : "") : ((!formSalePrice || parseFloat(formSalePrice) <= 0) ? "Valor Total, " : "")}{!formFirstDueDate ? "1º Vencimento" : ""}
+              Preencha: {!formProductName.trim() ? (formType === "CONTRACT" ? "Título, " : "Produto, ") : ""}{!hasValidClient ? "Cliente, " : ""}{formType === "CONTRACT" ? ((!formMonthlyValue || parseFloat(formMonthlyValue) <= 0) ? "Valor Mensal, " : "") : ((!formSalePrice || parseFloat(formSalePrice) <= 0) ? "Valor Total, " : "")}{!formFirstDueDate ? "1º Vencimento" : ""}
             </p>
           )}
 

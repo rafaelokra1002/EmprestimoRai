@@ -104,14 +104,14 @@ export function InterestRenegotiateBody(props: InterestRenegotiateBodyProps) {
               setMode("partial")
               setAmount(pendingPartialInterest || currentInterest)
             }}
-            className="w-full rounded-2xl border p-4 text-left transition-colors border-blue-400/50 bg-blue-50/40 hover:bg-blue-50 dark:border-blue-900/50 dark:bg-blue-950/20 dark:hover:bg-blue-950/30"
+            className="w-full rounded-2xl border p-4 text-left transition-colors border-cyan-500/50 bg-cyan-50/40 hover:bg-cyan-50 dark:border-cyan-900/50 dark:bg-cyan-950/20 dark:hover:bg-cyan-950/30"
           >
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/15 text-blue-500 dark:bg-blue-500/20">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-cyan-500/15 text-cyan-500 dark:bg-cyan-500/20">
                 <DollarSign className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-base font-semibold text-blue-600 dark:text-blue-400">Pagamento parcial de juros</p>
+                <p className="text-base font-semibold text-cyan-600 dark:text-cyan-400">Pagamento parcial de juros</p>
                 <p className="text-sm text-gray-500 dark:text-zinc-400">Registrar pagamento de parte dos juros de uma parcela</p>
               </div>
             </div>
@@ -190,6 +190,24 @@ export function InterestRenegotiateBody(props: InterestRenegotiateBodyProps) {
               <Label>Nova Data de Vencimento *</Label>
               <Input type="date" value={newDueDate} onChange={(e) => setNewDueDate(e.target.value)} className="mt-1 h-10 rounded-[10px] border-[#22C35D] dark:border-[#22C35D] cal-green dark:bg-[#1E293B]" />
               <p className="mt-1.5 text-[11px] leading-tight text-gray-500 dark:text-zinc-400">Proxima data de cobranca</p>
+            </div>
+          </div>
+
+          <div>
+            <Label className="text-xs">Forma de Pagamento</Label>
+            <div className="mt-1.5 flex gap-2">
+              {(["Dinheiro", "Pix", "Cartão"] as PayMethod[]).map((method) => (
+                <Button
+                  key={method}
+                  type="button"
+                  variant={payMethod === method ? "default" : "outline"}
+                  size="sm"
+                  className="flex-1 text-xs"
+                  onClick={() => setPayMethod(method)}
+                >
+                  {method === "Dinheiro" ? "💵" : method === "Pix" ? "📲" : "💳"} {method}
+                </Button>
+              ))}
             </div>
           </div>
 
@@ -276,6 +294,24 @@ export function InterestRenegotiateBody(props: InterestRenegotiateBodyProps) {
                   <div>
                     <Label className="text-xs text-[#5DD3E4] dark:text-[#5DD3E4]">Data do pagamento *</Label>
                     <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="mt-2 h-10 rounded-[10px] border-[#06B6D4] dark:border-[#06B6D4] cal-green dark:bg-[#083344]" />
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-xs text-[#5DD3E4] dark:text-[#5DD3E4]">Forma de Pagamento</Label>
+                  <div className="mt-2 flex gap-2">
+                    {(["Dinheiro", "Pix", "Cartão"] as PayMethod[]).map((method) => (
+                      <Button
+                        key={method}
+                        type="button"
+                        variant={payMethod === method ? "default" : "outline"}
+                        size="sm"
+                        className="flex-1 text-xs"
+                        onClick={() => setPayMethod(method)}
+                      >
+                        {method === "Dinheiro" ? "💵" : method === "Pix" ? "📲" : "💳"} {method}
+                      </Button>
+                    ))}
                   </div>
                 </div>
 

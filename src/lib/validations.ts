@@ -83,7 +83,15 @@ export const paymentSchema = z.object({
 })
 
 export const saleSchema = z.object({
-  clientId: z.string().min(1, "Selecione um cliente"),
+  clientId: z.string().optional(),
+  newClient: z.object({
+    name: z.string().min(1),
+    phone: z.string().optional(),
+    document: z.string().optional(),
+    rg: z.string().optional(),
+    email: z.string().optional(),
+    address: z.string().optional(),
+  }).optional(),
   description: z.string().min(2, "Descrição obrigatória"),
   totalAmount: z.number().min(1, "Valor deve ser maior que zero"),
   installmentCount: z.number().min(1, "Mínimo 1 parcela"),

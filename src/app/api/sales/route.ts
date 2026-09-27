@@ -36,6 +36,26 @@ export async function POST(request: Request) {
 
     const body = await request.json()
     const data = saleSchema.parse(body)
+    const userId = (session.user as any).id
+
+    let clientId = data.clientId
+    if (!clientId && data.newClient?.name) {
+      const newClient = await prisma.client.create({
+        data: {
+          userId,
+          name: data.newClient.name,
+          phone: data.newClient.phone || undefined,
+          document: data.newClient.document || undefined,
+          rg: data.newClient.rg || undefined,
+          email: data.newClient.email || undefined,
+          address: data.newClient.address || undefined,
+        },
+      })
+      clientId = newClient.id
+    }
+    if (!clientId) {
+      return NextResponse.json({ error: "Selecione um cliente ou cadastre um novo" }, { status: 400 })
+    }
 
     const startDate = new Date(data.startDate.includes("T") ? data.startDate : data.startDate + "T12:00:00")
     const modality = data.modality || "MONTHLY"
@@ -45,8 +65,8 @@ export async function POST(request: Request) {
 
     const sale = await prisma.sale.create({
       data: {
-        clientId: data.clientId,
-        userId: (session.user as any).id,
+        clientId,
+        userId,
         description: data.description,
         totalAmount: data.totalAmount,
         installmentCount: data.installmentCount,

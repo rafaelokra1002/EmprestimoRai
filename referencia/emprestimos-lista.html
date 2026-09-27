@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Empréstimos – Modelo Lista</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#121614; --card:#191f1c; --sidebar:#171c1a; --muted:#222a26; --border:#29322e;
+  --text:#fafafa; --text-muted:#9dafa6; --primary:#22c35d;
+  --red:#ef4444; --red-text:#dc2626; --blue:#3b82f6; --blue-text:#2563eb; --orange:#f97316;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);font-size:14px}
+button{font-family:inherit;cursor:pointer}
+svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+
+/* ===== Sidebar ===== */
+aside{position:fixed;inset:0 auto 0 0;width:232px;background:var(--sidebar);border-right:1px solid var(--border);padding:16px 8px;display:flex;flex-direction:column;gap:8px;overflow:auto}
+.brand{display:flex;align-items:center;gap:12px;padding:4px 12px 12px}
+.brand b{font-size:15px}.brand small{display:block;font-size:10px;color:var(--text-muted)}
+.scard{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;border:1px solid;color:#fff;box-shadow:0 10px 15px -3px rgba(0,0,0,.35);transition:.2s}
+.scard .ic{width:34px;height:34px;border-radius:50%;display:grid;place-items:center}
+.scard b{font-size:12px;font-weight:500;display:block}.scard small{font-size:10px;white-space:nowrap;color:rgba(255,255,255,.6)}
+.scard .chev{margin-left:auto;opacity:.6;width:14px}
+.verde{border-color:rgba(52,211,153,.3);background:radial-gradient(circle at top left,rgba(16,185,129,.28),transparent 55%),linear-gradient(135deg,#062418 0%,rgba(6,95,70,.75) 55%,#062418 100%)}
+.verde .ic{background:rgba(16,185,129,.25);color:#6ee7b7}
+.laranja{border-color:rgba(251,191,36,.3);background:radial-gradient(circle at top left,rgba(251,191,36,.22),transparent 55%),linear-gradient(135deg,#1F1408 0%,rgba(122,85,31,.65) 55%,#1F1408 100%)}
+.laranja .ic{background:rgba(245,158,11,.25);color:#fcd34d}
+.azul{border-color:rgba(34,211,238,.3);background:radial-gradient(circle at top left,rgba(34,211,238,.22),transparent 55%),linear-gradient(135deg,#0a1f2e 0%,rgba(8,145,178,.65) 55%,#0a1f2e 100%)}
+.azul .ic{background:rgba(6,182,212,.25);color:#67e8f9}
+.dourado{border-color:rgba(250,204,21,.3);background:radial-gradient(circle at top left,rgba(250,204,21,.22),transparent 55%),linear-gradient(135deg,#1F1408 0%,rgba(161,98,7,.65) 55%,#1F1408 100%)}
+.dourado .ic{background:rgba(234,179,8,.25);color:#fde047}
+.roxo{border-color:rgba(232,121,249,.3);background:radial-gradient(circle at top left,rgba(217,70,239,.28),transparent 55%),linear-gradient(135deg,#2b0a3d 0%,rgba(124,29,111,.7) 55%,#2b0a3d 100%)}
+.roxo .ic{background:rgba(217,70,239,.25);color:#f5d0fe}
+.menu-label{font-size:10px;color:var(--text-muted);padding:10px 12px 2px;letter-spacing:.05em}
+.menu a{display:flex;align-items:center;gap:12px;padding:9px 12px;color:var(--text);text-decoration:none;font-size:12px;border-radius:8px}
+.menu a:hover{background:var(--muted)}
+
+/* ===== Main ===== */
+main{margin-left:232px;min-height:100vh}
+header{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;background:var(--card);border-bottom:1px solid var(--border)}
+header h1{font-size:15px;font-weight:600}header p{font-size:12px;color:var(--text-muted)}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--primary);background:rgba(34,195,93,.12);border:1px solid rgba(34,195,93,.35);padding:4px 10px;border-radius:999px;margin-left:12px}
+.btn{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:8px;font-size:12px;font-weight:500;border:1px solid var(--border);background:var(--bg);color:var(--text)}
+.btn:hover{background:var(--muted)}
+.content{padding:24px}
+.title-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px}
+.title-row h2{font-size:18px;font-weight:700}.title-row p{color:var(--text-muted);font-size:13px}
+.tabs{display:inline-flex;gap:2px;background:var(--muted);padding:4px;border-radius:8px;margin-bottom:16px}
+.tab{display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:6px;font-size:12px;color:var(--text-muted);background:none;border:0}
+.tab.active{background:var(--bg);color:var(--text);font-weight:500}
+.toolbar{display:flex;gap:8px;margin-bottom:12px}
+.search{flex:1;display:flex;align-items:center;gap:8px;height:32px;padding:0 10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text-muted)}
+.search input{flex:1;background:none;border:0;outline:0;color:var(--text);font:inherit;font-size:12px}
+.btn-blue{background:linear-gradient(135deg,#2563eb,#1d4ed8);border-color:rgba(59,130,246,.4);color:#fff}
+.btn-green{background:linear-gradient(135deg,#047857,#065f46);border-color:rgba(16,185,129,.3);color:#fff}
+.filters{display:flex;justify-content:space-between;margin-bottom:12px}
+.btn-outline-green{color:var(--primary);border-color:var(--primary)}
+.btn-outline-orange{color:#ea580c;border-color:var(--orange)}
+.view{display:flex;gap:4px}
+.view button{width:28px;height:26px;display:grid;place-items:center;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text-muted)}
+.view button.on{background:var(--primary);border-color:var(--primary);color:#fff}
+
+/* ===== Tabela ===== */
+.panel{background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.summary{display:grid;grid-template-columns:1fr 1fr;padding:12px;border-bottom:1px solid var(--border)}
+.sum{display:flex;align-items:center;gap:10px}
+.sum .ic{width:26px;height:26px;border-radius:6px;display:grid;place-items:center}
+.sum small{font-size:10px;color:var(--text-muted);display:block}.sum b{font-size:12px}
+.count{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text-muted)}
+.table-wrap{overflow:auto}
+table{width:100%;border-collapse:collapse;min-width:900px}
+thead tr{background:rgba(34,42,38,.5)}
+th{text-align:left;font-weight:500;font-size:12px;padding:12px;border-bottom:1px solid var(--border)}
+th:last-child,td:last-child{text-align:right}
+td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:12px;font-weight:600;height:54px}
+tr.late{background:rgba(239,68,68,.05)}
+tbody tr:hover{background:rgba(34,42,38,.5)}
+.cli{display:flex;align-items:center;gap:8px}
+.av{width:20px;height:20px;border-radius:50%;background:var(--primary);color:#fff;font-size:8px;font-weight:700;display:grid;place-items:center}
+.badge{font-size:10px;font-weight:500;padding:2px 8px;border-radius:999px;border:1px solid}
+.b-late{background:rgba(239,68,68,.1);color:var(--red-text);border-color:rgba(239,68,68,.2)}
+.b-ok{background:rgba(59,130,246,.1);color:var(--blue-text);border-color:rgba(59,130,246,.2)}
+.red{color:var(--red-text)}
+.parc{display:flex;flex-direction:column;gap:2px}
+.parc span{display:flex;align-items:center;gap:4px}
+.chk{width:11px;height:11px;border-radius:2px;background:var(--primary);display:grid;place-items:center}
+.chk svg{width:9px;height:9px;color:#fff;stroke-width:3}
+.late-info{font-size:9px;color:var(--red-text);font-weight:500}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--red)}
+.dots{background:none;border:0;color:var(--text);padding:4px}
+
+@media (max-width:900px){aside{display:none}main{margin-left:0}.toolbar{flex-wrap:wrap}}
+</style>
+</head>
+<body>
+
+<aside>
+  <div class="brand">
+    <svg viewBox="0 0 24 24" style="width:20px;height:20px"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+    <div><b>CobraFácil</b><small>Gestão Financeira</small></div>
+  </div>
+  <a class="scard verde"><span class="ic"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg></span><div><b>Funcionários</b><small>Cadastrar funcionários</small></div><svg class="chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></a>
+  <a class="scard laranja"><span class="ic"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></span><div><b>Relatórios Diário</b><small>Relatórios via WhatsApp</small></div><svg class="chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></a>
+  <a class="scard azul"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg></span><div><b>Meu Perfil</b><small>Gerenciar dados e plano</small></div><svg class="chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></a>
+  <a class="scard dourado"><span class="ic"><svg viewBox="0 0 24 24"><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg></span><div><b>Meus Planos</b><small>Assinatura e upgrades</small></div><svg class="chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></a>
+  <a class="scard roxo"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></span><div><b>Consultas</b><small>SPC, Serasa, CPF e mais</small></div><svg class="chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></a>
+  <div class="menu-label">MENU</div>
+  <nav class="menu">
+    <a href="#"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard</a>
+    <a href="#"><svg viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>Central de Atendimento</a>
+    <a href="#"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Clientes</a>
+  </nav>
+</aside>
+
+<main>
+  <header>
+    <div style="display:flex;align-items:center">
+      <div><h1>Bem-vindo de volta!</h1><p>Gerencie seus empréstimos</p></div>
+      <span class="pill">Dono (acesso total)</span>
+    </div>
+    <button class="btn">Minha conta</button>
+  </header>
+
+  <div class="content">
+    <div class="title-row">
+      <div><h2>Empréstimos</h2><p>Gerencie seus empréstimos</p></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>Baixar Relatório</button>
+        <button class="btn" style="color:#059669;border-color:#10b981">Cobrança em Lote</button>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active">Empréstimos <b id="tabCount">(0)</b></button>
+      <button class="tab">Diário (0)</button>
+      <button class="tab">Tabela Price</button>
+      <button class="tab">Recebimentos</button>
+      <button class="tab">Lixeira</button>
+    </div>
+
+    <div class="toolbar">
+      <label class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input id="q" placeholder="Buscar..."></label>
+      <button class="btn btn-blue">Novo Diário</button>
+      <button class="btn btn-green">+ Novo Empréstimo</button>
+    </div>
+
+    <div class="filters">
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-outline-green">Filtros ▾</button>
+        <button class="btn btn-outline-orange">Etiqueta ▾</button>
+      </div>
+      <div class="view">
+        <button title="Cards"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></button>
+        <button class="on" title="Lista"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="summary">
+        <div class="sum"><span class="ic" style="background:rgba(59,130,246,.15);color:#60a5fa">$</span><div><small>Total Emprestado</small><b id="totEmp"></b></div></div>
+        <div class="sum"><span class="ic" style="background:rgba(249,115,22,.15);color:#fb923c">$</span><div><small>Total a Receber</small><b id="totRec"></b></div></div>
+      </div>
+      <div class="count"><span id="countLbl"></span><button class="btn">Exportar CSV</button></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Cliente</th><th>Status</th><th>Emprestado</th><th>Restante</th><th>Parcelas</th><th>Vencimento ▴</th><th>Etiquetas</th><th>Ações</th></tr></thead>
+          <tbody id="tb"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+// Dados de exemplo — substitua pelos seus
+const emprestimos = [
+  {cliente:"teste 8",   emprestado:300,  restante:390,    pagas:0, total:1, atrasadas:1, venc:"2026-09-03"},
+  {cliente:"teste 8",   emprestado:300,  restante:390,    pagas:0, total:1, atrasadas:1, venc:"2026-09-10"},
+  {cliente:"teste 4",   emprestado:300,  restante:390,    pagas:0, total:1, atrasadas:1, venc:"2026-09-22"},
+  {cliente:"teste 4",   emprestado:300,  restante:390,    pagas:0, total:1, atrasadas:1, venc:"2026-09-22"},
+  {cliente:"TESTE002",  emprestado:400,  restante:520,    pagas:0, total:1, atrasadas:1, venc:"2026-09-24"},
+  {cliente:"teste 1",   emprestado:1300, restante:240,    pagas:0, total:1, atrasadas:1, venc:"2026-09-24"},
+  {cliente:"teste 6666",emprestado:100,  restante:285.60, pagas:0, total:4, atrasadas:1, venc:"2026-09-25"},
+  {cliente:"teste 6666",emprestado:1000, restante:2196.99,pagas:0, total:3, atrasadas:0, venc:"2026-09-30"},
+  {cliente:"teste 2",   emprestado:650,  restante:715,    pagas:2, total:4, atrasadas:0, venc:"2026-10-03"},
+  {cliente:"TESTE9",    emprestado:1000, restante:1300,   pagas:0, total:1, atrasadas:0, venc:"2026-10-17"},
+  {cliente:"teste 8",   emprestado:300,  restante:390,    pagas:0, total:1, atrasadas:0, venc:"2026-10-19"},
+  {cliente:"teste 2",   emprestado:500,  restante:650,    pagas:0, total:1, atrasadas:0, venc:"2026-10-19"},
+  {cliente:"TESTE9",    emprestado:600,  restante:780,    pagas:0, total:1, atrasadas:0, venc:"2026-10-20"},
+];
+
+const brl = v => v.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+const data = d => d.split("-").reverse().join("/");
+const ini = n => { const p=n.trim().split(/\s+/); return (p.length>1 ? p[0][0]+p[1][0] : n.slice(0,2)).toUpperCase(); };
+const check = '<span class="chk"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span>';
+
+function render(){
+  const q = document.getElementById("q").value.toLowerCase();
+  const lista = emprestimos.filter(e => e.cliente.toLowerCase().includes(q)).sort((a,b)=>a.venc.localeCompare(b.venc));
+  document.getElementById("tb").innerHTML = lista.map(e => {
+    const late = e.atrasadas > 0;
+    return `<tr class="${late?'late':''}">
+      <td><div class="cli"><span class="av">${ini(e.cliente)}</span>${e.cliente}</div></td>
+      <td><span class="badge ${late?'b-late':'b-ok'}">${late?'Atraso':'Em Dia'}</span></td>
+      <td>${brl(e.emprestado)}</td>
+      <td class="${late?'red':''}">${brl(e.restante)}</td>
+      <td><div class="parc"><span>${check}${e.pagas}/${e.total}</span>${late?`<span class="late-info"><i class="dot"></i>${e.atrasadas} em atraso</span>`:''}</div></td>
+      <td class="${late?'red':''}">${data(e.venc)}</td>
+      <td></td>
+      <td><button class="dots">⋯</button></td>
+    </tr>`;
+  }).join("");
+  document.getElementById("countLbl").textContent = `${lista.length} empréstimos`;
+  document.getElementById("tabCount").textContent = `(${emprestimos.length})`;
+  document.getElementById("totEmp").textContent = brl(lista.reduce((s,e)=>s+e.emprestado,0));
+  document.getElementById("totRec").textContent = brl(lista.reduce((s,e)=>s+e.restante,0));
+}
+document.getElementById("q").addEventListener("input", render);
+render();
+</script>
+</body>
+</html>
