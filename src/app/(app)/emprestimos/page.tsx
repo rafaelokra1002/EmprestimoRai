@@ -729,6 +729,27 @@ export default function EmprestimosPage() {
     return { label: "Em Dia", color: "bg-primary/50/20 text-green-400" }
   }
 
+  // Badge com fundo/borda visíveis (usado nos cards de pasta, cujo fundo pode ser um gradiente escuro
+  // onde as cores pálidas de status.color ficam invisíveis).
+  const vividBadgeColor = (label: string) => {
+    switch (label) {
+      case "Atrasado":
+      case "Inadimplente":
+        return "bg-destructive/10 text-destructive border border-destructive/20"
+      case "Quitado":
+        return "bg-primary/10 text-primary border border-primary/20"
+      case "Só Juros":
+      case "Pago no Mês":
+        return "bg-purple-500/10 text-purple-600 dark:text-purple-300 border border-purple-500/20"
+      case "Em Dia":
+        return "bg-blue-500/10 text-blue-600 dark:text-blue-300 border border-blue-500/20"
+      case "Pendente":
+        return "bg-orange-500/10 text-orange-600 dark:text-orange-300 border border-orange-500/20"
+      default:
+        return "bg-gray-500/10 text-gray-600 dark:text-gray-300 border border-gray-500/20"
+    }
+  }
+
   const getPaidTotal = (loan: Loan) => calculateEffectivePaidAmountFromPayments(loan.payments, loan.installments)
 
   // Pagamentos que realmente reduzem o saldo (exclui "só juros" e "parcial de juros")
@@ -2558,10 +2579,10 @@ export default function EmprestimosPage() {
                           Reneg.
                         </span>
                       )}
-                      <span className={`shrink-0 whitespace-nowrap px-2 py-0.5 rounded-lg text-xs font-bold transition hover:ring-2 hover:ring-inset hover:ring-current hover:saturate-150 ${isQuitado ? "bg-white/20 text-white" : status.color}`}>
+                      <span className={`shrink-0 whitespace-nowrap px-2 py-0.5 rounded-full text-xs font-bold transition hover:ring-2 hover:ring-inset hover:ring-current hover:saturate-150 ${isQuitado ? "bg-white/20 text-white" : status.color}`}>
                         {status.label}
                       </span>
-                      <span className={`shrink-0 whitespace-nowrap px-2 py-0.5 rounded-lg text-xs font-bold transition hover:brightness-125 ${isQuitado ? "bg-white/20 text-white" : "bg-green-500/20 text-[#16a34a] dark:text-green-400 hover:bg-green-500/30"}`}>
+                      <span className={`shrink-0 whitespace-nowrap px-2 py-0.5 rounded-full text-xs font-bold transition hover:brightness-125 ${isQuitado ? "bg-white/20 text-white" : "bg-green-500/20 text-[#16a34a] dark:text-green-400 hover:bg-green-500/30"}`}>
                         {loan.interestType === "CUSTOM" ? "PERSONALIZADO" : loan.installmentCount > 1 ? "PARCELADO" : MODALITY_LABELS[loan.modality] || loan.modality}
                       </span>
                     </div>
@@ -3035,8 +3056,8 @@ export default function EmprestimosPage() {
               const isDarkFolderCard = isGroupRed || isGroupDueToday || isGroupGreen
               const fCardBorder = isGroupRed ? "border-amber-400/20 border-l-4 border-l-[#E5484D] shadow-lg shadow-slate-950/40" : isGroupDueToday ? "border-amber-400/20 border-l-4 border-l-[#F59E0B] shadow-lg shadow-slate-950/40" : isGroupGreen ? "border-amber-400/20 border-l-4 border-l-[#3B82F6] shadow-lg shadow-slate-950/40" : isGroupPurple ? "border-purple-500/20 border-l-4 border-l-[#a855f7]" : isGroupBlue ? "border-blue-400 dark:border-blue-700" : "border-gray-200 dark:border-zinc-700"
               const fCardBg = (isGroupRed || isGroupDueToday || isGroupGreen) ? "bg-[radial-gradient(circle_at_top_left,rgba(212,165,116,0.18),transparent_55%),linear-gradient(135deg,#0F1419_0%,rgba(30,41,59,0.85)_55%,#0F1419_100%)]" : "bg-white dark:bg-zinc-900"
-              const fRemainingColor = "text-[#16a34a] dark:text-green-400"
-              const fRemainingBg = isDarkFolderCard ? "bg-white/10" : "bg-gray-50 dark:bg-zinc-800/50"
+              const fRemainingColor = isDarkFolderCard ? "text-white" : "text-[#16a34a] dark:text-green-400"
+              const fProfitColor = isDarkFolderCard ? "text-white" : "text-primary"
               const fText = isDarkFolderCard ? "text-white" : "text-gray-900 dark:text-zinc-100"
               const fMuted = isDarkFolderCard ? "text-white/70" : "text-gray-400 dark:text-zinc-500"
 
@@ -3052,58 +3073,64 @@ export default function EmprestimosPage() {
                   {/* Avatar + badges */}
                   <div className="flex flex-wrap items-center gap-2 px-4 pb-2 pt-3">
                     <Avatar name={group.clientName} src={group.clientPhoto} size="sm" />
-                    <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-600 dark:bg-zinc-600 text-white flex items-center gap-1">
+                    <span className="px-2 py-0.5 rounded-full border text-[10px] font-semibold bg-amber-400/10 border-amber-400/30 text-amber-600 dark:text-amber-300 flex items-center gap-1">
                       <FolderOpen className="h-3 w-3" />
                       {group.loans.length} empréstimos
                     </span>
-                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${groupStatus.color}`}>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${vividBadgeColor(groupStatus.label)}`}>
                       {groupStatus.label}
                     </span>
                   </div>
 
-                  {/* Valor Restante */}
-                  <div className="px-4 pb-3">
-                    <div className={`${fRemainingBg} rounded-2xl border px-4 py-3 text-center shadow-sm ${isDarkFolderCard ? "border-white/10" : "border-white/50 dark:border-white/5"}`}>
-                      <p className={`mt-1 text-[1.65rem] font-bold tabular-nums leading-none tracking-tight ${fRemainingColor}`}>{formatCurrency(remaining)}</p>
-                      <p className={`mt-1 text-[11px] ${isDarkFolderCard ? "text-white/70" : "text-gray-500 dark:text-zinc-400"}`}>restante a receber</p>
+                  {/* Valor Restante (sem caixa, igual referência) */}
+                  <div className="px-4 pb-3 text-center">
+                    <p className={`text-[1.65rem] font-bold tabular-nums leading-none tracking-tight ${fRemainingColor}`}>{formatCurrency(remaining)}</p>
+                    <p className={`mt-1 text-[11px] ${isDarkFolderCard ? "text-white/70" : "text-gray-500 dark:text-zinc-400"}`}>restante a receber</p>
+                  </div>
+
+                  {/* Emprestado / Total a Receber */}
+                  <div className={isDarkFolderCard ? "px-5 py-3" : "px-5 py-3 border-t bg-gray-50 dark:bg-zinc-800/40 border-gray-100 dark:border-zinc-800"}>
+                    <div className="grid grid-cols-2 gap-x-6">
+                      <div>
+                        <p className={`text-[11px] ${fMuted}`}>Emprestado</p>
+                        <p className={`text-sm font-bold tabular-nums ${fText}`}>{formatCurrency(totalAmount)}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className={`text-[11px] ${fMuted}`}>Total a Receber</p>
+                        <p className={`text-sm font-bold tabular-nums ${fText}`}>{formatCurrency(totalReceivable)}</p>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Grid de valores */}
-                  <div className={`mx-4 grid grid-cols-2 rounded-lg overflow-hidden border ${isDarkFolderCard ? "bg-white/10 border-white/10" : "bg-gray-50 border-gray-100 dark:bg-zinc-800/50 dark:border-zinc-800"}`}>
-                    <div className="px-3 py-2.5">
-                      <p className={`text-[11px] ${fMuted}`}>Emprestado</p>
-                      <p className={`text-sm font-bold tabular-nums ${fText}`}>{formatCurrency(totalAmount)}</p>
-                    </div>
-                    <div className="px-3 py-2.5 text-right">
-                      <p className={`text-[11px] ${fMuted}`}>Total a Receber</p>
-                      <p className={`text-sm font-bold tabular-nums ${fText}`}>{formatCurrency(totalReceivable)}</p>
-                    </div>
-                    <div className="px-3 py-2.5">
-                      <p className={`text-[11px] flex items-center gap-1 ${fMuted}`}><Lock className="h-3 w-3" /> Lucro Previsto</p>
-                      <p className="text-sm font-bold tabular-nums text-primary">{formatCurrency(totalProfit)}</p>
-                    </div>
-                    <div className="px-3 py-2.5 text-right">
-                      <p className={`text-[11px] flex items-center gap-1 justify-end ${fMuted}`}><Check className="h-3 w-3" /> Recebido</p>
-                      <p className="text-sm font-bold tabular-nums text-primary">{formatCurrency(totalReceivedProfit)}</p>
+                  {/* Lucro Previsto / Recebido */}
+                  <div className={isDarkFolderCard ? "px-5 py-3" : "px-5 py-3 border-t border-gray-100 dark:border-zinc-800"}>
+                    <div className="grid grid-cols-2 gap-x-6">
+                      <div>
+                        <p className={`text-[11px] flex items-center gap-1 ${fMuted}`}><Lock className="h-3 w-3" /> Lucro Previsto</p>
+                        <p className={`text-sm font-bold tabular-nums ${fProfitColor}`}>{formatCurrency(totalProfit)}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className={`text-[11px] flex items-center gap-1 justify-end ${fMuted}`}><Check className="h-3 w-3" /> Recebido</p>
+                        <p className={`text-sm font-bold tabular-nums ${fProfitColor}`}>{formatCurrency(totalReceivedProfit)}</p>
+                      </div>
                     </div>
                   </div>
 
                   {/* Lista de empréstimos */}
                   <div className="px-4 py-3 mt-2">
                     <p className={`mb-2 text-[11px] font-semibold uppercase tracking-wider ${fMuted}`}>Empréstimos na Pasta</p>
-                    <div className="flex flex-col">
+                    <div className="max-h-[120px] overflow-y-auto space-y-1.5 pr-1">
                       {group.loans.map((loan) => {
                         const nextI = getNextDueInst(loan)
                         const loanStatus = getLoanStatusInfo(loan)
                         return (
-                          <div key={loan.id} className={`flex items-center justify-between py-2 border-b last:border-0 ${isDarkFolderCard ? "border-white/10" : "border-gray-100 dark:border-zinc-800"}`}>
+                          <div key={loan.id} className={isDarkFolderCard ? "flex items-center justify-between gap-2 py-2" : "flex items-center justify-between gap-2 py-2.5 px-3 rounded-md bg-gray-50 dark:bg-zinc-800/50"}>
                             <div className="flex items-center gap-1.5 text-sm min-w-0">
                               <DollarSign className={`h-3.5 w-3.5 shrink-0 ${fMuted}`} />
                               <span className={`font-medium tabular-nums ${fText}`}>{formatCurrency(loan.amount)}</span>
                               <span className={isDarkFolderCard ? "text-white/40" : "text-gray-300 dark:text-zinc-600"}>•</span>
                               <span className={`text-xs ${fMuted}`}>Venc: {nextI ? formatDate(nextI.dueDate) : "—"}</span>
-                              <span className={`ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${loanStatus.color}`}>{loanStatus.label}</span>
+                              <span className={`ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${vividBadgeColor(loanStatus.label)}`}>{loanStatus.label}</span>
                             </div>
                             <span className={`ml-2 shrink-0 text-sm font-bold tabular-nums ${fText}`}>{formatCurrency(loan.totalAmount)}</span>
                           </div>
@@ -3114,17 +3141,6 @@ export default function EmprestimosPage() {
 
                   {/* Botão */}
                   <div className="px-4 pb-4 pt-1 space-y-2">
-                    {(groupStatus.label === "Atrasado" || groupStatus.label === "Inadimplente") && (() => {
-                      const overdueLoan = group.loans.find(l => {
-                        const st = getLoanStatusInfo(l)
-                        return st.label === "Atrasado" || st.label === "Inadimplente"
-                      })
-                      return overdueLoan ? (
-                        <Button size="sm" onClick={() => openWhatsappDialog(overdueLoan)} className="w-full h-9 text-sm bg-red-600 hover:bg-red-700 text-white transition-colors">
-                          <MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Cobrar via WhatsApp
-                        </Button>
-                      ) : null
-                    })()}
                     <button
                       onClick={() => router.push(`/emprestimos/cliente/${group.clientId}`)}
                       className="w-full py-2.5 rounded-lg bg-primary hover:bg-primary/90 text-white text-sm font-medium transition-colors flex items-center justify-center gap-2"
