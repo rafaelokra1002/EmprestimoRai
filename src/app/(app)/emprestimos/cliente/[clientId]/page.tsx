@@ -508,6 +508,26 @@ export default function ClienteEmprestimosPage() {
     return { label: "Pendente", color: "bg-orange-50 dark:bg-orange-950/20 text-orange-600" }
   }
 
+  // Badge com fundo/borda visíveis (usado nos cards escuros, onde as cores pálidas de status.color ficam invisíveis).
+  const vividBadgeColor = (label: string) => {
+    switch (label) {
+      case "Atrasado":
+      case "Inadimplente":
+        return "bg-destructive/10 text-destructive border border-destructive/20"
+      case "Quitado":
+        return "bg-primary/10 text-primary border border-primary/20"
+      case "Só Juros":
+      case "Pago no Mês":
+        return "bg-purple-500/10 text-purple-600 dark:text-purple-300 border border-purple-500/20"
+      case "Em Dia":
+        return "bg-blue-500/10 text-blue-600 dark:text-blue-300 border border-blue-500/20"
+      case "Pendente":
+        return "bg-orange-500/10 text-orange-600 dark:text-orange-300 border border-orange-500/20"
+      default:
+        return "bg-gray-500/10 text-gray-600 dark:text-gray-300 border border-gray-500/20"
+    }
+  }
+
   const getPaidTotal = (loan: Loan) => calculateEffectivePaidAmountFromPayments(loan.payments, loan.installments)
   const getPaidTotalExcludingInterest = (loan: Loan) => loan.payments
     .filter((p: any) => {
@@ -1136,11 +1156,13 @@ export default function ClienteEmprestimosPage() {
             const isDueTodayHighlight = Boolean(isDueToday)
             const isParcelado = loan.installmentCount > 1
             const isParceladoCardBlue = isParcelado && !isAtrasado && !isQuitado && !isSoJuros && !isPagoNoMes
+            const isSpecialModality = loan.interestType === "CUSTOM" || isParcelado
+            const isCustomInterest = loan.interestType === "CUSTOM" || isParceladoCardBlue
 
             const isRenegotiada = (loan.tags || []).some((t: string) => t.split("|")[0] === "Renegociacao")
-            const isDarkCard = isRenegotiada || isAtrasado || isSoJuros || isPagoNoMes || isDueToday || isDueTodayHighlight || isQuitado
-            const cardBorder = isRenegotiada ? "border-pink-500/20 border-l-4 border-l-[#EC4899] shadow-lg shadow-pink-950/40" : isAtrasado ? "border-red-500/20 border-l-4 border-l-[#E5484D] shadow-lg shadow-red-950/40" : isDueTodayHighlight ? "border-amber-500/20 border-l-4 border-l-[#F59E0B] shadow-lg shadow-amber-950/40" : (isSoJuros || isPagoNoMes) ? "border-purple-500/20 border-l-4 border-l-[#a855f7] shadow-lg shadow-purple-950/40" : isQuitado ? "border-primary" : "border-gray-200 dark:border-zinc-700"
-            const cardBg = isRenegotiada ? "bg-[radial-gradient(circle_at_top_left,rgba(255,120,190,0.22),transparent_55%),linear-gradient(135deg,#3A0F24_0%,#8E2F58_55%,#3A0F24_100%)]" : isAtrasado ? "bg-[radial-gradient(circle_at_top_left,rgba(255,92,92,0.18),transparent_55%),linear-gradient(135deg,#1F0608_0%,rgba(122,31,14,0.85)_55%,#1F0608_100%)]" : isDueTodayHighlight ? "bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.20),transparent_55%),linear-gradient(135deg,#332812_0%,#8A6E2A_55%,#332812_100%)]" : (isSoJuros || isPagoNoMes) ? "bg-[radial-gradient(circle_at_top_left,rgba(190,123,255,0.28),transparent_55%),linear-gradient(135deg,#2C1544_0%,#6B399E_55%,#2C1544_100%)]" : isQuitado ? "bg-primary" : "bg-white dark:bg-zinc-900"
+            const isDarkCard = isRenegotiada || isAtrasado || isSoJuros || isPagoNoMes || isDueToday || isDueTodayHighlight || isQuitado || isCustomInterest
+            const cardBorder = isRenegotiada ? "border-pink-500/20 border-l-4 border-l-[#EC4899] shadow-lg shadow-pink-950/40" : isAtrasado ? "border-red-500/20 border-l-4 border-l-[#E5484D] shadow-lg shadow-red-950/40" : isDueTodayHighlight ? "border-amber-500/20 border-l-4 border-l-[#F59E0B] shadow-lg shadow-amber-950/40" : (isSoJuros || isPagoNoMes) ? "border-purple-500/20 border-l-4 border-l-[#a855f7] shadow-lg shadow-purple-950/40" : isQuitado ? "border-primary" : isCustomInterest ? "border-cyan-500/20 border-l-4 border-l-[#22D3EE] shadow-lg shadow-cyan-950/40" : "border-gray-200 dark:border-zinc-700"
+            const cardBg = isRenegotiada ? "bg-[radial-gradient(circle_at_top_left,rgba(255,120,190,0.22),transparent_55%),linear-gradient(135deg,#3A0F24_0%,#8E2F58_55%,#3A0F24_100%)]" : isAtrasado ? "bg-[radial-gradient(circle_at_top_left,rgba(255,92,92,0.18),transparent_55%),linear-gradient(135deg,#1F0608_0%,rgba(122,31,14,0.85)_55%,#1F0608_100%)]" : isDueTodayHighlight ? "bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.20),transparent_55%),linear-gradient(135deg,#332812_0%,#8A6E2A_55%,#332812_100%)]" : (isSoJuros || isPagoNoMes) ? "bg-[radial-gradient(circle_at_top_left,rgba(190,123,255,0.28),transparent_55%),linear-gradient(135deg,#2C1544_0%,#6B399E_55%,#2C1544_100%)]" : isQuitado ? "bg-primary" : isCustomInterest ? "bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.18),transparent_55%),linear-gradient(135deg,#06141A_0%,rgba(14,85,102,0.85)_55%,#06141A_100%)]" : "bg-white dark:bg-zinc-900"
             const remainingColor = isQuitado ? "text-white" : "text-[#16a34a] dark:text-green-400"
             const profitValueColor = isQuitado ? "text-white" : "text-primary"
             const fText = isDarkCard ? "text-white" : "text-gray-900 dark:text-zinc-100"
@@ -1158,7 +1180,7 @@ export default function ClienteEmprestimosPage() {
                 <div className="px-4 pt-3 pb-2 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Avatar name={clientName} src={clientPhoto} size="sm" />
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${isQuitado ? "bg-white/20 text-white" : status.color}`}>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${isQuitado ? "bg-white/20 text-white" : vividBadgeColor(status.label)}`}>
                       {status.label}
                     </span>
                     {loan.modality === "INTEREST_ONLY" && (
@@ -1166,7 +1188,7 @@ export default function ClienteEmprestimosPage() {
                         J. Compostos
                       </span>
                     )}
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${isQuitado ? "bg-white/20 text-white" : "bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary"}`}>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${isQuitado ? "bg-white/20 text-white" : isSpecialModality ? "bg-purple-500/20 text-purple-700 dark:text-purple-300" : "bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary"}`}>
                       {loan.interestType === "CUSTOM" ? "PERSONALIZADO" : isParcelado ? "PARCELADO" : (MODALITY_LABELS[loan.modality] || loan.modality)}
                     </span>
                   </div>
@@ -1528,7 +1550,7 @@ export default function ClienteEmprestimosPage() {
       )}
 
       {/* ===== APLICAR MULTA DIALOG ===== */}
-      <Dialog open={!!multaDialog} onClose={() => { setMultaDialog(null); setMultaValue("") }} className="rounded-2xl">
+      <Dialog open={!!multaDialog} onClose={() => { setMultaDialog(null); setMultaValue("") }} className="w-full rounded-2xl">
         {multaDialog && (() => {
           const overdue = overdueInstallmentsOf(multaDialog)
           const val = parseFloat(multaValue) || 0
@@ -1650,7 +1672,7 @@ export default function ClienteEmprestimosPage() {
       </Dialog>
 
       {/* ===== CONFIGURAR JUROS POR ATRASO DIALOG ===== */}
-      <Dialog open={!!jurosDialog} onClose={() => { setJurosDialog(null); setJurosPct("") }} className="rounded-2xl">
+      <Dialog open={!!jurosDialog} onClose={() => { setJurosDialog(null); setJurosPct("") }} className="w-full rounded-2xl">
         <div className="space-y-4">
           <div className="flex items-start justify-between gap-3">
             <div>
@@ -1712,7 +1734,7 @@ export default function ClienteEmprestimosPage() {
       </Dialog>
 
       {/* Tag Dialog */}
-      <Dialog open={!!tagDialog} onClose={() => setTagDialog(null)} title="Gerenciar Etiquetas" className="max-w-sm">
+      <Dialog open={!!tagDialog} onClose={() => setTagDialog(null)} title="Gerenciar Etiquetas" className="w-full max-w-sm">
         <div className="space-y-3">
           {editingTags.map((tag, i) => {
             const [name, color] = tag.includes("|") ? tag.split("|") : [tag, "#ef4444"]
@@ -1758,7 +1780,7 @@ export default function ClienteEmprestimosPage() {
       <Dialog
         open={!!renegotiateDialog}
         onClose={() => { setRenegotiateDialog(null); setRenegotiateMode(null); setRenegotiateEntry("all"); setRenegotiateAmount(0); setRenegotiateNotes("") }}
-        className="max-w-lg dark:bg-[#121614] dark:border-[#29322E]"
+        className="w-full max-w-lg dark:bg-[#121614] dark:border-[#29322E]"
       >
         {renegotiateDialog && (
           <>
@@ -1821,7 +1843,7 @@ export default function ClienteEmprestimosPage() {
       <Dialog
         open={!!paymentDialog}
         onClose={() => { setPaymentDialog(null); resetPaymentForm() }}
-        className="max-w-lg scrollbar-visible dark:bg-[#121614] dark:border-[#29322E]"
+        className="w-full max-w-lg scrollbar-visible dark:bg-[#121614] dark:border-[#29322E]"
       >
         {paymentDialog && (() => {
           const pendingInstallments = paymentDialog.installments.filter((i: any) => i.status !== "PAID")
@@ -2055,7 +2077,7 @@ export default function ClienteEmprestimosPage() {
         open={whatsappDialog}
         onClose={() => { setWhatsappDialog(false); setWhatsappSent(false) }}
         title="Cobrar via WhatsApp"
-        className="max-w-lg"
+        className="w-full max-w-lg"
       >
         <div className="space-y-4">
           {whatsappLoan && (
@@ -2130,7 +2152,7 @@ export default function ClienteEmprestimosPage() {
       </Dialog>
 
       {/* Dialog Comprovante de Pagamento */}
-      <Dialog open={paymentReceiptDialog} onClose={() => setPaymentReceiptDialog(false)} className="max-w-md">
+      <Dialog open={paymentReceiptDialog} onClose={() => setPaymentReceiptDialog(false)} className="w-full max-w-md">
         {paymentReceiptInfo && (
           <div className="space-y-5">
             <div className="text-center">

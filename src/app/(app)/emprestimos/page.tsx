@@ -2375,21 +2375,23 @@ export default function EmprestimosPage() {
               {filteredLoans.map((loan) => {
                 const status = getLoanStatusInfo(loan)
                 const isAtraso = status.label === "Atrasado" || status.label === "Inadimplente"
-                // Nos filtros "Todos" e "Em Aberto", quem já pagou só os juros e não está mais em atraso
-                // aparece como "Em Dia" (o status "Só Juros" continua valendo nos outros filtros/telas).
-                // Cores do badge seguem a referência (emprestimos-lista.html): pílula vermelha p/ atraso, azul p/ em dia.
-                const displayStatus = ((loanFilter === "all" || loanFilter === "open") && status.label === "Só Juros")
-                  ? { label: "Em Dia", color: "bg-blue-500/10 text-blue-600 border border-blue-500/20" }
-                  : isAtraso
-                    ? { label: status.label, color: "bg-red-500/10 text-red-600 border border-red-500/20" }
-                    : status
                 const remaining = getRemaining(loan)
                 const nextInst = getNextDueInst(loan)
                 const isDueToday = nextInst && toDateStr(new Date(nextInst.dueDate)) === todayStr
                 const paidCount = loan.installments.filter(i => i.status === "PAID").length
                 const overdueCount = loan.installments.filter(i => i.status !== "PAID" && toDateStr(new Date(i.dueDate)) < todayStr).length
+                // Nos filtros "Todos" e "Em Aberto", quem já pagou só os juros e não está mais em atraso
+                // aparece como "Em Dia" (o status "Só Juros" continua valendo nos outros filtros/telas).
+                // Cores do badge seguem a referência (emprestimos-lista.html): pílula vermelha p/ atraso, âmbar p/ vence hoje, azul p/ em dia.
+                const displayStatus = ((loanFilter === "all" || loanFilter === "open") && status.label === "Só Juros")
+                  ? { label: "Em Dia", color: "bg-blue-500/10 text-blue-600 border border-blue-500/20" }
+                  : isAtraso
+                    ? { label: status.label, color: "bg-red-500/10 text-red-600 border border-red-500/20" }
+                    : isDueToday
+                      ? { label: "Vence Hoje", color: "bg-amber-500/10 text-amber-600 border border-amber-500/20" }
+                      : status
                 return (
-                  <tr key={loan.id} className={`border-b border-gray-100 dark:border-zinc-800 transition-colors ${isAtraso ? "bg-red-500/5 hover:bg-red-500/10" : "hover:bg-gray-50 dark:hover:bg-[#222A26]/50"}`}>
+                  <tr key={loan.id} className={`border-b border-gray-100 dark:border-zinc-800 transition-colors ${isAtraso ? "bg-red-500/5 hover:bg-red-500/10" : isDueToday ? "bg-amber-500/5 hover:bg-amber-500/10" : "hover:bg-gray-50 dark:hover:bg-[#222A26]/50"}`}>
                     <td className="p-4">
                       <div className="flex items-center gap-2">
                         {loan.client.photo ? (
@@ -2428,7 +2430,7 @@ export default function EmprestimosPage() {
                       })()}
                     </td>
                     <td className="p-4 hidden sm:table-cell">
-                      <span className={isAtraso ? "font-medium text-red-600" : isDueToday ? "font-medium text-yellow-600 dark:text-yellow-400" : "text-gray-500 dark:text-zinc-400"}>{nextInst ? formatDate(nextInst.dueDate) : "—"}</span>
+                      <span className={isAtraso ? "font-medium text-red-600" : isDueToday ? "font-medium text-amber-600" : "text-gray-500 dark:text-zinc-400"}>{nextInst ? formatDate(nextInst.dueDate) : "—"}</span>
                     </td>
                     <td className="p-4 hidden lg:table-cell">
                       <div className="flex flex-wrap gap-1">
@@ -2530,18 +2532,20 @@ export default function EmprestimosPage() {
               const isDueToday = nextInst && toDateStr(new Date(nextInst.dueDate)) === todayStr
               const isDueTodayHighlight = Boolean(isDueToday)
               const isParceladoCardBlue = loan.installmentCount > 1 && !isAtrasado && !isQuitado && !isSoJuros && !isPagoNoMes
+              const isSpecialModality = loan.interestType === "CUSTOM" || loan.installmentCount > 1
+              const isCustomInterest = loan.interestType === "CUSTOM" || isParceladoCardBlue
               const isRenegotiada = (loan.tags || []).some((t: string) => t.split("|")[0] === "Renegociacao")
               const oldLoanIdMatch = loan.notes?.match(/Renegociacao do contrato ([a-z0-9_-]+)/i)
               const oldLoan = isRenegotiada && oldLoanIdMatch ? loans.find((l) => l.id === oldLoanIdMatch[1]) : null
               const detailTone: LoanDetailsTone = isRenegotiada ? "renegotiated" : isAtrasado ? "overdue" : isDueTodayHighlight ? "dueToday" : (isSoJuros || isPagoNoMes) ? "interest" : (isQuitado || isParceladoCardBlue) ? "settled" : "default"
 
-              // Cores: Renegociada=rosa, Vence hoje=laranja, Atrasado=vermelho, Só Juros/Pago no mês=roxo, Quitado=azul, resto=branco
-              const cardBorder = isRenegotiada ? "border-pink-500/20 border-l-4 border-l-[#EC4899] shadow-lg shadow-pink-950/40" : isAtrasado ? "border-red-500/20 border-l-4 border-l-[#E5484D] shadow-lg shadow-red-950/40" : isDueTodayHighlight ? "border-amber-500/20 border-l-4 border-l-[#F59E0B] shadow-lg shadow-amber-950/40" : (isSoJuros || isPagoNoMes) ? "border-purple-500/20 border-l-4 border-l-[#a855f7] shadow-lg shadow-purple-950/40" : isQuitado ? "border-primary" : isDueToday ? "border-amber-500/20 border-l-4 border-l-[#F59E0B] shadow-lg shadow-amber-950/40" : "border-gray-200 dark:border-zinc-700"
-              const cardBg = isRenegotiada ? "bg-[radial-gradient(circle_at_top_left,rgba(255,120,190,0.22),transparent_55%),linear-gradient(135deg,#3A0F24_0%,#8E2F58_55%,#3A0F24_100%)]" : isAtrasado ? "bg-[radial-gradient(circle_at_top_left,rgba(255,92,92,0.18),transparent_55%),linear-gradient(135deg,#1F0608_0%,rgba(122,31,14,0.85)_55%,#1F0608_100%)]" : isDueTodayHighlight ? "bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.20),transparent_55%),linear-gradient(135deg,#332812_0%,#8A6E2A_55%,#332812_100%)]" : (isSoJuros || isPagoNoMes) ? "bg-[radial-gradient(circle_at_top_left,rgba(190,123,255,0.28),transparent_55%),linear-gradient(135deg,#2C1544_0%,#6B399E_55%,#2C1544_100%)]" : isQuitado ? "bg-primary" : isDueToday ? "bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.20),transparent_55%),linear-gradient(135deg,#332812_0%,#8A6E2A_55%,#332812_100%)]" : "bg-white dark:bg-zinc-900"
+              // Cores: Renegociada=rosa, Vence hoje=laranja, Atrasado=vermelho, Só Juros/Pago no mês=roxo, Quitado=verde, Juros Compostos=ciano, resto=branco
+              const cardBorder = isRenegotiada ? "border-pink-500/20 border-l-4 border-l-[#EC4899] shadow-lg shadow-pink-950/40" : isAtrasado ? "border-red-500/20 border-l-4 border-l-[#E5484D] shadow-lg shadow-red-950/40" : isDueTodayHighlight ? "border-amber-500/20 border-l-4 border-l-[#F59E0B] shadow-lg shadow-amber-950/40" : (isSoJuros || isPagoNoMes) ? "border-purple-500/20 border-l-4 border-l-[#a855f7] shadow-lg shadow-purple-950/40" : isQuitado ? "border-primary" : isDueToday ? "border-amber-500/20 border-l-4 border-l-[#F59E0B] shadow-lg shadow-amber-950/40" : isCustomInterest ? "border-cyan-500/20 border-l-4 border-l-[#22D3EE] shadow-lg shadow-cyan-950/40" : "border-gray-200 dark:border-zinc-700"
+              const cardBg = isRenegotiada ? "bg-[radial-gradient(circle_at_top_left,rgba(255,120,190,0.22),transparent_55%),linear-gradient(135deg,#3A0F24_0%,#8E2F58_55%,#3A0F24_100%)]" : isAtrasado ? "bg-[radial-gradient(circle_at_top_left,rgba(255,92,92,0.18),transparent_55%),linear-gradient(135deg,#1F0608_0%,rgba(122,31,14,0.85)_55%,#1F0608_100%)]" : isDueTodayHighlight ? "bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.20),transparent_55%),linear-gradient(135deg,#332812_0%,#8A6E2A_55%,#332812_100%)]" : (isSoJuros || isPagoNoMes) ? "bg-[radial-gradient(circle_at_top_left,rgba(190,123,255,0.28),transparent_55%),linear-gradient(135deg,#2C1544_0%,#6B399E_55%,#2C1544_100%)]" : isQuitado ? "bg-primary" : isDueToday ? "bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.20),transparent_55%),linear-gradient(135deg,#332812_0%,#8A6E2A_55%,#332812_100%)]" : isCustomInterest ? "bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.18),transparent_55%),linear-gradient(135deg,#06141A_0%,rgba(14,85,102,0.85)_55%,#06141A_100%)]" : "bg-white dark:bg-zinc-900"
               const remainingColor = isQuitado ? "text-white" : "text-[#16a34a] dark:text-green-400"
               const profitValueColor = isQuitado ? "text-white" : "text-primary"
               // Cards com fundo escuro (atrasado = vinho, só juros = roxo, quitado = verde sólido): texto direto no card precisa ser claro
-              const isDarkCard = isRenegotiada || isAtrasado || isSoJuros || isPagoNoMes || isDueToday || isDueTodayHighlight || isQuitado
+              const isDarkCard = isRenegotiada || isAtrasado || isSoJuros || isPagoNoMes || isDueToday || isDueTodayHighlight || isQuitado || isCustomInterest
 
               return (
                 <div key={group.clientId} className={`rounded-xl border overflow-hidden shadow-sm hover:shadow-md transition-shadow ${cardBorder} ${cardBg}`}>
@@ -2579,10 +2583,10 @@ export default function EmprestimosPage() {
                           Reneg.
                         </span>
                       )}
-                      <span className={`shrink-0 whitespace-nowrap px-2 py-0.5 rounded-full text-xs font-bold transition hover:ring-2 hover:ring-inset hover:ring-current hover:saturate-150 ${isQuitado ? "bg-white/20 text-white" : status.color}`}>
+                      <span className={`shrink-0 whitespace-nowrap px-2 py-0.5 rounded-full text-xs font-bold transition hover:ring-2 hover:ring-inset hover:ring-current hover:saturate-150 ${isQuitado ? "bg-white/20 text-white" : vividBadgeColor(status.label)}`}>
                         {status.label}
                       </span>
-                      <span className={`shrink-0 whitespace-nowrap px-2 py-0.5 rounded-full text-xs font-bold transition hover:brightness-125 ${isQuitado ? "bg-white/20 text-white" : "bg-green-500/20 text-[#16a34a] dark:text-green-400 hover:bg-green-500/30"}`}>
+                      <span className={`shrink-0 whitespace-nowrap px-2 py-0.5 rounded-full text-xs font-bold transition hover:brightness-125 ${isQuitado ? "bg-white/20 text-white" : isSpecialModality ? "bg-purple-500/20 text-purple-700 dark:text-purple-300 hover:bg-purple-500/30" : "bg-green-500/20 text-[#16a34a] dark:text-green-400 hover:bg-green-500/30"}`}>
                         {loan.interestType === "CUSTOM" ? "PERSONALIZADO" : loan.installmentCount > 1 ? "PARCELADO" : MODALITY_LABELS[loan.modality] || loan.modality}
                       </span>
                     </div>
@@ -3158,7 +3162,7 @@ export default function EmprestimosPage() {
       )}
 
       {/* ===== NOVO EMPRÉSTIMO DIALOG ===== */}
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} className="max-w-lg max-h-[90vh] overflow-y-auto dark:bg-[#121614]">
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} className="w-full max-w-lg max-h-[90vh] overflow-y-auto dark:bg-[#121614]">
         <div className="space-y-5 dark:[&_input]:!bg-[#121614] dark:[&_select]:!bg-[#121614] dark:[&_textarea]:!bg-[#121614]">
           {/* Header */}
           <div className="flex items-center justify-between">
@@ -3325,17 +3329,19 @@ export default function EmprestimosPage() {
                 placeholder="0,00"
               />
             </div>
-            <div>
-              <Label>Taxa de Juros (%) *</Label>
-              <Input
-                type="number"
-                step="0.1"
-                value={interestRate || ""}
-                onChange={(e) => setInterestRate(Number(e.target.value))}
-                className="mt-1"
-                placeholder="0"
-              />
-            </div>
+            {interestType !== "CUSTOM" && (
+              <div>
+                <Label>Taxa de Juros (%) *</Label>
+                <Input
+                  type="number"
+                  step="0.1"
+                  value={interestRate || ""}
+                  onChange={(e) => setInterestRate(Number(e.target.value))}
+                  className="mt-1"
+                  placeholder="0"
+                />
+              </div>
+            )}
           </div>
 
           {/* Juros Aplicado + Modalidade */}
@@ -3359,7 +3365,7 @@ export default function EmprestimosPage() {
           </div>
 
           {/* Nº Parcelas + Juros Total (R$) */}
-          <div className={interestType === "CUSTOM" ? "" : "grid grid-cols-2 gap-4"}>
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>{modality === "BIWEEKLY" ? "Nº de Quinzenas" : modality === "WEEKLY" ? "Nº de Semanas" : modality === "DAILY" ? "Nº de Dias" : "Nº de Parcelas"} *</Label>
               <Input
@@ -3396,7 +3402,7 @@ export default function EmprestimosPage() {
 
           {/* Parcelas Personalizadas */}
           {interestType === "CUSTOM" && (
-            <div className="rounded-lg border border-gray-200 dark:border-zinc-700 p-4 bg-gray-50 dark:bg-zinc-800/40 space-y-3">
+            <div className="rounded-lg border border-gray-200 dark:border-zinc-700 p-4 bg-gray-50 dark:bg-[#121614] space-y-3">
               <p className="text-sm font-bold text-gray-900 dark:text-zinc-100">Valores das Parcelas</p>
               <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                 {customInstallmentAmounts.map((val, idx) => (
@@ -3417,16 +3423,6 @@ export default function EmprestimosPage() {
                     />
                   </div>
                 ))}
-              </div>
-              <div className="border-t border-gray-200 dark:border-zinc-700 pt-3 space-y-1">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-500 dark:text-zinc-400">Soma das parcelas:</span>
-                  <span className="font-bold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(customInstallmentAmounts.reduce((s, v) => s + (v || 0), 0))}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-500 dark:text-zinc-400">Lucro (juros):</span>
-                  <span className={`font-bold tabular-nums ${preview.totalInterest >= 0 ? "text-primary" : "text-red-500"}`}>{formatCurrency(preview.totalInterest)}</span>
-                </div>
               </div>
             </div>
           )}
@@ -3674,7 +3670,7 @@ export default function EmprestimosPage() {
           */}
 
           {/* Botões */}
-          <div className="flex justify-end gap-3 pt-2">
+          <div className="sticky bottom-0 -mx-6 -mb-6 flex justify-end gap-3 border-t border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#121614] px-6 py-4">
             <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
             <Button onClick={onSubmit}>Criar</Button>
           </div>
@@ -3686,7 +3682,7 @@ export default function EmprestimosPage() {
       <Dialog
         open={!!paymentDialog}
         onClose={() => { setPaymentDialog(null); resetPaymentForm() }}
-        className="max-w-lg scrollbar-visible dark:bg-[#121614] dark:border-[#29322E]"
+        className="w-full max-w-lg scrollbar-visible dark:bg-[#121614] dark:border-[#29322E]"
       >
         {paymentDialog && (() => {
           const pendingInstallments = paymentDialog.installments.filter((i: any) => i.status !== "PAID")
@@ -4597,7 +4593,7 @@ export default function EmprestimosPage() {
       )}
 
       {/* ===== APLICAR MULTA DIALOG ===== */}
-      <Dialog open={!!multaDialog} onClose={() => { setMultaDialog(null); setMultaValue("") }} className="rounded-2xl">
+      <Dialog open={!!multaDialog} onClose={() => { setMultaDialog(null); setMultaValue("") }} className="w-full rounded-2xl">
         {multaDialog && (() => {
           const overdue = overdueInstallmentsOf(multaDialog)
           const val = parseFloat(multaValue) || 0
@@ -4720,7 +4716,7 @@ export default function EmprestimosPage() {
       </Dialog>
 
       {/* ===== CONFIGURAR JUROS POR ATRASO DIALOG ===== */}
-      <Dialog open={!!jurosDialog} onClose={() => { setJurosDialog(null); setJurosPct("") }} className="rounded-2xl">
+      <Dialog open={!!jurosDialog} onClose={() => { setJurosDialog(null); setJurosPct("") }} className="w-full rounded-2xl">
         <div className="space-y-4">
           {/* Cabeçalho com X vermelho */}
           <div className="flex items-start justify-between gap-3">
@@ -4786,7 +4782,7 @@ export default function EmprestimosPage() {
       <Dialog
         open={!!renegotiateDialog}
         onClose={() => { setRenegotiateDialog(null); setRenegotiateMode(null); setRenegotiateEntry("all"); setRenegotiateAmount(0); setRenegotiateNotes("") }}
-        className="max-w-lg dark:bg-[#121614] dark:border-[#29322E]"
+        className="w-full max-w-lg dark:bg-[#121614] dark:border-[#29322E]"
       >
         {renegotiateDialog && (
           <>
@@ -4846,7 +4842,7 @@ export default function EmprestimosPage() {
       </Dialog>
 
       {/* Dialog de Sucesso - Empréstimo Criado */}
-      <Dialog open={successDialog} onClose={() => setSuccessDialog(false)} className="max-w-md">
+      <Dialog open={successDialog} onClose={() => setSuccessDialog(false)} className="w-full max-w-md">
         <div className="space-y-5">
           <div className="text-center">
             <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 dark:bg-primary/20">
@@ -4943,7 +4939,7 @@ export default function EmprestimosPage() {
       </Dialog>
 
       {/* Dialog Comprovante de Pagamento */}
-      <Dialog open={paymentReceiptDialog} onClose={() => setPaymentReceiptDialog(false)} className="max-w-md">
+      <Dialog open={paymentReceiptDialog} onClose={() => setPaymentReceiptDialog(false)} className="w-full max-w-md">
         {paymentReceiptInfo && (
           <div className="space-y-5">
             <div className="text-center">
@@ -5062,7 +5058,7 @@ export default function EmprestimosPage() {
         open={!!bulkResultDialog}
         onClose={() => setBulkResultDialog(null)}
         title="Resultado do Envio"
-        className="max-w-sm"
+        className="w-full max-w-sm"
       >
         {bulkResultDialog && (
           <div className="space-y-4 text-center">
@@ -5096,7 +5092,7 @@ export default function EmprestimosPage() {
         open={whatsappChooser}
         onClose={() => setWhatsappChooser(false)}
         title="Enviar cobrança"
-        className="max-w-md"
+        className="w-full max-w-md"
       >
         <div className="space-y-3">
           <p className="text-sm text-gray-500 dark:text-zinc-400">Você verá uma prévia da mensagem antes de qualquer envio.</p>
@@ -5211,7 +5207,7 @@ export default function EmprestimosPage() {
         open={reportChooser}
         onClose={() => setReportChooser(false)}
         title="Enviar relatório"
-        className="max-w-md"
+        className="w-full max-w-md"
       >
         <div className="space-y-3">
           <p className="text-sm text-gray-500 dark:text-zinc-400">Você verá uma prévia da mensagem antes de qualquer envio.</p>
@@ -5335,7 +5331,7 @@ export default function EmprestimosPage() {
         open={batchOpen}
         onClose={() => { if (!batchSending) setBatchOpen(false) }}
         title="Cobrança em Lote"
-        className="max-w-md"
+        className="w-full max-w-md"
       >
         <div className="space-y-4">
           {!batchResult ? (
