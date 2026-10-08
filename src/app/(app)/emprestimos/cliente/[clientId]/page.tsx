@@ -1109,7 +1109,7 @@ export default function ClienteEmprestimosPage() {
   return (
     <div className="space-y-6 pt-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 rounded-xl border border-gray-200 dark:border-[#29322E] bg-gray-50 dark:bg-[#1A201D] px-4 py-3">
         <button onClick={() => router.push("/emprestimos")} className="flex items-center gap-2 text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200 transition-colors">
           <X className="h-4 w-4" />
           <span className="text-sm">Voltar</span>
@@ -2300,24 +2300,33 @@ export default function ClienteEmprestimosPage() {
       {deleteConfirmId && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/55 p-4">
           <button type="button" aria-label="Fechar" className="absolute inset-0 cursor-default" onClick={() => setDeleteConfirmId(null)} />
-          <div className="relative z-10 w-full max-w-sm rounded-2xl border border-red-300 dark:border-red-800/60 bg-white dark:bg-zinc-900 p-6 shadow-2xl space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-red-100 dark:bg-red-950/40">
-                <Trash2 className="h-6 w-6 text-red-600 dark:text-red-400" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-red-700 dark:text-red-400">Excluir empréstimo?</h3>
-                <p className="text-xs text-gray-500 dark:text-zinc-400">Esta ação não pode ser desfeita.</p>
-              </div>
+          <div className="relative z-10 w-full max-w-md rounded-2xl border border-gray-200 dark:border-[#29322E] bg-white dark:bg-[#121614] p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">Excluir empréstimo</h2>
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmId(null)}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-500 text-white transition hover:bg-red-600"
+                aria-label="Fechar"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
-            <p className="text-sm text-gray-600 dark:text-zinc-400">
-              O empréstimo será removido do dashboard. Os <span className="font-semibold text-gray-800 dark:text-zinc-200">recebimentos serão mantidos</span> no histórico.
+
+            <p className="text-sm text-gray-500 dark:text-zinc-400">
+              O empréstimo será excluído e os valores pagos continuarão salvo no histórico de pagamento.
             </p>
-            <div className="flex gap-2 pt-1">
-              <button onClick={() => setDeleteConfirmId(null)} className="flex-1 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-zinc-300 transition hover:bg-gray-50 dark:hover:bg-zinc-700">Cancelar</button>
-              <button onClick={confirmDelete} disabled={deleting} className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-50">
+
+            <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-sm font-medium text-amber-500">
+              <AlertTriangle className="h-4 w-4 shrink-0" />
+              Esta ação não poderá ser desfeita.
+            </div>
+
+            <div className="flex gap-3 pt-1">
+              <button onClick={() => setDeleteConfirmId(null)} className="flex-1 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-[#121614] px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-zinc-300 transition hover:bg-gray-50 dark:hover:bg-zinc-800">Cancelar</button>
+              <button onClick={confirmDelete} disabled={deleting} className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-red-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-600 disabled:opacity-50">
                 {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                Excluir
+                Excluir empréstimo
               </button>
             </div>
           </div>

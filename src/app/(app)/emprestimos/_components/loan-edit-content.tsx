@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Avatar } from "@/components/avatar"
-import { ChevronDown, ChevronsUpDown, RefreshCw, Plus, X, Search, Check, Trash2, UserPlus, Shield } from "lucide-react"
+import { ChevronDown, ChevronsUpDown, RefreshCw, Plus, X, Search, Check, Trash2, UserPlus, Shield, User } from "lucide-react"
 import { calculateLoan, formatCurrency, generateInstallmentDates, localDateStr, resolveDailyInterestAmount } from "@/lib/utils"
 import { showToast } from "@/lib/toast"
 
@@ -315,34 +315,29 @@ export function LoanEditContent({ presentation = "page", onClose }: LoanEditCont
           <button
             type="button"
             onClick={() => setClientPickerOpen((open) => !open)}
-            className="mt-1.5 flex h-9 w-full items-center justify-between gap-2 rounded-md border border-gray-200 bg-white px-3 text-left transition hover:border-primary/50 dark:border-zinc-700 dark:bg-[#121614]"
+            className="mt-1.5 flex h-10 w-full items-center justify-between gap-2 rounded-md border border-gray-300 bg-white px-3 text-left text-sm text-gray-900 transition hover:border-primary/50 hover:bg-gray-50 dark:border-zinc-700 dark:bg-[#121614] dark:text-zinc-100 dark:hover:bg-[#222A26]"
           >
-            <div className="flex min-w-0 items-center gap-2">
-              {selectedClient ? (
-                <>
-                  <Avatar name={selectedClient.name} src={selectedClient.photo} size="sm" className="h-6 w-6 text-[10px] bg-primary/20 text-primary" />
-                  <span className="truncate text-sm font-medium text-gray-900 dark:text-zinc-100">{selectedClient.name}</span>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-[#3a2f12] dark:text-[#f5c451]">
-                    👍 {selectedClient.score}
-                  </span>
-                </>
-              ) : (
-                <span className="text-sm text-slate-500 dark:text-zinc-400">Selecione o cliente</span>
-              )}
-            </div>
+            <span className="flex min-w-0 items-center gap-2">
+              <User className="h-4 w-4 shrink-0 text-gray-400 dark:text-zinc-500" />
+              <span className={`truncate ${selectedClient ? "text-gray-900 dark:text-zinc-100" : "text-gray-500 dark:text-zinc-400"}`}>
+                {selectedClient
+                  ? `${selectedClient.name}${selectedClient.phone ? ` - ${selectedClient.phone}` : selectedClient.document ? ` - ${selectedClient.document}` : ""}`
+                  : "Buscar cliente por nome, telefone ou CPF..."}
+              </span>
+            </span>
             <ChevronsUpDown className="h-4 w-4 shrink-0 text-gray-400 dark:text-zinc-500" />
           </button>
 
           {clientPickerOpen && (
-            <div className="mt-2 overflow-hidden rounded-md border border-gray-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-[#121614]">
-              <div className="border-b border-gray-100 p-3 dark:border-zinc-800">
+            <div className="mt-2 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-[#121614]">
+              <div className="border-b border-gray-100 p-2 dark:border-zinc-800">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-zinc-500" />
                   <Input
                     value={clientSearch}
                     onChange={(e) => setClientSearch(e.target.value)}
                     placeholder="Buscar cliente..."
-                    className="pl-9 border-gray-200 bg-white dark:border-zinc-700 dark:bg-[#121614]"
+                    className="h-8 pl-9 border-0 bg-white shadow-none focus-visible:ring-0 focus-visible:border-0 dark:bg-[#171C1A]"
                     autoFocus
                   />
                 </div>

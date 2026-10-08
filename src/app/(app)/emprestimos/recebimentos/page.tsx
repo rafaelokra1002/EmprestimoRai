@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Download, HelpCircle, Calendar, RefreshCw, DollarSign, Percent, Hash, TrendingUp, Table2, Trash2, Pencil, MessageCircle, AlertTriangle } from "lucide-react"
+import { Download, HelpCircle, Calendar, RefreshCw, DollarSign, Percent, Hash, TrendingUp, Table2, Trash2, Pencil, MessageCircle, AlertTriangle, X } from "lucide-react"
 import { Dialog } from "@/components/ui/dialog"
 import { formatCurrency, formatDate, localDateStr } from "@/lib/utils"
 
@@ -52,6 +52,7 @@ export default function RecebimentosPage() {
 
   const [editingPaymentId, setEditingPaymentId] = useState<string | null>(null)
   const [editingAmount, setEditingAmount] = useState("")
+  const [editingOriginalAmount, setEditingOriginalAmount] = useState(0)
   const [savingAmount, setSavingAmount] = useState(false)
 
   const loadData = async () => {
@@ -554,7 +555,7 @@ export default function RecebimentosPage() {
                       <div className="flex items-center justify-center gap-1">
                         <button
                           type="button"
-                          onClick={() => { setEditingPaymentId(payment.id); setEditingAmount(String(payment.amount)) }}
+                          onClick={() => { setEditingPaymentId(payment.id); setEditingAmount(String(payment.amount)); setEditingOriginalAmount(payment.amount) }}
                           className="p-1.5 rounded-md text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
                           title="Editar valor"
                         >
@@ -581,36 +582,74 @@ export default function RecebimentosPage() {
       <Dialog
         open={!!editingPaymentId}
         onClose={() => { if (!savingAmount) { setEditingPaymentId(null); setEditingAmount("") } }}
-        title="Editar Valor do Pagamento"
-        className="max-w-md"
+        className="w-full max-w-md dark:border-[#29322E] dark:bg-[#121614]"
       >
         <div className="space-y-4">
+          <div className="flex items-start justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">Editar pagamento</h2>
+              <p className="mt-0.5 text-sm text-gray-500 dark:text-zinc-400">Altere o valor do pagamento deste empréstimo.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => { if (!savingAmount) { setEditingPaymentId(null); setEditingAmount("") } }}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-500 text-white transition hover:bg-red-600"
+              aria-label="Fechar"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          <div className="rounded-lg border border-gray-200 dark:border-[#29322E] bg-gray-50 dark:bg-[#1A201D] px-4 py-3">
+            <p className="text-sm text-gray-500 dark:text-zinc-400">Pagamento atual</p>
+            <p className="mt-1 text-xl font-bold text-primary">{formatCurrency(editingOriginalAmount)}</p>
+          </div>
+
           <div>
-            <p className="mb-2 text-sm text-gray-500 dark:text-zinc-400">Novo valor</p>
+            <p className="mb-2 text-sm font-medium text-gray-900 dark:text-zinc-100">Novo valor</p>
             <Input
               type="text"
               inputMode="decimal"
               placeholder="0,00"
               value={editingAmount}
               onChange={(e) => { const v = e.target.value; if (/^\d*[,.]?\d*$/.test(v)) setEditingAmount(v) }}
+              className="dark:bg-[#121614]"
             />
           </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => { setEditingPaymentId(null); setEditingAmount("") }} disabled={savingAmount}>Cancelar</Button>
-            <Button onClick={handleSaveEditAmount} disabled={!editingAmount || savingAmount}>{savingAmount ? "Salvando..." : "Salvar"}</Button>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button type="button" variant="outline" onClick={() => { setEditingPaymentId(null); setEditingAmount("") }} disabled={savingAmount}>Cancelar</Button>
+            <Button onClick={handleSaveEditAmount} disabled={!editingAmount || savingAmount} className="bg-green-500 hover:bg-green-600 text-white">{savingAmount ? "Salvando..." : "Salvar"}</Button>
           </div>
         </div>
       </Dialog>
 
       {/* Confirmação de exclusão de pagamento (centralizado) */}
-      <Dialog open={!!deletePaymentId} onClose={() => setDeletePaymentId(null)} title="Excluir pagamento?" className="max-w-sm">
+      <Dialog open={!!deletePaymentId} onClose={() => { if (!deletingPayment) setDeletePaymentId(null) }} className="w-full max-w-md dark:border-[#29322E] dark:bg-[#121614]">
         <div className="space-y-4">
-          <p className="text-sm text-gray-600 dark:text-zinc-400">
-            Tem certeza que deseja excluir este pagamento? Esta ação não pode ser desfeita.
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">Excluir pagamento?</h2>
+            <button
+              type="button"
+              onClick={() => { if (!deletingPayment) setDeletePaymentId(null) }}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-500 text-white transition hover:bg-red-600"
+              aria-label="Fechar"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          <p className="text-sm text-gray-500 dark:text-zinc-400">
+            Tem certeza que deseja excluir este pagamento? Esta ação não poderá ser desfeita.
           </p>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setDeletePaymentId(null)} disabled={deletingPayment}>Cancelar</Button>
-            <Button onClick={confirmDeletePayment} disabled={deletingPayment} className="bg-red-600 hover:bg-red-700 text-white">
+
+          <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-sm font-medium text-amber-500">
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            Esta ação não poderá ser desfeita.
+          </div>
+
+          <div className="flex justify-end gap-3 pt-2">
+            <Button type="button" variant="outline" onClick={() => setDeletePaymentId(null)} disabled={deletingPayment}>Cancelar</Button>
+            <Button onClick={confirmDeletePayment} disabled={deletingPayment} className="bg-red-500 hover:bg-red-600 text-white">
               {deletingPayment ? "Excluindo..." : "Excluir"}
             </Button>
           </div>

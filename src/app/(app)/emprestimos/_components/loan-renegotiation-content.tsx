@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { AlertTriangle, CalendarDays, CheckCircle2, FileText, Plus, RefreshCw, Shield } from "lucide-react"
+import { AlertTriangle, CheckCircle2, FileText, Plus, RefreshCw, Shield } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -361,7 +361,7 @@ export function LoanRenegotiationContent({ loan, remainingAmount, onClose, onSuc
         </div>
       </div>
 
-      <div className="rounded-lg border !border-emerald-200 !bg-emerald-50/80 px-3 py-2 text-sm dark:!border-emerald-900/50 dark:!bg-emerald-950/20">
+      <div className="rounded-lg border !border-emerald-200 px-3 py-2 text-sm dark:!border-emerald-900/50">
         <div className="mb-0.5 flex items-center gap-1.5 text-xs font-semibold uppercase !text-emerald-600 dark:!text-emerald-300">
           <CheckCircle2 className="h-3.5 w-3.5" />
           <span>Novo contrato</span>
@@ -469,16 +469,14 @@ export function LoanRenegotiationContent({ loan, remainingAmount, onClose, onSuc
           <div>
             <Label>Data do Contrato</Label>
             <div className="relative mt-1">
-              <Input type="date" value={contractDate} onChange={(e) => setContractDate(e.target.value)} className="h-9 pr-11" />
-              <CalendarDays className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-emerald-500" />
+              <Input type="date" value={contractDate} onChange={(e) => setContractDate(e.target.value)} className="h-9 pr-3 cal-green" />
             </div>
             <p className="mt-1 text-[11px] text-slate-500 dark:text-zinc-400">Quando foi fechado</p>
           </div>
           <div>
             <Label>1ª Parcela</Label>
             <div className="relative mt-1">
-              <Input type="date" value={firstInstallmentDate} onChange={(e) => setFirstInstallmentDate(e.target.value)} className="h-9 pr-11" />
-              <CalendarDays className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-emerald-500" />
+              <Input type="date" value={firstInstallmentDate} onChange={(e) => setFirstInstallmentDate(e.target.value)} className="h-9 pr-3 cal-green" />
             </div>
             <p className="mt-1 text-[11px] text-slate-500 dark:text-zinc-400">Quando começa a pagar</p>
           </div>
@@ -508,9 +506,8 @@ export function LoanRenegotiationContent({ loan, remainingAmount, onClose, onSuc
                       next[index] = e.target.value
                       setInstallmentDates(next)
                     }}
-                    className="h-9 pr-11"
+                    className="h-9 pr-3 cal-green"
                   />
-                  <CalendarDays className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-emerald-500" />
                 </div>
               </div>
             ))}

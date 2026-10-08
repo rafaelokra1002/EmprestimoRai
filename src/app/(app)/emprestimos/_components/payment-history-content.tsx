@@ -2,12 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { useParams } from "next/navigation"
-import { CalendarDays, Copy, DollarSign, Download, Eye, FileText, Pencil, Trash2, User, X } from "lucide-react"
+import { AlertTriangle, CalendarDays, Copy, DollarSign, Download, Eye, FileText, Pencil, Trash2, User, X } from "lucide-react"
 import { formatCurrency, formatDate } from "@/lib/utils"
 import { buildLoanData, calculateEffectivePaidAmountFromPayments, calculateTotalAmountWithLateFee, normalizeInstallmentsFromPayments } from "@/lib/loan-logic"
 import { Dialog } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
 interface Payment {
   id: string
@@ -371,6 +372,7 @@ export function PaymentHistoryContent({
   const [editingAmountPayment, setEditingAmountPayment] = useState<Payment | null>(null)
   const [editingAmount, setEditingAmount] = useState("")
   const [savingAmount, setSavingAmount] = useState(false)
+  const [deleteConfirmPayment, setDeleteConfirmPayment] = useState<Payment | null>(null)
 
   useEffect(() => {
     const fetchLoan = async () => {
@@ -440,8 +442,6 @@ export function PaymentHistoryContent({
   }
 
   const handleDelete = async (paymentId: string) => {
-    if (!confirm("Excluir este pagamento?")) return
-
     setDeletingId(paymentId)
     try {
       const res = await fetch(`/api/payments?id=${paymentId}`, { method: "DELETE" })
@@ -455,6 +455,7 @@ export function PaymentHistoryContent({
         ...current,
         payments: current.payments.filter((payment) => payment.id !== paymentId),
       } : current)
+      setDeleteConfirmPayment(null)
     } finally {
       setDeletingId(null)
     }
@@ -535,15 +536,15 @@ export function PaymentHistoryContent({
   }
 
   if (loading) {
-    return <div className="rounded-xl border border-gray-200 bg-white p-6 text-sm text-gray-500 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">Carregando histórico...</div>
+    return <div className="rounded-xl border border-gray-200 bg-white p-6 text-sm text-gray-500 shadow-2xl dark:border-[#29322E] dark:bg-[#121614] dark:text-zinc-400">Carregando histórico...</div>
   }
 
   if (error || !loan) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-2xl dark:border-[#29322E] dark:bg-[#121614]">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-[20px] font-semibold text-slate-800">Histórico de Pagamentos</h2>
-          <button type="button" onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full border border-emerald-300 text-emerald-500 transition-colors hover:bg-emerald-50">
+          <h2 className="text-[20px] font-semibold text-slate-800 dark:text-zinc-100">Histórico de Pagamentos</h2>
+          <button type="button" onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-500 text-white transition hover:bg-red-600">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -553,15 +554,16 @@ export function PaymentHistoryContent({
   }
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900">
-      <div className="flex items-center justify-between gap-3">
+    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-2xl dark:border-[#29322E] dark:bg-[#121614]">
+      <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="text-[20px] font-semibold text-slate-800 dark:text-zinc-100">Histórico de Pagamentos</h2>
+          <p className="mt-0.5 text-sm text-gray-500 dark:text-zinc-400">Todos os pagamentos registrados deste empréstimo.</p>
         </div>
         <button
           type="button"
           onClick={onClose}
-          className="flex h-8 w-8 items-center justify-center rounded-full border border-emerald-300 text-emerald-500 transition-colors hover:bg-emerald-50 dark:border-emerald-800 dark:hover:bg-emerald-950/30"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-500 text-white transition hover:bg-red-600"
           aria-label="Fechar histórico"
         >
           <X className="h-4 w-4" />
@@ -570,7 +572,7 @@ export function PaymentHistoryContent({
 
       <div className="mt-4 space-y-3">
         {payments.length === 0 ? (
-          <div className="rounded-3xl border border-gray-200 bg-gray-50 px-5 py-8 text-center text-sm text-gray-500 dark:border-zinc-800 dark:bg-zinc-800/50 dark:text-zinc-400">
+          <div className="rounded-2xl border border-gray-200 bg-gray-50 px-5 py-8 text-center text-sm text-gray-500 dark:border-[#29322E] dark:bg-[#1A201D] dark:text-zinc-400">
             Nenhum pagamento registrado.
           </div>
         ) : payments.map((payment) => {
@@ -580,7 +582,7 @@ export function PaymentHistoryContent({
           return (
             <div
               key={payment.id}
-              className="rounded-3xl border border-gray-200 bg-white px-4 py-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80"
+              className="rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-sm dark:border-[#29322E] dark:bg-[#1A201D]"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
@@ -590,10 +592,9 @@ export function PaymentHistoryContent({
                   </div>
 
                   <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <span className="text-[14px] font-semibold text-primary">$</span>
                     <span className="text-[18px] font-bold tracking-tight text-primary">{formatCurrency(payment.amount)}</span>
-                    <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-[12px] font-medium text-gray-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
-                      Dinheiro
+                    <span className="inline-flex items-center gap-1 rounded-full border border-green-500/30 bg-green-500/10 px-2 py-0.5 text-[12px] font-medium text-green-600 dark:text-green-400">
+                      💰 Dinheiro
                     </span>
                   </div>
 
@@ -603,47 +604,47 @@ export function PaymentHistoryContent({
                   </p>
                 </div>
 
-                <div className="flex items-center gap-1 self-center">
+                <div className="flex items-center gap-1.5 self-center">
                   <button
                     type="button"
                     onClick={() => openPreview(payment)}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-primary transition-colors hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
+                    className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 text-gray-600 transition-colors hover:bg-gray-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
                     title="Copiar comprovante"
                   >
-                    <FileText className="h-4 w-4" />
+                    <FileText className="h-5 w-5" />
                   </button>
                   <button
                     type="button"
                     onClick={() => handleDownload(payment)}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-primary transition-colors hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
+                    className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-500/10 text-green-600 transition-colors hover:bg-green-500/20 dark:text-green-400"
                     title="Baixar comprovante"
                   >
-                    <Download className="h-4 w-4" />
+                    <Download className="h-5 w-5" />
                   </button>
                   <button
                     type="button"
                     onClick={() => openEditDate(payment)}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+                    className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 transition-colors hover:bg-blue-500/20 dark:text-blue-400"
                     title="Editar data do pagamento"
                   >
-                    <Pencil className="h-4 w-4" />
+                    <Pencil className="h-5 w-5" />
                   </button>
                   <button
                     type="button"
                     onClick={() => { setEditingAmountPayment(payment); setEditingAmount(String(payment.amount)) }}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-amber-500 transition-colors hover:bg-amber-50 dark:hover:bg-amber-950/20"
+                    className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/10 text-amber-500 transition-colors hover:bg-amber-500/20"
                     title="Editar valor do pagamento"
                   >
-                    <DollarSign className="h-4 w-4" />
+                    <DollarSign className="h-5 w-5" />
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleDelete(payment.id)}
+                    onClick={() => setDeleteConfirmPayment(payment)}
                     disabled={deletingId === payment.id}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-red-500 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-red-950/20"
+                    className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-500/10 text-red-500 transition-colors hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-60"
                     title="Excluir pagamento"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-5 w-5" />
                   </button>
                 </div>
               </div>
@@ -734,21 +735,32 @@ export function PaymentHistoryContent({
       <Dialog
         open={!!editingPayment}
         onClose={() => { if (!savingEdit) { setEditingPayment(null); setEditingDate("") } }}
-        title="Editar Data do Pagamento"
-        className="max-w-md"
+        className="w-full max-w-md dark:border-[#29322E] dark:bg-[#121614]"
       >
         <div className="space-y-4">
-          <div>
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">Editar data do pagamento</h2>
+            <button
+              type="button"
+              onClick={() => { if (!savingEdit) { setEditingPayment(null); setEditingDate("") } }}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-500 text-white transition hover:bg-red-600"
+              aria-label="Fechar"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          <div className="rounded-lg border border-gray-200 dark:border-[#29322E] bg-gray-50 dark:bg-[#1A201D] px-4 py-3">
             <p className="text-sm text-gray-500 dark:text-zinc-400">Pagamento</p>
-            <p className="mt-1 font-semibold text-gray-900 dark:text-zinc-100">{editingPayment ? formatCurrency(editingPayment.amount) : ""}</p>
+            <p className="mt-1 text-xl font-bold text-primary">{editingPayment ? formatCurrency(editingPayment.amount) : ""}</p>
           </div>
           <div>
-            <p className="mb-2 text-sm text-gray-500 dark:text-zinc-400">Nova data</p>
-            <Input type="date" value={editingDate} onChange={(event) => setEditingDate(event.target.value)} />
+            <Label className="text-sm font-medium">Nova data</Label>
+            <Input type="date" value={editingDate} onChange={(event) => setEditingDate(event.target.value)} className="mt-1.5 cal-green dark:bg-[#121614]" />
           </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => { setEditingPayment(null); setEditingDate("") }} disabled={savingEdit}>Cancelar</Button>
-            <Button onClick={handleSaveEditDate} disabled={!editingDate || savingEdit}>{savingEdit ? "Salvando..." : "Salvar"}</Button>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button type="button" variant="outline" onClick={() => { setEditingPayment(null); setEditingDate("") }} disabled={savingEdit}>Cancelar</Button>
+            <Button onClick={handleSaveEditDate} disabled={!editingDate || savingEdit} className="bg-green-500 hover:bg-green-600 text-white">{savingEdit ? "Salvando..." : "Salvar"}</Button>
           </div>
         </div>
       </Dialog>
@@ -756,27 +768,79 @@ export function PaymentHistoryContent({
       <Dialog
         open={!!editingAmountPayment}
         onClose={() => { if (!savingAmount) { setEditingAmountPayment(null); setEditingAmount("") } }}
-        title="Editar Valor do Pagamento"
-        className="max-w-md"
+        className="w-full max-w-md dark:border-[#29322E] dark:bg-[#121614]"
       >
         <div className="space-y-4">
-          <div>
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">Editar valor do pagamento</h2>
+            <button
+              type="button"
+              onClick={() => { if (!savingAmount) { setEditingAmountPayment(null); setEditingAmount("") } }}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-500 text-white transition hover:bg-red-600"
+              aria-label="Fechar"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          <div className="rounded-lg border border-gray-200 dark:border-[#29322E] bg-gray-50 dark:bg-[#1A201D] px-4 py-3">
             <p className="text-sm text-gray-500 dark:text-zinc-400">Valor atual</p>
-            <p className="mt-1 font-semibold text-gray-900 dark:text-zinc-100">{editingAmountPayment ? formatCurrency(editingAmountPayment.amount) : ""}</p>
+            <p className="mt-1 text-xl font-bold text-primary">{editingAmountPayment ? formatCurrency(editingAmountPayment.amount) : ""}</p>
           </div>
           <div>
-            <p className="mb-2 text-sm text-gray-500 dark:text-zinc-400">Novo valor</p>
+            <Label className="text-sm font-medium">Novo valor</Label>
             <Input
               type="text"
               inputMode="decimal"
               placeholder="0,00"
               value={editingAmount}
               onChange={(e) => { const v = e.target.value; if (/^\d*[,.]?\d*$/.test(v)) setEditingAmount(v) }}
+              className="mt-1.5 dark:bg-[#121614]"
             />
           </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => { setEditingAmountPayment(null); setEditingAmount("") }} disabled={savingAmount}>Cancelar</Button>
-            <Button onClick={handleSaveEditAmount} disabled={!editingAmount || savingAmount}>{savingAmount ? "Salvando..." : "Salvar"}</Button>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button type="button" variant="outline" onClick={() => { setEditingAmountPayment(null); setEditingAmount("") }} disabled={savingAmount}>Cancelar</Button>
+            <Button onClick={handleSaveEditAmount} disabled={!editingAmount || savingAmount} className="bg-green-500 hover:bg-green-600 text-white">{savingAmount ? "Salvando..." : "Salvar"}</Button>
+          </div>
+        </div>
+      </Dialog>
+
+      <Dialog
+        open={!!deleteConfirmPayment}
+        onClose={() => { if (!deletingId) setDeleteConfirmPayment(null) }}
+        className="w-full max-w-md dark:border-[#29322E] dark:bg-[#121614]"
+      >
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">Excluir pagamento?</h2>
+            <button
+              type="button"
+              onClick={() => { if (!deletingId) setDeleteConfirmPayment(null) }}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-500 text-white transition hover:bg-red-600"
+              aria-label="Fechar"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          <p className="text-sm text-gray-500 dark:text-zinc-400">
+            Tem certeza que deseja excluir este pagamento{deleteConfirmPayment ? ` de ${formatCurrency(deleteConfirmPayment.amount)}` : ""}?
+          </p>
+
+          <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-sm font-medium text-amber-500">
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            Esta ação não poderá ser desfeita.
+          </div>
+
+          <div className="flex justify-end gap-3 pt-2">
+            <Button type="button" variant="outline" onClick={() => setDeleteConfirmPayment(null)} disabled={!!deletingId}>Cancelar</Button>
+            <Button
+              onClick={() => deleteConfirmPayment && handleDelete(deleteConfirmPayment.id)}
+              disabled={!!deletingId}
+              className="bg-red-500 hover:bg-red-600 text-white"
+            >
+              {deletingId ? "Excluindo..." : "Excluir"}
+            </Button>
           </div>
         </div>
       </Dialog>
