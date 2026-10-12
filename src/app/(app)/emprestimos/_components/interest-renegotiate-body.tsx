@@ -163,7 +163,7 @@ export function InterestRenegotiateBody(props: InterestRenegotiateBodyProps) {
 
           <div className="grid gap-2.5 sm:grid-cols-2">
             <div>
-              <Label>Valor Pago (Juros) (R$) *</Label>
+              <Label className="text-xs">Valor Pago (Juros) (R$) *</Label>
               <Input
                 type="number"
                 step="0.01"
@@ -174,7 +174,7 @@ export function InterestRenegotiateBody(props: InterestRenegotiateBodyProps) {
               <p className="mt-1.5 text-[11px] leading-tight text-gray-500 dark:text-zinc-400">Valor calculado automaticamente, editavel</p>
             </div>
             <div>
-              <Label>Valor Total que Falta (R$)</Label>
+              <Label className="text-xs">Valor Total que Falta (R$)</Label>
               <Input type="text" readOnly value={formatCurrency(amountAfterInterestPayment)} className="mt-1 h-10 rounded-[10px] border-[#22C35D] dark:border-[#22C35D] bg-gray-50 dark:bg-[#1E293B]" />
               <p className="mt-1.5 text-[11px] leading-tight text-gray-500 dark:text-zinc-400">So diminui se pagar mais que o juros</p>
             </div>
@@ -182,32 +182,14 @@ export function InterestRenegotiateBody(props: InterestRenegotiateBodyProps) {
 
           <div className="grid gap-2.5 sm:grid-cols-2">
             <div>
-              <Label>Data do Pagamento *</Label>
+              <Label className="text-xs">Data do Pagamento *</Label>
               <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="mt-1 h-10 rounded-[10px] border-[#22C35D] dark:border-[#22C35D] cal-green dark:bg-[#1E293B]" />
               <p className="mt-1.5 text-[11px] leading-tight text-gray-500 dark:text-zinc-400">Quando o cliente pagou os juros</p>
             </div>
             <div>
-              <Label>Nova Data de Vencimento *</Label>
+              <Label className="text-xs">Nova Data de Vencimento *</Label>
               <Input type="date" value={newDueDate} onChange={(e) => setNewDueDate(e.target.value)} className="mt-1 h-10 rounded-[10px] border-[#22C35D] dark:border-[#22C35D] cal-green dark:bg-[#1E293B]" />
               <p className="mt-1.5 text-[11px] leading-tight text-gray-500 dark:text-zinc-400">Proxima data de cobranca</p>
-            </div>
-          </div>
-
-          <div>
-            <Label className="text-xs">Forma de Pagamento</Label>
-            <div className="mt-1.5 flex gap-2">
-              {(["Dinheiro", "Pix", "Cartão"] as PayMethod[]).map((method) => (
-                <Button
-                  key={method}
-                  type="button"
-                  variant={payMethod === method ? "default" : "outline"}
-                  size="sm"
-                  className="flex-1 text-xs"
-                  onClick={() => setPayMethod(method)}
-                >
-                  {method === "Dinheiro" ? "💵" : method === "Pix" ? "📲" : "💳"} {method}
-                </Button>
-              ))}
             </div>
           </div>
 
@@ -294,24 +276,6 @@ export function InterestRenegotiateBody(props: InterestRenegotiateBodyProps) {
                   <div>
                     <Label className="text-xs text-[#5DD3E4] dark:text-[#5DD3E4]">Data do pagamento *</Label>
                     <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="mt-2 h-10 rounded-[10px] border-[#06B6D4] dark:border-[#06B6D4] cal-green dark:bg-[#083344]" />
-                  </div>
-                </div>
-
-                <div>
-                  <Label className="text-xs text-[#5DD3E4] dark:text-[#5DD3E4]">Forma de Pagamento</Label>
-                  <div className="mt-2 flex gap-2">
-                    {(["Dinheiro", "Pix", "Cartão"] as PayMethod[]).map((method) => (
-                      <Button
-                        key={method}
-                        type="button"
-                        variant={payMethod === method ? "default" : "outline"}
-                        size="sm"
-                        className="flex-1 text-xs"
-                        onClick={() => setPayMethod(method)}
-                      >
-                        {method === "Dinheiro" ? "💵" : method === "Pix" ? "📲" : "💳"} {method}
-                      </Button>
-                    ))}
                   </div>
                 </div>
 

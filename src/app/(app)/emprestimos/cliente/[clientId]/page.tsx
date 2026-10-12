@@ -9,7 +9,7 @@ import { Dialog } from "@/components/ui/dialog"
 import { LoanDetailsContent, type LoanDetailsTone } from "@/app/(app)/emprestimos/_components/loan-details-content"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ArrowLeft, Calendar, Check, CheckCircle2, ChevronDown, Clock, Copy, DollarSign, Download, Eye, FileText, Lock, Loader2, MessageCircle, Pencil, Percent, Receipt, RotateCcw, Send, Tag, Trash2, X, Plus, AlertTriangle } from "lucide-react"
+import { ArrowLeft, Bell, Calendar, Check, CheckCircle2, ChevronDown, Clock, Copy, DollarSign, Download, Eye, FileText, Filter, Lock, Loader2, MessageCircle, Pencil, Percent, Receipt, RotateCcw, Search, Send, Tag, Trash2, X, Plus, AlertTriangle } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import { LoanRenegotiationContent } from "../../_components/loan-renegotiation-content"
 import { InterestRenegotiateBody } from "../../_components/interest-renegotiate-body"
@@ -47,6 +47,8 @@ interface Loan {
   payments: { id: string; amount: number; date: string; notes?: string }[]
 }
 
+const getTagName = (tag: string) => (tag.includes("|") ? tag.split("|")[0] : tag).trim()
+
 const MODALITY_LABELS: Record<string, string> = {
   MONTHLY: "MENSAL",
   BIWEEKLY: "QUINZENAL",
@@ -61,6 +63,13 @@ export default function ClienteEmprestimosPage() {
 
   const [loans, setLoans] = useState<Loan[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Busca + filtros
+  const [search, setSearch] = useState("")
+  const [loanFilter, setLoanFilter] = useState<"open" | "all" | "on_time" | "due_today" | "paid" | "overdue" | "overdue_1_7" | "overdue_8_15" | "overdue_16_30" | "overdue_30_plus" | "renegotiated" | "interest_only" | "weekly" | "biweekly" | "monthly" | "single" | "parceled" | "tagged">("all")
+  const [filterOpen, setFilterOpen] = useState(false)
+  const [tagFilterOpen, setTagFilterOpen] = useState(false)
+  const [selectedTag, setSelectedTag] = useState<string | null>(null)
   const [tagDialog, setTagDialog] = useState<Loan | null>(null)
   const [editingTags, setEditingTags] = useState<string[]>([])
   const [tagInput, setTagInput] = useState("")
@@ -1106,8 +1115,252 @@ export default function ClienteEmprestimosPage() {
     } catch {}
   }
 
+  const filteredLoans = useMemo(() => {
+    let result = loans
+
+    if (search.trim()) {
+      const q = search.toLowerCase()
+      result = result.filter((loan) => {
+        const matchesClient = clientName.toLowerCase().includes(q)
+        const matchesTag = (loan.tags || []).some((tag) => getTagName(tag).toLowerCase().includes(q))
+        return matchesClient || matchesTag
+      })
+    }
+
+    const now = new Date()
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`
+    const getLocalDateStr = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+    const maxDaysLate = (l: Loan) => {
+      const overdue = l.installments
+        .filter((i) => i.status !== "PAID" && getLocalDateStr(new Date(i.dueDate)) < todayStr)
+        .map((i) => new Date(getLocalDateStr(new Date(i.dueDate)) + "T00:00:00").getTime())
+      if (overdue.length === 0) return 0
+      const earliest = Math.min(...overdue)
+      const todayMs = new Date(todayStr + "T00:00:00").getTime()
+      return Math.floor((todayMs - earliest) / 86400000)
+    }
+
+    if (loanFilter === "open") {
+      result = result.filter(l => l.status !== "COMPLETED")
+    } else if (loanFilter === "paid") {
+      result = result.filter(l => l.status === "COMPLETED")
+    } else if (loanFilter === "on_time") {
+      result = result.filter(l => l.status !== "COMPLETED" && !l.installments.some(i => i.status !== "PAID" && getLocalDateStr(new Date(i.dueDate)) < todayStr))
+    } else if (loanFilter === "due_today") {
+      result = result.filter(l => l.installments.some(i => i.status !== "PAID" && getLocalDateStr(new Date(i.dueDate)) === todayStr))
+    } else if (loanFilter === "overdue") {
+      result = result.filter(l => l.status !== "COMPLETED" && l.installments.some(i => i.status !== "PAID" && getLocalDateStr(new Date(i.dueDate)) < todayStr))
+    } else if (loanFilter === "overdue_1_7") {
+      result = result.filter(l => l.status !== "COMPLETED" && (() => { const d = maxDaysLate(l); return d >= 1 && d <= 7 })())
+    } else if (loanFilter === "overdue_8_15") {
+      result = result.filter(l => l.status !== "COMPLETED" && (() => { const d = maxDaysLate(l); return d >= 8 && d <= 15 })())
+    } else if (loanFilter === "overdue_16_30") {
+      result = result.filter(l => l.status !== "COMPLETED" && (() => { const d = maxDaysLate(l); return d >= 16 && d <= 30 })())
+    } else if (loanFilter === "overdue_30_plus") {
+      result = result.filter(l => l.status !== "COMPLETED" && maxDaysLate(l) > 30)
+    } else if (loanFilter === "renegotiated") {
+      result = result.filter(l => (l.tags || []).some(t => t.split("|")[0] === "Renegociacao"))
+    } else if (loanFilter === "interest_only") {
+      result = result.filter(l => {
+        if (l.status === "COMPLETED") return false
+        const hasInterestPayment = l.payments.some(p => {
+          const notes = (p.notes || "").toLowerCase()
+          return notes.includes("só juros") || notes.includes("parcial de juros")
+        })
+        if (!hasInterestPayment) return false
+        const hasOverdue = l.installments.some(i => i.status !== "PAID" && getLocalDateStr(new Date(i.dueDate)) < todayStr)
+        return !hasOverdue
+      })
+    } else if (loanFilter === "weekly") {
+      result = result.filter(l => l.modality === "WEEKLY")
+    } else if (loanFilter === "biweekly") {
+      result = result.filter(l => l.modality === "BIWEEKLY")
+    } else if (loanFilter === "monthly") {
+      result = result.filter(l => l.modality === "MONTHLY")
+    } else if (loanFilter === "single") {
+      result = result.filter(l => l.installmentCount === 1)
+    } else if (loanFilter === "parceled") {
+      result = result.filter(l => l.installmentCount > 1)
+    } else if (loanFilter === "tagged") {
+      result = result.filter(l => (l.tags || []).length > 0)
+    }
+
+    if (selectedTag) {
+      result = result.filter(l => (l.tags || []).some(t => getTagName(t) === selectedTag))
+    }
+
+    return result
+  }, [loans, search, loanFilter, selectedTag, clientName])
+
+  const overdueValues = ["overdue", "overdue_1_7", "overdue_8_15", "overdue_16_30", "overdue_30_plus"]
+
+  const chipTone = (color: string, isActive: boolean) => {
+    switch (color) {
+      case "blue":
+        return isActive ? "border-blue-600 bg-blue-600 text-white" : "border-blue-500 text-blue-500 hover:bg-blue-500/10"
+      case "amber":
+        return isActive ? "border-amber-600 bg-amber-600 text-white" : "border-amber-500 text-amber-600 hover:bg-amber-500/10"
+      case "primary":
+        return isActive ? "border-primary bg-primary text-white" : "border-primary text-primary hover:bg-primary/10"
+      case "red":
+        return isActive ? "border-destructive bg-destructive text-white" : "border-destructive text-destructive hover:bg-destructive/10"
+      case "yellow":
+        return isActive ? "border-yellow-600 bg-yellow-600 text-white" : "border-yellow-500 text-yellow-600 hover:bg-yellow-500/10"
+      case "purple":
+        return isActive ? "border-purple-600 bg-purple-600 text-white" : "border-purple-500 text-purple-600 hover:bg-purple-500/10"
+      case "orange":
+        return isActive ? "border-orange-600 bg-orange-600 text-white" : "border-orange-500 text-orange-600 hover:bg-orange-500/10"
+      case "indigo":
+        return isActive ? "border-indigo-600 bg-indigo-600 text-white" : "border-indigo-500 text-indigo-600 hover:bg-indigo-500/10"
+      case "emerald":
+        return isActive ? "border-[#059669] bg-[#059669] text-white" : "border-[#10b981] text-[#059669] hover:bg-[#10b981]/10"
+      default:
+        return isActive ? "border-primary bg-primary text-white" : "border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground"
+    }
+  }
+
+  const filterChips: { value: typeof loanFilter; label: string; color: string; icon?: typeof Bell }[] = [
+    { value: "open", label: "Em Aberto", color: "blue" },
+    { value: "all", label: "Todos", color: "gray" },
+    { value: "on_time", label: "Em Dia", color: "blue" },
+    { value: "due_today", label: "Vence Hoje", color: "amber", icon: Bell },
+    { value: "paid", label: "Pagos", color: "primary" },
+    { value: "renegotiated", label: "Reneg.", color: "yellow" },
+    { value: "interest_only", label: "Só Juros", color: "purple" },
+    { value: "weekly", label: "Semanal", color: "orange", icon: Calendar },
+    { value: "parceled", label: "Parcelado", color: "indigo", icon: Calendar },
+    { value: "monthly", label: "Mensal", color: "emerald", icon: Calendar },
+  ]
+
+  const tagFilterButton = (
+    <div className="relative">
+      <button
+        onClick={() => { setTagFilterOpen((c) => !c); setFilterOpen(false) }}
+        className="inline-flex items-center gap-2 rounded-[10px] border border-orange-500 bg-white px-3 py-1.5 text-sm font-medium text-orange-500 transition hover:bg-orange-50 dark:border-[#f97316] dark:bg-[#121614] dark:text-[#ea580c] dark:hover:bg-[#1a211d]"
+      >
+        <Tag className="h-4 w-4" />
+        {selectedTag ?? "Etiqueta"}
+        <ChevronDown className={`h-4 w-4 transition-transform ${tagFilterOpen ? "rotate-180" : ""}`} />
+      </button>
+      {tagFilterOpen && (
+        <div className="absolute left-0 top-full mt-1.5 z-20 min-w-[180px] rounded-xl border border-gray-200 bg-white py-1.5 shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
+          <button
+            onClick={() => { setSelectedTag(null); setLoanFilter("all"); setTagFilterOpen(false) }}
+            className={`flex w-full items-center gap-2.5 px-3.5 py-2 text-sm transition hover:bg-gray-50 dark:hover:bg-zinc-700 ${!selectedTag ? "font-semibold text-gray-900 dark:text-zinc-100" : "text-gray-600 dark:text-zinc-400"}`}
+          >
+            Todas
+          </button>
+          {Array.from(new Map(loans.flatMap(l => l.tags || []).map(t => [getTagName(t), t])).values()).map((tag) => {
+            const name = getTagName(tag)
+            const color = tag.includes("|") ? tag.split("|")[1] : "#ef4444"
+            const isActive = selectedTag === name
+            return (
+              <button
+                key={name}
+                onClick={() => { setSelectedTag(name); setLoanFilter("tagged"); setTagFilterOpen(false) }}
+                className={`flex w-full items-center gap-2.5 px-3.5 py-2 text-sm transition hover:bg-gray-50 dark:hover:bg-zinc-700 ${isActive ? "font-semibold text-gray-900 dark:text-zinc-100" : "text-gray-600 dark:text-zinc-400"}`}
+              >
+                <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: color }} />
+                {name}
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+
   return (
     <div className="space-y-6 pt-6">
+      {/* Tabs */}
+      <div className="flex w-fit max-w-full items-center gap-1 bg-white dark:bg-[#222A26] rounded-xl p-1 border border-gray-200 dark:border-zinc-800 overflow-x-auto">
+        <button type="button" className="px-4 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap bg-gray-100 dark:bg-[#121614] text-gray-900 dark:text-zinc-100">
+          Empréstimos ({loans.length})
+        </button>
+        <a href="/emprestimos/tabela-price" className="flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200">
+          <FileText className="h-3.5 w-3.5" /> Tabela Price
+        </a>
+        <a href="/emprestimos/recebimentos" className="flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200">
+          <DollarSign className="h-3.5 w-3.5" /> Recebimentos
+        </a>
+      </div>
+
+      {/* Busca */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-zinc-500" />
+        <Input placeholder="Buscar cliente ou etiqueta..." className="pl-10 pr-10 dark:bg-[#161A18]" value={search} onChange={(e) => setSearch(e.target.value)} />
+        {(search || selectedTag) && (
+          <button
+            type="button"
+            onClick={() => { setSearch(""); setSelectedTag(null) }}
+            title="Limpar filtro"
+            aria-label="Limpar busca"
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center justify-center rounded-md border border-red-500 p-0.5 text-red-500 transition-colors hover:bg-red-500/10"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        )}
+      </div>
+
+      {/* Filtros */}
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => { setFilterOpen((c) => !c); setTagFilterOpen(false) }}
+            className="inline-flex items-center gap-2 rounded-[10px] border border-primary/50 bg-white px-3 py-1.5 text-sm font-medium text-primary transition hover:bg-primary/10 dark:border-[#22c35d] dark:bg-[#121614] dark:text-[#22c35d] dark:hover:bg-[#1a211d]"
+          >
+            <Filter className="h-4 w-4" />
+            Filtros
+            <ChevronDown className={`h-4 w-4 transition-transform ${filterOpen ? "rotate-180" : ""}`} />
+          </button>
+          {!filterOpen && tagFilterButton}
+        </div>
+
+        {filterOpen && (
+          <div className="flex items-start gap-2 flex-wrap">
+            <div className="flex w-fit max-w-full items-center gap-1.5 flex-wrap rounded-xl border border-gray-200 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-900/40 p-2">
+              {filterChips.map((opt) => {
+                const chip = (
+                  <button
+                    key={opt.value}
+                    onClick={() => setLoanFilter(opt.value)}
+                    className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium transition ${chipTone(opt.color, loanFilter === opt.value)}`}
+                  >
+                    {opt.icon ? <opt.icon className="h-3.5 w-3.5" /> : null}
+                    {opt.label}
+                  </button>
+                )
+                if (opt.value === "paid") {
+                  const overdueActive = overdueValues.includes(loanFilter)
+                  return (
+                    <div key="paid-and-atraso" className="contents">
+                      {chip}
+                      <button
+                        onClick={() => setLoanFilter("overdue")}
+                        className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium transition ${chipTone("red", overdueActive)}`}
+                      >
+                        Atraso
+                      </button>
+                    </div>
+                  )
+                }
+                return chip
+              })}
+            </div>
+            {tagFilterButton}
+          </div>
+        )}
+      </div>
+
+      {selectedTag && (
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-500 dark:text-zinc-400">Filtrando por etiqueta:</span>
+          <button onClick={() => setSelectedTag(null)} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium text-white" style={{ backgroundColor: (() => { const t = loans.flatMap(l => l.tags || []).find(t => getTagName(t) === selectedTag); return t?.includes("|") ? t.split("|")[1] : "#ef4444" })() }}>
+            {selectedTag} <X className="h-3 w-3" />
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center gap-4 rounded-xl border border-gray-200 dark:border-[#29322E] bg-gray-50 dark:bg-[#1A201D] px-4 py-3">
         <button onClick={() => router.push("/emprestimos")} className="flex items-center gap-2 text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200 transition-colors">
@@ -1123,11 +1376,11 @@ export default function ClienteEmprestimosPage() {
 
       {loading ? (
         <div className="text-gray-500 dark:text-zinc-400">Carregando empréstimos...</div>
-      ) : loans.length === 0 ? (
+      ) : filteredLoans.length === 0 ? (
         <div className="text-gray-400 dark:text-zinc-500">Nenhum empréstimo encontrado para este cliente.</div>
       ) : (
         <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {loans.map((loan) => {
+          {filteredLoans.map((loan) => {
             const status = getLoanStatusInfo(loan)
             const paid = getPaidTotal(loan)
             const remaining = getRemaining(loan)
@@ -1257,11 +1510,11 @@ export default function ClienteEmprestimosPage() {
                     </div>
                   </div>
                   <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                    <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 dark:bg-blue-950/30 px-1.5 py-0.5 text-[10px] font-medium text-blue-600 dark:text-blue-400">
+                    <span className="inline-flex items-center gap-1 rounded-sm bg-blue-50 dark:bg-blue-950/30 px-1.5 py-0.5 text-[10px] font-medium text-blue-600 dark:text-blue-400">
                       <DollarSign className="h-2.5 w-2.5" /> Juros: {formatCurrency(loan.profit)}
                     </span>
                     {multaAtraso > 0 && (
-                      <span className="inline-flex items-center gap-1 rounded-md bg-yellow-50 dark:bg-yellow-950/30 px-1.5 py-0.5 text-[10px] font-medium text-yellow-700 dark:text-yellow-500">
+                      <span className="inline-flex items-center gap-1 rounded-sm bg-yellow-50 dark:bg-yellow-950/30 px-1.5 py-0.5 text-[10px] font-medium text-yellow-700 dark:text-yellow-500">
                         <AlertTriangle className="h-2.5 w-2.5" /> Multas: {formatCurrency(multaAtraso)}
                       </span>
                     )}
@@ -1441,9 +1694,9 @@ export default function ClienteEmprestimosPage() {
                                       type="button"
                                       onClick={() => excluirMulta(loan)}
                                       title="Excluir multa"
-                                      className="inline-flex items-center gap-1 rounded-md border border-green-600/40 px-1.5 py-0.5 text-[10px] font-medium text-green-800 dark:text-green-400 hover:bg-green-500/10 transition-colors"
+                                      className="inline-flex items-center gap-1 rounded-lg border border-green-600/50 px-2 py-1 text-xs font-medium text-green-800 dark:text-green-400 hover:bg-green-500/10 transition-colors"
                                     >
-                                      <Trash2 className="h-2.5 w-2.5" /> Excluir
+                                      <Trash2 className="h-3 w-3" /> Excluir
                                     </button>
                                   )}
                                 </span>
@@ -1505,11 +1758,11 @@ export default function ClienteEmprestimosPage() {
                 {/* Ações */}
                 <div className={`px-4 pt-3 pb-4 mt-2 border-t space-y-3 ${isDarkCard ? "border-white/30" : "border-gray-100 dark:border-zinc-800"}`}>
                   <div className="grid w-full min-w-0 gap-1.5 pb-1 grid-cols-[minmax(0,1.6fr)_minmax(0,2.4fr)_repeat(5,minmax(0,1fr))]">
-                    <button onClick={() => openPaymentDialog(loan)} className={`group relative inline-flex min-w-0 h-10 items-center justify-center rounded-md px-2 text-xs font-medium transition-colors ${isDarkCard ? "border border-black/5 bg-white text-[#15803d] hover:bg-gray-100 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20" : "border border-primary/15 bg-primary/10 text-primary hover:bg-primary/15 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20"}`}>
+                    <button onClick={() => openPaymentDialog(loan)} className={`group relative inline-flex min-w-0 h-10 items-center justify-center rounded-md px-2 text-xs font-medium transition-colors ${isDarkCard ? "border border-black/5 bg-white text-[#15803d] hover:bg-gray-100 dark:border-transparent dark:bg-[#29322E] dark:text-primary dark:hover:bg-[#333d38]" : "border border-primary/15 bg-primary/10 text-primary hover:bg-primary/15 dark:border-transparent dark:bg-[#29322E] dark:text-primary dark:hover:bg-[#333d38]"}`}>
                       <Receipt className="mr-1 h-4 w-4 shrink-0" /> <span className="whitespace-nowrap">Pagar</span>
                       <span className={tooltipClsLeft}>Registre pagamentos: parcela, valor parcial ou quitação total</span>
                     </button>
-                    <button onClick={() => openInterestRenegotiateDialog(loan)} className={`group relative inline-flex min-w-0 h-10 items-center justify-center rounded-md px-2 text-xs font-medium transition-colors ${isDarkCard ? "border border-black/5 bg-white text-[#15803d] hover:bg-gray-100 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20" : "border border-primary/15 bg-primary/10 text-primary hover:bg-primary/15 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20"}`}>
+                    <button onClick={() => openInterestRenegotiateDialog(loan)} className={`group relative inline-flex min-w-0 h-10 items-center justify-center rounded-md px-2 text-xs font-medium transition-colors ${isDarkCard ? "border border-black/5 bg-white text-[#15803d] hover:bg-gray-100 dark:border-transparent dark:bg-[#29322E] dark:text-primary dark:hover:bg-[#333d38]" : "border border-primary/15 bg-primary/10 text-primary hover:bg-primary/15 dark:border-transparent dark:bg-[#29322E] dark:text-primary dark:hover:bg-[#333d38]"}`}>
                       <DollarSign className="mr-1 h-4 w-4 shrink-0" /> <span className="whitespace-nowrap">Pagar Juros</span>
                       <span className={tooltipClsLeft}>Pague apenas os juros e renove o prazo (+30 dias)</span>
                     </button>
@@ -1525,15 +1778,15 @@ export default function ClienteEmprestimosPage() {
                       <Send className="h-4 w-4" />
                       <span className={tooltipCls}>Enviar relatório ao cliente pelo WhatsApp</span>
                     </button>
-                    <button className={`group relative flex min-w-0 w-full items-center justify-center rounded-xl h-10 transition-colors ${isDarkCard ? "bg-white text-violet-600 hover:bg-gray-100 dark:bg-violet-900/50 dark:text-violet-300 dark:hover:bg-violet-900/70" : "border border-violet-100 bg-violet-50/80 text-primary shadow-sm hover:bg-violet-100 dark:border-violet-900/40 dark:bg-violet-950/30 dark:text-primary dark:hover:bg-violet-900/40"}`} onClick={() => router.push(`/emprestimos/${loan.id}`)}>
+                    <button className="group relative flex min-w-0 w-full items-center justify-center rounded-xl h-10 bg-gray-100 text-violet-600 transition-colors hover:bg-gray-200 dark:bg-[#29322E] dark:text-violet-400 dark:hover:bg-[#333d38]" onClick={() => router.push(`/emprestimos/${loan.id}`)}>
                       <RotateCcw className="h-4 w-4" />
                       <span className={tooltipCls}>Ver histórico de pagamentos</span>
                     </button>
-                    <button className={`group relative flex min-w-0 w-full items-center justify-center rounded-xl h-10 transition-colors ${isDarkCard ? "bg-white text-blue-600 hover:bg-gray-100 dark:bg-blue-900/50 dark:text-blue-300 dark:hover:bg-blue-900/70" : "bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-950/30 dark:text-blue-400 dark:hover:bg-blue-900/40"}`} onClick={() => router.push(`/emprestimos/${loan.id}/editar`)}>
+                    <button className="group relative flex min-w-0 w-full items-center justify-center rounded-xl h-10 bg-gray-100 text-blue-600 transition-colors hover:bg-gray-200 dark:bg-[#29322E] dark:text-blue-400 dark:hover:bg-[#333d38]" onClick={() => router.push(`/emprestimos/${loan.id}/editar`)}>
                       <Pencil className="h-4 w-4" />
                       <span className={tooltipCls}>Editar empréstimo</span>
                     </button>
-                    <button className={`group relative flex min-w-0 w-full items-center justify-center rounded-xl h-10 transition-colors ${isDarkCard ? "bg-white text-amber-500 hover:bg-gray-100 dark:bg-amber-900/50 dark:text-amber-300 dark:hover:bg-amber-900/70" : "bg-amber-50 text-amber-500 hover:bg-amber-100 dark:bg-amber-950/30 dark:text-amber-400 dark:hover:bg-amber-900/40"}`} onClick={() => openRenegotiateDialog(loan)}>
+                    <button className="group relative flex min-w-0 w-full items-center justify-center rounded-xl h-10 bg-gray-100 text-amber-500 transition-colors hover:bg-gray-200 dark:bg-[#29322E] dark:text-amber-400 dark:hover:bg-[#333d38]" onClick={() => openRenegotiateDialog(loan)}>
                       <RotateCcw className="h-4 w-4" />
                       <span className={tooltipClsRight}>Renegociar empréstimo / atraso</span>
                     </button>
@@ -1785,7 +2038,10 @@ export default function ClienteEmprestimosPage() {
         {renegotiateDialog && (
           <>
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-slate-700 dark:text-zinc-100">{renegotiateEntry === "interest" ? "Renegociar Dívida" : "Renegociação de Contrato"}</h2>
+            <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-700 dark:text-zinc-100">
+              {renegotiateEntry !== "interest" && <AlertTriangle className="h-5 w-5 text-amber-500" />}
+              {renegotiateEntry === "interest" ? "Renegociar Dívida" : "Renegociação de Contrato"}
+            </h2>
             <button
               type="button"
               onClick={() => { setRenegotiateDialog(null); setRenegotiateMode(null); setRenegotiateEntry("all"); setRenegotiateAmount(0); setRenegotiateNotes("") }}
@@ -2273,6 +2529,13 @@ export default function ClienteEmprestimosPage() {
             presentation="modal"
             tone={detailsTone}
             onClose={() => setDetailsLoanId(null)}
+            onEditMulta={() => {
+              const l = loans.find((x) => x.id === detailsLoanId)
+              if (l) {
+                setDetailsLoanId(null)
+                openMultaDialog(l)
+              }
+            }}
           />
         ) : null}
       </Dialog>

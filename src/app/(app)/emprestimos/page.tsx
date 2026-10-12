@@ -94,7 +94,6 @@ export default function EmprestimosPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [loanFilter, setLoanFilter] = useState<"open" | "all" | "on_time" | "due_today" | "paid" | "overdue" | "overdue_1_7" | "overdue_8_15" | "overdue_16_30" | "overdue_30_plus" | "renegotiated" | "interest_only" | "weekly" | "biweekly" | "monthly" | "single" | "parceled" | "tagged">("open")
   const [filterOpen, setFilterOpen] = useState(false)
-  const [overdueMenuOpen, setOverdueMenuOpen] = useState(false)
   const [tagFilterOpen, setTagFilterOpen] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState<string | null>(null)
   const [payMenuOpen, setPayMenuOpen] = useState<string | null>(null)
@@ -133,8 +132,7 @@ export default function EmprestimosPage() {
   const [whatsappSending, setWhatsappSending] = useState(false)
   const [whatsappSent, setWhatsappSent] = useState(false)
 
-  // WhatsApp relatório state (fluxo: escolha → prévia)
-  const [reportChooser, setReportChooser] = useState(false)
+  // WhatsApp relatório state
   const [reportDialog, setReportDialog] = useState(false)
   const [reportLoan, setReportLoan] = useState<Loan | null>(null)
   const [reportMessage, setReportMessage] = useState("")
@@ -1336,22 +1334,7 @@ export default function EmprestimosPage() {
     msg += `\n\n${extra.join("\n")}`
 
     setReportMessage(msg)
-    setReportChooser(true)
-  }
-
-  const openReportPreview = () => {
-    setReportChooser(false)
     setReportDialog(true)
-  }
-
-  // "Abrir no meu WhatsApp": abre o wa.me do aparelho com o relatório preenchido
-  const openReportManual = () => {
-    if (!reportLoan) return
-    const phone = (getClientPhone(reportLoan) || "").replace(/\D/g, "")
-    if (!phone) { showToast("Cliente sem telefone cadastrado", "error"); return }
-    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(reportMessage)}`, "_blank")
-    setReportChooser(false)
-    setReportDialog(false)
   }
 
   // Gera o PDF (print) do relatório a partir da mensagem editada
@@ -2083,15 +2066,7 @@ export default function EmprestimosPage() {
     { value: "monthly", label: "Mensal", color: "emerald", icon: Calendar },
   ]
 
-  const overdueSubFilters: { value: LoanFilterValue; label: string }[] = [
-    { value: "overdue", label: "Todos os atrasados" },
-    { value: "overdue_1_7", label: "1 a 7 dias" },
-    { value: "overdue_8_15", label: "8 a 15 dias" },
-    { value: "overdue_16_30", label: "16 a 30 dias" },
-    { value: "overdue_30_plus", label: "Mais de 30 dias" },
-  ]
-  const overdueValues = overdueSubFilters.map(o => o.value)
-  const overdueActiveLabel = overdueSubFilters.find(o => o.value === loanFilter)?.label
+  const overdueValues: LoanFilterValue[] = ["overdue", "overdue_1_7", "overdue_8_15", "overdue_16_30", "overdue_30_plus"]
 
   const tagOptions = [
     { value: "all", label: "Todas" },
@@ -2273,34 +2248,18 @@ export default function EmprestimosPage() {
                   {opt.label}
                 </button>
               )
-              // Insere o chip "Atraso" (com dropdown) logo após "Pagos"
+              // Insere o chip "Atraso" logo após "Pagos"
               if (opt.value === "paid") {
                 const overdueActive = overdueValues.includes(loanFilter)
                 return (
                   <div key="paid-and-atraso" className="contents">
                     {chip}
-                    <div className="relative">
-                      <button
-                        onClick={() => setOverdueMenuOpen((c) => !c)}
-                        className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium transition ${chipTone("red", overdueActive)}`}
-                      >
-                        {overdueActive && overdueActiveLabel && loanFilter !== "overdue" ? overdueActiveLabel : "Atraso"}
-                        <ChevronDown className={`h-3.5 w-3.5 transition-transform ${overdueMenuOpen ? "rotate-180" : ""}`} />
-                      </button>
-                      {overdueMenuOpen && (
-                        <div className="absolute left-0 top-full mt-1.5 z-20 min-w-[170px] rounded-xl border border-gray-200 bg-white py-1.5 shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
-                          {overdueSubFilters.map((sub) => (
-                            <button
-                              key={sub.value}
-                              onClick={() => { setLoanFilter(sub.value); setOverdueMenuOpen(false) }}
-                              className={`flex w-full items-center gap-2.5 px-3.5 py-2 text-sm transition hover:bg-gray-50 dark:hover:bg-zinc-700 ${loanFilter === sub.value ? "font-semibold text-red-600 dark:text-red-400" : "text-gray-600 dark:text-zinc-400"}`}
-                            >
-                              {sub.label}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                    <button
+                      onClick={() => setLoanFilter("overdue")}
+                      className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium transition ${chipTone("red", overdueActive)}`}
+                    >
+                      Atraso
+                    </button>
                   </div>
                 )
               }
@@ -2653,11 +2612,11 @@ export default function EmprestimosPage() {
                       </div>
                     </div>
                     <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                      <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 dark:bg-blue-950/30 px-1.5 py-0.5 text-[10px] font-medium text-blue-600 dark:text-blue-400">
+                      <span className="inline-flex items-center gap-1 rounded-sm bg-blue-50 dark:bg-blue-950/30 px-1.5 py-0.5 text-[10px] font-medium text-blue-600 dark:text-blue-400">
                         <DollarSign className="h-2.5 w-2.5" /> Juros: {formatCurrency(loan.profit)}
                       </span>
                       {multaAtraso > 0 && (
-                        <span className="inline-flex items-center gap-1 rounded-md bg-yellow-50 dark:bg-yellow-950/30 px-1.5 py-0.5 text-[10px] font-medium text-yellow-700 dark:text-yellow-500">
+                        <span className="inline-flex items-center gap-1 rounded-sm bg-yellow-50 dark:bg-yellow-950/30 px-1.5 py-0.5 text-[10px] font-medium text-yellow-700 dark:text-yellow-500">
                           <AlertTriangle className="h-2.5 w-2.5" /> Multas: {formatCurrency(multaAtraso)}
                         </span>
                       )}
@@ -2861,9 +2820,9 @@ export default function EmprestimosPage() {
                                         type="button"
                                         onClick={() => excluirMulta(loan)}
                                         title="Excluir multa"
-                                        className="inline-flex items-center gap-1 rounded-md border border-green-600/40 px-1.5 py-0.5 text-[10px] font-medium text-green-800 dark:text-green-400 hover:bg-green-500/10 transition-colors"
+                                        className="inline-flex items-center gap-1 rounded-lg border border-green-600/50 px-2 py-1 text-xs font-medium text-green-800 dark:text-green-400 hover:bg-green-500/10 transition-colors"
                                       >
-                                        <Trash2 className="h-2.5 w-2.5" /> Excluir
+                                        <Trash2 className="h-3 w-3" /> Excluir
                                       </button>
                                     )}
                                   </span>
@@ -2925,11 +2884,11 @@ export default function EmprestimosPage() {
                   {/* Ações */}
                   <div className={`px-4 pt-3 pb-4 mt-2 border-t space-y-3 ${isDarkCard ? "border-white/30" : "border-gray-100 dark:border-zinc-800"}`}>
                     <div className="grid w-full min-w-0 gap-1.5 pb-1 grid-cols-[minmax(0,1.6fr)_minmax(0,2.4fr)_repeat(5,2.5rem)]">
-                      <button onClick={() => openPaymentDialog(loan)} className={`group relative inline-flex min-w-0 h-10 items-center justify-center rounded-md px-2 text-xs font-medium transition-colors ${isDarkCard ? "border border-black/5 bg-white text-[#15803d] hover:bg-gray-100 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20" : "border border-primary/15 bg-primary/10 text-primary hover:bg-primary/15 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20"}`}>
+                      <button onClick={() => openPaymentDialog(loan)} className={`group relative inline-flex min-w-0 h-10 items-center justify-center rounded-md px-2 text-xs font-medium transition-colors ${isDarkCard ? "border border-black/5 bg-white text-[#15803d] hover:bg-gray-100 dark:border-transparent dark:bg-[#29322E] dark:text-primary dark:hover:bg-[#333d38]" : "border border-primary/15 bg-primary/10 text-primary hover:bg-primary/15 dark:border-transparent dark:bg-[#29322E] dark:text-primary dark:hover:bg-[#333d38]"}`}>
                         <Receipt className="mr-1 h-4 w-4 shrink-0" /> <span className="whitespace-nowrap">Pagar</span>
                         <span className={tooltipClsLeft}>Registre pagamentos: parcela, valor parcial ou quitação total</span>
                       </button>
-                      <button onClick={() => openInterestRenegotiateDialog(loan)} className={`group relative inline-flex min-w-0 h-10 items-center justify-center rounded-md px-2 text-xs font-medium transition-colors ${isDarkCard ? "border border-black/5 bg-white text-[#15803d] hover:bg-gray-100 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20" : "border border-primary/15 bg-primary/10 text-primary hover:bg-primary/15 dark:border-primary/20 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20"}`}>
+                      <button onClick={() => openInterestRenegotiateDialog(loan)} className={`group relative inline-flex min-w-0 h-10 items-center justify-center rounded-md px-2 text-xs font-medium transition-colors ${isDarkCard ? "border border-black/5 bg-white text-[#15803d] hover:bg-gray-100 dark:border-transparent dark:bg-[#29322E] dark:text-primary dark:hover:bg-[#333d38]" : "border border-primary/15 bg-primary/10 text-primary hover:bg-primary/15 dark:border-transparent dark:bg-[#29322E] dark:text-primary dark:hover:bg-[#333d38]"}`}>
                         <DollarSign className="mr-1 h-4 w-4 shrink-0" /> <span className="whitespace-nowrap">Pagar Juros</span>
                         <span className={tooltipClsLeft}>Pague apenas os juros e renove o prazo (+30 dias)</span>
                       </button>
@@ -2940,15 +2899,15 @@ export default function EmprestimosPage() {
                         <Send className="h-4 w-4" />
                         <span className={tooltipCls}>Enviar relatório ao cliente pelo WhatsApp</span>
                       </button>
-                      <button className={`group relative flex min-w-0 w-full items-center justify-center rounded-xl h-10 transition-colors ${isDarkCard ? "bg-white text-violet-600 hover:bg-gray-100 dark:bg-violet-900/50 dark:text-violet-300 dark:hover:bg-violet-900/70" : "border border-violet-100 bg-violet-50/80 text-primary shadow-sm hover:bg-violet-100 dark:border-violet-900/40 dark:bg-violet-950/30 dark:text-primary dark:hover:bg-violet-900/40"}`} onClick={() => router.push(`/emprestimos/${loan.id}`)}>
+                      <button className="group relative flex min-w-0 w-full items-center justify-center rounded-xl h-10 bg-gray-100 text-violet-600 transition-colors hover:bg-gray-200 dark:bg-[#29322E] dark:text-violet-400 dark:hover:bg-[#333d38]" onClick={() => router.push(`/emprestimos/${loan.id}`)}>
                         <RotateCcw className="h-4 w-4" />
                         <span className={tooltipCls}>Ver histórico de pagamentos</span>
                       </button>
-                      <button className={`group relative flex min-w-0 w-full items-center justify-center rounded-xl h-10 transition-colors ${isDarkCard ? "bg-white text-blue-600 hover:bg-gray-100 dark:bg-blue-900/50 dark:text-blue-300 dark:hover:bg-blue-900/70" : "bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-950/30 dark:text-blue-400 dark:hover:bg-blue-900/40"}`} onClick={() => router.push(`/emprestimos/${loan.id}/editar`)}>
+                      <button className="group relative flex min-w-0 w-full items-center justify-center rounded-xl h-10 bg-gray-100 text-blue-600 transition-colors hover:bg-gray-200 dark:bg-[#29322E] dark:text-blue-400 dark:hover:bg-[#333d38]" onClick={() => router.push(`/emprestimos/${loan.id}/editar`)}>
                         <Pencil className="h-4 w-4" />
                         <span className={tooltipCls}>Editar empréstimo</span>
                       </button>
-                      <button className={`group relative flex min-w-0 w-full items-center justify-center rounded-xl h-10 transition-colors ${isDarkCard ? "bg-white text-amber-500 hover:bg-gray-100 dark:bg-amber-900/50 dark:text-amber-300 dark:hover:bg-amber-900/70" : "bg-amber-50 text-amber-500 hover:bg-amber-100 dark:bg-amber-950/30 dark:text-amber-400 dark:hover:bg-amber-900/40"}`} onClick={() => openRenegotiateDialog(loan)}>
+                      <button className="group relative flex min-w-0 w-full items-center justify-center rounded-xl h-10 bg-gray-100 text-amber-500 transition-colors hover:bg-gray-200 dark:bg-[#29322E] dark:text-amber-400 dark:hover:bg-[#333d38]" onClick={() => openRenegotiateDialog(loan)}>
                         <RotateCcw className="h-4 w-4" />
                         <span className={tooltipCls}>Renegociar empréstimo / atraso</span>
                       </button>
@@ -3162,8 +3121,8 @@ export default function EmprestimosPage() {
       )}
 
       {/* ===== NOVO EMPRÉSTIMO DIALOG ===== */}
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} className="w-full max-w-lg max-h-[90vh] overflow-y-auto dark:bg-[#121614]">
-        <div className="space-y-5 dark:[&_input]:!bg-[#121614] dark:[&_select]:!bg-[#121614] dark:[&_textarea]:!bg-[#121614]">
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} className="w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col p-0 dark:bg-[#121614]">
+        <div className="min-h-0 flex-1 overflow-y-auto p-6 space-y-5 dark:[&_input]:!bg-[#121614] dark:[&_select]:!bg-[#121614] dark:[&_textarea]:!bg-[#121614] dark:[&_label]:!text-white">
           {/* Header */}
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">Novo Empréstimo</h2>
@@ -3252,7 +3211,7 @@ export default function EmprestimosPage() {
                         value={clientSearch}
                         onChange={(e) => setClientSearch(e.target.value)}
                         placeholder="Buscar cliente..."
-                        className="h-8 pl-9 border-0 bg-white shadow-none focus-visible:ring-0 focus-visible:border-0 dark:bg-[#171C1A]"
+                        className="h-8 pl-9 border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-0 dark:bg-transparent"
                       />
                     </div>
                   </div>
@@ -3294,9 +3253,9 @@ export default function EmprestimosPage() {
                                 <div className="min-w-0">
                                   <div className="flex items-center gap-2">
                                     <p className="truncate text-sm font-medium text-gray-900 dark:text-zinc-100">{client.name}</p>
-                                    <span className="inline-flex shrink-0 -translate-y-0.5 items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold leading-none text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
-                                      <span className="text-[10px] leading-none">{getScoreIcon(client.score ?? 0)}</span>
-                                      <span className="leading-none">{client.score ?? 0}</span>
+                                    <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold leading-none text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
+                                      <span className="inline-flex items-center leading-none">{getScoreIcon(client.score ?? 0)}</span>
+                                      <span className="inline-flex items-center leading-none">{client.score ?? 0}</span>
                                     </span>
                                   </div>
                                   <p className="truncate text-xs text-gray-500 dark:text-zinc-400">
@@ -3371,8 +3330,9 @@ export default function EmprestimosPage() {
               <Input
                 type="number"
                 min={1}
-                value={installmentCount}
-                onChange={(e) => setInstallmentCount(Number(e.target.value) || 1)}
+                value={installmentCount || ""}
+                onChange={(e) => setInstallmentCount(Number(e.target.value) || 0)}
+                onBlur={() => setInstallmentCount((c) => Math.max(1, c || 1))}
                 className="mt-1"
               />
             </div>
@@ -3424,6 +3384,16 @@ export default function EmprestimosPage() {
                   </div>
                 ))}
               </div>
+              <div className="mx-2 rounded-lg bg-gray-100 dark:bg-[#222A26] px-3 py-2.5 space-y-1">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-500 dark:text-zinc-400">Soma das parcelas:</span>
+                  <span className="font-bold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(customInstallmentAmounts.reduce((s, v) => s + (v || 0), 0))}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-500 dark:text-zinc-400">Lucro (juros):</span>
+                  <span className={`font-bold tabular-nums ${preview.totalInterest >= 0 ? "text-primary" : "text-red-500"}`}>{formatCurrency(preview.totalInterest)}</span>
+                </div>
+              </div>
             </div>
           )}
 
@@ -3474,7 +3444,7 @@ export default function EmprestimosPage() {
 
           {/* Não cobrar nos seguintes dias */}
           <div>
-            <p className="text-sm text-gray-500 dark:text-zinc-400 mb-2">Não cobra nos seguintes dias:</p>
+            <p className="text-sm font-medium text-gray-700 dark:text-white mb-2">Não cobra nos seguintes dias:</p>
             <div className="flex gap-6">
               <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-zinc-300 cursor-pointer">
                 <input type="checkbox" checked={skipSaturday} onChange={(e) => setSkipSaturday(e.target.checked)} className="rounded border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 text-primary focus:ring-ring" />
@@ -3669,11 +3639,12 @@ export default function EmprestimosPage() {
           </div>
           */}
 
-          {/* Botões */}
-          <div className="sticky bottom-0 -mx-6 -mb-6 flex justify-end gap-3 border-t border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#121614] px-6 py-4">
-            <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
-            <Button onClick={onSubmit}>Criar</Button>
-          </div>
+        </div>
+
+        {/* Botões */}
+        <div className="shrink-0 rounded-b-xl flex justify-end gap-3 border-t border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#121614] px-6 py-4">
+          <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
+          <Button onClick={onSubmit}>Criar</Button>
         </div>
       </Dialog>
 
@@ -4787,7 +4758,10 @@ export default function EmprestimosPage() {
         {renegotiateDialog && (
           <>
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-slate-700 dark:text-zinc-100">{renegotiateEntry === "interest" ? "Renegociar Dívida" : "Renegociação de Contrato"}</h2>
+            <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-700 dark:text-zinc-100">
+              {renegotiateEntry !== "interest" && <AlertTriangle className="h-5 w-5 text-amber-500" />}
+              {renegotiateEntry === "interest" ? "Renegociar Dívida" : "Renegociação de Contrato"}
+            </h2>
             <button
               type="button"
               onClick={() => { setRenegotiateDialog(null); setRenegotiateMode(null); setRenegotiateEntry("all"); setRenegotiateAmount(0); setRenegotiateNotes("") }}
@@ -5202,62 +5176,6 @@ export default function EmprestimosPage() {
         )}
       </Dialog>
 
-      {/* Card menor: Enviar relatório (escolha) */}
-      <Dialog
-        open={reportChooser}
-        onClose={() => setReportChooser(false)}
-        title="Enviar relatório"
-        className="w-full max-w-md"
-      >
-        <div className="space-y-3">
-          <p className="text-sm text-gray-500 dark:text-zinc-400">Você verá uma prévia da mensagem antes de qualquer envio.</p>
-
-          {/* Visualizar relatório */}
-          <div className="rounded-xl border border-green-600/40 dark:border-green-700/50 bg-green-500/5 p-3">
-            <div className="flex items-start gap-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-green-500/15 text-green-800 dark:text-green-400"><Eye className="h-5 w-5" /></span>
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Visualizar relatório</p>
-                <p className="text-xs text-gray-500 dark:text-zinc-400">Veja a mensagem completa antes do envio, sem abrir o WhatsApp e sem gerar um novo envio.</p>
-              </div>
-            </div>
-            <button onClick={openReportPreview} className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-lg border border-green-600 py-2 text-sm font-semibold text-green-800 dark:text-green-400 hover:bg-green-500/10 transition">
-              <Eye className="h-4 w-4" /> Ver relatório
-            </button>
-          </div>
-
-          {/* Enviar pelo CobraFácil */}
-          <div className="rounded-xl border border-blue-500/40 dark:border-blue-800 bg-blue-500/5 p-3">
-            <div className="flex items-start gap-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-500/15 text-blue-600"><Send className="h-5 w-5" /></span>
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Enviar pelo CobraFácil</p>
-                <p className="text-xs text-gray-500 dark:text-zinc-400">Mensagem enviada automaticamente pela plataforma.</p>
-              </div>
-            </div>
-            <button onClick={openReportPreview} className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 py-2 text-sm font-semibold text-white transition">
-              <Send className="h-4 w-4" /> Enviar relatório de hoje
-            </button>
-          </div>
-
-          {/* Abrir no meu WhatsApp */}
-          <div className="rounded-xl border border-purple-500/40 dark:border-purple-800 bg-purple-500/5 p-3">
-            <div className="flex items-start gap-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-purple-500/15 text-purple-600"><MessageCircle className="h-5 w-5" /></span>
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Abrir no meu WhatsApp</p>
-                <p className="text-xs text-gray-500 dark:text-zinc-400">Envio manual pelo seu aparelho.</p>
-              </div>
-            </div>
-            <button onClick={openReportManual} className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-lg border border-purple-500 py-2 text-sm font-semibold text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/20 transition">
-              <ExternalLink className="h-4 w-4" /> Abrir WhatsApp — relatório de hoje
-            </button>
-          </div>
-
-          <p className="text-xs text-gray-400 dark:text-zinc-500 pt-1">Todas as opções permitem que você edite a mensagem antes de enviar.</p>
-        </div>
-      </Dialog>
-
       {/* Card: Visualizar relatório (mesma largura do card de cobrança) */}
       <Dialog
         open={reportDialog}
@@ -5411,6 +5329,13 @@ export default function EmprestimosPage() {
             presentation="modal"
             tone={detailsTone}
             onClose={() => setDetailsLoanId(null)}
+            onEditMulta={() => {
+              const l = loans.find((x) => x.id === detailsLoanId)
+              if (l) {
+                setDetailsLoanId(null)
+                openMultaDialog(l)
+              }
+            }}
           />
         ) : null}
       </Dialog>

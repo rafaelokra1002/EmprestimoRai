@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { X } from "lucide-react"
+import { AlertTriangle, DollarSign, Pencil, Trash2, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { buildLoanData, calculateOverdueInterest, calculateTotalAmountWithLateFee, getDaysOverdue, getOverdueDailyAmountBRL, getPaidExcludingInterest } from "@/lib/loan-logic"
@@ -33,6 +33,7 @@ interface LoanDetails {
   interestRate: number
   dailyInterest?: boolean
   dailyInterestAmount?: number
+  penaltyFee?: number
   dueDay?: number | null
   installmentValue: number
   installmentCount: number
@@ -76,11 +77,13 @@ export function LoanDetailsContent({
   onClose,
   loanId: loanIdProp,
   tone = "default",
+  onEditMulta,
 }: {
   presentation?: "page" | "modal"
   onClose?: () => void
   loanId?: string
   tone?: LoanDetailsTone
+  onEditMulta?: () => void
 }) {
   const params = useParams<{ id: string }>()
   const router = useRouter()
@@ -90,34 +93,52 @@ export function LoanDetailsContent({
   const [loan, setLoan] = useState<LoanDetails | null>(null)
   const [loading, setLoading] = useState(Boolean(loanId))
   const [error, setError] = useState<string | null>(null)
+  const [removingMulta, setRemovingMulta] = useState(false)
 
-  useEffect(() => {
-    const fetchLoan = async () => {
-      if (!loanId) {
+  const fetchLoan = async () => {
+    if (!loanId) {
+      setLoading(false)
+      setError(routeLoanId ? "Empréstimo não encontrado" : null)
+      return
+    }
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/loans/${loanId}`)
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data?.error || "Erro ao carregar empréstimo")
         setLoading(false)
-        setError(routeLoanId ? "Empréstimo não encontrado" : null)
         return
       }
-      setLoading(true)
-      setError(null)
-      try {
-        const res = await fetch(`/api/loans/${loanId}`)
-        const data = await res.json()
-        if (!res.ok) {
-          setError(data?.error || "Erro ao carregar empréstimo")
-          setLoading(false)
-          return
-        }
-        setLoan(data)
-      } catch (err: any) {
-        setError(err?.message || "Erro de conexão")
-      } finally {
-        setLoading(false)
-      }
+      setLoan(data)
+    } catch (err: any) {
+      setError(err?.message || "Erro de conexão")
+    } finally {
+      setLoading(false)
     }
+  }
 
+  useEffect(() => {
     fetchLoan()
   }, [loanId, routeLoanId])
+
+  const handleExcluirMulta = async () => {
+    if (!loanId) return
+    setRemovingMulta(true)
+    try {
+      const res = await fetch(`/api/loans/${loanId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ penaltyFee: 0, dailyInterest: false, dailyInterestAmount: 0 }),
+      })
+      if (res.ok) {
+        await fetchLoan()
+      }
+    } finally {
+      setRemovingMulta(false)
+    }
+  }
 
   const handleClose = () => {
     if (onClose) {
@@ -165,6 +186,16 @@ export function LoanDetailsContent({
     PER_INSTALLMENT: "Por Parcela",
     TOTAL: "Sobre o Total",
     FIXED_AMOUNT: "Valor Fixo",
+  }
+
+  const getInstallmentOverdueDetails = (installment: Installment) => {
+    if (installment.status === "PAID") return { daysOver: 0, juros: 0, multa: 0 }
+    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0)
+    const dueStart = new Date(installment.dueDate); dueStart.setHours(0, 0, 0, 0)
+    const daysOver = Math.max(0, Math.floor((todayStart.getTime() - dueStart.getTime()) / 86400000))
+    if (daysOver === 0) return { daysOver: 0, juros: 0, multa: 0 }
+    const dailyRate = getOverdueDailyAmountBRL(loanData)
+    return { daysOver, juros: dailyRate * daysOver, multa: loan.penaltyFee || 0 }
   }
 
   const statusLabel: Record<Installment["status"], string> = {
@@ -241,6 +272,16 @@ export function LoanDetailsContent({
               <div>
                 <div className="mb-1 flex items-center gap-1.5 text-[13px] text-white/75">💰 Lucro Previsto</div>
                 <div className="text-xl font-bold text-white">{formatCurrency(loan.profit)}</div>
+                <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                  <span className="inline-flex items-center gap-1 rounded-sm bg-blue-500/15 px-1.5 py-0.5 text-[10px] font-medium text-blue-300">
+                    <DollarSign className="h-2.5 w-2.5" /> Juros: {formatCurrency(loan.profit)}
+                  </span>
+                  {overdueInterestTotal > 0 && (
+                    <span className="inline-flex items-center gap-1 rounded-sm bg-yellow-500/15 px-1.5 py-0.5 text-[10px] font-medium text-yellow-300">
+                      <AlertTriangle className="h-2.5 w-2.5" /> Multas: {formatCurrency(overdueInterestTotal)}
+                    </span>
+                  )}
+                </div>
               </div>
               <div>
                 <div className="mb-1 flex items-center gap-1.5 text-[13px] text-white/75">✅ Lucro Realizado</div>
@@ -281,22 +322,51 @@ export function LoanDetailsContent({
                 const overdue = !paid && (inst.status === "OVERDUE" || new Date(inst.dueDate) < todayStart)
                 const label = paid ? "Pago" : overdue ? "Atrasada" : "Pendente"
                 const labelColor = paid ? "text-green-300" : overdue ? "text-red-300" : "text-white/75"
+                const overdueDetails = overdue ? getInstallmentOverdueDetails(inst) : { daysOver: 0, juros: 0, multa: 0 }
+                const installmentCharge = overdueDetails.juros + overdueDetails.multa
+                const remainingBase = Math.max(0, inst.amount - inst.paidAmount)
                 return (
-                  <div key={inst.id} className="grid grid-cols-[1fr_auto_1fr_auto] items-center gap-3 text-sm text-white/90">
-                    <span>Parcela {inst.number}/{totalInstallments}</span>
-                    <span className="text-center font-semibold">{formatCurrency(inst.amount)}</span>
-                    <span className="text-center text-white/75">{formatDate(inst.dueDate)}</span>
-                    <span className={`text-right font-semibold ${labelColor}`}>{label}</span>
+                  <div key={inst.id}>
+                    <div className="grid grid-cols-[1fr_auto_1fr_auto] items-center gap-3 text-sm text-white/90">
+                      <span>Parcela {inst.number}/{totalInstallments}</span>
+                      <span className="text-center font-semibold">{formatCurrency(inst.amount)}</span>
+                      <span className="text-center text-white/75">{formatDate(inst.dueDate)}</span>
+                      <span className={`text-right font-semibold ${labelColor}`}>{label}</span>
+                    </div>
+                    {installmentCharge > 0 && (
+                      <div className="mt-1.5 rounded-sm bg-orange-500/20 px-3 py-2">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="flex items-center gap-1.5 text-sm text-white/90">
+                            🔥 Multa aplicada ({overdueDetails.daysOver} dias)
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-white">+{formatCurrency(installmentCharge)}</span>
+                            <button
+                              type="button"
+                              onClick={onEditMulta}
+                              title="Editar multa"
+                              className="flex h-6 w-6 items-center justify-center rounded-sm text-blue-400 transition-colors hover:bg-blue-500/20 hover:text-blue-300"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleExcluirMulta}
+                              disabled={removingMulta}
+                              title="Excluir multa"
+                              className="flex h-6 w-6 items-center justify-center rounded-sm text-red-400 transition-colors hover:bg-red-500/20 hover:text-red-300 disabled:opacity-50"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                        <p className="mt-1 text-xs text-white/60">Total com multa: {formatCurrency(remainingBase + installmentCharge)}</p>
+                      </div>
+                    )}
                   </div>
                 )
               })}
             </div>
-          </div>
-
-          {/* Contato do Cliente */}
-          <div className={cardClass}>
-            <div className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-white">👤 Contato do Cliente</div>
-            <div className="flex items-center gap-2 text-sm text-white/90">📞 {loan.client.phone?.trim() ? loan.client.phone : "Não informado"}</div>
           </div>
 
           {/* Detalhes do Contrato */}

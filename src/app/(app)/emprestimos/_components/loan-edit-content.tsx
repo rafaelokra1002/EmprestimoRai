@@ -290,8 +290,8 @@ export function LoanEditContent({ presentation = "page", onClose }: LoanEditCont
   }
 
   const card = (
-    <div className="mx-auto max-w-3xl rounded-xl border border-gray-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-[#121614]">
-      <div className="max-h-[calc(100vh-48px)] space-y-6 overflow-y-auto px-6 pb-8 pt-4 sm:px-8">
+    <div className="mx-auto flex max-h-[calc(100vh-48px)] max-w-3xl flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-[#121614]">
+      <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-6 pb-8 pt-4 sm:px-8">
         <div className="flex items-center justify-between">
           <h1 className="text-base font-semibold tracking-tight text-slate-800 dark:text-zinc-100 sm:text-xl">Editar Empréstimo</h1>
           <button
@@ -337,7 +337,7 @@ export function LoanEditContent({ presentation = "page", onClose }: LoanEditCont
                     value={clientSearch}
                     onChange={(e) => setClientSearch(e.target.value)}
                     placeholder="Buscar cliente..."
-                    className="h-8 pl-9 border-0 bg-white shadow-none focus-visible:ring-0 focus-visible:border-0 dark:bg-[#171C1A]"
+                    className="h-8 pl-9 border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-0 dark:bg-transparent"
                     autoFocus
                   />
                 </div>
@@ -419,7 +419,14 @@ export function LoanEditContent({ presentation = "page", onClose }: LoanEditCont
           </div>
           <div>
             <Label className="text-xs font-medium text-slate-800 dark:text-zinc-100 sm:text-sm">Parcelas</Label>
-            <Input type="number" min={1} value={installmentCount} onChange={(e) => setInstallmentCount(Number(e.target.value) || 1)} className={inputClass} />
+            <Input
+              type="number"
+              min={1}
+              value={installmentCount || ""}
+              onChange={(e) => setInstallmentCount(Number(e.target.value) || 0)}
+              onBlur={() => setInstallmentCount((c) => Math.max(1, c || 1))}
+              className={inputClass}
+            />
           </div>
         </div>
 
@@ -585,10 +592,11 @@ export function LoanEditContent({ presentation = "page", onClose }: LoanEditCont
           )}
         </div>
 
-        <div className="flex justify-end gap-3 border-t border-gray-100 pt-2 dark:border-zinc-800">
-          <Button variant="outline" className="rounded-md px-5 !border-gray-300 dark:!border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-800" onClick={handleClose}>Cancelar</Button>
-          <Button className="rounded-md bg-primary px-5 text-white hover:bg-primary/90" onClick={handleSave} disabled={saving}>{saving ? "Salvando..." : "Salvar Alterações"}</Button>
-        </div>
+      </div>
+
+      <div className="shrink-0 rounded-b-xl flex justify-end gap-3 border-t border-gray-100 bg-white px-6 py-4 dark:border-zinc-800 dark:bg-[#121614] sm:px-8">
+        <Button variant="outline" className="rounded-md px-5 !border-gray-300 dark:!border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-800" onClick={handleClose}>Cancelar</Button>
+        <Button className="rounded-md bg-primary px-5 text-white hover:bg-primary/90" onClick={handleSave} disabled={saving}>{saving ? "Salvando..." : "Salvar Alterações"}</Button>
       </div>
     </div>
   )

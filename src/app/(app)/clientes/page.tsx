@@ -1463,7 +1463,7 @@ export default function ClientesPage() {
         onClose={() => setDialogOpen(false)}
         title={editing ? "Editar Cliente" : "Novo Cliente"}
         closeClassName="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500 text-white hover:bg-red-600 hover:text-white dark:text-white dark:hover:text-white"
-        className={`${activeTab === "endereco" || activeTab === "documentos" ? "w-full " : ""}max-w-2xl border dark:border-[#29322E] shadow-lg dark:bg-[#121614]`}
+        className={`${activeTab === "endereco" || activeTab === "documentos" ? "w-full " : ""}max-w-2xl border dark:border-[#29322E] shadow-lg dark:bg-[#121614] dark:[&_label]:!text-white`}
       >
         {/* Tabs */}
         <div className="grid grid-cols-1 gap-1 rounded-xl border border-gray-200 dark:border-[#29322E] bg-gray-100 dark:bg-[#191F1C] p-1 mb-6 sm:grid-cols-3">

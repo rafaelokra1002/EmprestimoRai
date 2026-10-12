@@ -300,7 +300,7 @@ export function LoanRenegotiationContent({ loan, remainingAmount, onClose, onSuc
 
   return (
     <div className="space-y-3">
-      <div className="rounded-lg border border-amber-400 bg-amber-50 px-3 py-2 text-sm leading-snug text-amber-500 dark:border-amber-500/60 dark:bg-amber-950/20 dark:text-amber-300">
+      <div className="rounded-lg border border-amber-400 bg-amber-50 px-3 py-2 text-sm leading-snug text-amber-500 dark:border-[#635110] dark:bg-[#3D3612] dark:text-yellow-300">
         <div className="flex items-start gap-2">
           <div className="hidden">
             <AlertTriangle className="h-4 w-4" />
@@ -320,8 +320,8 @@ export function LoanRenegotiationContent({ loan, remainingAmount, onClose, onSuc
         </div>
       )}
 
-      <div className="rounded-lg border border-amber-200 bg-amber-50/70 px-3 py-2 text-sm dark:border-amber-900/50 dark:bg-amber-950/20">
-        <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase text-amber-600 dark:text-amber-300">
+      <div className="rounded-lg border border-amber-200 bg-amber-50/70 px-3 py-2 text-sm dark:border-[#635110] dark:bg-[#282613]">
+        <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase text-amber-600 dark:text-amber-400">
           <FileText className="h-3.5 w-3.5" />
           <span>Contrato anterior</span>
         </div>
@@ -345,7 +345,7 @@ export function LoanRenegotiationContent({ loan, remainingAmount, onClose, onSuc
           </div>
         </div>
 
-        <div className="mt-2 space-y-0.5 border-t border-amber-200 pt-2 dark:border-amber-900/50">
+        <div className="mt-2 space-y-0.5 border-t border-amber-200 pt-2 dark:border-[#635110]/60">
           <div className="flex items-center justify-between gap-3">
             <span className="text-slate-500 dark:text-zinc-400">Total já recebido:</span>
             <span className="font-semibold !text-emerald-500">{formatCurrency(paidTotal)}</span>
@@ -384,11 +384,11 @@ export function LoanRenegotiationContent({ loan, remainingAmount, onClose, onSuc
         <div className="grid gap-3 sm:grid-cols-2">
           <div>
             <Label>Valor (R$)</Label>
-            <Input type="number" step="0.01" value={amount || ""} onChange={(e) => setAmount(Number(e.target.value))} className="mt-1 h-9" />
+            <Input type="number" step="0.01" value={amount || ""} onChange={(e) => setAmount(Number(e.target.value))} className="mt-1 h-9 dark:bg-zinc-900" />
           </div>
           <div>
             <Label>Juros (%)</Label>
-            <Input type="number" step="0.1" value={interestRate || ""} onChange={(e) => setInterestRate(Number(e.target.value))} className="mt-1 h-9" />
+            <Input type="number" step="0.1" value={interestRate || ""} onChange={(e) => setInterestRate(Number(e.target.value))} className="mt-1 h-9 dark:bg-zinc-900" />
           </div>
         </div>
 
@@ -403,7 +403,14 @@ export function LoanRenegotiationContent({ loan, remainingAmount, onClose, onSuc
           </div>
           <div>
             <Label>Parcelas</Label>
-            <Input type="number" min={1} value={installmentCount} onChange={(e) => setInstallmentCount(Math.max(Number(e.target.value) || 1, 1))} className="mt-1 h-9" />
+            <Input
+              type="number"
+              min={1}
+              value={installmentCount || ""}
+              onChange={(e) => setInstallmentCount(Number(e.target.value) || 0)}
+              onBlur={() => setInstallmentCount((c) => Math.max(1, c || 1))}
+              className="mt-1 h-9 dark:bg-zinc-900"
+            />
           </div>
         </div>
 
@@ -439,10 +446,20 @@ export function LoanRenegotiationContent({ loan, remainingAmount, onClose, onSuc
                       next[index] = Number(e.target.value) || 0
                       setCustomInstallmentAmounts(next)
                     }}
-                    className="mt-1 h-9"
+                    className="mt-1 h-9 dark:bg-zinc-900"
                   />
                 </div>
               ))}
+            </div>
+            <div className="mt-3 mx-2 rounded-lg bg-gray-100 dark:bg-[#222A26] px-3 py-2.5 space-y-1">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-500 dark:text-zinc-400">Soma das parcelas:</span>
+                <span className="font-bold tabular-nums text-gray-900 dark:text-zinc-100">{formatCurrency(customInstallmentAmounts.reduce((s, v) => s + (v || 0), 0))}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-500 dark:text-zinc-400">Lucro (juros):</span>
+                <span className={`font-bold tabular-nums ${preview.totalInterest >= 0 ? "text-primary" : "text-red-500"}`}>{formatCurrency(preview.totalInterest)}</span>
+              </div>
             </div>
           </div>
         ) : null}
@@ -469,14 +486,14 @@ export function LoanRenegotiationContent({ loan, remainingAmount, onClose, onSuc
           <div>
             <Label>Data do Contrato</Label>
             <div className="relative mt-1">
-              <Input type="date" value={contractDate} onChange={(e) => setContractDate(e.target.value)} className="h-9 pr-3 cal-green" />
+              <Input type="date" value={contractDate} onChange={(e) => setContractDate(e.target.value)} className="h-9 pr-3 cal-green dark:bg-zinc-900" />
             </div>
             <p className="mt-1 text-[11px] text-slate-500 dark:text-zinc-400">Quando foi fechado</p>
           </div>
           <div>
             <Label>1ª Parcela</Label>
             <div className="relative mt-1">
-              <Input type="date" value={firstInstallmentDate} onChange={(e) => setFirstInstallmentDate(e.target.value)} className="h-9 pr-3 cal-green" />
+              <Input type="date" value={firstInstallmentDate} onChange={(e) => setFirstInstallmentDate(e.target.value)} className="h-9 pr-3 cal-green dark:bg-zinc-900" />
             </div>
             <p className="mt-1 text-[11px] text-slate-500 dark:text-zinc-400">Quando começa a pagar</p>
           </div>
@@ -506,7 +523,7 @@ export function LoanRenegotiationContent({ loan, remainingAmount, onClose, onSuc
                       next[index] = e.target.value
                       setInstallmentDates(next)
                     }}
-                    className="h-9 pr-3 cal-green"
+                    className="h-9 pr-3 cal-green dark:bg-zinc-900"
                   />
                 </div>
               </div>
@@ -571,14 +588,14 @@ export function LoanRenegotiationContent({ loan, remainingAmount, onClose, onSuc
             </Button>
           </div>
           <p className="mt-2 text-xs leading-snug text-slate-500 dark:text-zinc-400">
-            Registre bens recebidos como garantia. NÃ£o afeta cÃ¡lculos - apenas aparece no comprovante.
+            Registre bens recebidos como garantia. Não afeta cálculos — apenas aparece no comprovante.
           </p>
           {showGuarantees && (
             <Textarea
               value={guarantees}
               onChange={(e) => setGuarantees(e.target.value)}
               className="mt-2 min-h-[72px]"
-              placeholder="Informe garantias, bens ou observaÃ§Ãµes adicionais"
+              placeholder="Informe garantias, bens ou observações adicionais"
             />
           )}
         </div>
