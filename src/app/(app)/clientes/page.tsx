@@ -790,12 +790,12 @@ export default function ClientesPage() {
           {aprovacaoTab === "pendentes" && (
             <div className="space-y-3">
               {clients.filter(c => c.status === "INACTIVE").length === 0 ? (
-                <div className="rounded-xl border border-green-500/50 dark:border-green-800/50 bg-white dark:bg-zinc-900 p-8 text-center text-sm text-gray-400 dark:text-zinc-500">
+                <div className="rounded-xl border border-green-500/50 dark:border-green-800/50 bg-white dark:bg-[#191F1C] p-8 text-center text-sm text-gray-400 dark:text-zinc-500">
                   Nenhum cadastro pendente de aprovação
                 </div>
               ) : (
                 clients.filter(c => c.status === "INACTIVE").map((client) => (
-                  <div key={client.id} className="rounded-xl border border-green-500/50 dark:border-green-800/50 bg-white dark:bg-zinc-900 px-5 py-4">
+                  <div key={client.id} className="rounded-xl border border-green-500/50 dark:border-green-800/50 bg-white dark:bg-[#191F1C] px-5 py-4">
                     {/* Header: nome + badge + data */}
                     <div className="flex items-start justify-between gap-4 mb-3">
                       <div>
@@ -884,12 +884,12 @@ export default function ClientesPage() {
           {aprovacaoTab === "historico" && (
             <div className="space-y-2">
               {aprovacaoHistorico.length === 0 ? (
-                <div className="rounded-xl border border-green-500/50 dark:border-green-800/50 bg-white dark:bg-zinc-900 p-8 text-center text-sm text-gray-400 dark:text-zinc-500">
+                <div className="rounded-xl border border-green-500/50 dark:border-green-800/50 bg-white dark:bg-[#191F1C] p-8 text-center text-sm text-gray-400 dark:text-zinc-500">
                   Nenhuma ação registrada nesta sessão
                 </div>
               ) : (
                 aprovacaoHistorico.map((item, i) => (
-                  <div key={i} className="flex items-center justify-between gap-4 rounded-xl border border-green-500/50 dark:border-green-800/50 bg-white dark:bg-zinc-900 px-5 py-4">
+                  <div key={i} className="flex items-center justify-between gap-4 rounded-xl border border-green-500/50 dark:border-green-800/50 bg-white dark:bg-[#191F1C] px-5 py-4">
                     <div>
                       <p className="font-semibold text-gray-900 dark:text-zinc-100">{item.name}</p>
                       {(item.phone || item.email) && (
@@ -925,7 +925,7 @@ export default function ClientesPage() {
 
       {/* Listing */}
       {clientesView === "clientes" && (viewMode === "table" ? (
-        <div className="rounded-xl overflow-hidden border border-[#10b981]/30 dark:border-[#22C35D]/30 bg-[#f4faf7] dark:bg-[#121614] dark:shadow-[0_4px_20px_-2px_rgba(34,195,93,0.10)] dark:[&_tr]:border-[#29322E]">
+        <div className="rounded-xl overflow-hidden border border-[#10b981]/30 dark:border-[#22C35D]/30 bg-[#f4faf7] dark:bg-[#191F1C] dark:shadow-[0_4px_20px_-2px_rgba(34,195,93,0.10)] dark:[&_tr]:border-[#29322E]">
           {/* Search bar */}
           <div className="flex items-center gap-3 px-5 py-4 bg-transparent">
             <div className="relative flex-1">
@@ -1051,7 +1051,7 @@ export default function ClientesPage() {
           </Table>
         </div>
       ) : (
-        <div className="rounded-xl overflow-hidden border border-[#10b981]/30 dark:border-[#22C35D]/30 bg-[#f4faf7] dark:bg-[#121614] dark:shadow-[0_4px_20px_-2px_rgba(34,195,93,0.10)] dark:[&_tr]:border-[#29322E]">
+        <div className="rounded-xl overflow-hidden border border-[#10b981]/30 dark:border-[#22C35D]/30 bg-[#f4faf7] dark:bg-[#191F1C] dark:shadow-[0_4px_20px_-2px_rgba(34,195,93,0.10)] dark:[&_tr]:border-[#29322E]">
           {/* Search bar */}
           <div className="flex items-center gap-3 px-5 py-4 bg-transparent">
             <div className="relative flex-1">
@@ -1361,7 +1361,7 @@ export default function ClientesPage() {
               <div className="flex items-center justify-between px-5 pt-5 pb-3">
                 <div className="flex items-center gap-2">
                   <Share2 className="h-5 w-5 text-green-500" />
-                  <h2 className="text-base font-bold text-gray-900 dark:text-zinc-100">Link de cadastro de clientes</h2>
+                  <h2 className="text-lg font-bold text-gray-900 dark:text-zinc-100">Link de cadastro de clientes</h2>
                 </div>
                 <button onClick={() => setShareModalOpen(false)} className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500 text-white transition-colors hover:bg-red-600">
                   <X className="h-4 w-4" />
@@ -1369,16 +1369,16 @@ export default function ClientesPage() {
               </div>
 
               <div className="px-5 pb-5 space-y-4">
-                <p className="text-sm text-gray-500 dark:text-zinc-400">
+                <p className="text-base text-gray-500 dark:text-zinc-400">
                   Compartilhe o link abaixo com seus clientes. Eles preenchem os dados pelo celular e você aprova antes de eles entrarem na sua lista.
                 </p>
 
                 {/* Link box */}
                 <div className="flex items-center gap-2 rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-[#121614] px-3 py-2.5">
-                  <span className="flex-1 truncate text-xs text-gray-600 dark:text-zinc-300 font-mono">{link}</span>
+                  <span className="flex-1 truncate text-sm text-gray-600 dark:text-zinc-300 font-mono">{link}</span>
                   <button
                     onClick={handleCopy}
-                    className="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-primary hover:bg-primary/90 px-3 py-1.5 text-xs font-semibold text-white transition-colors"
+                    className="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-primary hover:bg-primary/90 px-3 py-1.5 text-sm font-semibold text-white transition-colors"
                   >
                     <Copy className="h-3.5 w-3.5" />
                     {shareLinkCopied ? "Copiado!" : "Copiar mensagem"}
@@ -1388,11 +1388,11 @@ export default function ClientesPage() {
                 {/* Mensagem que será enviada */}
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Mensagem que será enviada</p>
+                    <p className="text-base font-semibold text-gray-900 dark:text-zinc-100">Mensagem que será enviada</p>
                     <button
                       type="button"
                       onClick={() => setShareMessage(DEFAULT_SHARE_MESSAGE)}
-                      className="text-xs font-medium text-gray-500 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+                      className="text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-zinc-200"
                     >
                       Restaurar padrão
                     </button>
@@ -1401,10 +1401,10 @@ export default function ClientesPage() {
                     value={shareMessage}
                     onChange={(e) => setShareMessage(e.target.value)}
                     rows={5}
-                    className="w-full resize-none rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-[#121614] px-3 py-2.5 text-sm text-gray-800 dark:text-zinc-200 placeholder-gray-400 dark:placeholder-zinc-500 outline-none focus:ring-2 focus:ring-primary/40"
+                    className="w-full resize-none rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-[#121614] px-3 py-2.5 text-base text-gray-800 dark:text-zinc-200 placeholder-gray-400 dark:placeholder-zinc-500 outline-none focus:ring-2 focus:ring-primary/40"
                   />
-                  <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">
-                    Use <code className="rounded bg-gray-100 dark:bg-zinc-800 px-1 py-0.5 text-[11px] text-gray-600 dark:text-zinc-300">{"{link}"}</code> para indicar onde o link aparece. Se você apagar, o link é anexado ao final automaticamente.
+                  <p className="mt-1 text-sm text-gray-400 dark:text-zinc-500">
+                    Use <code className="rounded bg-gray-100 dark:bg-zinc-800 px-1 py-0.5 text-xs text-gray-600 dark:text-zinc-300">{"{link}"}</code> para indicar onde o link aparece. Se você apagar, o link é anexado ao final automaticamente.
                   </p>
                 </div>
 
@@ -1412,7 +1412,7 @@ export default function ClientesPage() {
                 <div className="rounded-xl border border-green-200 dark:border-green-900/40 bg-green-500/5 dark:bg-[#131F18] p-4 space-y-2">
                   <div className="flex items-center gap-1.5 mb-1">
                     <Info className="h-4 w-4 text-green-600 dark:text-green-400" />
-                    <p className="text-sm font-semibold text-green-700 dark:text-white">Como funciona</p>
+                    <p className="text-base font-semibold text-green-700 dark:text-white">Como funciona</p>
                   </div>
                   {[
                     "Envie o link para o cliente (WhatsApp, e-mail, etc).",
@@ -1420,7 +1420,7 @@ export default function ClientesPage() {
                     "O cadastro fica pendente até a sua aprovação.",
                     <>Aprove ou rejeite na aba <strong className="text-gray-900 dark:text-white">"Aprovações"</strong> aqui mesmo nesta página.</>,
                   ].map((step, i) => (
-                    <p key={i} className="text-sm text-gray-600 dark:text-zinc-400">
+                    <p key={i} className="text-base text-gray-600 dark:text-zinc-400">
                       {i + 1}. {step}
                     </p>
                   ))}
@@ -1429,7 +1429,7 @@ export default function ClientesPage() {
                 {/* WhatsApp button */}
                 <button
                   onClick={handleWhatsApp}
-                  className="w-full flex items-center justify-center gap-2 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 px-4 py-3 text-sm font-semibold text-gray-700 dark:text-zinc-200 transition-colors"
+                  className="w-full flex items-center justify-center gap-2 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-[#121614] hover:bg-gray-50 dark:hover:bg-[#191F1C] px-4 py-3 text-base font-semibold text-gray-700 hover:text-primary dark:text-zinc-200 dark:hover:text-primary transition-colors"
                 >
                   <MessageCircle className="h-4 w-4 text-green-500" />
                   Compartilhar no WhatsApp
@@ -1502,10 +1502,10 @@ export default function ClientesPage() {
                   <img
                     src={photoPreview}
                     alt="Foto do cliente"
-                    className="h-20 w-20 rounded-full object-cover ring-2 ring-ring ring-offset-2"
+                    className="h-28 w-28 rounded-full object-cover ring-2 ring-ring ring-offset-2"
                   />
                 ) : (
-                  <div className="h-20 w-20 rounded-full bg-primary flex items-center justify-center text-white text-2xl font-bold">
+                  <div className="h-28 w-28 rounded-full bg-primary flex items-center justify-center text-white text-4xl font-bold">
                     {watchName ? watchName.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase() : "CL"}
                   </div>
                 )}
@@ -1530,7 +1530,7 @@ export default function ClientesPage() {
 
               {/* Nome Completo */}
               <div>
-                <Label className="flex items-center gap-1.5"><User className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Nome Completo <span className="text-red-500">*</span></Label>
+                <Label className="flex items-center gap-1.5 dark:!text-white"><User className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Nome Completo <span className="text-red-500">*</span></Label>
                 <Input {...register("name")} className="mt-1 dark:bg-[#121614] dark:border-[#29322E]" />
                 {errors.name && <p className="text-red-600 text-xs mt-1">{errors.name.message}</p>}
               </div>
@@ -1538,7 +1538,7 @@ export default function ClientesPage() {
               {/* CPF + RG */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <Label className="flex items-center gap-1.5"><CreditCard className="h-4 w-4 text-gray-400 dark:text-zinc-500" />CPF</Label>
+                  <Label className="flex items-center gap-1.5 dark:!text-white"><CreditCard className="h-4 w-4 text-gray-400 dark:text-zinc-500" />CPF</Label>
                   <Input
                     {...register("document")}
                     placeholder="000.000.000-00"
@@ -1548,7 +1548,7 @@ export default function ClientesPage() {
                   {errors.document && <p className="text-red-600 text-xs mt-1">{errors.document.message}</p>}
                 </div>
                 <div>
-                  <Label className="flex items-center gap-1.5"><CreditCard className="h-4 w-4 text-gray-400 dark:text-zinc-500" />RG</Label>
+                  <Label className="flex items-center gap-1.5 dark:!text-white"><CreditCard className="h-4 w-4 text-gray-400 dark:text-zinc-500" />RG</Label>
                   <Input
                     {...register("rg")}
                     placeholder="00.000.000-0"
@@ -1560,7 +1560,7 @@ export default function ClientesPage() {
               {/* E-mail + Telefone (+55) */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <Label className="flex items-center gap-1.5"><Mail className="h-4 w-4 text-gray-400 dark:text-zinc-500" />E-mail</Label>
+                  <Label className="flex items-center gap-1.5 dark:!text-white"><Mail className="h-4 w-4 text-gray-400 dark:text-zinc-500" />E-mail</Label>
                   <Input
                     {...register("email")}
                     type="email"
@@ -1569,7 +1569,7 @@ export default function ClientesPage() {
                   />
                 </div>
                 <div>
-                  <Label className="flex items-center gap-1.5"><Phone className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Telefone (com DDD)</Label>
+                  <Label className="flex items-center gap-1.5 dark:!text-white"><Phone className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Telefone (com DDD)</Label>
                   <div className="mt-1 flex gap-2">
                     <span className="flex h-10 shrink-0 items-center rounded-md border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800/60 px-3 text-sm font-medium text-gray-600 dark:text-zinc-300">+55</span>
                     <Input
@@ -1586,7 +1586,7 @@ export default function ClientesPage() {
               {/* Instagram + Facebook */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <Label className="flex items-center gap-1.5"><Instagram className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Instagram</Label>
+                  <Label className="flex items-center gap-1.5 dark:!text-white"><Instagram className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Instagram</Label>
                   <Input
                     {...register("instagram")}
                     placeholder="@usuario"
@@ -1594,7 +1594,7 @@ export default function ClientesPage() {
                   />
                 </div>
                 <div>
-                  <Label className="flex items-center gap-1.5"><Globe className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Facebook</Label>
+                  <Label className="flex items-center gap-1.5 dark:!text-white"><Globe className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Facebook</Label>
                   <Input
                     {...register("facebook")}
                     placeholder="Nome ou URL do perfil"
@@ -1606,7 +1606,7 @@ export default function ClientesPage() {
               {/* Profissão e Local de Trabalho */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <Label className="flex items-center gap-1.5"><Briefcase className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Profissão</Label>
+                  <Label className="flex items-center gap-1.5 dark:!text-white"><Briefcase className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Profissão</Label>
                   <Input
                     {...register("profession")}
                     placeholder="Ex: Eletricista, Comerciante..."
@@ -1614,7 +1614,7 @@ export default function ClientesPage() {
                   />
                 </div>
                 <div>
-                  <Label className="flex items-center gap-1.5"><Building2 className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Local de Trabalho</Label>
+                  <Label className="flex items-center gap-1.5 dark:!text-white"><Building2 className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Local de Trabalho</Label>
                   <Input
                     {...register("workplace")}
                     placeholder="Ex: Empresa X, Loja Y..."
@@ -1626,7 +1626,7 @@ export default function ClientesPage() {
               {/* Renda e Valor Solicitado */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <Label className="flex items-center gap-1.5"><DollarSign className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Renda</Label>
+                  <Label className="flex items-center gap-1.5 dark:!text-white"><DollarSign className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Renda</Label>
                   <Input
                     type="number"
                     step="0.01"
@@ -1636,7 +1636,7 @@ export default function ClientesPage() {
                   />
                 </div>
                 <div>
-                  <Label className="flex items-center gap-1.5"><DollarSign className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Valor Solicitado</Label>
+                  <Label className="flex items-center gap-1.5 dark:!text-white"><DollarSign className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Valor Solicitado</Label>
                   <Input
                     type="number"
                     step="0.01"
@@ -1649,7 +1649,7 @@ export default function ClientesPage() {
 
               {/* Categoria */}
               <div>
-                <Label className="flex items-center gap-1.5"><Tag className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Categoria</Label>
+                <Label className="flex items-center gap-1.5 dark:!text-white"><Tag className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Categoria</Label>
                 <select
                   {...register("category")}
                   className="flex h-10 w-full rounded-md border border-gray-300 dark:border-[#29322E] bg-white dark:bg-[#121614] px-3 py-2 text-sm text-gray-900 dark:text-zinc-100 mt-1 focus-visible:outline-none focus:ring-2 focus:ring-ring focus:border-ring outline-none"
@@ -1665,52 +1665,54 @@ export default function ClientesPage() {
               </div>
 
               {/* Cliente veio por indicação */}
-              <div
-                className="flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-200 dark:border-zinc-800 cursor-pointer hover:bg-white dark:bg-zinc-900 transition-colors"
-                onClick={() => {
-                  const nextReferral = !watchReferral
-                  setValue("referral", nextReferral)
-                  if (!nextReferral) {
-                    setValue("referralName", "")
-                    setValue("referralPhone", "")
-                  }
-                }}
-              >
-                <div className="flex h-5 w-5 items-center justify-center rounded-full text-primary">
-                  <CheckCircle2 className={`h-5 w-5 transition-opacity ${watchReferral ? "opacity-100" : "opacity-30"}`} />
+              <div className="rounded-xl border border-gray-200 dark:border-zinc-800 dark:bg-[#171C19] overflow-hidden">
+                <div
+                  className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                  onClick={() => {
+                    const nextReferral = !watchReferral
+                    setValue("referral", nextReferral)
+                    if (!nextReferral) {
+                      setValue("referralName", "")
+                      setValue("referralPhone", "")
+                    }
+                  }}
+                >
+                  <div className="flex h-5 w-5 items-center justify-center rounded-full text-primary">
+                    <CheckCircle2 className={`h-5 w-5 transition-opacity ${watchReferral ? "opacity-100" : "opacity-30"}`} />
+                  </div>
+                  <Users className="h-4 w-4 text-gray-500 dark:text-zinc-400" />
+                  <span className="text-sm font-semibold text-gray-700 dark:text-white">Cliente veio por indicação</span>
                 </div>
-                <Users className="h-4 w-4 text-gray-500 dark:text-zinc-400" />
-                <span className="text-sm text-gray-700 dark:text-zinc-300">Cliente veio por indicação</span>
-              </div>
 
-              {watchReferral && (
-                <div className="rounded-2xl border border-gray-200 bg-gray-50/80 p-4 dark:border-zinc-800 dark:bg-zinc-900/80">
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div>
-                      <Label className="flex items-center gap-1.5"><User className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Nome de quem indicou</Label>
-                      <Input
-                        {...register("referralName")}
-                        placeholder="Nome do indicador"
-                        className="mt-1 dark:bg-[#121614] dark:border-[#29322E]"
-                      />
-                    </div>
-                    <div>
-                      <Label className="flex items-center gap-1.5"><Phone className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Telefone de quem indicou</Label>
-                      <Input
-                        {...register("referralPhone")}
-                        placeholder="(00) 00000-0000"
-                        className="mt-1 dark:bg-[#121614] dark:border-[#29322E]"
-                        onChange={(e) => setValue("referralPhone", phoneMask(e.target.value))}
-                      />
+                {watchReferral && (
+                  <div className="px-4 pb-4">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div>
+                        <Label className="flex items-center gap-1.5 dark:!text-white"><User className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Nome de quem indicou</Label>
+                        <Input
+                          {...register("referralName")}
+                          placeholder="Nome do indicador"
+                          className="mt-1 dark:bg-[#121614] dark:border-[#29322E]"
+                        />
+                      </div>
+                      <div>
+                        <Label className="flex items-center gap-1.5 dark:!text-white"><Phone className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Telefone de quem indicou</Label>
+                        <Input
+                          {...register("referralPhone")}
+                          placeholder="(00) 00000-0000"
+                          className="mt-1 dark:bg-[#121614] dark:border-[#29322E]"
+                          onChange={(e) => setValue("referralPhone", phoneMask(e.target.value))}
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
 
               {/* Tipo de Cliente - removed */}
 
               <div>
-                <Label className="flex items-center gap-1.5"><UserCheck className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Status do Cliente</Label>
+                <Label className="flex items-center gap-1.5 dark:!text-white"><UserCheck className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Status do Cliente</Label>
                 <select
                   {...register("status")}
                   className="mt-1 flex h-10 w-full rounded-md border border-gray-300 dark:border-[#29322E] bg-white dark:bg-[#121614] px-3 py-2 text-sm text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring outline-none"
@@ -1727,7 +1729,7 @@ export default function ClientesPage() {
 
               {/* Observações */}
               <div>
-                <Label className="flex items-center gap-1.5 font-semibold text-gray-800 dark:text-zinc-200"><FileText className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Observações</Label>
+                <Label className="flex items-center gap-1.5 font-semibold text-gray-800 dark:text-zinc-200 dark:!text-white"><FileText className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Observações</Label>
                 <Textarea
                   {...register("notes")}
                   className="mt-1 dark:bg-[#121614] dark:border-[#29322E]"
@@ -1742,7 +1744,7 @@ export default function ClientesPage() {
             <div className="space-y-4">
               {/* CEP com botão Buscar */}
               <div>
-                <Label className="flex items-center gap-1.5 font-semibold"><MapPin className="h-4 w-4 text-gray-400 dark:text-zinc-500" />CEP</Label>
+                <Label className="flex items-center gap-1.5 font-semibold dark:!text-white"><MapPin className="h-4 w-4 text-gray-400 dark:text-zinc-500" />CEP</Label>
                 <div className="mt-1 flex flex-col gap-2 sm:flex-row">
                   <Input
                     {...register("zipCode")}
@@ -1755,7 +1757,7 @@ export default function ClientesPage() {
                     type="button"
                     onClick={searchCep}
                     disabled={cepLoading}
-                    className="flex w-full items-center justify-center gap-2 rounded-md border border-gray-300 bg-gray-50 px-4 py-2 text-sm text-gray-700 transition-colors disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800 sm:w-auto"
+                    className="flex w-full items-center justify-center gap-2 rounded-md border border-gray-300 bg-gray-50 px-4 py-2 text-sm text-gray-700 transition-colors disabled:opacity-50 dark:border-[#29322E] dark:bg-[#121614] dark:text-zinc-300 dark:hover:bg-[#191F1C] sm:w-auto"
                   >
                     <Search className="h-4 w-4" />
                     {cepLoading ? "Buscando..." : "Buscar"}
@@ -1765,36 +1767,36 @@ export default function ClientesPage() {
 
               {/* Rua / Logradouro */}
               <div>
-                <Label className="flex items-center gap-1.5 font-semibold"><MapPin className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Rua / Logradouro</Label>
+                <Label className="flex items-center gap-1.5 font-semibold dark:!text-white"><MapPin className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Rua / Logradouro</Label>
                 <Input {...register("address")} placeholder="Preenchido automaticamente pelo CEP" className="mt-1 dark:bg-[#121614] dark:border-[#29322E]" />
               </div>
 
               {/* Número e Complemento */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <Label className="flex items-center gap-1.5 font-semibold"><Hash className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Número</Label>
+                  <Label className="flex items-center gap-1.5 font-semibold dark:!text-white"><Hash className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Número</Label>
                   <Input {...register("number")} placeholder="123" className="mt-1 dark:bg-[#121614] dark:border-[#29322E]" />
                 </div>
                 <div>
-                  <Label className="flex items-center gap-1.5 font-semibold"><Home className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Complemento</Label>
+                  <Label className="flex items-center gap-1.5 font-semibold dark:!text-white"><Home className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Complemento</Label>
                   <Input {...register("complement")} placeholder="Apto 101" className="mt-1 dark:bg-[#121614] dark:border-[#29322E]" />
                 </div>
               </div>
 
               {/* Bairro */}
               <div>
-                <Label className="flex items-center gap-1.5 font-semibold"><MapPin className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Bairro</Label>
+                <Label className="flex items-center gap-1.5 font-semibold dark:!text-white"><MapPin className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Bairro</Label>
                 <Input {...register("neighborhood")} placeholder="Preenchido automaticamente pelo CEP" className="mt-1 dark:bg-[#121614] dark:border-[#29322E]" />
               </div>
 
               {/* Cidade e Estado */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <Label className="flex items-center gap-1.5 font-semibold"><MapPin className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Cidade</Label>
+                  <Label className="flex items-center gap-1.5 font-semibold dark:!text-white"><MapPin className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Cidade</Label>
                   <Input {...register("city")} placeholder="Preenchido automaticamente" className="mt-1 dark:bg-[#121614] dark:border-[#29322E]" />
                 </div>
                 <div>
-                  <Label className="flex items-center gap-1.5 font-semibold"><MapPin className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Estado (UF)</Label>
+                  <Label className="flex items-center gap-1.5 font-semibold dark:!text-white"><MapPin className="h-4 w-4 text-gray-400 dark:text-zinc-500" />Estado (UF)</Label>
                   <Input {...register("state")} placeholder="UF" className="mt-1 dark:bg-[#121614] dark:border-[#29322E]" />
                 </div>
               </div>
@@ -1812,7 +1814,7 @@ export default function ClientesPage() {
 
                   {/* Descrição do documento */}
                   <div>
-                    <Label className="font-semibold">Descrição do Documento (opcional)</Label>
+                    <Label className="font-semibold dark:!text-white">Descrição do Documento (opcional)</Label>
                     <Input
                       value={docDescription}
                       onChange={(e) => setDocDescription(e.target.value)}
@@ -1890,12 +1892,12 @@ export default function ClientesPage() {
                       ) : (
                         <div className="space-y-2">
                           {pendingDocs.map((pd, i) => (
-                            <div key={i} className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 dark:border-[#29322E] dark:bg-[#121614]">
+                            <div key={i} className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 transition-colors hover:bg-gray-50 dark:border-[#29322E] dark:bg-[#1A201D] dark:hover:bg-[#222A26]">
                               <div className="flex min-w-0 items-center gap-3">
-                                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-red-500/10">
+                                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-blue-500/10">
                                   {pd.file.type.startsWith("image/")
-                                    ? <Image className="h-4 w-4 text-red-500" />
-                                    : <FileText className="h-4 w-4 text-red-500" />}
+                                    ? <Image className="h-4 w-4 text-blue-500" />
+                                    : <FileText className="h-4 w-4 text-blue-500" />}
                                 </span>
                                 <div className="min-w-0">
                                   <p className="truncate text-sm font-medium text-gray-800 dark:text-zinc-200">{pd.file.name}</p>
@@ -1904,14 +1906,31 @@ export default function ClientesPage() {
                                   </p>
                                 </div>
                               </div>
-                              <button
-                                type="button"
-                                onClick={() => setPendingDocs((prev) => prev.filter((_, idx) => idx !== i))}
-                                className="p-1.5 rounded-md text-red-500 hover:bg-red-500/10 transition-colors shrink-0"
-                                title="Remover"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
+                              <div className="flex items-center gap-1 shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const url = URL.createObjectURL(pd.file)
+                                    const a = document.createElement("a")
+                                    a.href = url
+                                    a.download = pd.file.name
+                                    a.click()
+                                    URL.revokeObjectURL(url)
+                                  }}
+                                  className="p-1.5 rounded-md text-gray-500 hover:text-primary dark:text-zinc-400 dark:hover:text-primary transition-colors"
+                                  title="Baixar documento"
+                                >
+                                  <Download className="h-4 w-4" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setPendingDocs((prev) => prev.filter((_, idx) => idx !== i))}
+                                  className="p-1.5 rounded-md text-red-500 hover:bg-red-500/10 transition-colors"
+                                  title="Remover"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -1937,7 +1956,7 @@ export default function ClientesPage() {
                           return (
                           <div
                             key={doc.id}
-                            className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 dark:border-[#29322E] dark:bg-[#121614]"
+                            className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 transition-colors hover:bg-gray-50 dark:border-[#29322E] dark:bg-[#121614] dark:hover:bg-[#222A26]"
                           >
                             <button
                               type="button"
@@ -1961,7 +1980,7 @@ export default function ClientesPage() {
                               <button
                                 type="button"
                                 onClick={() => handleDocDownload(doc)}
-                                className="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-800 dark:text-zinc-400 dark:hover:bg-[#191F1C] dark:hover:text-zinc-100 transition-colors"
+                                className="p-1.5 rounded-md text-gray-500 hover:text-primary dark:text-zinc-400 dark:hover:text-primary transition-colors"
                                 title="Baixar documento"
                               >
                                 <Download className="h-4 w-4" />
@@ -1993,12 +2012,12 @@ export default function ClientesPage() {
           <div className="flex flex-col gap-3 border-t border-gray-200 pt-4 dark:border-[#29322E] sm:flex-row sm:items-center sm:justify-between">
             <div>
               {activeTab === "endereco" && (
-                <Button type="button" variant="outline" onClick={() => setActiveTab("dados")}>
+                <Button type="button" variant="outline" className="dark:bg-[#121614] dark:border-[#29322E] dark:hover:bg-[#191F1C]" onClick={() => setActiveTab("dados")}>
                   ← Voltar
                 </Button>
               )}
               {activeTab === "documentos" && (
-                <Button type="button" variant="outline" onClick={() => setActiveTab("endereco")}>
+                <Button type="button" variant="outline" className="dark:bg-[#121614] dark:border-[#29322E] dark:hover:bg-[#191F1C]" onClick={() => setActiveTab("endereco")}>
                   ← Voltar
                 </Button>
               )}

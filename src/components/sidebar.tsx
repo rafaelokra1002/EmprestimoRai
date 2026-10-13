@@ -164,7 +164,7 @@ export function Sidebar() {
         ? "border-l-[#D4A574] text-white font-semibold shadow-md shadow-black/30 bg-[radial-gradient(circle_at_left,rgba(212,165,116,0.18),transparent_60%),linear-gradient(135deg,#0F1419_0%,rgba(30,41,59,0.85)_55%,#0F1419_100%)]"
         : "font-normal text-white/80 hover:bg-white/10 hover:text-white hover:border-l-[#D4A574]/40"
     )
-    const iconCls = cn(sub ? "h-5 w-5" : "h-6 w-6", "shrink-0")
+    const iconCls = cn(sub ? "h-4 w-4" : "h-5 w-5", "shrink-0")
     const inner = (
       <>
         <item.icon className={iconCls} />
@@ -237,8 +237,8 @@ export function Sidebar() {
                     cardColors[item.color].card
                   )}
                 >
-                  <span className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-full", cardColors[item.color].badge)}>
-                    <item.icon className={cn("h-[18px] w-[18px]", cardColors[item.color].icon)} />
+                  <span className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-full", cardColors[item.color].badge)}>
+                    <item.icon className={cn("h-4 w-4", cardColors[item.color].icon)} />
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className="truncate font-semibold text-sm leading-tight text-white">{item.label}</p>
