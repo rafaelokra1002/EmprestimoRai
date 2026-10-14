@@ -14,7 +14,7 @@ import { FilterDropdown } from "@/components/ui/filter-dropdown"
 import { Textarea } from "@/components/ui/textarea"
 import { Avatar } from "@/components/avatar"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Search, Pencil, Trash2, User, MapPin, FileText, Users, Camera, Upload, Eye, Image, DollarSign, Briefcase, LayoutGrid, Rows3, Filter, CheckCircle2, MoreVertical, UserCheck, Phone, Mail, XCircle, X, Share2, MessageCircle, Copy, Info, Home, CreditCard, Instagram, Globe, Building2, Hash, Tag, Download } from "lucide-react"
+import { Plus, Search, Pencil, Trash2, User, MapPin, FileText, Users, Camera, Upload, Eye, Image, DollarSign, Briefcase, LayoutGrid, Rows3, Filter, CheckCircle2, MoreVertical, UserCheck, Phone, Mail, XCircle, X, Share2, MessageCircle, Copy, Info, Home, CreditCard, Instagram, Globe, Building2, Hash, Tag, Download, Navigation, Calendar, Locate, Maximize2, ExternalLink } from "lucide-react"
 import { useSession } from "next-auth/react"
 
 interface Client {
@@ -46,6 +46,16 @@ interface Client {
   score: number
   status: "ACTIVE" | "INACTIVE" | "DESAPARECIDO"
   createdAt: string
+  requestLatitude: number | null
+  requestLongitude: number | null
+  requestAccuracy: number | null
+  requestLocationAt: string | null
+  requestAddressApprox: string | null
+  updateLatitude: number | null
+  updateLongitude: number | null
+  updateAccuracy: number | null
+  updateLocationAt: string | null
+  updateAddressApprox: string | null
   loans: {
     id: string
     amount: number
@@ -68,7 +78,7 @@ interface Client {
   }[]
 }
 
-type DialogTab = "dados" | "endereco" | "documentos"
+type DialogTab = "dados" | "endereco" | "documentos" | "localizacao"
 
 interface ClientDoc {
   id: string
@@ -156,6 +166,8 @@ export default function ClientesPage() {
   const [profileImagePreview, setProfileImagePreview] = useState<{ name: string; src: string } | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [mapPreview, setMapPreview] = useState<{ latitude: number; longitude: number; label: string } | null>(null)
+  const [deletingLocation, setDeletingLocation] = useState<"request" | "update" | null>(null)
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const docFileInputRef = useRef<HTMLInputElement>(null)
@@ -253,6 +265,28 @@ export default function ClientesPage() {
       await fetchClients()
     } finally {
       setAprovacaoLoading(null)
+    }
+  }
+
+  const handleDeleteLocation = async (type: "request" | "update") => {
+    if (!editing) return
+    setDeletingLocation(type)
+    try {
+      await fetch(`/api/clients/${editing.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clearLocation: type }),
+      })
+      setEditing((prev) =>
+        prev
+          ? type === "request"
+            ? { ...prev, requestLatitude: null, requestLongitude: null, requestAccuracy: null, requestLocationAt: null, requestAddressApprox: null }
+            : { ...prev, updateLatitude: null, updateLongitude: null, updateAccuracy: null, updateLocationAt: null, updateAddressApprox: null }
+          : prev
+      )
+      await fetchClients()
+    } finally {
+      setDeletingLocation(null)
     }
   }
 
@@ -600,7 +634,130 @@ export default function ClientesPage() {
     { key: "dados", label: "Dados Pessoais", icon: <User className="h-4 w-4" /> },
     { key: "endereco", label: "Endereço", icon: <MapPin className="h-4 w-4" /> },
     { key: "documentos", label: "Documentos", icon: <FileText className="h-4 w-4" /> },
+    { key: "localizacao", label: "Localização", icon: <Navigation className="h-4 w-4" /> },
   ]
+
+  const renderLocationCard = (opts: {
+    title: string
+    description: string
+    latitude: number | null
+    longitude: number | null
+    at: string | null
+    addressApprox: string | null
+    type: "request" | "update"
+  }) => {
+    const { title, description, latitude, longitude, at, addressApprox, type } = opts
+    const hasLocation = latitude != null && longitude != null
+
+    if (!hasLocation) {
+      return (
+        <div className="rounded-xl border border-dashed border-gray-300 dark:border-[#29322E] bg-gray-50 dark:bg-[#191F1C] p-4">
+          <div className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-zinc-300">
+            <Navigation className="h-4 w-4 text-gray-400 dark:text-zinc-500" />
+            {title}
+          </div>
+          <div className="mt-3 flex items-start gap-2 rounded-lg border border-dashed border-gray-300 dark:border-[#29322E] bg-white dark:bg-[#121614] px-3 py-2.5 text-sm text-gray-500 dark:text-zinc-400">
+            <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="font-medium text-gray-600 dark:text-zinc-300">
+                {type === "request" ? "Não há registro de localização da solicitação." : "Não há registro de atualização de cadastro."}
+              </p>
+              <p className="mt-0.5 text-xs">Esta seção será exibida apenas quando o cliente possuir uma localização registrada no sistema.</p>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    const addressLines = (addressApprox || "").split("\n").filter(Boolean)
+    const formattedDate = at
+      ? new Date(at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })
+      : null
+    const delta = 0.004
+    const bbox = `${longitude! - delta}%2C${latitude! - delta}%2C${longitude! + delta}%2C${latitude! + delta}`
+    const embedUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${latitude}%2C${longitude}`
+    const viewUrl = `https://www.openstreetmap.org/?mlat=${latitude}&mlon=${longitude}#map=17/${latitude}/${longitude}`
+    const deleting = deletingLocation === type
+
+    return (
+      <div className="rounded-xl border border-gray-200 dark:border-[#29322E] bg-white dark:bg-[#121614] p-4">
+        <div className="flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-zinc-100">
+          <Navigation className="h-4 w-4 text-green-600" />
+          {title}
+        </div>
+        <p className="mt-1 text-xs text-gray-500 dark:text-zinc-400">{description}</p>
+
+        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="space-y-3 text-sm">
+            <div className="flex items-start gap-2">
+              <Calendar className="h-4 w-4 mt-0.5 text-gray-400 dark:text-zinc-500" />
+              <div>
+                <p className="text-xs text-gray-500 dark:text-zinc-400">Data e hora</p>
+                <p className="font-medium text-gray-900 dark:text-zinc-100">{formattedDate || "-"}</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <MapPin className="h-4 w-4 mt-0.5 text-gray-400 dark:text-zinc-500" />
+              <div>
+                <p className="text-xs text-gray-500 dark:text-zinc-400">Endereço (aproximado)</p>
+                {addressLines.length > 0 ? (
+                  addressLines.map((line, i) => (
+                    <p key={i} className="font-medium text-gray-900 dark:text-zinc-100">{line}</p>
+                  ))
+                ) : (
+                  <p className="text-gray-400 dark:text-zinc-500">Endereço não identificado</p>
+                )}
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <Locate className="h-4 w-4 mt-0.5 text-gray-400 dark:text-zinc-500" />
+              <div>
+                <p className="text-xs text-gray-500 dark:text-zinc-400">Coordenadas (GPS)</p>
+                <p className="font-medium text-gray-900 dark:text-zinc-100">{latitude!.toFixed(6)}, {longitude!.toFixed(6)}</p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2 pt-1">
+              <a
+                href={viewUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 rounded-md border border-gray-300 dark:border-[#29322E] bg-gray-50 dark:bg-[#191F1C] px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-[#1f2621] transition-colors"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                Ver no mapa
+              </a>
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={() => handleDeleteLocation(type)}
+                className="flex items-center gap-1.5 rounded-md border border-red-300 dark:border-red-900/40 bg-red-50 dark:bg-red-950/10 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-100 dark:hover:bg-red-950/20 transition-colors disabled:opacity-50"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                {deleting ? "Excluindo..." : "Excluir localização"}
+              </button>
+            </div>
+          </div>
+
+          <div className="relative overflow-hidden rounded-lg border border-gray-200 dark:border-[#29322E] h-40 sm:h-full min-h-[160px]">
+            <iframe
+              src={embedUrl}
+              className="h-full w-full border-0"
+              loading="lazy"
+              title={`Mapa - ${title}`}
+            />
+            <button
+              type="button"
+              onClick={() => setMapPreview({ latitude: latitude!, longitude: longitude!, label: title })}
+              className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-md bg-white/90 dark:bg-[#121614]/90 text-gray-600 dark:text-zinc-300 shadow hover:bg-white dark:hover:bg-[#121614] transition-colors"
+              title="Expandir mapa"
+            >
+              <Maximize2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   // Faixas alinhadas com a página de Score
   const getScoreIcon = (score: number) => {
@@ -1457,16 +1614,45 @@ export default function ClientesPage() {
         )}
       </Dialog>
 
+      {/* Dialog mapa expandido (Localização) */}
+      <Dialog
+        open={Boolean(mapPreview)}
+        onClose={() => setMapPreview(null)}
+        title={mapPreview?.label || "Localização"}
+        className="max-w-3xl"
+      >
+        {mapPreview && (
+          <div className="space-y-3">
+            <div className="h-[60vh] overflow-hidden rounded-lg border border-gray-200 dark:border-[#29322E]">
+              <iframe
+                src={`https://www.openstreetmap.org/export/embed.html?bbox=${mapPreview.longitude - 0.006}%2C${mapPreview.latitude - 0.006}%2C${mapPreview.longitude + 0.006}%2C${mapPreview.latitude + 0.006}&layer=mapnik&marker=${mapPreview.latitude}%2C${mapPreview.longitude}`}
+                className="h-full w-full border-0"
+                title="Mapa expandido"
+              />
+            </div>
+            <a
+              href={`https://www.openstreetmap.org/?mlat=${mapPreview.latitude}&mlon=${mapPreview.longitude}#map=17/${mapPreview.latitude}/${mapPreview.longitude}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-green-700 hover:underline dark:text-green-400"
+            >
+              <ExternalLink className="h-4 w-4" />
+              Abrir no OpenStreetMap
+            </a>
+          </div>
+        )}
+      </Dialog>
+
       {/* Dialog Novo / Editar Cliente */}
       <Dialog
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
         title={editing ? "Editar Cliente" : "Novo Cliente"}
         closeClassName="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500 text-white hover:bg-red-600 hover:text-white dark:text-white dark:hover:text-white"
-        className={`${activeTab === "endereco" || activeTab === "documentos" ? "w-full " : ""}max-w-2xl border dark:border-[#29322E] shadow-lg dark:bg-[#121614] dark:[&_label]:!text-white`}
+        className={`${activeTab === "endereco" || activeTab === "documentos" || activeTab === "localizacao" ? "w-full " : ""}max-w-2xl border dark:border-[#29322E] shadow-lg dark:bg-[#121614] dark:[&_label]:!text-white`}
       >
         {/* Tabs */}
-        <div className="grid grid-cols-1 gap-1 rounded-xl border border-gray-200 dark:border-[#29322E] bg-gray-100 dark:bg-[#191F1C] p-1 mb-6 sm:grid-cols-3">
+        <div className="grid grid-cols-2 gap-1 rounded-xl border border-gray-200 dark:border-[#29322E] bg-gray-100 dark:bg-[#191F1C] p-1 mb-6 sm:grid-cols-4">
           {tabs.map((tab) => (
             <button
               key={tab.key}
@@ -2003,6 +2189,36 @@ export default function ClientesPage() {
             </div>
           )}
 
+          {/* Tab: Localização */}
+          {activeTab === "localizacao" && (
+            <div className="space-y-4">
+              <div className="flex items-start gap-2 rounded-lg border border-green-600/30 bg-green-50 dark:bg-green-950/10 px-4 py-3 text-sm text-green-800 dark:text-green-400">
+                <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                <p>As localizações são registradas automaticamente pelo sistema quando o cliente faz a solicitação de empréstimo e quando atualiza o cadastro.</p>
+              </div>
+
+              {renderLocationCard({
+                title: "Localização da Solicitação",
+                description: "Localização registrada no momento da solicitação de empréstimo.",
+                latitude: editing?.requestLatitude ?? null,
+                longitude: editing?.requestLongitude ?? null,
+                at: editing?.requestLocationAt ?? null,
+                addressApprox: editing?.requestAddressApprox ?? null,
+                type: "request",
+              })}
+
+              {renderLocationCard({
+                title: "Localização da Atualização de Cadastro",
+                description: "Última localização registrada no momento da atualização de cadastro.",
+                latitude: editing?.updateLatitude ?? null,
+                longitude: editing?.updateLongitude ?? null,
+                at: editing?.updateLocationAt ?? null,
+                addressApprox: editing?.updateAddressApprox ?? null,
+                type: "update",
+              })}
+            </div>
+          )}
+
           {/* Botões de ação */}
           {formError && (
             <div className="px-4 py-3 rounded-lg bg-red-50 dark:bg-red-950/10 border border-red-500/30 text-red-600 text-sm">
@@ -2018,6 +2234,11 @@ export default function ClientesPage() {
               )}
               {activeTab === "documentos" && (
                 <Button type="button" variant="outline" className="dark:bg-[#121614] dark:border-[#29322E] dark:hover:bg-[#191F1C]" onClick={() => setActiveTab("endereco")}>
+                  ← Voltar
+                </Button>
+              )}
+              {activeTab === "localizacao" && (
+                <Button type="button" variant="outline" className="dark:bg-[#121614] dark:border-[#29322E] dark:hover:bg-[#191F1C]" onClick={() => setActiveTab("documentos")}>
                   ← Voltar
                 </Button>
               )}
@@ -2043,8 +2264,18 @@ export default function ClientesPage() {
                   Próximo: Documentos →
                 </Button>
               )}
+              {activeTab === "documentos" && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setActiveTab("localizacao")}
+                  className="bg-[#252D29] dark:bg-[#252D29] text-[#22C35D] dark:text-[#22C35D] border-[#3a463f] dark:border-[#3a463f] hover:bg-[#2c352f] dark:hover:bg-[#2c352f]"
+                >
+                  Próximo: Localização →
+                </Button>
+              )}
               <Button type="submit" disabled={saving}>
-                {saving ? "Salvando..." : activeTab === "documentos" ? "Concluir" : editing ? "Salvar" : "Criar Cliente"}
+                {saving ? "Salvando..." : activeTab === "localizacao" ? "Concluir" : editing ? "Salvar" : "Criar Cliente"}
               </Button>
             </div>
           </div>

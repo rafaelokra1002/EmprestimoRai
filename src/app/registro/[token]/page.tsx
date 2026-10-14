@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useParams } from "next/navigation"
 import { CheckCircle2, User, Phone, FileText, MapPin, Briefcase, DollarSign, Instagram, Camera, X, ImageIcon, Key, Home } from "lucide-react"
 
@@ -86,6 +86,24 @@ export default function RegistroPage() {
   const [error, setError] = useState("")
   const [showPhotoError, setShowPhotoError] = useState(false)
   const [cepLoading, setCepLoading] = useState(false)
+  const [location, setLocation] = useState<{ latitude: number; longitude: number; accuracy: number } | null>(null)
+
+  useEffect(() => {
+    if (!navigator.geolocation) return
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLocation({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracy: position.coords.accuracy,
+        })
+      },
+      () => {
+        // Permissão negada ou indisponível: segue o cadastro normalmente, sem localização.
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    )
+  }, [])
 
   const set = (field: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((prev) => ({ ...prev, [field]: e.target.value }))
@@ -141,7 +159,7 @@ export default function RegistroPage() {
       const res = await fetch("/api/registro", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, ...form, photos }),
+        body: JSON.stringify({ token, ...form, photos, location }),
       })
       const data = await res.json()
       if (!res.ok) {

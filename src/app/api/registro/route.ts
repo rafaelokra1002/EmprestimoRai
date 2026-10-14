@@ -40,6 +40,55 @@ function parseOptionalMoney(value: unknown) {
   return Number.isFinite(parsed) ? parsed : null
 }
 
+interface Coordinates {
+  latitude: number
+  longitude: number
+  accuracy: number | null
+}
+
+function parseCoordinates(value: unknown): Coordinates | null {
+  if (!value || typeof value !== "object") return null
+  const { latitude, longitude, accuracy } = value as Record<string, unknown>
+  if (typeof latitude !== "number" || typeof longitude !== "number") return null
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null
+  return {
+    latitude,
+    longitude,
+    accuracy: typeof accuracy === "number" && Number.isFinite(accuracy) ? accuracy : null,
+  }
+}
+
+async function reverseGeocode(latitude: number, longitude: number): Promise<string | null> {
+  try {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 5000)
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
+      {
+        headers: { "User-Agent": "EmprestimoRai-App/1.0" },
+        signal: controller.signal,
+      }
+    )
+    clearTimeout(timeout)
+    if (!res.ok) return null
+    const data = await res.json()
+    const addr = data?.address
+    if (!addr) return null
+
+    const line1 = [addr.road, addr.house_number].filter(Boolean).join(", ")
+    const neighborhood = addr.suburb || addr.neighbourhood || addr.village
+    const line1Full = [line1, neighborhood].filter(Boolean).join(", ")
+    const city = addr.city || addr.town || addr.municipality
+    const line2 = [city && addr.state ? `${city} - ${addr.state}` : city || addr.state, addr.postcode]
+      .filter(Boolean)
+      .join(", ")
+
+    return [line1Full, line2].filter(Boolean).join("\n") || null
+  } catch {
+    return null
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const {
@@ -59,6 +108,7 @@ export async function POST(request: Request) {
       profession,
       housingType,
       photos,
+      location,
     } = await request.json()
 
     if (!token || !name || !phone) {
@@ -81,6 +131,11 @@ export async function POST(request: Request) {
 
     const selfieDataUrl = (photos as Record<string, PhotoFile | null>)?.selfie?.dataUrl || null
 
+    const coordinates = parseCoordinates(location)
+    const requestAddressApprox = coordinates
+      ? await reverseGeocode(coordinates.latitude, coordinates.longitude)
+      : null
+
     const client = await prisma.client.create({
       data: {
         userId: user.id,
@@ -101,6 +156,11 @@ export async function POST(request: Request) {
         photo: selfieDataUrl,
         status: "INACTIVE",
         score: 100,
+        requestLatitude: coordinates?.latitude ?? null,
+        requestLongitude: coordinates?.longitude ?? null,
+        requestAccuracy: coordinates?.accuracy ?? null,
+        requestLocationAt: coordinates ? new Date() : null,
+        requestAddressApprox,
       },
     })
 

@@ -148,6 +148,20 @@ export async function PATCH(
     if (typeof body.status === "string" && ["ACTIVE", "INACTIVE", "DESAPARECIDO"].includes(body.status)) {
       allowedFields.status = body.status
     }
+    if (body.clearLocation === "request") {
+      allowedFields.requestLatitude = null
+      allowedFields.requestLongitude = null
+      allowedFields.requestAccuracy = null
+      allowedFields.requestLocationAt = null
+      allowedFields.requestAddressApprox = null
+    }
+    if (body.clearLocation === "update") {
+      allowedFields.updateLatitude = null
+      allowedFields.updateLongitude = null
+      allowedFields.updateAccuracy = null
+      allowedFields.updateLocationAt = null
+      allowedFields.updateAddressApprox = null
+    }
 
     if (Object.keys(allowedFields).length === 0) {
       return NextResponse.json({ error: "Nenhum campo válido para atualizar" }, { status: 400 })

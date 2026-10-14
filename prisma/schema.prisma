@@ -97,6 +97,16 @@ model Client {
   score        Int              @default(100)
   status       ClientStatus     @default(ACTIVE)
   deleted      Boolean          @default(false)
+  requestLatitude      Float?
+  requestLongitude     Float?
+  requestAccuracy      Float?
+  requestLocationAt    DateTime?
+  requestAddressApprox String?
+  updateLatitude       Float?
+  updateLongitude      Float?
+  updateAccuracy       Float?
+  updateLocationAt     DateTime?
+  updateAddressApprox  String?
   userId       String
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
